@@ -1,0 +1,26 @@
+{
+  "name": "Moses' Deadly Escape",
+  "short_name": "Moses' Escape",
+  "description": "Interactive Bible maze game for kids by Bible Explorer Kids.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#2a0808",
+  "theme_color": "#4a0808",
+  "icons": [
+    {
+      "src": "assets/images/logo%201.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/logo%201.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "education", "kids"]
+}
