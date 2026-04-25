@@ -233,7 +233,17 @@
     z-index:5;
   }
   .hud-group { display:flex; align-items:center; gap:8px; font-size:14px; color:#ffeaa3; }
-  .hud-hearts { letter-spacing:3px; font-size:18px; }
+  .hud-hearts { letter-spacing:3px; font-size:18px; transition: color 0.2s, transform 0.2s, text-shadow 0.2s; }
+  /* v3.10 Jane 2026-04-24 EPIC VISUAL: low-health pulse — at 1 heart the
+     hearts strip flashes red and breathes bigger so kids feel the urgency. */
+  @keyframes heartLowPulse {
+    0%, 100% { transform: scale(1.0); color: #ff6b6b; text-shadow: 0 0 4px rgba(255,80,80,0.7); }
+    50%      { transform: scale(1.15); color: #ff3030; text-shadow: 0 0 12px rgba(255,40,40,0.95); }
+  }
+  .hud-hearts.hud-hearts-low {
+    animation: heartLowPulse 720ms ease-in-out infinite;
+    transform-origin: left center;
+  }
   .hud-chip {
     background:rgba(0,0,0,0.35);
     border:1px solid rgba(255,215,118,0.45);
@@ -243,6 +253,36 @@
     font-size:13px;
     font-weight:700;
     display:inline-flex; align-items:center; gap:5px;
+    /* v3.1 FIX F: prevent chips from clipping the HUD on narrow screens */
+    max-width: 32vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 0 0 auto;
+  }
+  /* v3.9 Jane 2026-04-24 PORTRAIT FIX: action-panel auto-sized to its
+     children (~154 px wide), forcing Interact/Hint/Menu to wrap onto 3
+     stacked rows that pushed Hint/Menu below the viewport on phones with
+     visible URL bar (effective ~360x640). Now action-panel takes the
+     full controls-row width so 3 buttons sit on ONE row, control area
+     drops from ~292px tall to ~150px, Hint and Menu always visible. */
+  @media (max-width: 480px) and (orientation: portrait) {
+    .action-panel {
+      width: 100% !important;
+      max-width: 100% !important;
+      flex-direction: row !important;
+      gap: 6px;
+      justify-content: stretch;
+    }
+    .action-btn {
+      flex: 1 1 0 !important;
+      max-width: none !important;
+      padding: 8px 4px !important;
+      font-size: 12px !important;
+      min-height: 40px;
+    }
+    .controls { gap: 8px !important; padding: 8px !important; }
+    .dpad { width: 150px; align-self: center; }
   }
   .hud-chip img { width:18px; height:18px; }
   .pause-btn {
@@ -250,14 +290,61 @@
     font-weight:900; font-size:17px;
     box-shadow:0 2px 8px rgba(0,0,0,0.4);
   }
+  /* v3.21 Jane 2026-04-25: dedicated MAP button — wider rounded pill (not a
+     circle), keeps "MAP" on a single line, and shows the remaining-uses
+     count as a small notification badge in the top-right corner instead of
+     wrapping below as "(2)". Reads cleaner at every viewport size. */
+  .peek-map-btn {
+    position: relative;
+    width: auto !important;
+    min-width: 56px;
+    padding: 0 12px;
+    height: 36px;
+    border-radius: 18px !important;
+    background: linear-gradient(145deg,#2a4a8a,#3a5ea8) !important;
+    border: 2px solid #ffd976 !important;
+    color: #ffd976 !important;
+    font-size: 13px !important;
+    letter-spacing: 0.5px;
+    margin-right: 6px;
+    white-space: nowrap;
+    overflow: visible;
+  }
+  .peek-count-badge {
+    position: absolute;
+    top: -6px; right: -6px;
+    min-width: 18px; height: 18px; padding: 0 4px;
+    border-radius: 9px;
+    background: #d63a3a;
+    color: #fff;
+    font-size: 11px; font-weight: 900;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1.5px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    line-height: 1;
+  }
+  .peek-count-badge.empty {
+    background: #555; color: #bbb;
+  }
 
   /* canvas area */
+  /* v3.4 LANE 2+ (Jane 2026-04-24): scene2_background.png as the wrapper
+     backdrop. Earlier attempt drew it BEHIND tiles inside the canvas, but
+     the sand-tile floor fully obscured it — Jane saw no change. Now we
+     paint it as a CSS background-image on .canvas-wrapper so it shows
+     around / under the canvas edges and contributes a warm horizon glow
+     even where the canvas itself is opaque sand. cover sizing keeps it
+     filling the wrapper at any aspect ratio. The dark radial vignette is
+     layered on top of the image so the play canvas still has its subtle
+     focus-darken at the edges. */
   .canvas-wrapper {
     flex:1;
     display:flex; align-items:center; justify-content:center;
     overflow:hidden;
     background:
-      radial-gradient(ellipse at center, #3a1708 0%, #140502 100%);
+      radial-gradient(ellipse at center, rgba(58,23,8,0.35) 0%, rgba(20,5,2,0.85) 100%),
+      url('assets/images/scene2_background.png') center/cover no-repeat,
+      #2a1508;
     position:relative;
     padding:6px;
   }
@@ -305,8 +392,38 @@
     padding:6px 8px 4px;
     z-index:4;
     box-shadow:0 3px 12px rgba(0,0,0,0.55);
-    pointer-events:none;
+    /* v3.9: pointer-events:auto so the box itself is tappable. */
+    pointer-events:auto;
+    cursor:pointer;
     display:flex; flex-direction:column; align-items:center;
+  }
+  /* v3.12 Jane 2026-04-24: minimap was covering the top-right canvas view
+     and Jane found the colored-dot legend useless. Hidden on the canvas;
+     the MAP button in the HUD opens the same overlay with proper labels.
+     Leaving minimap rendered so the keyboard 'm' shortcut + the redirect
+     handler still work, but visually moved out of the way. */
+  .minimap-box {
+    display: none !important;
+  }
+  .minimap-box .mm-label {
+    /* tap affordance hint */
+    position: relative;
+  }
+  .minimap-box::after {
+    content: 'TAP TO PEEK';
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: rgba(255,217,118,0.85);
+    background: rgba(0,0,0,0.72);
+    padding: 1px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,217,118,0.4);
+    letter-spacing: 1px;
+    pointer-events: none;
+    white-space: nowrap;
   }
   .minimap-box .mm-label {
     color:#ffd976; font-size:10px; font-weight:700; letter-spacing:1px;
@@ -368,6 +485,33 @@
   @media (max-width: 540px) {
     .minimap-box { transform:scale(0.82); transform-origin:top right; top:4px; right:4px; }
     .compass-box { transform:scale(0.78); transform-origin:top left; top:4px; left:4px; }
+  }
+  /* v3.9 Jane 2026-04-24: stronger mobile shrink for minimap + compass.
+     Jane's screenshot showed DESERT MAP eating ~30% of landscape canvas
+     width on phone. Now it scales to 0.55 on portrait phones and 0.5 on
+     landscape phones (where horizontal real estate is most precious),
+     and the legend rows are hidden on landscape so only the map + label
+     remain. Compass also shrinks but stays visible. */
+  @media (max-width: 430px) {
+    .minimap-box {
+      transform: scale(0.55); transform-origin: top right;
+      top: 2px; right: 2px;
+    }
+    .compass-box {
+      transform: scale(0.55); transform-origin: top left;
+      top: 2px; left: 2px;
+    }
+  }
+  @media (max-height: 500px) and (orientation: landscape) {
+    .minimap-box {
+      transform: scale(0.50); transform-origin: top right;
+      top: 2px; right: 2px;
+    }
+    .minimap-box .mm-legend, .minimap-box .mm-pos { display: none; }
+    .compass-box {
+      transform: scale(0.50); transform-origin: top left;
+      top: 2px; left: 2px;
+    }
   }
   .pulse-vignette {
     pointer-events:none;
@@ -477,6 +621,27 @@
     animation: dangerShake 0.55s ease-in-out;
     overflow:visible;
   }
+  /* v3.1 FIX C (Jane 2026-04-23): higher-specificity rule that beats the
+     v4.2 .modal-overlay .modal-content cap and forces a true centered
+     "Caught!" card on every viewport. Width is hard-clamped so it never
+     spills off the right edge on portrait phones, and explicit margin:auto
+     centers it inside the flex overlay even if a host UA fails to honor
+     the parent's justify-content. Cross-browser safe. */
+  .modal-overlay.danger-modal .modal-content {
+    width: min(94vw, 440px);
+    max-width: min(94vw, 440px);
+    max-height: min(86vh, 720px);
+    max-height: min(86dvh, 720px);
+    margin: auto;
+    box-sizing: border-box;
+  }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .modal-overlay.danger-modal .modal-content {
+      max-height: 94vh;
+      max-height: 94dvh;
+      padding: 14px 16px;
+    }
+  }
   /* v2.3 Jane: Time's Up modal uses scene2_background.png behind the overlay
      so nightfall / desert imagery replaces the default black dimmer. Also
      paints the modal card with a warm dusk wash so the message still pops. */
@@ -577,10 +742,76 @@
     color:#ffd976;
     animation: winTitlePop 1.8s ease-in-out infinite;
     display:inline-block;
+    /* v3.20: tightened margin so the hero, title, stars, tier, score sit
+       closer together → reads as ONE celebration block, not five stacked
+       titles. */
+    margin: 6px auto 4px;
+    font-size: clamp(20px, 4.4vw, 28px);
+    line-height: 1.15;
   }
   @keyframes winTitlePop {
     0%,100% { transform:scale(1); text-shadow:0 0 20px rgba(255,215,0,0.6); }
     50% { transform:scale(1.08); text-shadow:0 0 60px rgba(255,215,0,1); }
+  }
+  /* v3.20 Jane 2026-04-25: pulsing Moses hero graphic above the win title.
+     Sits in front of an animated radial-ray burst so the modal reads as a
+     true celebration, not a wall of text. */
+  .win-hero {
+    position: relative;
+    width: clamp(120px, 28vw, 168px);
+    height: clamp(120px, 28vw, 168px);
+    margin: -6px auto 2px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .win-hero-rays {
+    position: absolute; inset: -14% -14% -14% -14%;
+    border-radius: 50%;
+    background:
+      conic-gradient(from 0deg,
+        rgba(255,215,0,0.55) 0deg, rgba(255,215,0,0) 18deg,
+        rgba(255,215,0,0.55) 36deg, rgba(255,215,0,0) 54deg,
+        rgba(255,215,0,0.55) 72deg, rgba(255,215,0,0) 90deg,
+        rgba(255,215,0,0.55) 108deg, rgba(255,215,0,0) 126deg,
+        rgba(255,215,0,0.55) 144deg, rgba(255,215,0,0) 162deg,
+        rgba(255,215,0,0.55) 180deg, rgba(255,215,0,0) 198deg,
+        rgba(255,215,0,0.55) 216deg, rgba(255,215,0,0) 234deg,
+        rgba(255,215,0,0.55) 252deg, rgba(255,215,0,0) 270deg,
+        rgba(255,215,0,0.55) 288deg, rgba(255,215,0,0) 306deg,
+        rgba(255,215,0,0.55) 324deg, rgba(255,215,0,0) 342deg);
+    filter: blur(1.5px);
+    animation: heroRaysSpin 14s linear infinite, heroRaysPulse 2.4s ease-in-out infinite;
+    opacity: 0.85;
+    pointer-events: none;
+  }
+  .win-hero::after {
+    /* soft warm corona behind Moses */
+    content: '';
+    position: absolute; inset: 8% 8% 8% 8%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,235,170,0.55) 0%, rgba(255,215,0,0.18) 55%, rgba(255,215,0,0) 100%);
+    pointer-events: none;
+    animation: heroCoronaPulse 2.0s ease-in-out infinite;
+  }
+  .win-hero-img {
+    position: relative; z-index: 2;
+    width: 78%; height: 78%; object-fit: contain;
+    filter: drop-shadow(0 4px 14px rgba(0,0,0,0.45));
+    animation: heroBreathe 2.0s ease-in-out infinite;
+  }
+  @keyframes heroBreathe {
+    0%,100% { transform: scale(1) translateY(0); }
+    50%     { transform: scale(1.07) translateY(-4px); }
+  }
+  @keyframes heroRaysSpin {
+    from { transform: rotate(0deg); } to { transform: rotate(360deg); }
+  }
+  @keyframes heroRaysPulse {
+    0%,100% { opacity: 0.55; }
+    50%     { opacity: 0.95; }
+  }
+  @keyframes heroCoronaPulse {
+    0%,100% { transform: scale(1); opacity: 0.7; }
+    50%     { transform: scale(1.08); opacity: 1; }
   }
   .win-stars {
     display:flex; gap:10px; justify-content:center; font-size:54px; margin:12px 0 8px;
@@ -828,6 +1059,31 @@
     background:linear-gradient(90deg,#ffd976,#ffb000); color:#3a1a00;
     border:2px solid #7a4a00; border-radius:10px; padding:8px 18px;
     font-weight:800; font-size:14px; cursor:pointer; margin-top:8px;
+    transition: background 0.12s, transform 0.08s, box-shadow 0.12s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  /* v3.9 Jane 2026-04-24: Submit button had no press feedback. Now :hover
+     brightens, :active sinks darker + scales down so kids feel the tap.
+     :focus-visible adds a keyboard-friendly outline. */
+  .ch-confirm-btn:hover {
+    background: linear-gradient(90deg, #ffe095, #ffc833);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.32);
+  }
+  .ch-confirm-btn:active {
+    background: linear-gradient(90deg, #c08a30, #8a5a18);
+    color: #fff8d8;
+    transform: translateY(2px) scale(0.97);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .ch-confirm-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    background: linear-gradient(90deg, #b88c3a, #8a6418);
+  }
+  .ch-confirm-btn:focus-visible {
+    outline: 3px solid #6ec6ff;
+    outline-offset: 2px;
   }
   /* ==== v3.6.2 NEW CHALLENGE TYPES: spot / pair / count / memory / mini-maze ==== */
   /* -- SPOT: 2x2 grid of big word tiles -- */
@@ -939,11 +1195,37 @@
     font-size:22px;
   }
   .ch-maze-cell.open { background:#f7e6bc; }
-  .ch-maze-cell.wall { background:#5a3a14; border:1px solid #3a1a00; }
-  .ch-maze-cell.exit { background:#9ed89e; }
-  .ch-maze-cell.exit::after { content:"\2605"; color:#2e5e2e; font-weight:900; }
-  .ch-maze-cell.moses { background:#ffd976; }
-  .ch-maze-cell.moses::after { content:"\1F464"; font-size:18px; }
+  /* v3.11 Jane 2026-04-24: maze cells now show sprite art instead of plain
+     colors — wall = Egyptian guard, exit = Midian well, Moses = his front
+     sprite. Background-image with cover-fit; no inner content overlap. */
+  .ch-maze-cell.wall {
+    background:#5a3a14 url('assets/images/egyptian%20guard%20front%20facing.png') center/110% no-repeat;
+    border:1px solid #3a1a00;
+    box-shadow: inset 0 0 4px rgba(0,0,0,0.4);
+  }
+  .ch-maze-cell.exit {
+    /* v3.12 Jane 2026-04-24: stack 3 fallbacks. CSS picks the FIRST that
+       loads — new midian.png > midian.png > old midian well.png > none.
+       Background-color stays mint green so kids see a green target even
+       if every PNG is missing. */
+    background-color: #9ed89e;
+    background-image:
+      url('assets/images/new%20midian.png'),
+      url('assets/images/midian.png'),
+      url('assets/images/midian%20well.png');
+    background-position: center, center, center;
+    background-size: 95%, 95%, 95%;
+    background-repeat: no-repeat, no-repeat, no-repeat;
+    border:2px solid #2e5e2e;
+    box-shadow: 0 0 6px rgba(120,220,120,0.6);
+  }
+  .ch-maze-cell.exit::after { content:""; }
+  .ch-maze-cell.moses {
+    background:#ffd976 url('assets/images/moses%20front%20facing.png') center/110% no-repeat;
+    box-shadow: 0 0 8px rgba(255,200,80,0.85);
+    border:2px solid #c89030;
+  }
+  .ch-maze-cell.moses::after { content:""; }
   .ch-maze-pad { display:flex; flex-direction:column; gap:4px; align-items:center; margin:6px auto 0; }
   .ch-maze-row { display:flex; gap:6px; }
   .ch-maze-btn, .ch-maze-spacer { width:44px; height:44px; font-size:22px; font-weight:900; }
@@ -1026,10 +1308,31 @@
   .map-peek-overlay.active { display:flex; }
   .map-peek-box {
     background:#1a0830; border:3px solid #ffd976; border-radius:12px;
-    padding:10px; box-shadow:0 0 40px rgba(255,215,0,0.5);
+    padding:12px; box-shadow:0 0 40px rgba(255,215,0,0.5);
+    max-width: 96vw; max-height: 96vh;
   }
-  .map-peek-box canvas { display:block; background:#000; border:1px solid #ffd976; }
+  .map-peek-box canvas {
+    display:block; background:#000; border:1px solid #ffd976;
+    /* v3.23 Jane: scale canvas down on small viewports while preserving
+       its native 640x400 backing-store so it stays crisp. */
+    max-width: 100%; height: auto;
+  }
   .map-peek-box p { color:#ffd976; text-align:center; margin:6px 0 0; font-size:12px; }
+  /* v3.23 Jane 2026-04-25: legend strip — small color swatches with labels
+     so kids understand what each dot means on the map. Compact wrap-flex. */
+  .map-peek-legend {
+    display:flex; flex-wrap:wrap; gap:6px 10px; justify-content:center;
+    margin:8px 4px 2px; color:#ffe082; font-size:11px; font-weight:600;
+    letter-spacing:0.2px;
+  }
+  .map-peek-legend .lg {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:2px 6px; background:rgba(0,0,0,0.25); border-radius:6px;
+  }
+  .map-peek-legend .sw {
+    display:inline-block; width:11px; height:11px; border-radius:50%;
+    border:1.5px solid rgba(255,255,255,0.6);
+  }
   .win-motivate {
     color:#ffe082; font-size:12px; margin:6px 0 4px; font-weight:600;
   }
@@ -1137,15 +1440,34 @@
      The Exit button is now a non-scrolling sibling at the bottom, so there
      is no possible overlap. Flex shrink on .ch-scroll keeps the button
      always visible on phones with the URL/address bar showing. */
-  .challenge-modal .modal-content {
+  /* v3.1 FIX B (Jane 2026-04-23): bumped specificity by chaining
+     .modal-overlay.challenge-modal so this rule beats the generic v4.2
+     .modal-overlay .modal-content cap at line ~1190 that was setting
+     max-height to 88dvh. Previously 85dvh = ~918 px on 1080p desktop
+     which overflowed the ~640 px canvas-wrapper. Capped at min(78dvh,
+     620 px) so the modal always fits inside the typical game frame.
+     Older Safari (<=15) falls back on the vh line, newer UAs take dvh. */
+  .modal-overlay.challenge-modal .modal-content {
     display: flex;
     flex-direction: column;
-    max-height: 85vh;               /* fallback for older Safari */
-    max-height: 85dvh;              /* dynamic viewport – tracks URL bar */
-    overflow: hidden;               /* outer is clipped; inner scrolls */
-    padding-bottom: 16px;           /* no longer needs ~84px buffer */
+    width: min(94vw, 560px);
+    max-width: min(94vw, 560px);
+    max-height: min(78vh, 620px);
+    max-height: min(78dvh, 620px);
+    margin: auto;
+    overflow: hidden;
+    padding-bottom: 16px;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;   /* prevents body scroll leak on iOS */
+    overscroll-behavior: contain;
+  }
+  /* v3.1 FIX B: landscape phones (short viewports) need an even tighter cap
+     or the Exit-footer gets pushed off the bottom edge. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .modal-overlay.challenge-modal .modal-content {
+      max-height: 92vh;
+      max-height: 92dvh;
+      padding: 10px 12px 12px 12px;
+    }
   }
   .challenge-modal .ch-scroll {
     flex: 1 1 auto;
@@ -1516,10 +1838,113 @@
     .hud-chip { font-size:12px; padding:3px 8px; }
     .hud { padding:6px 8px; }
   }
-  @media (max-height: 620px) and (orientation: landscape) {
-    .controls { min-height:unset; padding:4px 10px; }
-    .dpad-btn { height:38px; }
-    .action-btn { height:36px; }
+  /* v3.8 PASS A Jane 2026-04-24: portrait narrow-phone HUD was wrapping
+     MAP + pause onto a second row because chips + buttons totaled more
+     than 375px. Force a single-line nowrap HUD with tighter gaps and
+     smaller chips at ≤420 px wide. Horizontal overflow-x auto covers
+     the very rare case of 320 px (iPhone SE 1) where everything still
+     doesn't fit — kid can scroll-to-timer in that edge case. */
+  @media (max-width: 420px) {
+    .hud {
+      gap: 3px;
+      padding: 6px 6px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .hud-chip {
+      font-size: 11px;
+      padding: 2px 6px;
+      gap: 3px;
+      max-width: unset;
+    }
+    .hud-chip img { width: 14px; height: 14px; }
+    .hud-hearts { font-size: 15px; letter-spacing: 2px; }
+    .pause-btn { width: 32px; height: 32px; font-size: 15px; }
+    #peekMapBtn {
+      width: 44px !important;
+      height: 32px !important;
+      font-size: 10px !important;
+      padding: 0 !important;
+      border-radius: 16px !important;
+    }
+  }
+  /* v3.9 Jane 2026-04-24 KIDS-BIBLE-APP STYLE: landscape phone gets a
+     COMPLETELY different control layout. Action buttons (Interact, Hint,
+     Menu) become a vertical column of CIRCULAR icons floating over the
+     right edge of the canvas — matching the Kids Bible app reference Jane
+     shared. D-pad stays at bottom-left, also as fixed-position overlay
+     on the canvas, so the canvas itself fills the entire viewport below
+     the HUD instead of sharing 92 px with controls. Net effect: canvas
+     grows from 224 px to ~310 px (+38%) and sprites finally read at a
+     usable size on a landscape phone. */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .hud {
+      padding: 4px 10px;
+      min-height: auto;
+      flex-wrap: nowrap;
+      gap: 5px;
+    }
+    .hud-chip { font-size: 11px; padding: 2px 6px; }
+    .hud-chip img { width: 14px; height: 14px; }
+    .hud-hearts { font-size: 14px; }
+    .pause-btn { width: 30px; height: 30px; font-size: 14px; }
+    #peekMapBtn {
+      width: 44px !important; height: 30px !important;
+      font-size: 10px !important; padding: 0 !important;
+      border-radius: 15px !important;
+    }
+    /* .controls becomes a thin transparent strip carrying ONLY the D-pad */
+    .controls {
+      min-height: unset;
+      height: auto;
+      padding: 0;
+      background: transparent;
+      border-top: none;
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      right: auto;
+      width: auto;
+      z-index: 30;
+      gap: 0;
+    }
+    /* D-pad: smaller, anchored bottom-left of canvas */
+    .dpad {
+      width: 116px;
+      gap: 4px;
+    }
+    .dpad-btn, .dpad-spacer { height: 30px; border-radius: 50%; font-size: 16px; }
+    /* Action panel: circular icons, fixed-position column on right edge.
+       Uses position:fixed (viewport-relative) instead of absolute because
+       .controls itself is now position:absolute, which would otherwise
+       become the offset parent and pin actions next to the D-pad. */
+    .action-panel {
+      position: fixed;
+      top: 50%;
+      right: 6px;
+      transform: translateY(-50%);
+      flex: 0 0 auto;
+      flex-direction: column !important;
+      gap: 7px;
+      max-width: unset;
+      width: auto;
+      z-index: 30;
+    }
+    .action-btn {
+      width: 46px;
+      height: 46px;
+      min-width: 0;
+      border-radius: 50%;
+      padding: 0;
+      font-size: 11px;
+      font-weight: 800;
+      flex: 0 0 auto;
+      line-height: 1.05;
+      letter-spacing: 0;
+      background: rgba(0,0,0,0.55);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.55);
+    }
   }
 </style>
 </head>
@@ -1615,7 +2040,7 @@
       <span class="hud-chip" id="hudTimer">3:00</span>
     </div>
     <div class="hud-group">
-      <button class="pause-btn" id="peekMapBtn" aria-label="Peek Map" title="Peek the map (2 uses)" style="background:linear-gradient(145deg,#2a4a8a,#3a5ea8);border-color:#ffd976;color:#ffd976;margin-right:6px;">MAP <span id="peekCount" style="font-size:10px;">(2)</span></button>
+      <button class="pause-btn peek-map-btn" id="peekMapBtn" aria-label="Open Map" title="Tap to view the full map (no limit)">MAP</button>
       <button class="pause-btn" id="pauseBtn" aria-label="Pause">| |</button>
     </div>
   </div>
@@ -1624,8 +2049,19 @@
        clicking the map did nothing). Countdown extended to 5s for kids. -->
   <div class="map-peek-overlay" id="mapPeekOverlay">
     <div class="map-peek-box">
-      <canvas id="mapPeekCanvas" width="320" height="200"></canvas>
-      <p style="color:#ffd976;">Tap anywhere to close &#183; auto-closes in <span id="peekTimer">5</span>s</p>
+      <canvas id="mapPeekCanvas" width="640" height="400"></canvas>
+      <div id="mapPeekLegend" class="map-peek-legend">
+        <span class="lg"><span class="sw" style="background:#5fdb5f;border-color:#1f6b2e;"></span>Start</span>
+        <span class="lg"><span class="sw" style="background:#28d04a;border-color:#0e5a20;"></span>Exit</span>
+        <span class="lg"><span class="sw" style="background:#ffd976;border-color:#7a4a10;"></span>Checkpoint</span>
+        <span class="lg"><span class="sw" style="background:#5fdb5f;border-color:#1f6b2e;"></span>Solved</span>
+        <span class="lg"><span class="sw" style="background:#3a8ff0;border-color:#fff;"></span>You</span>
+        <span class="lg"><span class="sw" style="background:#ff4040;"></span>Guard</span>
+        <span class="lg"><span class="sw" style="background:#ff8040;"></span>Scout</span>
+        <span class="lg"><span class="sw" style="background:#8a5a22;"></span>Cave</span>
+        <span class="lg"><span class="sw" style="background:#d49b5e;"></span>Treasure</span>
+      </div>
+      <p style="color:#ffd976;">Tap anywhere to close</p>
     </div>
   </div>
   <div class="canvas-wrapper">
@@ -1716,7 +2152,7 @@
     <button class="btn ghost" id="restartBtn">Restart Scene</button>
     <button class="btn ghost" id="quitBtn">Main Menu</button>
     <div style="margin-top:10px;font-size:12px;color:#ffd976;opacity:0.7;">
-      Tip: Hide behind boulders [#] to avoid scouts!
+      Tip: Hide behind boulders and inside caves to avoid scouts and guards!
     </div>
   </div>
 </div>
@@ -1763,27 +2199,38 @@
   </div>
 </div>
 
+<!-- v3.20 Jane 2026-04-25: Victory modal REWORKED. Removed redundant titles
+     ("Moses reached the Midian well" + "BRAVE TRAVELER" tier + win-tier
+     stacked = 3 titles). Now: ONE hero title, a pulsing Moses sprite,
+     stars + score, badges, ONE motivate line, and three buttons. The
+     Replay button now correctly says "Replay Scene 2". -->
 <div class="modal-overlay win-modal" id="winModal">
-  <div class="modal-content">
+  <div class="modal-content win-content-v2">
+    <div class="win-hero">
+      <div class="win-hero-rays" id="winHeroRays"></div>
+      <img class="win-hero-img" id="winHeroImg"
+           src="assets/images/moses%20front%20facing.png"
+           alt="Moses celebrates"
+           onerror="this.style.display='none'">
+    </div>
     <h2 class="win-title" id="winTitle">Moses reached safety!</h2>
-    <div class="win-tier" id="winTier">BRAVE EXPLORER</div>
     <div class="win-stars" id="winStars">
       <span>&#9733;</span><span>&#9733;</span><span>&#9733;</span>
     </div>
+    <div class="win-tier" id="winTier">BRAVE TRAVELER</div>
     <div class="win-scorebox" id="winScorebox">
       <span><strong id="winScoreNum">0</strong> Score</span>
       <span><strong id="winTreasureNum">0/0</strong> Treasures</span>
       <span><strong id="winHeartsNum">3/3</strong> Hearts</span>
     </div>
-    <!-- v3.4: finish-modal is compact; the chest reveal plays mid-scene only. -->
     <div class="win-truth-card" id="winTruthCard">
       <span class="tc-label">&#9733; 1 Truth Card Collected &#9733;</span>
       <div class="tc-body" id="winTruthText">God had a plan for Moses.</div>
     </div>
     <div class="win-badge-strip" id="winBadges"></div>
     <p class="win-motivate" id="winMotivate">Collect more Truth Cards in the next scene to unlock the Truth Finder badge!</p>
-    <button class="btn" id="winNextBtn">Next: The Desert -></button>
-    <button class="btn ghost" id="winReplayBtn">Replay Scene 1</button>
+    <button class="btn" id="winNextBtn">Continue Adventure -></button>
+    <button class="btn ghost" id="winReplayBtn">Replay Scene 2</button>
     <button class="btn ghost" id="winMenuBtn">Main Menu</button>
   </div>
 </div>
@@ -1804,7 +2251,19 @@
         <div class="ray" style="transform:translate(-50%,-100%) rotate(270deg);"></div>
         <div class="ray" style="transform:translate(-50%,-100%) rotate(315deg);"></div>
       </div>
-      <div class="chest-body" id="midChestBody">
+      <!-- v3.11 Jane 2026-04-24: replaced hand-drawn chest-body/chest-lid
+           CSS divs with the actual treasure-chest PNG. The closed PNG is
+           swapped to the open PNG by playChestAnim() once the lid animates. -->
+      <img id="midChestImg"
+           src="assets/images/treasure%20chest%20closed.png"
+           data-closed="assets/images/treasure%20chest%20closed.png"
+           data-open="assets/images/treasure%20chest%20open.png"
+           alt="Treasure chest"
+           style="display:block;margin:18px auto 6px;width:160px;max-width:62%;height:auto;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.5));">
+      <!-- legacy hand-drawn chest kept for fallback (hidden by default; if
+           PNGs fail to load the chest-anim function still has elements to
+           toggle classes on without throwing). -->
+      <div class="chest-body" id="midChestBody" style="display:none;">
         <div class="chest-lid" id="midChestLid"></div>
       </div>
     </div>
@@ -1918,16 +2377,22 @@ function resizeCanvas() {
   const availW = Math.max(300, Math.floor(wrapRect.width) - 16);
   const availH = Math.max(200, Math.floor(wrapRect.height) - 16);
   // Tile picker — first size from the candidate list that yields at least
-  // 12 visible columns and 8 visible rows. Matches the v2.2.1 picker that
-  // Jane confirmed working. The earlier "four-tier + aspect cap" picker
-  // (v4.2) over-constrained on short-height laptop screens and produced a
-  // cramped/weird canvas — it was reverted here on 2026-04-23.
+  // the minimum visible grid for the current viewport. v3.9 Jane 2026-04-24:
+  // mobile phones now accept fewer visible cols/rows (9x6 instead of 12x8)
+  // so each tile renders LARGER and sprites are readable. Subjects (Moses,
+  // scouts, tablets) appeared too tiny on her phone screenshots; this
+  // zoom-in directly addresses that. Desktop behavior unchanged.
+  const _isMobile = innerWidth < 700;
   let bestTile = 32;
-  const candidates = [44, 40, 36, 32, 28, 24];
+  const candidates = _isMobile
+    ? [56, 52, 48, 44, 40, 36, 32]   // mobile: prefer larger tiles first
+    : [44, 40, 36, 32, 28, 24];      // desktop: original picker
+  const minCols = _isMobile ? 9 : 12;
+  const minRows = _isMobile ? 6 : 8;
   for (const t of candidates) {
     const cols = Math.floor(availW / t);
     const rows = Math.floor(availH / t);
-    if (cols >= 12 && rows >= 8) { bestTile = t; break; }
+    if (cols >= minCols && rows >= minRows) { bestTile = t; break; }
   }
   TILE = bestTile;
   VIEW_COLS = Math.min(MAP_W, Math.floor(availW / TILE));
@@ -1936,7 +2401,15 @@ function resizeCanvas() {
   CANVAS_H = VIEW_ROWS * TILE;
   // HiDPI / retina fix — backing store at device resolution, CSS at logical px.
   // Draw code continues to work in CSS pixel space thanks to the scale transform.
-  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  // v3.21 Jane 2026-04-25: bumped DPR cap 3 → 4 + factor in user browser zoom.
+  // When Jane Ctrl+Plus zooms past 100% the canvas pixels stretch and look
+  // soft. Detect that via outerWidth/innerWidth and over-render proportionally
+  // so even a 200% zoom keeps oasis/camel/sprite detail crisp. Caps at 4 so
+  // memory stays bounded on phones.
+  const browserZoom = (window.outerWidth && window.innerWidth)
+    ? Math.max(1, window.outerWidth / window.innerWidth)
+    : 1;
+  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), 4);
   canvas.width  = Math.round(CANVAS_W * dpr);
   canvas.height = Math.round(CANVAS_H * dpr);
   canvas.style.width  = CANVAS_W + 'px';
@@ -1948,6 +2421,13 @@ function resizeCanvas() {
   updateCamera();
 }
 window.addEventListener('resize', () => { resizeCanvas(); });
+// v3.21 Jane 2026-04-25: also re-resize on Ctrl+Plus / Ctrl+Minus zoom so
+// the backing store grows with the zoom level. resize fires for window-size
+// changes but not always for zoom — visualViewport's resize event is the
+// canonical zoom signal on modern browsers.
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => { resizeCanvas(); });
+}
 
 /* ---------- TILE TYPES ----------
    0 = floor (walkable sand)
@@ -2092,9 +2572,19 @@ function setMusic(which /* 'bgm' | 'narration' | 'alerted' | null */){
 // paused, in a challenge modal, or mid-cinematic, these should be fully
 // silent -- otherwise Jane hears "guard footsteps" during the quiz modal.
 const PLAY_ONLY_WHILE_PLAYING = { footstep: 1 };
+// v3.13 Jane 2026-04-25 AUDIO LAG FIX: rapid same-sound replays were
+// queueing on phones and causing the audio decoder to stutter/break.
+// Throttle each named sound to fire at most once per 90ms (well under
+// human perception of "two distinct taps") which lets the decoder
+// finish processing before we ask it to seek-zero + play again.
+const _lastPlayAt = Object.create(null);
 function play(name) {
   const a = audio[name]; if (!a) return;
   if (PLAY_ONLY_WHILE_PLAYING[name] && (typeof game === 'undefined' || game.state !== 'playing')) return;
+  const now = performance.now();
+  // skip if we just fired the same sound — prevents decode-stutter on weak phones
+  if (_lastPlayAt[name] && (now - _lastPlayAt[name]) < 90) return;
+  _lastPlayAt[name] = now;
   try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){}
 }
 
@@ -2112,7 +2602,9 @@ const IMG_SRC = {
   wall:       'assets/images/palace%20wall.png',
   floor:      'assets/images/palace%20floor.png',
   servant:    'assets/images/gossiping%20servant.png',
-  sceneBg:    'assets/images/scene2%20background.png',
+  // v3.13 Jane 2026-04-25: filename on disk is `scene2_background.png`
+  // (UNDERSCORE) — the URL-encoded space variant 404'd silently.
+  sceneBg:    'assets/images/scene2_background.png',
   // v3.5 NEW ASSET SLOTS - fall back to canvas art until PNGs are dropped in
   crown:      'assets/images/crown.png',
   chest:        'assets/images/treasure%20chest%20closed.png',
@@ -2136,7 +2628,9 @@ const IMG_SRC = {
   sandstorm2: 'assets/images/sandstorm%202.png',
   sandstormA: 'assets/images/sandstorm.png',
   scorpion:   'assets/images/scorpion.png',
-  heatZone:   'assets/images/heat%20zone.png',
+  // v3.9 Jane 2026-04-24 Bug 39: heatZone is registered but never rendered
+  // on any tile. Kept commented for a future build if we add heat hazards.
+  // heatZone:   'assets/images/heat%20zone.png',
   // v2.2.7 FULL SCENE 2 ASSET WIRING (Jane brief 2026-04-22) -----------------
   // Moses directional sprites (drawPlayer switches on player.dir)
   mosesFront: 'assets/images/moses%20front%20facing.png',
@@ -2171,7 +2665,9 @@ const IMG_SRC = {
   // Desert landscape tiles / decor
   sandTile:    'assets/images/sand%20tile.png',
   oasisTile:   'assets/images/oasis%20tile.png',
-  palmShade:   'assets/images/palm%20shade.png',
+  // v3.9 Jane 2026-04-24 Bug 39: palmShade never drawn on any tile (palmShadow
+  // is used instead). Commented out to skip the preload.
+  // palmShade:   'assets/images/palm%20shade.png',
   desertCactus:'assets/images/desert%20cactus.png',
   campfire:    'assets/images/desert%20campfire.png',
   rock:        'assets/images/rock.png',
@@ -2192,6 +2688,39 @@ const IMG_SRC = {
   pillarStone:'assets/images/pillar%20stone.png',
   // Consumable pickup
   waterSkin:  'assets/images/water%20skin.png',
+  // v3.2 LANE 2 (Jane 2026-04-23): drop-in art uplift assets
+  tablet:     'assets/images/stone%20tablet.png',    // checkpoint marker (was vector "?")
+  tablet2:    'assets/images/stone%20tablet%202.png', // alternate tablet for variety
+  sandTile1:  'assets/images/sand%20tile%201.png',   // (registered but not used after revert)
+  palmShadow: 'assets/images/palm%20shadow.png',     // sparse ground-depth decor
+  // v3.4 LANE 2+ (Jane 2026-04-24): sinking sand variant for quicksand tiles
+  // (tile-code 9). Provides clear visual cue distinguishing safe sand from
+  // sink-trap sand without needing a separate hand-drawn vector overlay.
+  sinkingSand:'assets/images/sinking%20sand.png',
+  // v3.14 Jane 2026-04-25: lightSand was tried as primary floor but turned
+  // out to be a landscape illustration (cliffs/dunes) not a tile. Kept
+  // registered in case we re-purpose it as a horizon backdrop later.
+  lightSand: 'assets/images/light%20color%20sand.png',
+  // v3.16 Jane 2026-04-25: PROPERLY TILEABLE PNGs Jane just generated.
+  // sandTileLight = ground-only top-down warm-tan sand
+  // sandTileRed   = ground-only top-down red sandstone
+  // These replace the tint-overlay approach. Both repeat cleanly across
+  // a 40-tile grid without producing landscape fragments.
+  sandTileLight: 'assets/images/sand%20tile%20light.png',
+  sandTileRed:   'assets/images/sand%20tile%20red.png',
+  // v3.17 Jane 2026-04-25: use `checkpoint 1.png` as the actual checkpoint
+  // sprite. `new checkpoint.png` was a maze-glyph that didn't read at
+  // tile scale.
+  checkpoint: 'assets/images/checkpoint%201.png',
+  midianWell: 'assets/images/new%20midian.png',
+  desertExitNew: 'assets/images/new%20desert%20exit.png',
+  // v3.5 + v3.12 Jane 2026-04-24: red sandstone variant for Mesa zone
+  // floor (cols 29-37). Falls through new -> old -> midian fallbacks.
+  // Whichever loads first is used by drawTile.
+  sandRed:    'assets/images/new%20desert%20sand%20red.png',
+  sandRedAlt: 'assets/images/desert%20sand%20red.png',
+  sandRedAlt2:'assets/images/midian%20sand%20tile.png',
+  sandRedAlt3:'assets/images/midian%20rock%20tile.png',
 };
 const IMG = {};
 let imagesReady = 0, imagesTotal = Object.keys(IMG_SRC).length;
@@ -2205,20 +2734,37 @@ let imagesLoadedCallback = null;
    point IMG[k] at the offscreen canvas. Every subsequent drawImage
    uses a much smaller intermediate, so tile renders are crisp and
    colors are richer. Non-square images keep their aspect ratio. */
-function _preRender(srcImg) {
+function _preRender(srcImg, _maxDimOverride) {
   try {
-    const maxDim = 256;
+    // v3.22 Jane 2026-04-25: maxDim default is now an arg-overridable 512.
+    // Sprite-critical assets (oasis, checkpoint, exit, camel, etc.) get a
+    // LARGER pre-render target (768) at load time so the per-frame
+    // downscale ratio drops from ~20× (1024→50) to ~15× (768→50). That
+    // gets us through bilinear without smearing. Generic full-canvas
+    // backdrops keep the 512 default — they fill the canvas at near-native
+    // resolution anyway.
+    const maxDim = _maxDimOverride || 512;
     const w0 = srcImg.naturalWidth || srcImg.width;
     const h0 = srcImg.naturalHeight || srcImg.height;
     if (!w0 || !h0) return srcImg;
     if (w0 <= maxDim && h0 <= maxDim) return srcImg;
     const scale = Math.min(maxDim / w0, maxDim / h0);
-    // two-step downscale for smoother, richer result
+    // v3.22 Jane 2026-04-25: TRUE multi-step bicubic cascade. Previous loop
+    // exited as soon as one more halve would dip below maxDim, so a 1024 →
+    // 384 went 1024 → 512 → drawImage(512, 384). The 512 → 384 final step
+    // is fine (1.33×), but ensuring an extra near-final intermediate keeps
+    // edge contrast crisp. Iterate while ratio to target > 1.4×, dividing
+    // by 1.5 each pass instead of halving — gives more steps for very large
+    // ratios without exploding memory.
     let cw = w0, ch = h0;
     let cur = srcImg;
-    while (cw * 0.5 > maxDim && ch * 0.5 > maxDim) {
-      cw = Math.max(1, Math.round(cw * 0.5));
-      ch = Math.max(1, Math.round(ch * 0.5));
+    const finalTargetW = Math.max(1, Math.round(w0 * scale));
+    const finalTargetH = Math.max(1, Math.round(h0 * scale));
+    let safety = 8;
+    while ((cw / finalTargetW > 1.5 || ch / finalTargetH > 1.5) && safety-- > 0) {
+      cw = Math.max(finalTargetW, Math.round(cw / 1.5));
+      ch = Math.max(finalTargetH, Math.round(ch / 1.5));
+      if (cw <= finalTargetW && ch <= finalTargetH) break;
       const step = document.createElement('canvas');
       step.width = cw; step.height = ch;
       const sctx = step.getContext('2d');
@@ -2249,14 +2795,168 @@ function _preRender(srcImg) {
   } catch(e) { return srcImg; }
 }
 
+// v3.13 Jane 2026-04-25: track which IMG keys fail to load so we can
+// see exactly what's missing. window._imgFailures is inspectable from
+// DevTools console at any time. Console-warn each failure with the
+// key + the URL so the offending file is obvious.
+window._imgFailures = [];
+
+// v3.19 Jane 2026-04-25: ALPHA BLEED — kill white halos on sprite PNGs.
+// PNGs exported from Midjourney/Photoshop store fully-transparent pixels
+// with RGB=(255,255,255). When the browser scales the sprite down with
+// bilinear filtering, those white RGB values bleed into the visible edge
+// and produce a 1-2px white fringe (very visible on dark backgrounds /
+// the desert sand). Fix: for every transparent edge pixel, copy the RGB
+// from its nearest opaque neighbor BEFORE the sprite is ever drawn.
+// Alpha stays at 0 so the pixel is invisible — but the bilinear sampler
+// now mixes color-correct RGB instead of white. Applied to the
+// SPRITE_BLEED keys at load time. Cheap (~1-3ms per 512px sprite).
+const SPRITE_BLEED = new Set([
+  'oasisTile','checkpoint','tablet','tablet2','desertStart','desertExit',
+  'desertExitNew','midianWell','cliffStep','sinkingSand','desertCactus',
+  'palmShadow','cave1','cave2','cave3','rock','rollingBoulder','campfire',
+  'chest','chestClosed','chestOpen','crown','bread','travelBread',
+  'waterSkin','star','treasureB','treasureG','treasureR','scorpion','vulture',
+  'mosesFront','mosesBack','mosesLeft','mosesRight','moses',
+  'mosesDuckFront','mosesDuckLeft','mosesDuckRight','mosesCrouchRight',
+  'guardFront','guardBack','guardLeft','guardRight','guard','guardSide',
+  'scout','scoutBack','scoutLeft','scoutRight',
+  'caravan','caravanBack','caravanLeft','caravanRight',
+  'camelFriendly','merchant','servant','foxLeft','foxRight'
+]);
+function _alphaBleed(srcImg) {
+  try {
+    const w = srcImg.naturalWidth || srcImg.width;
+    const h = srcImg.naturalHeight || srcImg.height;
+    if (!w || !h) return srcImg;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const cx = c.getContext('2d');
+    cx.drawImage(srcImg, 0, 0);
+    let id;
+    try { id = cx.getImageData(0, 0, w, h); }
+    catch(e) { return srcImg; } // CORS-tainted; bail
+    const d = id.data;
+    // v3.20 Jane 2026-04-25: CHROMA-KEY near-white background pixels.
+    // Many AI-generated PNGs ship with an opaque white border (alpha=255,
+    // RGB≈255) that produces a hard white box around the sprite — alpha-bleed
+    // alone can't fix that because the pixels aren't transparent. Detect
+    // border-connected near-white pixels via flood-fill from the four corners
+    // and convert them to fully transparent. We ONLY flood from the edges so
+    // legitimate interior whites (Moses's tunic highlights, etc.) survive.
+    // v3.21 Jane 2026-04-25: tightened threshold to RGB ≥ 248 AND alpha === 255
+    // (was 240 / 200). The looser threshold was eating into anti-aliased sprite
+    // edges (e.g. the bright water highlights on the oasis), producing the
+    // blurry / chewed-edge look Jane reported. True flat-white background
+    // pixels are always exactly 255,255,255 with alpha 255 — narrowing the
+    // window keeps real sprite content untouched.
+    const isNearWhite = (i) => d[i] >= 248 && d[i+1] >= 248 && d[i+2] >= 248 && d[i+3] === 255;
+    const visited = new Uint8Array(w * h);
+    const stack = [];
+    const seed = (x, y) => {
+      if (x < 0 || y < 0 || x >= w || y >= h) return;
+      const p = y * w + x;
+      if (visited[p]) return;
+      const i = p * 4;
+      if (!isNearWhite(i)) return;
+      visited[p] = 1; stack.push(p);
+    };
+    // Seed from all four edges (covers any continuous white border)
+    for (let x = 0; x < w; x++) { seed(x, 0); seed(x, h - 1); }
+    for (let y = 0; y < h; y++) { seed(0, y); seed(w - 1, y); }
+    while (stack.length) {
+      const p = stack.pop();
+      const x = p % w, y = (p / w) | 0;
+      d[p * 4 + 3] = 0; // make transparent
+      if (x > 0)     seed(x - 1, y);
+      if (x < w - 1) seed(x + 1, y);
+      if (y > 0)     seed(x, y - 1);
+      if (y < h - 1) seed(x, y + 1);
+    }
+    const nbrs = [-1-w*4, -w*4, 1-w*4, -4, 4, w*4-1, w*4, w*4+1].map(o => o*1);
+    // Two passes bleed RGB outward by 2 pixels (enough for any reasonable downscale)
+    for (let pass = 0; pass < 2; pass++) {
+      const snap = new Uint8ClampedArray(d);
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = (y * w + x) * 4;
+          if (snap[i+3] !== 0) continue;
+          let r=0,g=0,b=0,n=0;
+          for (let dy=-1; dy<=1; dy++) for (let dx=-1; dx<=1; dx++) {
+            if (!dx && !dy) continue;
+            const nx=x+dx, ny=y+dy;
+            if (nx<0||ny<0||nx>=w||ny>=h) continue;
+            const j = (ny*w+nx)*4;
+            if (snap[j+3] > 0) { r+=snap[j]; g+=snap[j+1]; b+=snap[j+2]; n++; }
+          }
+          if (n > 0) {
+            d[i] = (r/n)|0; d[i+1] = (g/n)|0; d[i+2] = (b/n)|0;
+            // alpha intentionally stays 0 — this only seeds RGB so the
+            // bilinear sampler doesn't pull white into the visible edge
+          }
+        }
+      }
+    }
+    cx.putImageData(id, 0, 0);
+    try {
+      c.complete = true;
+      c.naturalWidth = w;
+      c.naturalHeight = h;
+      c.src = srcImg.src; // preserve for any code that reads .src
+    } catch(e){}
+    return c;
+  } catch(e) { return srcImg; }
+}
+// v3.17.2 Jane 2026-04-25: BYPASS _preRender for sprite-critical assets.
+// _preRender returns a CANVAS for any source > 512px. Canvases work
+// with drawImage, BUT they have no naturalWidth/naturalHeight, which
+// breaks aspect-ratio math in many sprite render paths and makes the
+// sprite render at the wrong size or invisibly. The keys in this
+// SKIP_PRERENDER set always store the raw Image (with .src + .naturalW),
+// so every sprite path renders correctly.
+const SKIP_PRERENDER = new Set([
+  'checkpoint','tablet','tablet2','sinkingSand','oasisTile',
+  'desertCactus','palmShadow','desertStart','desertExit',
+  'desertExitNew','midianWell','cliffStep','cave1','cave2','cave3',
+  'rock','rollingBoulder','mirageShimmer','campfire','sandTile',
+  'sandTile1','sandRed','chest','chestClosed','chestOpen',
+  'crown','bread','travelBread','waterSkin','star',
+  'treasureB','treasureG','treasureR','scorpion','vulture',
+  'mosesFront','mosesBack','mosesLeft','mosesRight','moses',
+  'mosesDuckFront','mosesDuckLeft','mosesDuckRight','mosesCrouchRight',
+  'guardFront','guardBack','guardLeft','guardRight','guard','guardSide',
+  'scout','scoutBack','scoutLeft','scoutRight',
+  'caravan','caravanBack','caravanLeft','caravanRight',
+  'camelFriendly','merchant','servant','foxLeft','foxRight'
+]);
 for (const k in IMG_SRC) {
   const img = new Image();
   img.onload = () => {
-    try { IMG[k] = _preRender(img); } catch(e) { IMG[k] = img; }
+    try {
+      // v3.19: Bleed RGB into transparent edge pixels FIRST to kill white halos
+      const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
+      // v3.23 Jane 2026-04-25: REVERTED v3.22's _preRender-for-sprite-critical
+      // change. It broke guard + Moses-back/right sprite rendering — likely
+      // because chaining _alphaBleed (returns canvas) into _preRender
+      // (returns ANOTHER canvas) lost some property the sprite render
+      // paths depend on. Safer: keep the alpha-bled canvas raw for sprite-
+      // critical keys (SKIP_PRERENDER set), let _preRender shrink only
+      // generic full-canvas backdrops. Blur on zoom is a softer issue
+      // than missing characters.
+      if (SKIP_PRERENDER.has(k)) {
+        IMG[k] = bled;
+      } else {
+        IMG[k] = _preRender(bled);
+      }
+    } catch(e) { IMG[k] = img; }
     imagesReady++;
     if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
   };
   img.onerror = () => {
+    try {
+      window._imgFailures.push({ key: k, src: IMG_SRC[k] });
+      console.warn('[IMG load FAILED]', k, '->', IMG_SRC[k]);
+    } catch(e){}
     imagesReady++;
     if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
   };
@@ -2618,45 +3318,59 @@ const CHALLENGE_BANK = {
     // the well, Jethro, Zipporah, Gershom, Horeb.
     { id:'e1', type:'trivia', q:'When Moses grew up, what country did he flee to?',
       options:['Canaan','Midian','Assyria','Babylon'], correct:1,
+      clue:'A desert land east of Egypt — its name starts with M. Moses sat by a well there (Exodus 2:15).',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     { id:'e2', type:'trivia', q:'Where did Moses sit down after crossing the desert?',
       options:['Under a tree','By a well','On a rock','In a tent'], correct:1,
+      clue:'A place shepherds bring flocks for cool water. Seven sisters came here too.',
       verse:'"...and sat down by a well." (Exodus 2:15 NIV)' },
     { id:'e3', type:'trivia', q:'Who came to the well to draw water for their flocks?',
       options:['Seven shepherds','Seven daughters of the priest of Midian','Seven brothers','Seven merchants'], correct:1,
+      clue:'Seven sisters whose father was a priest in Midian. One of them later married Moses.',
       verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
     { id:'e4', type:'fill', q:'Moses rescued the girls at the well and watered their _______.',
       options:['Camels','Flock','Fields','Children'], correct:1,
+      clue:'Sheep + goats together. The word a shepherd uses for the animals he tends.',
       verse:'"He drew water for them and watered their flock." (Exodus 2:17 NIV)' },
     { id:'e5', type:'tf', q:'True or False: Moses drove away the shepherds who bothered the priest\'s daughters.',
       options:['True','False'], correct:0,
+      clue:'Yes — Moses stood up for the seven daughters and helped water their flock (Exodus 2:17).',
       verse:'"Moses got up and came to their rescue." (Exodus 2:17 NIV)' },
     { id:'e6', type:'trivia', q:'Who was the priest of Midian that gave Moses a home?',
       options:['Laban','Jethro','Melchizedek','Balaam'], correct:1,
+      clue:'Father of seven daughters. Sometimes also called Reuel. He took Moses in.',
       verse:'"Moses agreed to stay with the man [Jethro]..." (Exodus 2:21 NIV)' },
     { id:'e7', type:'trivia', q:'Who did Moses marry in Midian?',
       options:['Miriam','Zipporah','Rachel','Rebekah'], correct:1,
+      clue:'One of Jethro\u2019s seven daughters. Her name starts with Z (Exodus 2:21).',
       verse:'"[He] gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
     { id:'e8', type:'tf', q:'True or False: Moses named his first son Gershom because he was a foreigner in a foreign land.',
       options:['True','False'], correct:0,
+      clue:'True. The name Gershom literally means "a stranger there" — Moses felt like a foreigner in Midian.',
       verse:'"Zipporah gave birth to a son, and Moses named him Gershom, saying, I have become a foreigner in a foreign land." (Exodus 2:22 NIV)' },
     { id:'e9', type:'trivia', q:'What work did Moses do for Jethro in Midian?',
       options:['Baked bread','Tended sheep','Built wells','Traded gold'], correct:1,
+      clue:'A shepherd\u2019s job — Moses watched flocks for forty years before God called him at the burning bush.',
       verse:'"Moses agreed to stay with the man, who gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
     { id:'e10', type:'fill', q:'The Egyptians made the Hebrews\' lives bitter with harsh labor in brick and _______.',
       options:['Stone','Mortar','Wood','Iron'], correct:1,
+      clue:'The clay paste that holds bricks together in a wall. It rhymes with "porter".',
       verse:'"They made their lives bitter with harsh labor in brick and mortar..." (Exodus 1:14 NIV)' },
     { id:'e11', type:'trivia', q:'Who were the two Hebrew midwives who feared God?',
       options:['Rachel and Leah','Shiphrah and Puah','Ruth and Naomi','Mary and Martha'], correct:1,
+      clue:'Two brave women who saved Hebrew baby boys. Their names start with S and P.',
       verse:'"The king of Egypt said to the Hebrew midwives, whose names were Shiphrah and Puah..." (Exodus 1:15 NIV)' },
     { id:'e12', type:'tf', q:'True or False: The Hebrew midwives obeyed Pharaoh\'s order to kill baby boys.',
       options:['True','False'], correct:1,
+      clue:'False — they feared God MORE than the king and let the babies live (Exodus 1:17).',
       verse:'"The midwives, however, feared God and did not do what the king of Egypt had told them to do." (Exodus 1:17 NIV)' },
     { id:'e13', type:'trivia', q:'Who was the ruler Egypt\'s new king did NOT know or remember?',
       options:['Abraham','Joseph','Isaac','Jacob'], correct:1,
+      clue:'The man with the colorful coat — long ago he saved Egypt from famine, but the new king forgot him.',
       verse:'"Then a new king, to whom Joseph meant nothing, came to power in Egypt." (Exodus 1:8 NIV)' },
     { id:'e14', type:'fill', q:'"By faith he left _______, not fearing the king\'s anger."',
       options:['Egypt','Midian','Canaan','Judah'], correct:0,
+      clue:'The land of pyramids and Pharaoh — where the Hebrews were slaves.',
       verse:'"By faith he left Egypt, not fearing the king\'s anger." (Hebrews 11:27 NIV)' },
     { id:'e15', type:'tf', q:'True or False: When Moses fled from Egypt, he went to live in Midian.',
       options:['True','False'], correct:0,
@@ -2664,18 +3378,23 @@ const CHALLENGE_BANK = {
       verse:'"Moses fled from Pharaoh and went to live in Midian, where he sat down by a well." (Exodus 2:15 NIV)' },
     { id:'e16', type:'trivia', q:'What did Moses see an Egyptian doing to a Hebrew?',
       options:['Feeding him','Beating him','Teaching him','Arresting him'], correct:1,
+      clue:'A cruel act with a stick or fist. Moses stepped in to defend his own people (Exodus 2:11).',
       verse:'"He saw an Egyptian beating a Hebrew, one of his own people." (Exodus 2:11 NIV)' },
     { id:'e17', type:'trivia', q:'After Moses struck the Egyptian, where did he hide the body?',
       options:['In a cave','In the sand','In a tent','Underwater'], correct:1,
+      clue:'Right under his feet — what the desert is made of (Exodus 2:12).',
       verse:'"...he killed the Egyptian and hid him in the sand." (Exodus 2:12 NIV)' },
     { id:'e18', type:'tf', q:'True or False: The next day, Moses saw two Hebrews fighting each other.',
       options:['True','False'], correct:0,
+      clue:'True — two of his own people were quarreling. Moses asked the wrongdoer, "Why are you hitting your fellow Hebrew?"',
       verse:'"The next day he went out and saw two Hebrews fighting." (Exodus 2:13 NIV)' },
     { id:'e19', type:'trivia', q:'How old was Moses when he first went out to visit his own people?',
       options:['20','30','40','60'], correct:2,
+      clue:'Moses\u2019 life had three forty-year chapters: 40 in Egypt, 40 in Midian, 40 leading Israel.',
       verse:'"When Moses was forty years old, he decided to visit his own people, the Israelites." (Acts 7:23 NIV)' },
     { id:'e20', type:'fill', q:'God heard the Israelites\' groaning and remembered His _______ with Abraham, Isaac, and Jacob.',
       options:['Promise','Covenant','Song','Altar'], correct:1,
+      clue:'A solemn promise sealed before God. Starts with C, ends with -nant.',
       verse:'"God heard their groaning and he remembered his covenant with Abraham, with Isaac and with Jacob." (Exodus 2:24 NIV)' },
     // --- Unscramble ---
     { id:'eU1', type:'unscramble',
@@ -3041,9 +3760,13 @@ const CHALLENGE_BANK = {
     { id:'h8', type:'trivia', q:'Why did Moses flee Egypt the very next day after striking the Egyptian?',
       options:['His mother warned him','He was afraid — the deed was known','An angel told him','He was sick'], correct:1,
       verse:'"Moses was afraid and thought, What I did must have become known." (Exodus 2:14 NIV)' },
-    { id:'h9', type:'tf', q:'True or False: Moses regarded disgrace for Christ as greater wealth than the treasures of Egypt.',
+    // v3.12 Jane 2026-04-24: replaced the Hebrews 11:26 "disgrace for Christ"
+    // question — out of scope for Scene 2 (Exodus 2:11-25). Substituted an
+    // Exodus 2:14 question that fits the actual flight-from-Egypt narrative.
+    { id:'h9', type:'tf', q:'True or False: When Moses asked the fighting Hebrew "Why are you hitting your fellow Hebrew?" the man asked back, "Are you going to kill me?"',
       options:['True','False'], correct:0,
-      verse:'"He regarded disgrace for the sake of Christ as of greater value than the treasures of Egypt..." (Hebrews 11:26 NIV)' },
+      clue:'Exodus 2:14 — the man\u2019s reply revealed that Moses\u2019 secret was already out.',
+      verse:'"Who made you ruler and judge over us? Are you thinking of killing me as you killed the Egyptian?" (Exodus 2:14 NIV)' },
     { id:'h10', type:'fill', q:'After fleeing to Midian, Moses sat down by a _______.',
       options:['Tree','Well','Fire','Palace'], correct:1,
       verse:'"When he arrived in Midian, he sat down by a well." (Exodus 2:15 NIV)' },
@@ -3217,16 +3940,31 @@ const CHALLENGE_BANK = {
 // Note: climb positions MUST match the type-7 tiles in MAP_STR.
 const CHALLENGE_POSITIONS = [
   // --- Zone checkpoints (mandatory mid-map challenges) ---
-  { tx: 5,  ty: 12, kind: 'zone', zone: 'wadi',  label: 'Wadi Checkpoint'  },
-  { tx: 14, ty: 12, kind: 'zone', zone: 'dunes', label: 'Dunes Checkpoint' },
-  { tx: 24, ty: 12, kind: 'zone', zone: 'oasis', label: 'Oasis Checkpoint' },
-  { tx: 33, ty: 12, kind: 'zone', zone: 'mesa',  label: 'Mesa Checkpoint'  },
-  // --- Mountain cliff ascent steps (MUST all be solved to reach summit) ---
-  { tx: 39, ty: 22, kind: 'climb', step: 1, label: 'Ascent 1 (Base)'     },
-  { tx: 39, ty: 17, kind: 'climb', step: 2, label: 'Ascent 2'            },
-  { tx: 39, ty: 12, kind: 'climb', step: 3, label: 'Ascent 3 (Midway)'   },
-  { tx: 39, ty:  7, kind: 'climb', step: 4, label: 'Ascent 4'            },
-  { tx: 39, ty:  2, kind: 'climb', step: 5, label: 'Ascent 5 (Summit)'   },
+  // v3.8 PASS A Jane 2026-04-24 (Bug 42): previously all 4 zone checkpoints
+  // sat on row 12 — Moses's straight-east start row. That clustered them in
+  // a single horizontal line and made them "hardly visible" when viewport
+  // cropped vertically. Spread across different rows (8/16/10/17) so kids
+  // see checkpoints distributed over the map instead of all in one band.
+  // Each target tile verified walkable against MAP_STR with walkable
+  // neighbors so approach paths are not blocked.
+  { tx: 5,  ty:  8, kind: 'zone', zone: 'wadi',  label: 'Wadi Checkpoint'  },
+  { tx: 14, ty: 16, kind: 'zone', zone: 'dunes', label: 'Dunes Checkpoint' },
+  { tx: 24, ty: 10, kind: 'zone', zone: 'oasis', label: 'Oasis Checkpoint' },
+  { tx: 33, ty: 17, kind: 'zone', zone: 'mesa',  label: 'Mesa Checkpoint'  },
+  // v3.7 PASS A Jane 2026-04-24: cliff concept removed. The 5 east-edge
+  // gates are now "Final Path Checkpoints" leading to the Midian well at
+  // the east edge. Internal `kind: 'climb'` retained so existing logic
+  // (challenge bundle assignment, altitude tracking, audio cues) keeps
+  // working without a renaming sweep across the file.
+  { tx: 39, ty: 22, kind: 'climb', step: 1, label: 'Final Path Checkpoint 1' },
+  { tx: 39, ty: 17, kind: 'climb', step: 2, label: 'Final Path Checkpoint 2' },
+  { tx: 39, ty: 12, kind: 'climb', step: 3, label: 'Final Path Checkpoint 3' },
+  { tx: 39, ty:  7, kind: 'climb', step: 4, label: 'Final Path Checkpoint 4' },
+  // v3.20 Jane 2026-04-25: topmost east-edge climb-step (39,2) RELOCATED
+  // inland so the topmost east-edge tile-7 stands ALONE as the visually-
+  // dominant EXIT tile (no checkpoint sprite stacked on top of it). Total
+  // gate count stays at 9 so HUD "▲ 0/9" math is unchanged.
+  { tx: 18, ty:  4, kind: 'zone', zone: 'dunes-north', label: 'Dunes North Checkpoint' },
 ];
 const challengeGates = [];  // populated once difficulty is chosen (legacy name preserved for downstream code)
 
@@ -3440,13 +4178,76 @@ seedTreasures();
 updateHudTreasure();
 
 /* ---------- CAMERA ---------- */
-const camera = { px:0, py:0 };
+const camera = { px:0, py:0, locked:false };
 function updateCamera() {
+  // v3.11 Jane 2026-04-24: when the intro pan owns the camera, skip the
+  // player-recenter so the cinematic sweep can reach the east edge.
+  if (camera.locked) return;
   // center on player, clamp to map edges
   const cx = player.px + TILE/2 - CANVAS_W/2;
   const cy = player.py + TILE/2 - CANVAS_H/2;
   camera.px = clamp(cx, 0, MAP_W*TILE - CANVAS_W);
   camera.py = clamp(cy, 0, MAP_H*TILE - CANVAS_H);
+}
+// v3.11 Jane 2026-04-24: cinematic intro pan. On scene start, slide the
+// camera from Moses (col 1) east to the well/exit (col 39), pause briefly
+// at the well, then ease back to Moses.
+// v3.12: also fires on Restart Scene (not just first launch).
+let _introPanActive = false;
+let _introPanLabel = null;
+function playIntroPan(onDone){
+  if (_introPanActive) { try { onDone && onDone(); } catch(e){} return; }
+  if (game.scene !== 2) { try { onDone && onDone(); } catch(e){} return; }
+  _introPanActive = true;
+  camera.locked = true;
+  const startX = clamp(player.px + TILE/2 - CANVAS_W/2, 0, MAP_W*TILE - CANVAS_W);
+  const eastX  = clamp((MAP_W - 1) * TILE - CANVAS_W/2, 0, MAP_W*TILE - CANVAS_W);
+  const peekY  = clamp(player.py + TILE/2 - CANVAS_H/2, 0, MAP_H*TILE - CANVAS_H);
+  camera.px = startX; camera.py = peekY;
+  const t0 = performance.now();
+  // v3.12 Jane 2026-04-24: longer HOLD so kids can clearly see the EXIT/well
+  // before the camera glides back. Bumped 700ms -> 2400ms.
+  const PAN_OUT = 1400, HOLD = 2400, PAN_BACK = 1200;
+  // overlay label — added to body so it renders on top of the canvas
+  try {
+    const lbl = document.createElement('div');
+    lbl.id = '_introPanLabel';
+    lbl.style.cssText = 'position:fixed;top:12%;left:50%;transform:translateX(-50%);z-index:55;background:linear-gradient(180deg,#3a1708,#5a2510);color:#ffd976;border:3px solid #ffd976;padding:10px 22px;border-radius:14px;font-family:Georgia,serif;font-weight:900;font-size:18px;letter-spacing:1px;box-shadow:0 6px 20px rgba(0,0,0,0.55);text-shadow:0 0 8px rgba(255,217,118,0.55);pointer-events:none;opacity:0;transition:opacity 0.35s;';
+    lbl.textContent = 'Help Moses reach the well at Midian!';
+    document.body.appendChild(lbl);
+    _introPanLabel = lbl;
+    setTimeout(() => { try { lbl.style.opacity = '1'; } catch(e){} }, 30);
+  } catch(e){}
+  const tick = () => {
+    const t = performance.now() - t0;
+    if (t < PAN_OUT) {
+      const k = t / PAN_OUT;
+      const e = k * k * (3 - 2 * k); // smoothstep
+      camera.px = startX + (eastX - startX) * e;
+    } else if (t < PAN_OUT + HOLD) {
+      camera.px = eastX;
+    } else if (t < PAN_OUT + HOLD + PAN_BACK) {
+      const k = (t - PAN_OUT - HOLD) / PAN_BACK;
+      const e = k * k * (3 - 2 * k);
+      camera.px = eastX + (startX - eastX) * e;
+    } else {
+      camera.locked = false;
+      _introPanActive = false;
+      // remove the overlay label
+      try {
+        if (_introPanLabel) {
+          _introPanLabel.style.opacity = '0';
+          const lbl = _introPanLabel;
+          setTimeout(() => { try { lbl.remove(); } catch(e){} }, 380);
+          _introPanLabel = null;
+        }
+      } catch(e){}
+      try { onDone && onDone(); } catch(e){}
+      return;
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 /* ---------- INPUT ---------- */
@@ -3633,6 +4434,27 @@ function attemptMove(dir) {
     }
   }
 
+  // v3.9 Jane 2026-04-24 AUTO-PICKUP: kids didn't realize they had to press
+  // Interact when next to bread/crown/scroll/waterskin. Now stepping ONTO
+  // (or into adjacency of) a pickup auto-triggers it. NPC kinds (servant,
+  // dog, caravan trader) are NOT auto-triggered because their dialogs are
+  // optional and shouldn't pop without a tap. truthchest IS auto-opened
+  // because it's the special mid-scene reveal moment.
+  try {
+    const _autoPickKinds = { bread:1, crown:1, jug:1, scroll:1, tablet:1, waterskin:1, water:1, coin:1, treasure:1, truthchest:1 };
+    for (const obj of interactables) {
+      if (obj.used) continue;
+      if (!_autoPickKinds[obj.kind]) continue;
+      // step-onto OR step-adjacent (Chebyshev <= 1) auto-fires the pickup
+      const cd = Math.max(Math.abs(obj.tx - nx), Math.abs(obj.ty - ny));
+      if (cd <= 1) {
+        triggerInteractable(obj);
+        // don't return — let the rest of tile effects run too
+        break;
+      }
+    }
+  } catch(e) {}
+
   // check tile effects
   const t = tileAt(nx, ny);
   if (t === 2) onHazardHit(nx, ny);
@@ -3660,9 +4482,26 @@ function attemptMove(dir) {
         if (totalGates > 0 && solvedGates >= totalGates) {
           onReachExit();
         } else {
+          // v3.19 Jane 2026-04-25: friendlier prompt + bounce Moses back
+          // one tile so he doesn't get camped on the locked exit.
           const remaining = Math.max(0, totalGates - solvedGates);
-          try { toast('The exit is sealed! Clear all ' + totalGates + ' Checkpoints first. (' + remaining + ' still remaining.)'); } catch(e){}
-          try { play('error'); } catch(e){}
+          try {
+            toast('\u{1F512} Locked! Clear ' + remaining + ' more checkpoint' + (remaining===1?'':'s') + ' to unlock the path to Midian.');
+          } catch(e){}
+          try { play('friendlyAlert') || play('uhoh'); } catch(e){}
+          // bounce Moses back so he isn't standing ON the locked exit
+          try {
+            const last = player.lastSafeTile;
+            if (last && isWalkable(last.tx, last.ty)) {
+              player.tx = last.tx; player.ty = last.ty;
+              player.px = last.tx * TILE; player.py = last.ty * TILE;
+              updateCamera();
+            } else {
+              player.tx = Math.max(0, nx - 1);
+              player.px = player.tx * TILE;
+              updateCamera();
+            }
+          } catch(e){}
         }
       }
     }
@@ -3905,16 +4744,53 @@ function startScene1() {
   $('gamePage').classList.add('active');
   // now that the game page is visible, the canvas-wrapper has real dimensions
   resizeCanvas();
+  // v3.22 Jane 2026-04-25: PRIME the peek-map canvas backing while gamePage
+  // is now visible. The first-from-main-menu MAP-blank bug was caused by
+  // the peek canvas existing in the DOM since first paint while its parent
+  // (mapPeekOverlay) was display:none, which meant the canvas backing
+  // store had never been "warmed" by a real paint. By the time the user
+  // clicked MAP, the first sync draw landed before the browser had
+  // committed the canvas → blank. Doing a tiny no-op draw now (parent is
+  // visible, canvas is in flow) guarantees the backing is initialized
+  // before the user can ever click MAP. Restart-from-pause already passed
+  // through this path during the first session so it never had the bug.
+  try {
+    if (_peekCtx) {
+      _peekCtx.fillStyle = 'rgba(0,0,0,0)';
+      _peekCtx.fillRect(0, 0, 1, 1);
+    }
+  } catch(e) {}
   // re-anchor player pixel position to new TILE size
   player.px = player.tx * TILE;
   player.py = player.ty * TILE;
   updateCamera();
-  // tutorial on first play
-  if (!localStorage.getItem('bek.moses2.tutDone')) {
-    showTutorial(0);
-  }
+  // v3.1 FIX G (Jane 2026-04-23): tutorial / cinematic timer race.
+  // Previously startTimers() and the first render() fired immediately even
+  // while a 5-slide tutorial was on screen, so the 4-min countdown ticked
+  // and pursuit scouts patrolled in the background while the child read.
+  // Now: if the tutorial is open, we set game.state = 'paused', skip
+  // startTimers(), and the tutNextBtn handler resumes + starts timers
+  // when the child taps "Start!" on the final slide.
   render();
-  startTimers();
+  if (!localStorage.getItem('bek.moses2.tutDone')) {
+    game.state = 'paused';
+    game._timersDeferred = true;
+    showTutorial(0);
+  } else {
+    // v3.11 Jane 2026-04-24: on every NEW scene-start (not paused-resume),
+    // play a brief cinematic camera pan east → west so kids see the goal
+    // before they start playing. Pan is non-blocking; timers still kick
+    // off, but Moses can't move during the lock (camera.locked).
+    try {
+      game.state = 'paused';
+      playIntroPan(() => {
+        game.state = 'playing';
+        startTimers();
+      });
+    } catch(e) {
+      startTimers();
+    }
+  }
 }
 
 /* ---------- SNAPSHOT FOR IN-SCENE RESTART ----------
@@ -3962,7 +4838,7 @@ function restartScene() {
   game.truthCardCollected = false;
   game.midSceneTruth = null;
   game.peeksLeft = 2;
-  const _pc = $('peekCount'); if (_pc) _pc.textContent = '(2)';
+  const _pc = $('peekCount'); if (_pc) { _pc.textContent = '2'; _pc.classList.remove('empty'); }
   // v3.4 reset palace hurdles
   censer.phase = 0; censer.strikeCooldown = 0;
   servantNPC.tx = servantNPC.minTx; servantNPC.dir = 1; servantNPC.tick = 0; servantNPC.alertCooldownMs = 0;
@@ -3988,10 +4864,22 @@ function restartScene() {
   try { seedRollingBoulders(); } catch(e){}
   updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){}
   updateCamera();
-  game.state = 'playing';
   setMusic('bgm');
-  startTimers();
-  toast('Scene restarted - try again!');
+  // v3.12 Jane 2026-04-24: also play the cinematic intro pan on Restart Scene
+  // (previously only fired on first launch from the cover page). Timers
+  // resume only after the camera returns to Moses.
+  try {
+    game.state = 'paused';
+    playIntroPan(() => {
+      game.state = 'playing';
+      startTimers();
+      toast('Scene restarted - try again!');
+    });
+  } catch(e) {
+    game.state = 'playing';
+    startTimers();
+    toast('Scene restarted - try again!');
+  }
 }
 
 /* ---------- TUTORIAL ---------- */
@@ -4019,6 +4907,14 @@ $('tutNextBtn').addEventListener('click', () => {
   } else {
     $('tutorialModal').classList.remove('active');
     localStorage.setItem('bek.moses2.tutDone', '1');
+    // v3.1 FIX G: resume gameplay + start timers/scout patrols only AFTER
+    // the child taps "Start!" on the final slide. Pairs with the deferred-
+    // start branch in initGame() above.
+    if (game._timersDeferred) {
+      game._timersDeferred = false;
+      game.state = 'playing';
+      try { startTimers(); } catch(e){}
+    }
   }
 });
 
@@ -4026,7 +4922,12 @@ $('tutNextBtn').addEventListener('click', () => {
 function updateHudHearts(){
   let s='';
   for (let i=0;i<3;i++) s += (i<game.hearts) ? '&#9829;' : '&#9825;';
-  $('hudHearts').innerHTML = s;
+  const el = $('hudHearts');
+  el.innerHTML = s;
+  // v3.10 EPIC VISUAL: low-health pulse. At 1 heart, the hearts strip
+  // pulses red+bigger so kids feel the danger.
+  if (game.hearts === 1) el.classList.add('hud-hearts-low');
+  else el.classList.remove('hud-hearts-low');
 }
 function updateHudStars(){ $('hudStars').textContent = game.stars; }
 function updateHudTreasure(){ $('hudTreasure').textContent = game.treasureCount; }
@@ -4052,8 +4953,13 @@ function updateHudAltitude(){
   val.textContent = cleared;
   // All-clear state: exit is unlocked.
   const summit = (cleared >= totalGates && totalGates > 0);
-  chip.innerHTML = '? <span id="hudAltitude">' + cleared + '</span>/' + totalGates + ' Checkpoints'
-    + (summit ? ' <span style="font-size:10px;">EXIT OPEN!</span>' : '');
+  // v3.1 FIX F (Jane 2026-04-23): chip text "? 0/9 Checkpoints" was clipping
+  // off the right edge of the HUD on phones and 1280px desktops. Shortened
+  // to "▲ 0/9" with the full label moved into the title attribute so screen
+  // readers + hover still convey meaning, but the visible chip stays compact.
+  chip.innerHTML = '\u25B2 <span id="hudAltitude">' + cleared + '</span>/' + totalGates
+    + (summit ? ' <span style="font-size:10px;">\u2605</span>' : '');
+  chip.title = 'Checkpoints cleared: ' + cleared + ' of ' + totalGates + (summit ? ' — EXIT OPEN!' : '');
   chip.style.boxShadow = summit
     ? '0 0 14px rgba(255,217,118,0.9)'
     : '0 0 6px rgba(255,217,118,0.35)';
@@ -4108,17 +5014,24 @@ function interact(){
   // often landed one tile short of a full adjacency. Widen the reach for
   // THOSE TWO KINDS ONLY to Chebyshev <= 2 so a near-miss still counts. If
   // still out of reach, toast a breadcrumb with their tile coords.
+  // v3.1 FIX D (Jane 2026-04-23): "treasure chest cannot be opened or closed
+  // and bread, waterskin, crown cannot be pickable". The widened-reach
+  // (Chebyshev <= 2) was previously gated to crown + truthchest only.
+  // Bread (kind:'bread'), waterskin (kind:'jug'), and stone-marker scrolls
+  // (kind:'scroll') frequently land one tile beyond Moses's diagonal scan
+  // because of map walls and patrol paths. Same widening applied to them.
+  const _wideKinds = { crown:'royal circlet', truthchest:'cedar truth-chest', bread:'travel bread', jug:'water skin', scroll:'ancient marker' };
   for (const obj of interactables) {
     if (obj.used) continue;
-    if (obj.kind !== 'crown' && obj.kind !== 'truthchest') continue;
+    const niceName = _wideKinds[obj.kind];
+    if (!niceName) continue;
     const cd = Math.max(Math.abs(obj.tx - player.tx), Math.abs(obj.ty - player.ty));
     if (cd <= 2) {
       triggerInteractable(obj);
       return;
     }
     if (cd <= 4) {
-      const name = (obj.kind === 'crown') ? 'royal circlet' : 'cedar truth-chest';
-      toast('Moses senses a ' + name + ' nearby — step closer and press Interact!');
+      toast('Moses senses a ' + niceName + ' nearby — step closer and press Interact!');
     }
   }
   // v3.6.1: patrolling servant (servantNPC) is a moving sprite, not part of
@@ -4143,7 +5056,14 @@ function interact(){
       if (!caravanTrader.used) {
         caravanTrader.used = true;
         try { play('helloThere') || play('chime'); } catch(e){}  // v2.2.7 trader greeting
-        try { play('camelGrunt'); } catch(e){}                    // v2.2.7 camel huff
+        // v3.12 Jane 2026-04-24: camel grunt MP3 is multi-second; bounded to
+        // 1.4s so a single tap doesn't keep grunting under the challenge modal.
+        try {
+          play('camelGrunt');
+          if (audio.camelGrunt) {
+            setTimeout(() => { try { audio.camelGrunt.pause(); audio.camelGrunt.currentTime = 0; } catch(e){} }, 1400);
+          }
+        } catch(e){}
         if (game.hearts < 3) {
           game.hearts++;
           updateHudHearts();
@@ -4177,17 +5097,38 @@ function triggerInteractable(obj){
   obj.used = true;
   play('chime');
   // award reward
+  // v3.8 PASS A VISUAL FEEL: helper — spawn a floating popup above the
+  // pickup tile so kids see the reward ascend from the object location.
+  const _popupAt = (txt, color) => {
+    try {
+      const wx = obj.tx * TILE + TILE/2;
+      const wy = obj.ty * TILE;
+      spawnScorePopup(txt, wx, wy, color);
+    } catch(e){}
+  };
   if (obj.reward === 'heal') {
-    if (game.hearts < 3) { game.hearts++; updateHudHearts(); }
-    try { toast('Heart restored!'); } catch(e){}
+    // v3.3 LANE 3 (Jane 2026-04-23): heal pickups (waterskin) were the only
+    // pickup kind with no particle burst. Adding parity so every pickup feels
+    // rewarding. Also play coin sound for an extra "got it!" cue.
+    if (game.hearts < 3) {
+      game.hearts++; updateHudHearts();
+      try { spawnGlitterBurstAtPlayer(16); } catch(e){}
+      try { play('coin') || play('chime'); } catch(e){}
+      try { toast((obj.name || 'Heart') + ' restored! +1 heart'); } catch(e){}
+      _popupAt('+1 \u2665', '#ff8ab8');
+    } else {
+      try { toast(obj.name + ' — but Moses is already at full hearts!'); } catch(e){}
+    }
   } else if (obj.reward === 'stars2') {
     game.stars += 2; updateHudStars();
     spawnGlitterBurstAtPlayer(12);
     try { toast((obj.name || 'Item') + ' picked up! +2 stars'); } catch(e){}
+    _popupAt('+2 \u2605', '#ffd976');
   } else if (obj.reward === 'stars3') {
     game.stars += 3; updateHudStars();
     spawnGlitterBurstAtPlayer(14);
     try { toast((obj.name || 'Item') + ' picked up! +3 stars'); } catch(e){}
+    _popupAt('+3 \u2605', '#ffd976');
   } else if (obj.reward === 'stars50') {
     game.stars += 50;
     game.crownFound = true;
@@ -4199,6 +5140,7 @@ function triggerInteractable(obj){
     setTimeout(() => spawnGlitterBurstAtPlayer(22), 160);
     setTimeout(() => spawnGlitterBurstAtPlayer(18), 340);
     try { toast('Crown picked up! +50 stars - by faith!'); } catch(e){}
+    _popupAt('+50 \u2605', '#ffe680');
   } else if (obj.reward === 'truthcard') {
     // Mid-scene truth card pickup -> trigger the treasure-chest reveal IN THE WORLD,
     // then continue gameplay. Truth card remembered for finish modal.
@@ -4228,17 +5170,36 @@ function playMidSceneTruthChestReveal(){
     return;
   }
   modal.classList.add('active');
-  // v3.4: child-friendly truths (match the ones shown on the finish card).
+  // reset chest image to closed at the start of every reveal
+  try {
+    const ci = document.getElementById('midChestImg');
+    if (ci && ci.dataset.closed) ci.src = ci.dataset.closed;
+  } catch(e){}
+  // v3.11 Jane 2026-04-24: gripping kid-facing truths. Each speaks directly
+  // to the child so the moment LANDS as a personal lesson, not a dry fact.
+  // Rotation uses localStorage to AVOID showing the same truth twice in a
+  // row across plays (Jane: "It shouldn't be the same truth card each time").
   const truths = [
-    'God had a plan for Moses.',
-    'God helped Moses be brave.',
-    'God heard His people when they cried out.',
-    'God took care of baby Moses in the basket.',
-    'God is with us even when we are afraid.',
-    'By faith, Moses chose God\u2019s people over Egypt\u2019s treasures.',
-    'God\u2019s family is more precious than a king\u2019s gold.'
+    'God can use anyone — even YOU. Just trust Him.',
+    'When God remembers His promise, no king can stop it.',
+    'Brave is not "no fear" — brave is moving forward WITH God.',
+    'Moses said no to Egypt\u2019s gold. What will YOU say no to today?',
+    'God hears every quiet prayer. Even the ones nobody else hears.',
+    'God prepares you when you do not even know He is preparing you.',
+    'You are never too small for God\u2019s big plan.',
+    'When you stand up for what is right, you stand WITH God.',
+    'God is with you even when you feel like a stranger.',
+    'A heart that fears God is stronger than any throne.',
   ];
-  game.midSceneTruth = truths[Math.floor(Math.random() * truths.length)];
+  let lastSeen = null;
+  try { lastSeen = localStorage.getItem('bek.moses2.lastTruth'); } catch(e){}
+  let pick = truths[Math.floor(Math.random() * truths.length)];
+  // try a few times to avoid repeating the same one
+  for (let tries = 0; tries < 4 && pick === lastSeen; tries++) {
+    pick = truths[Math.floor(Math.random() * truths.length)];
+  }
+  game.midSceneTruth = pick;
+  try { localStorage.setItem('bek.moses2.lastTruth', pick); } catch(e){}
   try {
     const _truthEl = $('midTruthText');
     if (_truthEl) _truthEl.textContent = game.midSceneTruth;
@@ -4248,6 +5209,13 @@ function playMidSceneTruthChestReveal(){
   setTimeout(() => {
     try { playChestAnim('midChestBody','midChestLid','midChestRays','midChestStage','midTruthCard'); }
     catch(e) { console.warn('[truthChest] anim failed', e.message); }
+    // swap chest PNG to the open variant once the animation kicks off
+    try {
+      const ci = document.getElementById('midChestImg');
+      if (ci && ci.dataset.open) {
+        setTimeout(() => { ci.src = ci.dataset.open; }, 520);
+      }
+    } catch(e){}
   }, 180);
 }
 
@@ -4317,8 +5285,18 @@ $('hintBtn').addEventListener('click', () => {
   play('click');
   try { play('hint'); } catch(e){}  // v2.2.7 hint-chime reveal
   let ctxHint = null;
-  // nearest unsolved challenge gate
-  const nextGate = challengeGates.find(g => !g.solved);
+  // v3.11 Jane 2026-04-24: pick the NEAREST unsolved gate to Moses, not the
+  // first in array order. Plus produce a richer compass direction (N/NE/E/
+  // SE/...) and include the zone NAME so the hint reads naturally.
+  let nextGate = null;
+  let nearestDist = Infinity;
+  if (typeof challengeGates !== 'undefined') {
+    for (const g of challengeGates) {
+      if (g.solved) continue;
+      const d = Math.abs(g.tx - player.tx) + Math.abs(g.ty - player.ty);
+      if (d < nearestDist) { nearestDist = d; nextGate = g; }
+    }
+  }
   const exit = findTileOfType(7);
 
   if (guards.some(g => g.state === 'alerted')) {
@@ -4329,12 +5307,27 @@ $('hintBtn').addEventListener('click', () => {
     ctxHint = "You are hidden - a boulder is blocking the scout's view.";
   } else if (nextGate) {
     const dx = nextGate.tx - player.tx, dy = nextGate.ty - player.ty;
-    const dir = Math.abs(dx) > Math.abs(dy) ? (dx>0?'east':'west') : (dy>0?'south':'north');
-    const remaining = nextGate.questions.length - nextGate.bundleIndex;
-    ctxHint = "A Bible checkpoint waits " + dir + " - " + remaining + " questions to clear it.";
+    // 8-direction compass (N, NE, E, SE, S, SW, W, NW)
+    let dir;
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+    const ratio = (Math.min(ax, ay) / Math.max(ax, ay, 1));
+    if (ratio > 0.42) {
+      // diagonal
+      const ns = dy > 0 ? 'south' : 'north';
+      const ew = dx > 0 ? 'east'  : 'west';
+      dir = ns + '-' + ew;
+    } else if (ax > ay) {
+      dir = dx > 0 ? 'east' : 'west';
+    } else {
+      dir = dy > 0 ? 'south' : 'north';
+    }
+    const zoneLabel = nextGate.label || (nextGate.zone ? (nextGate.zone[0].toUpperCase()+nextGate.zone.slice(1)+' Checkpoint') : 'Checkpoint');
+    const remaining = nextGate.questions ? (nextGate.questions.length - (nextGate.bundleIndex||0)) : 3;
+    ctxHint = zoneLabel + ' is ' + nearestDist + ' tiles to the ' + dir + ' \u2014 ' + remaining + ' question' + (remaining===1?'':'s') + ' left to clear it.';
   } else if (exit) {
     const dx = exit.x - player.tx, dy = exit.y - player.ty;
     if (Math.abs(dx) + Math.abs(dy) < 6) ctxHint = "You are close to the Midian well - go now!";
+    else ctxHint = "All checkpoints cleared! Walk east into the EXIT tile to reach Midian.";
   }
 
   const msg = ctxHint || HINT_POOL[hintIndex % HINT_POOL.length];
@@ -4400,8 +5393,12 @@ function getHintForQuestion(q){
     unscr:      'Riddle: the letters in front of you carry the answer inside them — like a treasure in a broken pot. Whisper the sounds out loud and the word hides less well.',
     memory:     'Riddle: twins wear the same face. Turn two cards; if they do not smile the same, remember where they hid, and keep hunting their twin.',
     maze:       'Riddle: walls say NO; open floor says YES. Trace a path with your eyes BEFORE your finger — then walk the one the walls allow.',
-    spot:       'Riddle: three belong to one family; one is a stranger wearing a mask. Ask each name, "Are you a PERSON of Israel, or a PLACE?" The odd one out is hiding in plain sight.',
-    pair:       'Riddle: each picture has a twin — except one lonely face. Count in pairs; the one left without a partner is your answer.',
+    // v3.11 Jane 2026-04-24: spot's old generic riddle ("three belong to one
+    // family") was wrong for emoji-spot puzzles where the odd-one-out is a
+    // CATEGORY mismatch (3 fires + 1 thermometer, etc.). New riddle directs
+    // the kid to look for the icon that doesn\u2019t fit the pattern.
+    spot:       'Riddle: four shapes look alike, one is a stranger. Look at every icon and ask, "Does this belong to the same family as the others?" The misfit is the answer.',
+    pair:       'Riddle: every icon has a twin — except one lonely face. Count in pairs; the one left without a partner is the answer.',
     count:      'Riddle: your eyes are a shepherd and the things on screen are a flock. Only count the sheep the question is asking for — leave the goats alone.',
     tf:         'Riddle: the Bible tells the true story. Read the sentence with a careful eye — is even ONE word a pebble in the shoe? If yes, it is False.',
     fill:       'Riddle: the blank is a missing stone in a wall. Which word makes the wall stand straight when you slot it in?',
@@ -4436,8 +5433,33 @@ function getHintForQuestion(q){
     // KILLED is more specific than EGYPT/HEBREWS so it wins if both apply.
     if (hasWord('kill','killed','struck','slew','slain'))
       return 'Moses saw an Egyptian beating a Hebrew, and struck him down (Exodus 2:11-12).';
-    if (hasWord('midian','jethro','zipporah','reuel'))
-      return 'Moses fled to Midian, a desert land. Jethro took him in and gave him Zipporah as wife (Exodus 2:15-21).';
+    // v3.10 Jane 2026-04-24 CLUE AUDIT: split the broad Midian cluster into
+    // person-specific topic hints so the kid gets a more useful nudge than
+    // the generic "Jethro took him in" sentence.
+    if (hasWord('jethro','reuel') && hasWord('priest'))
+      return 'Jethro (also called Reuel) was the priest of Midian — father of seven daughters who took Moses in (Exodus 2:18-21).';
+    if (hasWord('jethro','reuel'))
+      return 'Jethro / Reuel — Moses\u2019 father-in-law, priest of Midian, owner of the flocks Moses tended.';
+    if (hasWord('zipporah'))
+      return 'Zipporah — one of the seven daughters of Jethro. She married Moses (Exodus 2:21).';
+    if (hasWord('seven daughters','seven sisters','daughters of'))
+      return 'Seven daughters of the priest of Midian — they came to the well with their flock (Exodus 2:16).';
+    if (hasWord('forty','40'))
+      return 'Moses\u2019 life had three forty-year chapters: forty in Egypt, forty in Midian, forty leading Israel.';
+    if (hasWord('shiphrah','puah'))
+      return 'Shiphrah and Puah — the two Hebrew midwives who feared God more than Pharaoh (Exodus 1:15-21).';
+    if (hasWord('covenant'))
+      return 'A covenant is God\u2019s solemn promise. He made one with Abraham, Isaac, and Jacob (Exodus 2:24).';
+    if (hasWord('mortar','brick','bricks'))
+      return 'Bricks of clay + straw, stuck together with mortar paste. The Hebrews\u2019 forced labor (Exodus 1:14).';
+    if (hasWord('joseph'))
+      return 'Joseph saved Egypt from famine long before Moses, but the new Pharaoh forgot him (Exodus 1:8).';
+    if (hasWord('gershom'))
+      return 'Gershom — Moses\u2019 first son. The name means "a stranger there" (Exodus 2:22).';
+    if (hasWord('flock','sheep','shepherd'))
+      return 'Moses tended Jethro\u2019s flock for forty years before God called him at Mount Horeb.';
+    if (hasWord('midian'))
+      return 'Midian — a desert land east of Egypt where Moses found refuge (Exodus 2:15).';
     // Gershom: only match the NAME directly; removed the generic 'son' keyword
     // because it fires on 'person', 'lesson', 'reason', etc.
     if (hasWord('gershom'))
@@ -4618,6 +5640,14 @@ function openChallenge(gate) {
     } catch(e){}
   }
   const _cm = $('challengeModal'); if (_cm) _cm.classList.add('active');
+  // v3.12 Jane 2026-04-24: force-stop transient SFX (camel grunt, hello-there,
+  // etc.) so they don't keep playing under the challenge modal. BGM stays.
+  try {
+    ['camelGrunt','helloThere','dog','vulture','sandstormSfx','boulderRumble','mirageWoosh'].forEach(k => {
+      const a = audio[k];
+      if (a) { try { a.pause(); a.currentTime = 0; } catch(e){} }
+    });
+  } catch(e){}
 }
 
 /* ---------- v3.4: GOLDEN UPPERCASE CORRECT-ANSWER FLASH ----------
@@ -4764,6 +5794,22 @@ function renderMatch(gate, q, container){
   for (let i = rights.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [rights[i], rights[j]] = [rights[j], rights[i]];
+  }
+  // v3.20 Jane 2026-04-25: if the shuffle happened to land in the SAME
+  // order as q.pairs (i.e. each row already shows the correct pair side-by-
+  // side), kids think the puzzle is pre-solved. Force at least one swap so
+  // no row pairs L↔R correctly at start.
+  const isAlreadyAligned = () => rights.every((r, i) => r === q.pairs[i][1]);
+  let _guard = 0;
+  while (isAlreadyAligned() && rights.length > 1 && _guard++ < 8) {
+    const a = Math.floor(Math.random() * rights.length);
+    let b = Math.floor(Math.random() * rights.length);
+    if (a === b) b = (b + 1) % rights.length;
+    [rights[a], rights[b]] = [rights[b], rights[a]];
+  }
+  // Belt-and-suspenders: if STILL aligned (shouldn't happen), just rotate.
+  if (isAlreadyAligned() && rights.length > 1) {
+    rights.push(rights.shift());
   }
   const grid = document.createElement('div');
   grid.className = 'ch-match-grid';
@@ -5073,7 +6119,10 @@ function renderCount(gate, q, container){
    Bank entry shape: { type:'memory', prompt } (no pair data)
    We procedurally generate 4 palace-themed emoji pairs (8 cards, 2x4 grid). */
 function renderMemory(gate, q, container){
-  const PAIR_COUNT = 4;
+  // v3.9 Jane 2026-04-24 CHALLENGE UPGRADE: bumped from 4 pairs (8 cards)
+  // to 6 pairs (12 cards) so the memory load is real instead of trivial.
+  // Renders as 4 columns × 3 rows in the existing .ch-memory-grid CSS.
+  const PAIR_COUNT = 6;
   // Pool kept inside the function so it's not subject to TDZ during page load.
   const MEMORY_POOL = [
     ['\u{1F451}','CROWN'], ['\u{1F6E1}','SHIELD'], ['\u{1F4DC}','SCROLL'],
@@ -5099,7 +6148,7 @@ function renderMemory(gate, q, container){
     const j = Math.floor(Math.random() * (i + 1));
     [cards[i], cards[j]] = [cards[j], cards[i]];
   }
-  gate._memState = { first: null, second: null, lock: false, matchedCount: 0 };
+  gate._memState = { first: null, second: null, lock: false, matchedCount: 0, totalPairs: PAIR_COUNT };
   const grid = document.createElement('div');
   grid.className = 'ch-memory-grid';
   cards.forEach((c, idx) => {
@@ -5142,7 +6191,7 @@ function handleMemoryFlip(gate, cell, cards, grid){
     st.matchedCount += 1;
     try { play('chime'); } catch(e){}
     st.first = null; st.second = null; st.lock = false;
-    if (st.matchedCount >= 4) {
+    if (st.matchedCount >= (st.totalPairs || 4)) {
       // success -- all pairs matched
       setTimeout(() => {
         handleChallengeAnswer(gate, 0, grid.parentNode, { answerLabel: 'All pairs matched!' });
@@ -5163,25 +6212,34 @@ function handleMemoryFlip(gate, cell, cards, grid){
    Procedurally generates a small 5x5 grid with Moses at top-left and
    exit at bottom-right. A carved path is guaranteed diagonally. */
 function renderMiniMaze(gate, q, container){
-  const SZ = 5;
+  // v3.9 Jane 2026-04-24 CHALLENGE UPGRADE: maze was a trivial 5x5 with
+  // ~6 random opens. Bumped to 7x7 with TWO carved guaranteed paths
+  // (one staircase, one back-tracking detour) plus 10 random opens so
+  // there are real choices to make instead of one obvious route.
+  const SZ = 7;
   const map = [];
   // start fully walled
   for (let y=0;y<SZ;y++){ map.push(new Array(SZ).fill(1)); }
-  // carve a random staircase-ish path from (0,0) to (SZ-1,SZ-1)
-  let px = 0, py = 0;
-  map[0][0] = 0;
-  while (px < SZ-1 || py < SZ-1) {
-    const canRight = px < SZ-1;
-    const canDown  = py < SZ-1;
-    let go;
-    if (canRight && canDown) go = Math.random() < 0.5 ? 'r' : 'd';
-    else if (canRight) go = 'r';
-    else go = 'd';
-    if (go === 'r') px++; else py++;
-    map[py][px] = 0;
-  }
-  // open ~6 extra random cells to give the puzzle some width
-  for (let k=0;k<6;k++){
+  // carve TWO independent paths from (0,0) to (SZ-1,SZ-1) so kids can
+  // explore. Each path is a random staircase. Extra random opens add width.
+  const carvePath = () => {
+    let px = 0, py = 0;
+    map[0][0] = 0;
+    while (px < SZ-1 || py < SZ-1) {
+      const canRight = px < SZ-1;
+      const canDown  = py < SZ-1;
+      let go;
+      if (canRight && canDown) go = Math.random() < 0.5 ? 'r' : 'd';
+      else if (canRight) go = 'r';
+      else go = 'd';
+      if (go === 'r') px++; else py++;
+      map[py][px] = 0;
+    }
+  };
+  carvePath();
+  carvePath();
+  // 10 extra random opens for puzzle width
+  for (let k=0;k<10;k++){
     const rx = Math.floor(Math.random()*SZ);
     const ry = Math.floor(Math.random()*SZ);
     map[ry][rx] = 0;
@@ -5356,15 +6414,26 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
           if (isClimb) toast('Desert Checkpoint ' + (gate.step || '') + ' cleared - Moses presses on!');
           else toast('Checkpoint cleared!');
         }
+        // v3.3 LANE 3 (Jane 2026-04-23): celebration on every gate clear —
+        // particle burst + verse drift across the top so kids feel rewarded.
+        // Particles + showVerseDrift are both safe to no-op if undefined.
+        try { spawnGlitterBurstAtPlayer(perfect ? 26 : 18); } catch(e){}
+        try { if (typeof showVerseDrift === 'function') setTimeout(showVerseDrift, 600); } catch(e){}
         // v2.1: ALTITUDE TRACKING — climb challenges contribute to scene-complete
         if (game.scene === 2 && isClimb) {
           game.altitudeCleared = (game.altitudeCleared || 0) + 1;
-          try { updateHudAltitude(); } catch(e){}
           // v2.1: camera bump up on each ascent (cinematic rising feel)
           try {
             if (typeof emitSandPuff === 'function') emitSandPuff(player.px + TILE/2, player.py + TILE/2);
           } catch(e){}
         }
+        // v3.11 Jane 2026-04-24 BUGFIX: HUD checkpoint counter wasn't ticking
+        // because updateHudAltitude was inside the `isClimb` branch. Zone-
+        // checkpoint clears (4 of the 9 mandatory gates) never bumped the
+        // counter. Moved OUT of the branch so EVERY gate-clear updates the
+        // visible "▲ N/9" chip. Strong pop/glow already handled in the chip
+        // CSS via the alt-pop class.
+        try { if (game.scene === 2) updateHudAltitude(); } catch(e){}
         _closeChallengeModalAudio();
         $('challengeModal').classList.remove('active');
         game.state = 'playing';
@@ -5415,21 +6484,25 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
       ? opts.answerLabel
       : (q.options && q.correct != null ? q.options[q.correct] : '(see verse)');
     if (caughtByStrikes || game.hearts <= 0) {
-      // v2.2 FIX (R3): gold-on-dark for readability, 3.6s linger.
-      // v2.2.6: show the correct answer in gold so kids learn it, but
-      // skip the verse card (it overflowed the modal on small screens).
-      fb.innerHTML = '<div style="font-size:22px;color:#FFE680;margin-bottom:8px;font-weight:900;letter-spacing:0.5px;text-shadow:0 2px 6px rgba(0,0,0,0.6);background:rgba(60,10,0,0.78);border:3px solid #FFE680;border-radius:10px;padding:10px 14px;">The scouts are upon Moses!</div>'
-        + '<div style="font-size:15px;line-height:1.5;color:#fff;background:rgba(0,0,0,0.32);padding:11px 13px;border-radius:8px;border-left:4px solid #FFE680;text-align:center;">'
-        + '<strong style="color:#FFE680;">The answer was:</strong> ' + answerLabel + '</div>';
+      // v3.11 Jane 2026-04-24: 3-strikes is a LEARNING moment, not a punishment.
+      // Show the correct answer prominently in gold + the Bible verse beneath
+      // for context. Linger 6 seconds so kids actually read both. Friendly,
+      // encouraging tone instead of "scouts upon Moses" doom language.
+      const verseText = (q.verse || '').replace(/^"|"$/g, '');
+      const verseBlock = verseText
+        ? '<div style="font-size:13px;line-height:1.45;color:#fff5d2;background:rgba(0,0,0,0.32);padding:8px 11px;border-radius:8px;border-left:3px solid #FFE680;margin-top:8px;text-align:left;font-style:italic;">' + verseText + '</div>'
+        : '';
+      fb.innerHTML = '<div style="font-size:18px;color:#FFE680;margin-bottom:10px;font-weight:900;letter-spacing:0.5px;text-shadow:0 2px 6px rgba(0,0,0,0.6);background:linear-gradient(180deg,#1a4a6e,#0d2f4a);border:3px solid #FFE680;border-radius:10px;padding:10px 14px;text-align:center;">&#x1F4DA; Let\u2019s learn this one together!</div>'
+        + '<div style="font-size:15px;line-height:1.5;color:#fff;background:rgba(0,0,0,0.42);padding:12px 13px;border-radius:8px;border:2px solid #FFE680;text-align:center;">'
+        + '<div style="font-size:12px;color:#ffd976;letter-spacing:1px;margin-bottom:4px;">THE ANSWER IS</div>'
+        + '<div style="font-size:20px;font-weight:900;color:#FFE680;text-shadow:0 0 8px rgba(255,230,128,0.55);">' + answerLabel + '</div>'
+        + verseBlock
+        + '</div>';
       setTimeout(() => {
         _closeChallengeModalAudio();
         $('challengeModal').classList.remove('active');
-        // v4.2 Jane fix: when kids run out of tries on a checkpoint, the game
-        // ends because they COULDN'T ANSWER the questions — NOT because guards
-        // caught Moses. Use kind='questions' so the modal title, message, and
-        // image reflect the real reason (learning moment, not capture).
-        openDanger('Moses ran out of tries on the checkpoint questions. Keep reading the Bible clues — each question is a chance to learn the story!', IMG_SRC.scroll || IMG_SRC.tablet || IMG_SRC.moses, 'questions');
-      }, 3600);
+        openDanger('Don\u2019t worry — even Moses had to learn step by step. Try again with sharper Bible-clue eyes!', IMG_SRC.scroll || IMG_SRC.tablet || IMG_SRC.moses, 'questions');
+      }, 6000);
     } else if (opts && opts.keepOpen) {
       // transient feedback (match-challenge pair miss) - don't disable
       fb.style.display = 'block';
@@ -5448,8 +6521,16 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
       // v2.2.6 Jane feedback: no verse card on wrong answer either —
       // the Show Clue button already reveals a hint, and the verse
       // card was stacking under the Exit button on small screens.
-      fb.innerHTML = '<div style="font-size:22px;color:#FFE680;font-weight:900;letter-spacing:0.5px;text-shadow:0 2px 6px rgba(0,0,0,0.55);background:rgba(50,15,0,0.7);border:3px solid #FFE680;border-radius:10px;padding:10px 14px;">Not quite right &#8212; try again! (-1 heart)</div>'
-        + '<div style="margin-top:10px;font-size:16px;color:#FFE680;font-weight:800;text-align:center;"><strong>' + strikesLeft + ' tr' + (strikesLeft===1?'y':'ies') + ' left</strong> for this question. Tap Show Clue for help.</div>';
+      // v3.1 FIX A (Jane 2026-04-23): alpha 0.7 let the cream modal bleed through,
+      // turning the background muddy-orange and killing gold text contrast.
+      // Solid dark-red + stronger shadow keeps the banner readable on every device.
+      // v3.9 Jane 2026-04-24: "Not quite right" was too LARGE (22px) and
+      // the "X tries left" pill was hardly noticeable. Banner shrunk to
+      // clamp(13px,3.4vw,17px); tries-left pill given a high-contrast
+      // bright cyan-on-dark scheme so it pops against the cream papyrus
+      // modal background — kids actually see it now.
+      fb.innerHTML = '<div style="font-size:clamp(13px,3.4vw,17px);color:#FFE680;font-weight:900;letter-spacing:0.5px;text-shadow:0 2px 4px rgba(0,0,0,0.95),0 0 2px rgba(0,0,0,0.9);background:linear-gradient(180deg,#3a0d00,#2a0800);border:2px solid #FFE680;border-radius:10px;padding:8px 14px;box-shadow:0 4px 14px rgba(0,0,0,0.55);">Not quite right &#8212; try again! (-1 heart)</div>'
+        + '<div style="margin-top:9px;font-size:14px;color:#fff8d8;font-weight:800;text-align:center;background:linear-gradient(180deg,#1a4a6e,#0d2f4a);border:2px solid #6ec6ff;border-radius:8px;padding:7px 10px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">&#9888; <strong>' + strikesLeft + ' tr' + (strikesLeft===1?'y':'ies') + ' left</strong> &#8212; tap <em style="color:#ffd976;">Show Clue</em> for a hint!</div>';
       // re-enable / re-render the SAME question so child learns the answer
       setTimeout(() => {
         document.querySelectorAll('#chOptions .ch-option').forEach(b => {
@@ -5562,6 +6643,9 @@ function onHazardHit(tx, ty){
   game.hearts--; game.perfectRun = false;
   updateHudHearts();
   play('dangerAlert');
+  // v3.10 EPIC VISUAL: damage feedback — short shake. Stronger shake on
+  // the killing blow.
+  try { triggerCameraShake(game.hearts <= 0 ? 12 : 6); } catch(e){}
   if (game.hearts <= 0) {
     // v2.2.6 BUGFIX: sandstorm imagery belongs here, not palace torch.
     openDanger('A sudden sandstorm drove Moses back - try again!', IMG_SRC.sandstorm2 || IMG_SRC.sandstormA || IMG_SRC.sandstorm, 'sandstorm');
@@ -5663,13 +6747,16 @@ function showWin(){
   const pct = (game.hearts / 3) * 0.4 + (game.treasureCount / game.treasuresTotal) * 0.4 + (game.timeLeft / game.timeLimit) * 0.2;
   const starRating = pct >= 0.85 ? 3 : pct >= 0.55 ? 2 : 1;
 
-  // SINGLE tier title based on star rating (mutually exclusive)
+  // v3.20 Jane 2026-04-25: ONE hero headline combines tier + accomplishment
+  // (was two stacked titles + a secondary tier chip = three competing
+  // titles that crowded the modal). Tier chip stays as a small caption
+  // BELOW stars, not as a duplicate title above.
   const tierTitle = starRating === 3 ? 'DESERT CONQUEROR' : starRating === 2 ? 'BRAVE TRAVELER' : 'FAITHFUL JOURNEY';
   const tierHeadline = starRating === 3
-    ? 'Moses crossed the desert with wisdom, endurance, and faith!'
+    ? 'Moses reached Midian — a wise & faithful crossing!'
     : starRating === 2
-    ? 'Moses reached the Midian well - a brave crossing!'
-    : 'Moses made it through by faith alone.';
+    ? 'Moses reached Midian — a brave crossing!'
+    : 'Moses reached Midian — by faith alone.';
 
   // Sub-achievements: bonus badges (not titles) shown as secondary chips
   const badges = [];
@@ -5696,8 +6783,7 @@ function showWin(){
     'God heard His people when they cried out.',
     'God took care of baby Moses in the basket.',
     'God is with us even when we are afraid.',
-    'By faith, Moses chose God\u2019s people over Egypt\u2019s treasures.',
-    'God\u2019s family is more precious than a king\u2019s gold.'
+    'By faith, Moses chose God\u2019s people over Egypt\u2019s treasures.'
   ];
   const truth = game.midSceneTruth || truths[Math.floor(Math.random() * truths.length)];
 
@@ -5761,7 +6847,7 @@ function showWin(){
 }
 $('winNextBtn').addEventListener('click', () => {
   play('click');
-  toast('Scene 2: The Desert - coming in the next build!');
+  toast('Next scene coming soon — keep checking the BEK collection!');
 });
 const _midChestBtn = $('midChestContinueBtn');
 if (_midChestBtn) _midChestBtn.addEventListener('click', () => {
@@ -5885,119 +6971,215 @@ function openGiveUpGameOver(){
   $('dangerModal').classList.add('active');
 }
 
-/* ---------- PEEK MAP (2 uses per scene, 3s freeze to study map) ---------- */
+/* ---------- MAP (always available, live re-render, no peek limit) ----------
+   v3.23 Jane 2026-04-25: REWORKED into a useful tool.
+   - No usage cap. Kids can open the map any number of times, any time.
+   - LIVE rendering via rAF — guard/scout/Moses positions update in real
+     time, checkpoints/treasures stay accurate as they're solved/collected.
+     (The previous one-shot synchronous render was the source of "after
+     Moses moves, the map shows nothing" — first render captured the world,
+     subsequent opens kept showing the captured snapshot.)
+   - No auto-close timer. Tap anywhere to close.
+   - Bigger canvas (640×400 vs old 320×200) so labels & legend fit.
+   - Shows START + EXIT + checkpoints + caves + treasures + guards + scouts.
+   - "YOU ARE HERE" callout clamped on BOTH X and Y so it never clips. */
 const _peekCanvas = $('mapPeekCanvas');
 const _peekCtx = _peekCanvas ? _peekCanvas.getContext('2d') : null;
-function openMapPeek(){
-  if (game.state !== 'playing' && game.state !== 'paused') return;
-  if (game.peeksLeft <= 0) { toast('No peeks left!'); return; }
-  game.peeksLeft--;
-  $('peekCount').textContent = '(' + game.peeksLeft + ')';
-  const overlay = $('mapPeekOverlay');
-  if (!overlay || !_peekCtx) return;
-  overlay.classList.add('active');
-  game.state = 'peek';
-  // render the full map on the big peek canvas
+let _peekRafId = null;
+let _peekOpen = false;
+function _drawMapPeek(){
+  if (!_peekCtx) return;
   const PW = _peekCanvas.width, PH = _peekCanvas.height;
   const cx = PW / MAP_W, cy = PH / MAP_H;
   _peekCtx.fillStyle = '#0a0410'; _peekCtx.fillRect(0,0,PW,PH);
+  // ---- TILE LAYER ----
   for (let y=0;y<MAP_H;y++) for (let x=0;x<MAP_W;x++) {
     const t = MAP[y][x];
     let col = null;
-    if (t === 1) col = '#6a3c15';
-    else if (t === 0 || t === 8) col = '#d4af70';
-    else if (t === 3) col = '#8a5a22';
-    else if (t === 2) col = '#ff7a2a';
-    else if (t === 5) col = '#ffd976';
-    else if (t === 7) col = '#6eff6e';
+    if (t === 1) col = '#6a3c15';                 // wall / cliff frame
+    else if (t === 0 || t === 8) col = '#d4af70'; // sand / start cell
+    else if (t === 3) col = '#8a5a22';            // cover (rocks)
+    else if (t === 2) col = '#ff7a2a';            // hazard (scorpion)
+    else if (t === 5) col = '#d49b5e';            // treasure (uncollected)
+    else if (t === 6) col = '#3da08c';            // oasis
+    else if (t === 7) col = '#6eff6e';            // climb-step
+    else if (t === 9) col = '#7a4a8a';            // quicksand
     if (col) { _peekCtx.fillStyle = col; _peekCtx.fillRect(x*cx, y*cy, Math.ceil(cx), Math.ceil(cy)); }
   }
-  // gates
-  for (const gt of challengeGates) {
-    _peekCtx.fillStyle = gt.solved ? '#7ae07a' : '#66d0ff';
-    _peekCtx.fillRect(gt.tx*cx-1, gt.ty*cy-1, cx+2, cy+2);
-    // v2.2 R8: label climb ascents with step number
-    if (gt.kind === 'climb' && gt.step) {
-      _peekCtx.fillStyle = '#fff8c8';
-      _peekCtx.font = 'bold 10px system-ui, sans-serif';
+  // ---- ZONE TINTS (subtle column bands) ----
+  if (game.scene === 2) {
+    const tint = (x0, x1, c) => {
+      _peekCtx.fillStyle = c;
+      _peekCtx.fillRect(x0*cx, 0, (x1-x0+1)*cx, PH);
+    };
+    _peekCtx.save();
+    _peekCtx.globalCompositeOperation = 'overlay';
+    tint(0,9,    'rgba(120,170,220,0.08)'); // wadi (cool)
+    tint(20,28,  'rgba(120,255,200,0.10)'); // oasis (cyan)
+    tint(29,37,  'rgba(220,110,60,0.12)');  // mesa (warm)
+    _peekCtx.restore();
+  }
+  // ---- CAVES (sanctuary tiles) ----
+  if (game.scene === 2 && typeof caves !== 'undefined') {
+    for (const c of caves) {
+      const cxg = c.tx*cx + cx/2;
+      const cyg = c.ty*cy + cy/2;
+      const r = Math.max(5, Math.min(cx, cy) * 0.8);
+      _peekCtx.fillStyle = '#8a5a22';
+      _peekCtx.strokeStyle = '#3a1a00';
+      _peekCtx.lineWidth = 1.5;
+      _peekCtx.beginPath(); _peekCtx.arc(cxg, cyg, r, 0, Math.PI*2); _peekCtx.fill(); _peekCtx.stroke();
+      _peekCtx.fillStyle = '#ffe082';
+      _peekCtx.font = 'bold ' + Math.max(8, Math.floor(r*1.0)) + 'px Georgia, serif';
       _peekCtx.textAlign = 'center';
-      _peekCtx.fillText(String(gt.step), gt.tx*cx + cx/2, gt.ty*cy + cy/2 + 3);
+      _peekCtx.textBaseline = 'middle';
+      _peekCtx.fillText('C', cxg, cyg + 1);
     }
   }
-  // guards
-  for (const g of guards) {
-    _peekCtx.fillStyle = '#ff4040';
-    _peekCtx.fillRect(g.tx*cx-1, g.ty*cy-1, cx+2, cy+2);
-  }
-  // v2.2 R8: pursuit scouts too
-  if (game.scene === 2 && typeof pursuitScouts !== 'undefined') {
-    for (const s of pursuitScouts) {
-      if (s.caught) continue;
-      _peekCtx.fillStyle = '#ff8040';
-      _peekCtx.fillRect(s.tx*cx-1, s.ty*cy-1, cx+2, cy+2);
+  // ---- ROUTE LINE: Moses → next unsolved checkpoint ----
+  try {
+    const nextG = challengeGates.find(g => !g.solved);
+    if (nextG) {
+      const px0 = player.tx*cx + cx/2;
+      const py0 = player.ty*cy + cy/2;
+      const tx0 = nextG.tx*cx + cx/2;
+      const ty0 = nextG.ty*cy + cy/2;
+      _peekCtx.save();
+      _peekCtx.setLineDash([8, 5]);
+      _peekCtx.strokeStyle = 'rgba(120,255,255,0.85)';
+      _peekCtx.lineWidth = 3;
+      _peekCtx.beginPath(); _peekCtx.moveTo(px0, py0); _peekCtx.lineTo(tx0, ty0); _peekCtx.stroke();
+      _peekCtx.restore();
     }
+  } catch(e){}
+  // ---- CHECKPOINT DISCS (clamped) ----
+  for (const gt of challengeGates) {
+    const rg  = Math.max(8, Math.min(cx, cy) * 1.4);
+    const pad = 3;
+    const cxg = Math.max(rg + pad, Math.min(PW - rg - pad, gt.tx*cx + cx/2));
+    const cyg = Math.max(rg + pad, Math.min(PH - rg - pad, gt.ty*cy + cy/2));
+    _peekCtx.fillStyle = gt.solved ? 'rgba(120,220,120,0.45)' : 'rgba(255,217,118,0.55)';
+    _peekCtx.beginPath(); _peekCtx.arc(cxg, cyg, rg + 3, 0, Math.PI*2); _peekCtx.fill();
+    _peekCtx.fillStyle = gt.solved ? '#5fdb5f' : '#ffd976';
+    _peekCtx.strokeStyle = gt.solved ? '#1f6b2e' : '#7a4a10';
+    _peekCtx.lineWidth = 2;
+    _peekCtx.beginPath(); _peekCtx.arc(cxg, cyg, rg, 0, Math.PI*2); _peekCtx.fill(); _peekCtx.stroke();
+    _peekCtx.fillStyle = '#3a1a00';
+    _peekCtx.font = 'bold ' + Math.max(11, Math.floor(rg*1.2)) + 'px Georgia, serif';
+    _peekCtx.textAlign = 'center';
+    _peekCtx.textBaseline = 'middle';
+    _peekCtx.fillText(gt.solved ? '✓' : '?', cxg, cyg + 1);
   }
-  // v2.2 R8: PULSING player indicator with halo + name label
+  // ---- GREEN EXIT MARKER (topmost tile-7) ----
+  try {
+    if (typeof window._topmostExit === 'undefined' || window._topmostExit.tx < 0) {
+      let topY = MAP_H, topX = -1;
+      for (let _y = 0; _y < MAP_H; _y++) for (let _x = 0; _x < MAP_W; _x++) {
+        if (MAP[_y][_x] === 7 && _y < topY) { topY = _y; topX = _x; }
+      }
+      window._topmostExit = { tx: topX, ty: topY };
+    }
+    if (window._topmostExit.tx >= 0) {
+      const ex = window._topmostExit;
+      const erg = Math.max(11, Math.min(cx, cy) * 1.8);
+      const epad = 4;
+      const exg = Math.max(erg + epad, Math.min(PW - erg - epad, ex.tx*cx + cx/2));
+      const eyg = Math.max(erg + epad, Math.min(PH - erg - epad, ex.ty*cy + cy/2));
+      const ePulse = 0.55 + Math.sin(performance.now()/260)*0.35;
+      _peekCtx.fillStyle = 'rgba(80,255,120,' + (0.55 * ePulse).toFixed(2) + ')';
+      _peekCtx.beginPath(); _peekCtx.arc(exg, eyg, erg + 7, 0, Math.PI*2); _peekCtx.fill();
+      _peekCtx.fillStyle = '#28d04a';
+      _peekCtx.strokeStyle = '#0e5a20';
+      _peekCtx.lineWidth = 2.5;
+      _peekCtx.beginPath(); _peekCtx.arc(exg, eyg, erg, 0, Math.PI*2); _peekCtx.fill(); _peekCtx.stroke();
+      _peekCtx.font = 'bold ' + Math.max(10, Math.floor(erg*0.85)) + 'px Georgia, serif';
+      _peekCtx.textAlign = 'center';
+      _peekCtx.textBaseline = 'middle';
+      _peekCtx.fillStyle = '#fff';
+      _peekCtx.strokeStyle = '#0e5a20';
+      _peekCtx.lineWidth = 3;
+      _peekCtx.strokeText('EXIT', exg, eyg + 1);
+      _peekCtx.fillText('EXIT', exg, eyg + 1);
+    }
+  } catch(e){}
+  // ---- START DISC (only at game.scene === 2) ----
+  if (game.scene === 2) {
+    const sx0 = 1 * cx + cx/2;
+    const sy0 = 12 * cy + cy/2;
+    _peekCtx.fillStyle = '#5fdb5f';
+    _peekCtx.strokeStyle = '#1f6b2e';
+    _peekCtx.lineWidth = 2;
+    _peekCtx.beginPath(); _peekCtx.arc(sx0, sy0, 9, 0, Math.PI*2); _peekCtx.fill(); _peekCtx.stroke();
+    _peekCtx.fillStyle = '#fff';
+    _peekCtx.font = 'bold 9px Georgia, serif';
+    _peekCtx.textAlign = 'center';
+    _peekCtx.textBaseline = 'middle';
+    _peekCtx.fillText('S', sx0, sy0 + 1);
+  }
+  // ---- LIVE GUARDS / SCOUTS ----
+  try {
+    if (typeof guards !== 'undefined') {
+      for (const g of guards) {
+        _peekCtx.fillStyle = '#ff4040';
+        _peekCtx.fillRect(g.tx*cx-1, g.ty*cy-1, cx+2, cy+2);
+      }
+    }
+    if (game.scene === 2 && typeof pursuitScouts !== 'undefined') {
+      for (const s of pursuitScouts) {
+        if (s.caught) continue;
+        _peekCtx.fillStyle = '#ff8040';
+        _peekCtx.fillRect(s.tx*cx-1, s.ty*cy-1, cx+2, cy+2);
+      }
+    }
+  } catch(e){}
+  // ---- PLAYER MARKER (live, pulsing) + YOU ARE HERE callout (clamped X+Y) ----
   {
     const px = player.tx*cx + cx/2;
     const py = player.ty*cy + cy/2;
     const pulse = 0.6 + Math.sin(performance.now()/260)*0.4;
-    // outer halo ring (pulsing)
     _peekCtx.strokeStyle = 'rgba(120,200,255,' + (0.85 * pulse).toFixed(2) + ')';
-    _peekCtx.lineWidth = 3;
-    _peekCtx.beginPath();
-    _peekCtx.arc(px, py, 12 + pulse*4, 0, Math.PI*2);
-    _peekCtx.stroke();
-    // solid player block
-    _peekCtx.fillStyle = '#6ab8ff';
-    _peekCtx.fillRect(player.tx*cx-2, player.ty*cy-2, cx+4, cy+4);
-    // "MOSES" label
-    _peekCtx.fillStyle = '#ffffff';
-    _peekCtx.font = 'bold 11px system-ui, sans-serif';
-    _peekCtx.textAlign = 'center';
-    _peekCtx.strokeStyle = 'rgba(0,0,0,0.75)';
-    _peekCtx.lineWidth = 3;
-    _peekCtx.strokeText('MOSES', px, py - 18);
-    _peekCtx.fillText('MOSES', px, py - 18);
-  }
-  // v2.2 R8: GOAL FLAG on the summit (top-right cliff)
-  if (game.scene === 2) {
-    const gx = 39*cx + cx/2;
-    const gy = 2*cy + cy/2;
-    _peekCtx.fillStyle = '#ffd976';
-    _peekCtx.beginPath();
-    _peekCtx.arc(gx, gy, 9, 0, Math.PI*2);
-    _peekCtx.fill();
-    _peekCtx.strokeStyle = '#7a4a10';
-    _peekCtx.lineWidth = 2;
-    _peekCtx.stroke();
-    // flag pole
+    _peekCtx.lineWidth = 4;
+    _peekCtx.beginPath(); _peekCtx.arc(px, py, 18 + pulse*5, 0, Math.PI*2); _peekCtx.stroke();
+    _peekCtx.fillStyle = '#3a8ff0';
+    _peekCtx.beginPath(); _peekCtx.arc(px, py, 8, 0, Math.PI*2); _peekCtx.fill();
     _peekCtx.strokeStyle = '#fff';
     _peekCtx.lineWidth = 2;
-    _peekCtx.beginPath();
-    _peekCtx.moveTo(gx, gy - 8);
-    _peekCtx.lineTo(gx, gy - 20);
     _peekCtx.stroke();
-    // flag banner
-    _peekCtx.fillStyle = '#ff6a4a';
-    _peekCtx.beginPath();
-    _peekCtx.moveTo(gx, gy - 20);
-    _peekCtx.lineTo(gx + 12, gy - 17);
-    _peekCtx.lineTo(gx, gy - 14);
-    _peekCtx.closePath();
-    _peekCtx.fill();
+    // Callout: clamp X AND Y so it never clips on any edge.
     _peekCtx.fillStyle = '#ffffff';
-    _peekCtx.font = 'bold 10px system-ui, sans-serif';
+    _peekCtx.font = 'bold 13px Georgia, serif';
     _peekCtx.textAlign = 'center';
-    _peekCtx.strokeStyle = 'rgba(0,0,0,0.8)';
-    _peekCtx.lineWidth = 3;
-    _peekCtx.strokeText('MIDIAN', gx, gy + 20);
-    _peekCtx.fillText('MIDIAN', gx, gy + 20);
+    _peekCtx.textBaseline = 'middle';
+    _peekCtx.strokeStyle = 'rgba(0,0,0,0.85)';
+    _peekCtx.lineWidth = 4;
+    const lbl = 'YOU ARE HERE';
+    const tw = _peekCtx.measureText(lbl).width;
+    const tPad = 8;
+    let lx = px;
+    let ly = py - 28;
+    // place above by default; if too close to top, place below
+    if (ly < 14) ly = py + 28;
+    if (ly > PH - 14) ly = PH - 14;
+    lx = Math.max(tw/2 + tPad, Math.min(PW - tw/2 - tPad, lx));
+    // backing pill so the callout pops on any background
+    _peekCtx.fillStyle = 'rgba(20,10,40,0.78)';
+    _peekCtx.beginPath();
+    const pillW = tw + 14, pillH = 19;
+    const pillX = lx - pillW/2, pillY = ly - pillH/2;
+    if (typeof _peekCtx.roundRect === 'function') {
+      _peekCtx.roundRect(pillX, pillY, pillW, pillH, 9);
+    } else {
+      _peekCtx.rect(pillX, pillY, pillW, pillH);
+    }
+    _peekCtx.fill();
+    _peekCtx.fillStyle = '#fff';
+    _peekCtx.fillText(lbl, lx, ly);
   }
-  // v2.2 R8: Zone labels on Scene 2 for orientation
+  // ---- ZONE LABELS (along bottom) ----
   if (game.scene === 2) {
-    _peekCtx.font = 'bold 11px system-ui, sans-serif';
+    _peekCtx.font = 'bold 12px system-ui, sans-serif';
     _peekCtx.textAlign = 'center';
+    _peekCtx.textBaseline = 'alphabetic';
     _peekCtx.fillStyle = 'rgba(255,240,180,0.95)';
     _peekCtx.strokeStyle = 'rgba(0,0,0,0.7)';
     _peekCtx.lineWidth = 3;
@@ -6006,33 +7188,49 @@ function openMapPeek(){
       { x: 14, label: 'DUNES' },
       { x: 24, label: 'OASIS' },
       { x: 33, label: 'MESA'  },
-      { x: 39, label: 'CLIFF' },
     ];
     for (const z of zones) {
       const lx = z.x*cx + cx/2;
-      const ly = 24*cy - 6;
+      const ly = PH - 5;
       _peekCtx.strokeText(z.label, lx, ly);
       _peekCtx.fillText(z.label, lx, ly);
     }
   }
-  // v3.6.1: countdown extended to 5s AND overlay is click-to-close.
-  let t = 5;
-  $('peekTimer').textContent = t;
-  const closePeek = () => {
-    if (_peekCloseIv) { clearInterval(_peekCloseIv); _peekCloseIv = null; }
-    overlay.classList.remove('active');
-    overlay.removeEventListener('click', closePeek);
-    if (game.state === 'peek') game.state = 'playing';
-  };
-  _peekCloseIv = setInterval(() => {
-    t--;
-    $('peekTimer').textContent = t;
-    if (t <= 0) closePeek();
-  }, 1000);
-  // allow kids to dismiss the map by tapping anywhere on the overlay
-  overlay.addEventListener('click', closePeek);
 }
-let _peekCloseIv = null;
+function _peekRafLoop(){
+  if (!_peekOpen) return;
+  _drawMapPeek();
+  _peekRafId = requestAnimationFrame(_peekRafLoop);
+}
+function _closeMapPeek(){
+  _peekOpen = false;
+  if (_peekRafId) { cancelAnimationFrame(_peekRafId); _peekRafId = null; }
+  const overlay = $('mapPeekOverlay');
+  if (overlay) overlay.classList.remove('active');
+  if (game.state === 'peek') game.state = 'playing';
+}
+function openMapPeek(){
+  if (game.state !== 'playing' && game.state !== 'paused' && game.state !== 'peek') return;
+  if (_peekOpen) return; // already open
+  const overlay = $('mapPeekOverlay');
+  if (!overlay || !_peekCtx) return;
+  overlay.classList.add('active');
+  if (game.state === 'playing') game.state = 'peek';
+  // Force layout flush so the overlay's display:flex commits before drawing
+  void overlay.offsetWidth;
+  void _peekCanvas.offsetWidth;
+  // Reset backing dimensions so any stale state from an earlier session is wiped
+  _peekCanvas.width = parseInt(_peekCanvas.getAttribute('width'), 10) || 640;
+  _peekCanvas.height = parseInt(_peekCanvas.getAttribute('height'), 10) || 400;
+  _peekOpen = true;
+  _peekRafLoop();
+}
+// v3.23: overlay click anywhere closes the map. Bound once at script load.
+(function _wirePeekClose(){
+  const overlay = $('mapPeekOverlay');
+  if (overlay) overlay.addEventListener('click', () => _closeMapPeek());
+})();
+/* legacy open-map-peek render body removed in v3.23 — replaced by _drawMapPeek() rAF loop above */
 const _peekBtn = $('peekMapBtn');
 if (_peekBtn) _peekBtn.addEventListener('click', () => { play('click'); openMapPeek(); });
 
@@ -6281,6 +7479,11 @@ function seedPursuitScouts(){
 let _scoutCloseWarnAt = 0;   // v2.2 hoofbeat/scout-alert cooldown (ms)
 function updatePursuitScouts(dt){
   if (game.scene !== 2 || game.state !== 'playing') return;
+  // v3.3 LANE 3 (Jane 2026-04-23): 15-second grace window. Kids need a
+  // moment to read the HUD, find the D-pad, and orient themselves before
+  // scouts start patrolling. Without this, first-time players are caught
+  // before they understand the controls. Grace ends 15s after game start.
+  if (game.startedAt && (performance.now() - game.startedAt) < 15000) return;
   const now = performance.now();
   let closestDist = 99;
   // v2.2.2 Jane feedback: "when they see Moses they don't move after that"
@@ -6345,6 +7548,15 @@ function updatePursuitScouts(dt){
           if (s.ty < player.ty) s.ty++;
           else                  s.ty--;
         }
+      }
+      // v3.17 Jane 2026-04-25: scouts must NOT step onto cave tiles.
+      // Previously when Moses hid in a cave, the chasing scout walked
+      // right in next to him, then caught him as soon as Moses stepped
+      // out. Roll back any move that lands on a cave tile.
+      if (typeof caveAt === 'function' && caveAt(s.tx, s.ty)) {
+        s.tx = _preTx; s.ty = _preTy;
+        // also flip patrol direction so they walk past instead of camping
+        if (typeof s.patrolDir === 'number') s.patrolDir *= -1;
       }
       // v2.2.7: update facing direction from net move (horizontal wins ties)
       if      (s.tx > _preTx) s.dir = 'right';
@@ -6422,7 +7634,8 @@ function drawPursuitScouts(ctx){
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      const SCOUT_SCALE = 1.35;
+      // v3.2 LANE 2: 1.55. v3.11 Jane 2026-04-24: desktop bump to 1.72.
+      const SCOUT_SCALE = (innerWidth >= 900) ? 1.72 : 1.55;
       const sz = TILE * SCOUT_SCALE;
       // v2.2.8: preserve PNG aspect ratio (same fix as drawMoses/drawGuard)
       const scNatW = sprite.img.naturalWidth || 1;
@@ -6520,6 +7733,7 @@ function onMirageStep(nx, ny){
       m.triggered = true;
       try { play('mirageWoosh'); } catch(e){}  // v2.2.7 mirage shimmer whoosh
       try { play('error'); } catch(e){}
+      try { triggerCameraShake(8); } catch(e){}  // v3.10 mirage warp shake
       // v2.2.2 (Jane): remove uhoh; use dangerAlert if an extra sting is wanted
       try { setTimeout(() => { try { play('dangerAlert'); } catch(e){} }, 180); } catch(e){}
       try { game.hearts = Math.max(0, game.hearts - 1); updateHudHearts(); } catch(e){}
@@ -6564,15 +7778,26 @@ function drawMirages(ctx){
       ctx.drawImage(IMG.mirageShimmer, sx, sy, TILE, TILE);
       ctx.restore();
     }
-    // Wavy shimmer overlay — horizontal bands with oscillating alpha
+    // v3.10 EPIC VISUAL Jane 2026-04-24: bumped from 5 thin bands with 3px
+    // wobble to 8 bands with 6px wobble + a heat-haze column rising above
+    // the tile. The rising column makes the mirage read as ACTIVE air
+    // movement (like real desert mirages) instead of a flat overlay.
     const t = now * 1.8 + m.phase;
-    for (let row = 0; row < 5; row++) {
-      const alpha = 0.18 + 0.18 * Math.sin(t + row * 0.9);
+    for (let row = 0; row < 8; row++) {
+      const alpha = 0.22 + 0.22 * Math.sin(t + row * 0.7);
       ctx.fillStyle = 'rgba(180,210,255,' + Math.max(0, alpha).toFixed(3) + ')';
-      const h = TILE / 5;
-      const offset = Math.sin(t * 1.4 + row) * 3;
-      ctx.fillRect(sx + offset, sy + row * h, TILE, h * 0.75);
+      const h = TILE / 8;
+      const offset = Math.sin(t * 1.4 + row * 1.2) * 6;
+      ctx.fillRect(sx + offset, sy + row * h, TILE, h * 0.82);
     }
+    // rising heat-haze column above the tile (vertical narrow)
+    const colOff = Math.sin(t * 0.9) * 4;
+    const colGrad = ctx.createLinearGradient(sx + TILE/2, sy - TILE*0.6, sx + TILE/2, sy + TILE*0.5);
+    colGrad.addColorStop(0, 'rgba(180,210,255,0)');
+    colGrad.addColorStop(0.5, 'rgba(190,220,255,0.18)');
+    colGrad.addColorStop(1, 'rgba(180,210,255,0)');
+    ctx.fillStyle = colGrad;
+    ctx.fillRect(sx + TILE * 0.25 + colOff, sy - TILE * 0.6, TILE * 0.5, TILE * 1.1);
     // subtle blue tinge to hint it's not real sand
     ctx.fillStyle = 'rgba(120,160,210,0.06)';
     ctx.fillRect(sx, sy, TILE, TILE);
@@ -6682,10 +7907,10 @@ function drawCaves(ctx){
     // v3.8 Jane: bumped further 2.1 -> 2.4 tiles so cave clearly DOMINATES
     // Moses - "cover should dominate" per Jane's punchlist.
     const img = IMG && IMG[c.img];
-    // v3.9.1 Jane: cave at 2.4 was bleeding into neighbor tiles. 1.3 still
-    // clearly reads as a hideout (bottom-anchored with shadow) without
-    // overlapping pickups or paths nearby.
-    const size = TILE * 1.3;
+    // v3.17 Jane 2026-04-25: caves bumped 1.85 -> 2.3 on desktop, 1.55 ->
+    // 1.95 on mobile so they clearly DOMINATE Moses (who is 1.78x). Caves
+    // are hideouts — they should look big enough to actually hide in.
+    const size = TILE * ((innerWidth >= 900) ? 2.3 : 1.95);
     if (img && img.complete && img.naturalWidth) {
       const natW = img.naturalWidth || 1;
       const natH = img.naturalHeight || 1;
@@ -6728,9 +7953,26 @@ function drawCaves(ctx){
       ctx.arc(dx + TILE/2, dy + TILE*0.6, TILE*0.55, 0, Math.PI*2);
       ctx.stroke();
       ctx.restore();
-      // v2.3.2 (Jane): "IN CAVE" text removed here — drawHidingBadge() shows
-      // "HIDDEN IN CAVE" once, so the two overlays no longer stack visually.
     }
+    // v3.15 Jane 2026-04-25: CAVE label above every cave tile. The cave
+    // PNG art looks similar to the START sprite (both wooden doorways
+    // with vines), so kids couldn't tell them apart. Persistent label
+    // keeps them distinguishable from across the map.
+    ctx.save();
+    ctx.font = 'bold 9px Georgia';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(40,20,5,0.85)';
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(dx + TILE/2 - 22, dy - 14, 44, 13, 5);
+    else ctx.rect(dx + TILE/2 - 22, dy - 14, 44, 13);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(120,220,150,0.85)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.fillStyle = '#a0f7a0';
+    ctx.fillText('CAVE', dx + TILE/2, dy - 7);
+    ctx.restore();
   }
 }
 
@@ -6786,6 +8028,12 @@ function drawRollingBoulders(ctx){
 }
 
 function updateGuards(dt){
+  // v3.9 Jane 2026-04-24: apply the same 15-second grace window to
+  // Scene 2 guards that pursuitScouts already have. Previously guards
+  // would keep patrolling during the grace window and could catch Moses
+  // before he had time to orient. Scene 1 (palace) guards are still
+  // allowed to patrol normally since Scene 1 has its own tutorial flow.
+  if (game.scene === 2 && game.startedAt && (performance.now() - game.startedAt) < 15000) return;
   for (const g of guards) {
     g.timer -= dt;
     if (g.swordOut) g.swordAnim = Math.min(g.swordAnim + dt*0.003, 1);
@@ -6835,17 +8083,25 @@ function updateGuards(dt){
       }
       // chase (step toward Moses)
       if (g.state === 'alerted' && g.timer <= 0) {
+        // v3.17 Jane 2026-04-25: guards must NOT pathfind into cave tiles.
+        // Wrap isWalkable with a cave check so a guard never steps onto
+        // any cave tile — Moses's safe-zone stays safe, no exit-camping.
+        const _walkSafe = (tx, ty) => {
+          if (!isWalkable(tx, ty)) return false;
+          if (typeof caveAt === 'function' && caveAt(tx, ty)) return false;
+          return true;
+        };
         const dx = player.tx - g.tx, dy = player.ty - g.ty;
         if (Math.abs(dx) > Math.abs(dy)) {
-          if (dx > 0 && isWalkable(g.tx+1,g.ty)) { g.tx++; g.dir='right'; }
-          else if (dx < 0 && isWalkable(g.tx-1,g.ty)) { g.tx--; g.dir='left'; }
-          else if (dy > 0 && isWalkable(g.tx,g.ty+1)) { g.ty++; g.dir='down'; }
-          else if (dy < 0 && isWalkable(g.tx,g.ty-1)) { g.ty--; g.dir='up'; }
+          if (dx > 0 && _walkSafe(g.tx+1,g.ty)) { g.tx++; g.dir='right'; }
+          else if (dx < 0 && _walkSafe(g.tx-1,g.ty)) { g.tx--; g.dir='left'; }
+          else if (dy > 0 && _walkSafe(g.tx,g.ty+1)) { g.ty++; g.dir='down'; }
+          else if (dy < 0 && _walkSafe(g.tx,g.ty-1)) { g.ty--; g.dir='up'; }
         } else {
-          if (dy > 0 && isWalkable(g.tx,g.ty+1)) { g.ty++; g.dir='down'; }
-          else if (dy < 0 && isWalkable(g.tx,g.ty-1)) { g.ty--; g.dir='up'; }
-          else if (dx > 0 && isWalkable(g.tx+1,g.ty)) { g.tx++; g.dir='right'; }
-          else if (dx < 0 && isWalkable(g.tx-1,g.ty)) { g.tx--; g.dir='left'; }
+          if (dy > 0 && _walkSafe(g.tx,g.ty+1)) { g.ty++; g.dir='down'; }
+          else if (dy < 0 && _walkSafe(g.tx,g.ty-1)) { g.ty--; g.dir='up'; }
+          else if (dx > 0 && _walkSafe(g.tx+1,g.ty)) { g.tx++; g.dir='right'; }
+          else if (dx < 0 && _walkSafe(g.tx-1,g.ty)) { g.tx--; g.dir='left'; }
         }
         g.timer = 550;
         // catch only if Moses is actually visible, adjacent, NOT hidden, and not in a modal
@@ -7086,6 +8342,36 @@ function drawSunDisc(){
   g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.arc(cx, cy, r*3, 0, Math.PI*2); ctx.fill();
+  // v3.9 Jane 2026-04-24 VISUAL LIFT: god-ray sunbeams radiating from the
+  // sun disc. Eight beams swept at 45-degree steps with slow rotation so
+  // they feel alive without being distracting. Drawn BEFORE the disc so
+  // the disc still reads crisp on top. 'lighter' blend makes them add
+  // to the sky gradient instead of flat-painting over it.
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const beamBase = halo.replace(/[\d.]+\)/, '0.18)').replace('rgba(','rgba(');
+  const rayCount = 8;
+  const rotation = (performance.now() / 8000) % (Math.PI * 2);
+  const beamLen = Math.max(CANVAS_W, CANVAS_H) * 0.9;
+  for (let i = 0; i < rayCount; i++) {
+    const angle = rotation + (i / rayCount) * Math.PI * 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    const beamGrad = ctx.createLinearGradient(0, 0, beamLen, 0);
+    beamGrad.addColorStop(0,   halo);
+    beamGrad.addColorStop(0.2, beamBase);
+    beamGrad.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = beamGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(beamLen, -r * 0.55);
+    ctx.lineTo(beamLen,  r * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
   // disc
   ctx.fillStyle = core;
   ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
@@ -7477,6 +8763,131 @@ function drawStarsIfNight(){
   ctx.restore();
 }
 // sand puffs + footprints (minimal but lively)
+// v3.8 PASS A VISUAL FEEL Jane 2026-04-24: floating score popups
+// give kids a tactile reward on every pickup. Each popup rises from the
+// pickup location in world-space (so camera scroll moves with it),
+// fades out over ~1100ms, and uses gold for positive scores.
+// Also: zoneBanner shows when Moses crosses a zone boundary, a brief
+// 1800ms header drifting across the top with "ZONE NAME — flavor text"
+// so the scene has narrative pacing instead of just walking east.
+const scorePopups = [];
+function spawnScorePopup(text, worldX, worldY, color){
+  scorePopups.push({
+    text: text,
+    wx: worldX,
+    wy: worldY,
+    color: color || '#ffd976',
+    age: 0,
+    life: 1100,
+  });
+  if (scorePopups.length > 40) scorePopups.splice(0, scorePopups.length - 40);
+}
+function updateScorePopups(dt){
+  for (let i = scorePopups.length - 1; i >= 0; i--){
+    const p = scorePopups[i];
+    p.age += dt;
+    if (p.age > p.life) scorePopups.splice(i, 1);
+  }
+}
+function drawScorePopups(){
+  if (!scorePopups.length) return;
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = 'bold 16px Georgia, serif';
+  for (const p of scorePopups){
+    const t = p.age / p.life;            // 0..1
+    const dx = p.wx - camera.px;
+    const dy = p.wy - camera.py - (t * 36);   // rise over lifetime
+    if (dx < -40 || dx > CANVAS_W + 40 || dy < -20 || dy > CANVAS_H + 20) continue;
+    const alpha = 1 - t;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#3a1a00';               // dark outline
+    ctx.fillText(p.text, dx+1, dy+1);
+    ctx.fillStyle = p.color;
+    ctx.fillText(p.text, dx, dy);
+  }
+  ctx.restore();
+}
+// zone banner state
+const zoneBanner = { name:null, flavor:null, age:0, life:1800, lastZone:null };
+const ZONE_FLAVOR = {
+  wadi:  { label:'WADI CANYON',   flavor:'Cracked riverbed', color:'#a86d3a' },
+  dunes: { label:'OPEN DUNES',    flavor:'Wind-blown sand',   color:'#d09a4a' },
+  oasis: { label:'OASIS OF PALMS',flavor:'Cool water & mirages',color:'#3da08c' },
+  mesa:  { label:'MESA OF MIDIAN',flavor:'Red sandstone country',color:'#c2522a' },
+};
+function maybeShowZoneBanner(){
+  if (game.scene !== 2 || game.state !== 'playing') return;
+  if (typeof zoneOf !== 'function') return;
+  const z = zoneOf(player.tx);
+  if (zoneBanner.lastZone === null) { zoneBanner.lastZone = z; return; }
+  if (z !== zoneBanner.lastZone) {
+    const flavor = ZONE_FLAVOR[z];
+    if (flavor) {
+      zoneBanner.name   = flavor.label;
+      zoneBanner.flavor = flavor.flavor;
+      zoneBanner.color  = flavor.color;
+      zoneBanner.age    = 0;
+    }
+    zoneBanner.lastZone = z;
+  }
+}
+function updateZoneBanner(dt){
+  if (!zoneBanner.name) return;
+  zoneBanner.age += dt;
+  if (zoneBanner.age > zoneBanner.life) { zoneBanner.name = null; zoneBanner.flavor = null; }
+}
+function drawZoneBanner(){
+  if (!zoneBanner.name) return;
+  const t = zoneBanner.age / zoneBanner.life;
+  // fade in over first 18%, hold till 70%, fade out to 100%
+  let a = 1;
+  if (t < 0.18) a = t / 0.18;
+  else if (t > 0.7) a = (1 - t) / 0.3;
+  a = Math.max(0, Math.min(1, a));
+  ctx.save();
+  const bw = Math.min(CANVAS_W * 0.82, 420);
+  const bh = 48;
+  const bx = (CANVAS_W - bw) / 2;
+  const by = CANVAS_H * 0.10;
+  // shadow card
+  ctx.globalAlpha = a * 0.92;
+  ctx.fillStyle = zoneBanner.color || '#3a1a00';
+  if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 10); ctx.fill(); }
+  else ctx.fillRect(bx, by, bw, bh);
+  ctx.strokeStyle = '#ffd976';
+  ctx.lineWidth = 2;
+  if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 10); ctx.stroke(); }
+  // text
+  ctx.globalAlpha = a;
+  ctx.fillStyle = '#fff8d8';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.7)';
+  ctx.shadowBlur = 4;
+  ctx.font = 'bold 18px Georgia, serif';
+  ctx.fillText(zoneBanner.name, CANVAS_W/2, by + 18);
+  ctx.font = '13px Georgia, serif';
+  ctx.fillText(zoneBanner.flavor, CANVAS_W/2, by + 36);
+  ctx.restore();
+}
+
+// v3.10 Jane 2026-04-24 EPIC VISUAL: camera shake state. Triggered on damage,
+// scout capture, boulder hit, sandstorm peak. updateCameraShake decays
+// each frame. drawCameraShake applies a small ctx translate at the start
+// of render and the matching reverse at the end.
+const cameraShake = { mag: 0, decay: 0.92, x: 0, y: 0 };
+function triggerCameraShake(magnitude){
+  cameraShake.mag = Math.max(cameraShake.mag, magnitude);
+}
+function updateCameraShake(){
+  if (cameraShake.mag < 0.05) { cameraShake.mag = 0; cameraShake.x = 0; cameraShake.y = 0; return; }
+  cameraShake.x = (Math.random() * 2 - 1) * cameraShake.mag;
+  cameraShake.y = (Math.random() * 2 - 1) * cameraShake.mag;
+  cameraShake.mag *= cameraShake.decay;
+}
+
 const sandPuffs = [];
 function emitSandPuff(cx, cy){
   if (game.scene !== 2) return;
@@ -7554,6 +8965,15 @@ function drawFootprints(){
 
 /* ---------- RENDER ---------- */
 function render(){
+  // v3.10 EPIC VISUAL: apply camera shake at the start of every render
+  // and undo it at the end. The flag latches so save/restore stay paired
+  // even if magnitude decays past threshold mid-frame.
+  updateCameraShake();
+  const _shakeApplied = cameraShake.mag > 0.05;
+  if (_shakeApplied) {
+    ctx.save();
+    ctx.translate(Math.round(cameraShake.x), Math.round(cameraShake.y));
+  }
   // v2.0 cinematic stack for Scene 2 (order = back-to-front):
   //   1. Sky gradient (difficulty-anchored time band)
   //   2. Sun/moon disc
@@ -7590,6 +9010,14 @@ function render(){
     ctx.fillStyle = 'rgba(220,180,100,0.12)';
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
   }
+  // v3.9 Jane 2026-04-24 (Bug 38 cleanup): removed dead canvas-parallax
+  // backdrop block. It painted scene2_background.png inside the canvas
+  // BEFORE the tile grid, then sand tiles overwrote it completely — so
+  // it consumed a full-canvas drawImage per frame for zero visible
+  // effect. The backdrop is now exclusively painted via CSS background
+  // on .canvas-wrapper (see CSS around line ~260), which is visible in
+  // the border margins around the canvas and does not hit the per-frame
+  // budget.
 
   // visible tile range
   const sx = Math.floor(camera.px / TILE);
@@ -7605,6 +9033,14 @@ function render(){
       drawTile(t, dx, dy, tx, ty);
     }
   }
+
+  // v3.7 PASS A Jane 2026-04-24: cliff concept REMOVED. Jane: "let's remove
+  // cliff concept? its not doing anything much." The east edge of the map
+  // is now treated as a normal desert path leading to the Midian well —
+  // no rock face render, no climb metaphor. The 5 east-edge tile-7 gates
+  // stay in the data (they're still valid mandatory checkpoints) but are
+  // visually rendered as regular zone checkpoints + final-stretch tiles.
+  // (No cliff render block here.)
 
   // v3.4: decorative palace furnishings (purely cosmetic; not walkable/blocked)
   drawPalaceDecor();
@@ -7645,15 +9081,45 @@ function render(){
   // v2.1 Scene 2: mirage shimmer overlay (drawn above everything at floor level)
   try { drawMirages(ctx); } catch(e){}
   // v3.5: discoverability cues so kids know WHEN they can interact & hide
+  // v3.8 PASS A VISUAL FEEL: floating score popups (world-space, above sprites)
+  try { drawScorePopups(); } catch(e){}
   drawInteractPrompt();
   drawHidingBadge();
   // ambient: warm light rays + dust motes
   drawAmbient();
+  // v3.8 PASS A VISUAL FEEL: zone-entry banner (screen-space, on top of everything)
+  try { drawZoneBanner(); } catch(e){}
+  // v3.5 LANE 2+ Jane 2026-04-24: cool-tone atmospheric overlay to break
+  // up the monotone warm-tan palette. Painted as a soft horizon-blue haze
+  // at the top of the canvas (sky reflecting on sand) plus a subtle
+  // dawn-purple shadow at the bottom. Both at very low alpha so gameplay
+  // visibility is unaffected. This is a pure visual-pop layer; cheap, no
+  // new assets needed.
+  if (game.scene === 2) {
+    ctx.save();
+    // cool blue horizon at the top 22% of canvas
+    const skyHaze = ctx.createLinearGradient(0, 0, 0, CANVAS_H * 0.22);
+    skyHaze.addColorStop(0, 'rgba(120,180,220,0.16)');
+    skyHaze.addColorStop(1, 'rgba(120,180,220,0)');
+    ctx.fillStyle = skyHaze;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H * 0.22);
+    // dawn-purple shadow at the bottom 18%
+    const dawnHaze = ctx.createLinearGradient(0, CANVAS_H * 0.82, 0, CANVAS_H);
+    dawnHaze.addColorStop(0, 'rgba(80,40,90,0)');
+    dawnHaze.addColorStop(1, 'rgba(80,40,90,0.18)');
+    ctx.fillStyle = dawnHaze;
+    ctx.fillRect(0, CANVAS_H * 0.82, CANVAS_W, CANVAS_H * 0.18);
+    ctx.restore();
+  }
   // HUD-on-canvas: pulsing red overlay already in DOM
 
   // side HUD canvases (mini-map & compass)
   drawMiniMap();
   drawCompass();
+  // v3.10 EPIC VISUAL: matching restore for the camera-shake translate.
+  if (_shakeApplied) {
+    ctx.restore();
+  }
 }
 
 /* ---------- v3.5 DISCOVERABILITY PROMPTS ---------- */
@@ -7675,33 +9141,65 @@ function drawInteractPrompt(){
       break;
     }
   }
-  // v4.2 Jane fix: crown + chest use extended reach (Chebyshev <= 2) so the
-  // bubble appears even when Moses is one tile short of strict adjacency.
+  // v3.1 FIX D (Jane 2026-04-23): widened the TAKE/OPEN bubble reach to match
+  // interact()'s widened pickup list. Previously only crown + truthchest got
+  // the Chebyshev <= 2 prompt; now bread, waterskin (kind 'jug'), and stone
+  // markers (kind 'scroll') all surface the bubble too so kids see WHERE to
+  // press Interact.
   if (!nearest) {
+    const _wideKinds = { crown:1, truthchest:1, bread:1, jug:1, scroll:1 };
     for (const obj of interactables) {
       if (obj.used) continue;
-      if (obj.kind !== 'crown' && obj.kind !== 'truthchest') continue;
+      if (!_wideKinds[obj.kind]) continue;
       const cd = Math.max(Math.abs(obj.tx - player.tx), Math.abs(obj.ty - player.ty));
       if (cd <= 2) { nearest = obj; break; }
     }
   }
   if (!nearest) return;
-  const bx = nearest.tx * TILE - camera.px + TILE/2;
-  const by = nearest.ty * TILE - camera.py - 4;
+  // v3.8 PASS A Jane 2026-04-24: clamp bubble X so it never clips off the
+  // canvas edge when Moses is near left/right border. Previously the bubble
+  // was drawn centered on the pickup tile which could render half off-screen.
+  // Uses `_clampedBx` inside drawing calls below; also clamp Y to avoid a
+  // negative Y when the pickup is in the top row of the viewport.
+  const rawBx = nearest.tx * TILE - camera.px + TILE/2;
+  const rawBy = nearest.ty * TILE - camera.py - 4;
   const bobble = Math.sin(performance.now() / 280) * 2;
   // label
   // v2.3.5 Jane: every pickable object now labels as TAKE (bread, water, crown)
   // instead of the legacy default TALK. Only true NPCs get TALK.
-  const _pickKinds = ['crown','bread','waterskin','water','scroll','tablet','coin','star','treasure'];
-  const label = (nearest.kind === 'truthchest') ? 'OPEN'
-              : (nearest.kind === 'dog') ? 'PET'
-              : (_pickKinds.indexOf(nearest.kind) >= 0) ? 'TAKE'
-              : 'TALK';
+  // v3.1 FIX D: 'jug' is the kind used for the on-map waterskin pickup at
+  // (3,11) — added so its bubble reads TAKE not TALK.
+  const _pickKinds = ['crown','bread','waterskin','water','jug','scroll','tablet','coin','star','treasure'];
+  // v3.5 LANE 2+ Jane 2026-04-24: bubble was just "TAKE" / "TALK" with no
+  // hint of WHAT the object is. Kids could not tell apart bread, waterskin,
+  // crown, scroll. Now bubble reads "TAKE: Travel Bread" so the child knows
+  // what they are about to pick up before they tap Interact. NPC short
+  // names are derived from the object data (no new assets needed).
+  const verb = (nearest.kind === 'truthchest') ? 'OPEN'
+             : (nearest.kind === 'dog') ? 'PET'
+             : (_pickKinds.indexOf(nearest.kind) >= 0) ? 'TAKE'
+             : 'TALK';
+  // shorten the full title to <= 18 chars so the bubble fits on phones
+  const _shortName = (() => {
+    const n = nearest.name || nearest.kind || '';
+    if (n.length <= 18) return n;
+    // try first two words
+    const parts = n.split(/\s+/);
+    if (parts.length >= 2 && (parts[0] + ' ' + parts[1]).length <= 18) return parts[0] + ' ' + parts[1];
+    return n.slice(0, 16) + '\u2026';
+  })();
+  const label = _shortName ? (verb + ': ' + _shortName) : verb;
   ctx.save();
-  ctx.font = 'bold 10px Georgia';
+  ctx.font = 'bold 11px Georgia';
   ctx.textAlign = 'center';
-  const w = ctx.measureText(label).width + 14;
-  const h = 14;
+  const w = ctx.measureText(label).width + 16;
+  const h = 16;
+  // v3.8 PASS A Jane 2026-04-24: clamp X so the bubble never clips off the
+  // canvas edges; clamp Y so it never renders above the canvas top edge.
+  // Tail still points at the raw pickup X (rawBx) so the relationship
+  // "this bubble belongs to that tile" is visually preserved.
+  const bx = Math.max(w/2 + 4, Math.min(CANVAS_W - w/2 - 4, rawBx));
+  const by = Math.max(h + 6, rawBy);
   // bubble
   ctx.fillStyle = 'rgba(255,215,100,0.95)';
   ctx.strokeStyle = '#8a5a22';
@@ -7714,12 +9212,15 @@ function drawInteractPrompt(){
   // text
   ctx.fillStyle = '#4a2a0a';
   ctx.fillText(label, bx, by - 3 + bobble);
-  // small tail pointing down
+  // small tail pointing down — points at rawBx (the actual tile) so the
+  // bubble reads as "belonging" to that tile even when the bubble itself
+  // is clamped a few pixels inward to stay on canvas.
+  const tailX = Math.max(bx - w/2 + 8, Math.min(bx + w/2 - 8, rawBx));
   ctx.fillStyle = 'rgba(255,215,100,0.95)';
   ctx.beginPath();
-  ctx.moveTo(bx - 3, by + bobble);
-  ctx.lineTo(bx + 3, by + bobble);
-  ctx.lineTo(bx, by + 4 + bobble);
+  ctx.moveTo(tailX - 3, by + bobble);
+  ctx.lineTo(tailX + 3, by + bobble);
+  ctx.lineTo(tailX, by + 4 + bobble);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
@@ -7791,57 +9292,194 @@ function drawChallengeGate(gate){
   }
   const pulse = 0.55 + 0.3*Math.sin(performance.now()/300 + gate.tx);
   if (isClimbOverExit) {
-    // compact pulsing ? badge — top-right corner, doesn't cover the exit art
-    ctx.save();
-    const bx = dx + TILE - 11;
-    const by = dy + 11;
-    // outer halo
-    const halo = ctx.createRadialGradient(bx, by, 2, bx, by, 14);
-    halo.addColorStop(0, 'rgba(255,220,120,' + pulse.toFixed(2) + ')');
-    halo.addColorStop(1, 'rgba(255,180,60,0)');
-    ctx.fillStyle = halo;
-    ctx.beginPath();
-    ctx.arc(bx, by, 14, 0, Math.PI*2);
-    ctx.fill();
-    // scroll medallion
-    ctx.fillStyle = '#ffd976';
-    ctx.beginPath();
-    ctx.arc(bx, by, 9, 0, Math.PI*2);
-    ctx.fill();
-    ctx.strokeStyle = '#7a4809';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    // v3.8 Jane: Scene 2 is the desert flight to Midian - "gate" felt
-    // wrong for a sandy trail, so checkpoints are now SCROLLS. Kids roll
-    // up to a scripture scroll, answer its question, and journey on.
-    ctx.fillStyle = '#7a4809';
-    // v4.0 Jane: Scene 2 scroll "?" was 9px and vanished on phones. Scale to
-    // TILE so it grows when the tile grows. Floor to int px to avoid sub-pixel
-    // blur. Minimum 11px so kids can see it even on very small TILE values.
-    ctx.font = 'bold ' + Math.max(11, Math.floor(TILE * 0.45)) + 'px Georgia';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('?', bx, by + 1);
-    ctx.restore();
+    // v3.12 Jane 2026-04-24: east-edge climb-step gates were rendering as
+    // small gold "?" badges in the corner — Jane: "checkpoints along the
+    // east corner are still showing question marks". Now they use the
+    // SAME new checkpoint.png sprite the zone gates use, so all 9
+    // mandatory gates look consistent. Falls through to the small badge
+    // only if the PNG hasn't loaded yet.
+    const _okC = (im) => im && im.complete && im.naturalWidth;
+    // v3.17: prefer `checkpoint 1.png` (IMG.checkpoint) for east-edge gates too
+    const cpImg = _okC(IMG.checkpoint) ? IMG.checkpoint
+                : _okC(IMG.tablet) ? IMG.tablet
+                : _okC(IMG.tablet2) ? IMG.tablet2
+                : null;
+    if (cpImg) {
+      // halo behind tablet
+      const haloR = TILE * 0.5;
+      const haloG = ctx.createRadialGradient(dx+TILE/2, dy+TILE/2, 2, dx+TILE/2, dy+TILE/2, haloR);
+      haloG.addColorStop(0, 'rgba(255,220,120,' + (0.55*pulse).toFixed(2) + ')');
+      haloG.addColorStop(1, 'rgba(255,180,60,0)');
+      ctx.fillStyle = haloG;
+      ctx.beginPath(); ctx.arc(dx+TILE/2, dy+TILE/2, haloR, 0, Math.PI*2); ctx.fill();
+      // v3.13 Jane 2026-04-25: east checkpoints were SMALLER than west ones
+      // (1.05 vs 1.65 desktop). Now use the SAME scale as zone-gate tablets
+      // for visual consistency across all 9 mandatory checkpoints.
+      const scale = (innerWidth >= 900) ? 1.65 : 1.4;
+      const sz = TILE * scale;
+      const ar = (cpImg.naturalWidth || 1) / (cpImg.naturalHeight || 1);
+      const dh = Math.round(sz);
+      const dw = Math.round(sz * ar);
+      const ox = Math.round(dx + (TILE - dw) / 2);
+      const oy = Math.round(dy + (TILE - dh) / 2);
+      ctx.save();
+      ctx.shadowColor = 'rgba(40,20,5,0.45)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetY = 2;
+      ctx.drawImage(cpImg, ox, oy, dw, dh);
+      ctx.restore();
+      // "?" carved on top
+      ctx.save();
+      ctx.fillStyle = '#3a1a00';
+      ctx.font = 'bold ' + Math.max(12, Math.floor(TILE*0.4)) + 'px Georgia';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(255,235,170,0.65)';
+      ctx.shadowBlur = 1.5;
+      ctx.fillText('?', dx + TILE/2, dy + TILE/2);
+      ctx.restore();
+    } else {
+      // legacy vector badge fallback (unchanged)
+      ctx.save();
+      const bx = dx + TILE - 11;
+      const by = dy + 11;
+      const halo = ctx.createRadialGradient(bx, by, 2, bx, by, 14);
+      halo.addColorStop(0, 'rgba(255,220,120,' + pulse.toFixed(2) + ')');
+      halo.addColorStop(1, 'rgba(255,180,60,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(bx, by, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ffd976';
+      ctx.beginPath(); ctx.arc(bx, by, 9, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#7a4809'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = '#7a4809';
+      ctx.font = 'bold ' + Math.max(11, Math.floor(TILE * 0.45)) + 'px Georgia';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('?', bx, by + 1);
+      ctx.restore();
+    }
     return;
   }
-  // zone checkpoint: pulsing gold sigil
-  ctx.fillStyle = 'rgba(255,215,118,' + (pulse*0.35).toFixed(2) + ')';
-  ctx.fillRect(dx, dy, TILE, TILE);
-  ctx.strokeStyle = '#ffd976';
-  ctx.lineWidth = 2.5;
-  ctx.strokeRect(dx+2, dy+2, TILE-4, TILE-4);
-  ctx.fillStyle = '#f0d58a';
-  ctx.fillRect(dx+TILE*0.25, dy+TILE*0.3, TILE*0.5, TILE*0.4);
-  ctx.fillStyle = '#c38b28';
-  ctx.fillRect(dx+TILE*0.18, dy+TILE*0.3, TILE*0.1, TILE*0.4);
-  ctx.fillRect(dx+TILE*0.72, dy+TILE*0.3, TILE*0.1, TILE*0.4);
-  // v3.9 Jane: Scene 2 calls these simply CHECKPOINTS (too wide for tile, so use "?").
-  ctx.fillStyle = '#7a4809';
-  ctx.font = 'bold ' + Math.floor(TILE*0.55) + 'px Georgia';
+  // v3.2 LANE 2 (Jane 2026-04-23): zone checkpoint uses the new stone-tablet
+  // PNG with a pulsing warm halo + bobble. Falls through to the legacy vector
+  // sigil if the PNG hasn't loaded yet, so nothing breaks during preload or
+  // on a slow connection. The "?" glyph stays painted on top so kids know it
+  // is a question/quiz prompt.
+  const _okT = (im) => im && im.complete && im.naturalWidth;
+  const bob = Math.sin(performance.now()/360 + gate.tx*0.7) * 1.6;
+  // v3.9 VISUAL LIFT Jane 2026-04-24: stronger checkpoint proximity pulse.
+  // When Moses is within 3 tiles (Chebyshev), the halo grows ~1.5x and
+  // the pulse runs faster + brighter so the kid sees "this is the next
+  // thing!" with peripheral vision. Far gates use the original gentle
+  // halo so a screen full of checkpoints doesn't feel busy.
+  const _gateProx = (typeof player !== 'undefined')
+    ? Math.max(Math.abs(gate.tx - player.tx), Math.abs(gate.ty - player.ty))
+    : 99;
+  const _isClose = _gateProx <= 3 && !gate.solved;
+  const haloR = TILE * (_isClose ? 0.95 : 0.62);
+  const haloPulse = _isClose
+    ? (0.75 + 0.25 * Math.sin(performance.now()/180 + gate.tx))
+    : (0.55 * pulse);
+  const haloG = ctx.createRadialGradient(dx+TILE/2, dy+TILE/2, 2, dx+TILE/2, dy+TILE/2, haloR);
+  haloG.addColorStop(0, 'rgba(255,225,140,' + haloPulse.toFixed(2) + ')');
+  haloG.addColorStop(0.55, 'rgba(255,200,90,' + (haloPulse*0.45).toFixed(2) + ')');
+  haloG.addColorStop(1, 'rgba(255,180,60,0)');
+  ctx.fillStyle = haloG;
+  ctx.beginPath();
+  ctx.arc(dx+TILE/2, dy+TILE/2, haloR, 0, Math.PI*2);
+  ctx.fill();
+  // bonus: thin pulsing ring at proximity edge so kids see they have crossed
+  // into "tap interact / answer to pass" range
+  if (_isClose) {
+    ctx.strokeStyle = 'rgba(255,235,170,' + (0.5 * haloPulse).toFixed(2) + ')';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(dx+TILE/2, dy+TILE/2, haloR * 0.95, 0, Math.PI*2);
+    ctx.stroke();
+  }
+  // v3.17 Jane 2026-04-25: prefer `checkpoint 1.png` (now wired as
+  // IMG.checkpoint). Stone tablet variants kept as fallback only.
+  if (_okT(IMG.checkpoint) || _okT(IMG.tablet) || _okT(IMG.tablet2)) {
+    const tabletImg = _okT(IMG.checkpoint) ? IMG.checkpoint
+                    : _okT(IMG.tablet) ? IMG.tablet
+                    : IMG.tablet2;
+    // v3.6 baseline 1.4. v3.11 Jane 2026-04-24: 1.65 on desktop so
+    // checkpoints POP unmistakably. Combined with the floating "!" they
+    // are visible from across the canvas. Mobile keeps 1.4.
+    const scale = (innerWidth >= 900) ? 1.65 : 1.4;
+    const sz = TILE * scale;
+    const natW = tabletImg.naturalWidth || 1;
+    const natH = tabletImg.naturalHeight || 1;
+    const ar = natW / natH;
+    const drawH = Math.round(sz);
+    const drawW = Math.round(sz * ar);
+    const ox = Math.round(dx + (TILE - drawW) / 2);
+    const oy = Math.round(dy + (TILE - drawH) / 2 + bob);
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.shadowColor = 'rgba(40,20,5,0.45)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetY = 3;
+    ctx.drawImage(tabletImg, ox, oy, drawW, drawH);
+    ctx.restore();
+    // carved "?" overlay so kids read it as a quiz prompt
+    ctx.save();
+    ctx.fillStyle = '#3a1a00';
+    ctx.font = 'bold ' + Math.max(13, Math.floor(TILE*0.45)) + 'px Georgia';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(255,235,170,0.65)';
+    ctx.shadowBlur = 1.5;
+    ctx.shadowOffsetY = 1;
+    ctx.fillText('?', dx+TILE/2, dy+TILE/2 + bob + 1);
+    ctx.restore();
+  } else {
+    // legacy vector fallback (unchanged)
+    ctx.fillStyle = 'rgba(255,215,118,' + (pulse*0.35).toFixed(2) + ')';
+    ctx.fillRect(dx, dy, TILE, TILE);
+    ctx.strokeStyle = '#ffd976';
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(dx+2, dy+2, TILE-4, TILE-4);
+    ctx.fillStyle = '#f0d58a';
+    ctx.fillRect(dx+TILE*0.25, dy+TILE*0.3, TILE*0.5, TILE*0.4);
+    ctx.fillStyle = '#c38b28';
+    ctx.fillRect(dx+TILE*0.18, dy+TILE*0.3, TILE*0.1, TILE*0.4);
+    ctx.fillRect(dx+TILE*0.72, dy+TILE*0.3, TILE*0.1, TILE*0.4);
+    ctx.fillStyle = '#7a4809';
+    ctx.font = 'bold ' + Math.floor(TILE*0.55) + 'px Georgia';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('?', dx+TILE/2, dy+TILE*0.52);
+  }
+  // v3.6 PASS A Jane 2026-04-24: floating glowing "!" indicator above every
+  // unsolved checkpoint. Pulses. Lets kids spot a checkpoint from across the
+  // canvas even if the tablet sprite is partially behind cover. Drawn LAST
+  // so it sits on top of the tablet + halo.
+  const indPulse = 0.6 + 0.4 * Math.sin(performance.now() / 220 + gate.tx);
+  const indY = dy - TILE * 0.45 - bob * 1.2;
+  const indX = dx + TILE / 2;
+  // soft glow halo
+  const indHalo = ctx.createRadialGradient(indX, indY, 1, indX, indY, 18);
+  indHalo.addColorStop(0, 'rgba(255,235,140,' + (0.65 * indPulse).toFixed(2) + ')');
+  indHalo.addColorStop(1, 'rgba(255,180,40,0)');
+  ctx.fillStyle = indHalo;
+  ctx.beginPath();
+  ctx.arc(indX, indY, 18, 0, Math.PI*2);
+  ctx.fill();
+  // "!" badge
+  ctx.save();
+  ctx.font = 'bold ' + Math.max(15, Math.floor(TILE * 0.55)) + 'px Georgia';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('?', dx+TILE/2, dy+TILE*0.52);
+  ctx.fillStyle = '#fff8c8';
+  ctx.strokeStyle = '#5a2a06';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 2;
+  ctx.strokeText('!', indX, indY);
+  ctx.fillText('!', indX, indY);
+  ctx.restore();
 }
 
 /* ---------- DRAW INTERACTABLE ---------- */
@@ -7885,19 +9523,51 @@ function drawInteractable(obj){
       ctx.beginPath(); ctx.arc(dx+TILE/2, dy+10, 5, 0, Math.PI*2); ctx.fill();
     }
   } else if (obj.kind === 'scroll') {
-    ctx.fillStyle = '#f0d58a';
-    ctx.fillRect(dx+6, dy+10, TILE-12, TILE-18);
-    ctx.strokeStyle = '#7a4809';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(dx+6.5, dy+10.5, TILE-13, TILE-19);
-    ctx.fillStyle = '#7a4809';
-    ctx.fillRect(dx+8, dy+12, TILE-16, 1);
-    ctx.fillRect(dx+8, dy+15, TILE-16, 1);
-    ctx.fillRect(dx+8, dy+18, TILE-16, 1);
-    // scroll ends
-    ctx.fillStyle = '#c38b28';
-    ctx.fillRect(dx+4, dy+8, 3, TILE-14);
-    ctx.fillRect(dx+TILE-7, dy+8, 3, TILE-14);
+    // v3.12 Jane 2026-04-24: Weathered Tablet (kind:'scroll') was a vector
+    // line-drawn box that read as nothing in particular. Now uses the
+    // tablet/checkpoint PNG as a stone marker, with a subtle pulsing
+    // halo so it reads as "look here, pick me up".
+    const _okS = (im) => im && im.complete && im.naturalWidth;
+    const tabImg = _okS(IMG.tablet2) ? IMG.tablet2
+                : _okS(IMG.tablet) ? IMG.tablet
+                : _okS(IMG.checkpoint) ? IMG.checkpoint
+                : null;
+    if (tabImg) {
+      const sPulse = 0.55 + 0.25 * Math.sin(performance.now()/350);
+      const sR = TILE * 0.55;
+      const sG = ctx.createRadialGradient(dx+TILE/2, dy+TILE/2, 2, dx+TILE/2, dy+TILE/2, sR);
+      sG.addColorStop(0, 'rgba(255,220,120,' + (0.45*sPulse).toFixed(2) + ')');
+      sG.addColorStop(1, 'rgba(255,180,60,0)');
+      ctx.fillStyle = sG;
+      ctx.beginPath(); ctx.arc(dx+TILE/2, dy+TILE/2, sR, 0, Math.PI*2); ctx.fill();
+      const scale = (innerWidth >= 900) ? 1.12 : 1.0;
+      const sz = TILE * scale;
+      const ar = (tabImg.naturalWidth || 1) / (tabImg.naturalHeight || 1);
+      const dh = Math.round(sz);
+      const dw = Math.round(sz * ar);
+      const ox = Math.round(dx + (TILE - dw) / 2);
+      const oy = Math.round(dy + (TILE - dh) / 2);
+      ctx.save();
+      ctx.shadowColor = 'rgba(40,20,5,0.4)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetY = 2;
+      ctx.drawImage(tabImg, ox, oy, dw, dh);
+      ctx.restore();
+    } else {
+      // legacy vector fallback
+      ctx.fillStyle = '#f0d58a';
+      ctx.fillRect(dx+6, dy+10, TILE-12, TILE-18);
+      ctx.strokeStyle = '#7a4809';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(dx+6.5, dy+10.5, TILE-13, TILE-19);
+      ctx.fillStyle = '#7a4809';
+      ctx.fillRect(dx+8, dy+12, TILE-16, 1);
+      ctx.fillRect(dx+8, dy+15, TILE-16, 1);
+      ctx.fillRect(dx+8, dy+18, TILE-16, 1);
+      ctx.fillStyle = '#c38b28';
+      ctx.fillRect(dx+4, dy+8, 3, TILE-14);
+      ctx.fillRect(dx+TILE-7, dy+8, 3, TILE-14);
+    }
   } else if (obj.kind === 'jug') {
     ctx.fillStyle = '#6b3a14';
     ctx.beginPath();
@@ -8148,8 +9818,33 @@ function drawTile(t, dx, dy, tx, ty){
     // layer a faint hue variation + sun glaze on top to break the grid,
     // but the base reads as the real PNG asset when loaded. Falls back
     // to the hand-rendered vector sand if the PNG isn't ready yet.
+    // v3.15.1: outer guard checks sandTile (the tileable texture) again
+    // since lightSand is a landscape illustration not a tile.
     if (IMG.sandTile && IMG.sandTile.complete && IMG.sandTile.naturalWidth) {
-      ctx.drawImage(IMG.sandTile, dx, dy, TILE, TILE);
+      // v3.16.4 Jane 2026-04-25 FINAL APPROACH: ALL the "red sand" PNGs
+      // Jane uploaded are landscape illustrations, not sprites — when
+      // tiled they each show a tiny landscape that scrolls with camera
+      // (Jane: "what's that thing? it moves when the camera pans"). So
+      // we go back to: 100% sand tile.png everywhere, + a simple red
+      // tint overlay on Mesa tiles. Predictable, no landscape chaos,
+      // no scrolling artifacts. The tint is drawn AFTER drawImage below.
+      const _okFloor = (im) => im && im.complete && im.naturalWidth;
+      const _baseSand = _okFloor(IMG.sandTile) ? IMG.sandTile
+                      : _okFloor(IMG.sandTile1) ? IMG.sandTile1
+                      : null;
+      let floorImg = _baseSand;
+      const isRedBand = (tx >= 29 && tx <= 37);   // Mesa zone gets tint
+      ctx.drawImage(floorImg, dx, dy, TILE, TILE);
+      // v3.16.4: red tint overlay on Mesa tiles. Multiply blend lets the
+      // sand texture show through while giving the zone a clear red color
+      // identity. No landscape chaos, no scrolling artifacts.
+      if (isRedBand) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.fillStyle = 'rgba(220,110,60,0.55)';
+        ctx.fillRect(dx, dy, TILE, TILE);
+        ctx.restore();
+      }
       // tiny hue shift so no two adjacent tiles feel identical
       const sandVar = (tx*17 + ty*23) % 5;
       const tintA = sandVar===0 ? 'rgba(255,220,160,0.05)'
@@ -8159,6 +9854,53 @@ function drawTile(t, dx, dy, tx, ty){
                   :               'rgba(255,230,170,0.03)';
       ctx.fillStyle = tintA;
       ctx.fillRect(dx, dy, TILE, TILE);
+      // v3.4.1 LANE 2+ Jane 2026-04-24: revised. 2.2x sprawled too far on
+      // wide viewports. 1.5x is visibly larger than the original 1.0x but
+      // doesn't crowd. Density still 1-in-48 so palm shadows feel
+      // intentional, not crowded. Alpha 0.7 keeps the green tone readable
+      // against warm sand without dominating.
+      if (tx > 2 && tx < 37) {
+        const decorHash = (tx*31 + ty*53) % 48;
+        if (decorHash === 0 && IMG.palmShadow && IMG.palmShadow.complete && IMG.palmShadow.naturalWidth) {
+          ctx.save();
+          ctx.globalAlpha = 0.70;
+          const psSize = TILE * 1.5;
+          ctx.drawImage(
+            IMG.palmShadow,
+            Math.round(dx + (TILE - psSize) / 2),
+            Math.round(dy + (TILE - psSize) / 2),
+            Math.round(psSize),
+            Math.round(psSize)
+          );
+          ctx.restore();
+        }
+        // v3.13 Jane 2026-04-25: desert cactus decor sprinkle. Different hash
+        // bucket from palm shadow so they don't co-occupy. ~1-in-36 density,
+        // bottom-anchored (cactus stands on ground, doesn't float). Cactus
+        // is a CONTRASTING green against warm sand — Jane wanted "where are
+        // the cactii?" answered. Restricted to cols 5-32 so they cluster
+        // in the central play zones, not on the start row or near cliff.
+        const cactusHash = (tx*37 + ty*47) % 36;
+        if (cactusHash === 0 && tx >= 5 && tx <= 32 && IMG.desertCactus && IMG.desertCactus.complete && IMG.desertCactus.naturalWidth) {
+          ctx.save();
+          ctx.globalAlpha = 0.95;
+          const cSz = TILE * 1.15;
+          const cAR = (IMG.desertCactus.naturalWidth || 1) / (IMG.desertCactus.naturalHeight || 1);
+          const cH = Math.round(cSz);
+          const cW = Math.round(cSz * cAR);
+          ctx.shadowColor = 'rgba(20,30,10,0.35)';
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetY = 2;
+          ctx.drawImage(
+            IMG.desertCactus,
+            Math.round(dx + (TILE - cW) / 2),
+            Math.round(dy + TILE - cH + 2),
+            cW,
+            cH
+          );
+          ctx.restore();
+        }
+      }
     } else {
       // Fallback hand-rendered sand (pre-PNG-load)
       const sandVar = (tx*17 + ty*23) % 5;
@@ -8578,10 +10320,10 @@ function drawTile(t, dx, dy, tx, ty){
         // player height, clearly dwarfing Moses.
         const nW = coverPNG.naturalWidth  || TILE;
         const nH = coverPNG.naturalHeight || TILE;
-        // v3.9.1 Jane: boulders at 2.15x were bleeding onto neighboring tiles
-        // and blocking the path read. 1.25x still reads as a big rock (it's
-        // centered in the tile with shadow) but no longer overlaps adjacents.
-        const scale = 1.25;
+        // v3.4.1 baseline 1.32. v3.11 Jane 2026-04-24: 1.55 on desktop so
+        // boulders read as solid cover Moses can hide behind on bigger
+        // screens. Mobile keeps 1.32 to avoid neighbor-tile bleed.
+        const scale = (innerWidth >= 900) ? 1.55 : 1.32;
         const fitBase = TILE / Math.max(nW, nH);
         const w = Math.round(nW * fitBase * scale);
         const h = Math.round(nH * fitBase * scale);
@@ -8805,6 +10547,28 @@ function drawTile(t, dx, dy, tx, ty){
       const step = Math.max(0, 5 - Math.floor(ty / 5)); // 0-5 altitude tier
       const pulse = 0.55 + Math.sin(now/520 + ty*0.7) * 0.25;
       const ecx = dx + TILE/2, ecy = dy + TILE/2;
+      // v3.19 Jane 2026-04-25: ALWAYS render the exit sprite + a strong
+      // gold pulse at the topmost east-edge tile (39, 2). The checkpoint
+      // tablet still renders on top of UNSOLVED gates, but the exit
+      // arrow/glow stays visible so kids see the goal from across the
+      // map. After ALL gates are cleared, the exit gets an extra-bright
+      // "GO HERE NOW" pulse.
+      let _gateAtThisTile = null;
+      try {
+        if (typeof challengeGates !== 'undefined') {
+          for (const _g of challengeGates) {
+            if (_g.tx === tx && _g.ty === ty) { _gateAtThisTile = _g; break; }
+          }
+        }
+      } catch(e){}
+      const _gateSolved = !!(_gateAtThisTile && _gateAtThisTile.solved);
+      // ALWAYS render the exit sprite for tile-7. The checkpoint tablet
+      // (drawn after this in drawChallengeGate) sits on TOP of unsolved
+      // gates; on solved gates the exit shows alone.
+      const _showExitArt = true;
+      const _allGatesSolved = (typeof challengeGates !== 'undefined')
+        ? challengeGates.every(g => g.solved)
+        : false;
       // warm climbing-halo (brighter for higher altitude)
       const halo = ctx.createRadialGradient(ecx, ecy, 3, ecx, ecy, TILE);
       halo.addColorStop(0, 'rgba(255,230,150,' + ((0.3 + step*0.05) * pulse).toFixed(2) + ')');
@@ -8812,12 +10576,17 @@ function drawTile(t, dx, dy, tx, ty){
       halo.addColorStop(1, 'rgba(200,140,60,0)');
       ctx.fillStyle = halo;
       ctx.beginPath(); ctx.arc(ecx, ecy, TILE, 0, Math.PI*2); ctx.fill();
-      // v2.2.8 FIX (Jane): wire desertExit + cliffStep PNGs on top of the
-      // warm halo so the exit reads as a real climbable mountain step.
-      // We prefer desertExit (the main arch/door), then cliffStep (a lower
-      // stepping stone), then fall through to the vector-art stepped cliff.
-      const exitPNG = (IMG.desertExit && IMG.desertExit.complete && IMG.desertExit.naturalWidth) ? IMG.desertExit
-                    : (IMG.cliffStep  && IMG.cliffStep.complete  && IMG.cliffStep.naturalWidth)  ? IMG.cliffStep
+      // bail before painting the exit sprite if the gate is still unsolved —
+      // checkpoint tablet renders on top via drawChallengeGate.
+      if (!_showExitArt) return;
+      // v3.19 Jane 2026-04-25: ALL east-edge tile-7 tiles use
+      // `new desert exit.png` (per Jane: "the exit needs to be new desert
+      // exit.png. not midian one"). midian.png is reserved exclusively
+      // for the mini-maze finish cell. cliffStep + desertExit are
+      // fallbacks if new desert exit.png ever fails to load.
+      const exitPNG = (IMG.desertExitNew && IMG.desertExitNew.complete && IMG.desertExitNew.naturalWidth) ? IMG.desertExitNew
+                    : (IMG.cliffStep     && IMG.cliffStep.complete     && IMG.cliffStep.naturalWidth)     ? IMG.cliffStep
+                    : (IMG.desertExit    && IMG.desertExit.complete    && IMG.desertExit.naturalWidth)    ? IMG.desertExit
                     : null;
       if (exitPNG) {
         // v2.3.3 Jane: exit rendered LARGER (2.0x tile), aspect-ratio
@@ -8829,37 +10598,68 @@ function drawTile(t, dx, dy, tx, ty){
         ctx.ellipse(dx+TILE/2, dy+TILE-2, TILE*0.58, 5, 0, 0, Math.PI*2);
         ctx.fill();
         ctx.restore();
-        const esH = TILE * 2.0;
+        // v3.21 Jane 2026-04-25: bump topmost EXIT another notch — 2.7 → 3.2× TILE
+        // tall, width cap 2.6 → 3.0× TILE wide. EXIT now visually dominates
+        // the entire top-right corner so kids spot it from anywhere on the map.
+        const esH = TILE * 3.2;
         const esAR = (exitPNG.naturalWidth || 1) / (exitPNG.naturalHeight || 1);
-        const esW = Math.round(esH * esAR);
-        const esHInt = Math.round(esH);
+        let esW = Math.round(esH * esAR);
+        const esWMax = Math.round(TILE * 3.0);
+        let esHInt = Math.round(esH);
+        if (esW > esWMax) {
+          // keep aspect ratio: derive height from capped width
+          esHInt = Math.round(esWMax / esAR);
+          esW = esWMax;
+        }
         const esOX = Math.round(dx + TILE/2 - esW/2);
         const esOY = Math.round(dy + TILE - esHInt + TILE*0.14);
+        // extra-bright corona behind the dominant exit
+        ctx.save();
+        const exitGlow = ctx.createRadialGradient(ecx, ecy, 4, ecx, ecy, TILE*1.6);
+        const exitGlowA = (_allGatesSolved ? 0.55 : 0.30) + 0.18 * Math.sin(now/240);
+        exitGlow.addColorStop(0, _allGatesSolved
+          ? 'rgba(140,255,160,' + exitGlowA.toFixed(2) + ')'
+          : 'rgba(255,220,140,' + exitGlowA.toFixed(2) + ')');
+        exitGlow.addColorStop(1, 'rgba(255,200,100,0)');
+        ctx.fillStyle = exitGlow;
+        ctx.beginPath(); ctx.arc(ecx, ecy, TILE*1.6, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
         ctx.drawImage(exitPNG, esOX, esOY, esW, esHInt);
-        // pulsing gold "UP" arrow above so kids recognize it as the goal
-        ctx.fillStyle = 'rgba(255,220,120,' + pulse.toFixed(2) + ')';
+        // v3.19 Jane 2026-04-25: STRONG always-on EXIT pulse so kids see
+        // the goal from across the canvas. When all gates are cleared,
+        // pulse goes EXTRA bright + green-gold "GO HERE!" so the kid
+        // knows the path is open. Otherwise it's a dimmer "blocked"
+        // amber.
+        const goPulse = _allGatesSolved
+          ? (0.85 + 0.15 * Math.sin(now/180))
+          : (0.40 + 0.15 * Math.sin(now/300));
+        const arrowColor = _allGatesSolved
+          ? 'rgba(120,255,140,' + goPulse.toFixed(2) + ')'
+          : 'rgba(255,220,120,' + goPulse.toFixed(2) + ')';
+        ctx.fillStyle = arrowColor;
         ctx.beginPath();
         ctx.moveTo(ecx, dy - 6);
-        ctx.lineTo(ecx - 7, dy + 2);
-        ctx.lineTo(ecx - 3, dy + 2);
-        ctx.lineTo(ecx - 3, dy + 12);
-        ctx.lineTo(ecx + 3, dy + 12);
-        ctx.lineTo(ecx + 3, dy + 2);
-        ctx.lineTo(ecx + 7, dy + 2);
+        ctx.lineTo(ecx - 8, dy + 4);
+        ctx.lineTo(ecx - 3, dy + 4);
+        ctx.lineTo(ecx - 3, dy + 14);
+        ctx.lineTo(ecx + 3, dy + 14);
+        ctx.lineTo(ecx + 3, dy + 4);
+        ctx.lineTo(ecx + 8, dy + 4);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = 'rgba(80,40,0,0.7)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = _allGatesSolved ? 'rgba(20,80,30,0.85)' : 'rgba(80,40,0,0.7)';
+        ctx.lineWidth = 1.5;
         ctx.stroke();
-        // EXIT label above the tile
+        // EXIT label
         ctx.save();
         ctx.font = 'bold 11px Georgia';
         ctx.textAlign = 'center';
-        ctx.fillStyle = '#7a2';
+        ctx.fillStyle = _allGatesSolved ? '#28a040' : '#7a2';
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 3;
-        ctx.strokeText('EXIT', dx + TILE/2, dy - 14);
-        ctx.fillText('EXIT', dx + TILE/2, dy - 14);
+        const exitLabel = _allGatesSolved ? 'GO! EXIT' : 'EXIT';
+        ctx.strokeText(exitLabel, dx + TILE/2, dy - 14);
+        ctx.fillText(exitLabel, dx + TILE/2, dy - 14);
         ctx.restore();
         return;
       }
@@ -8962,27 +10762,48 @@ function drawTile(t, dx, dy, tx, ty){
       ctx.fillText('EXIT', ecx, ecy + 3);
     }
   } else if (t === 8) {
-    // start marker (bigger, more cinematic glow)
-    const a = 0.28 + Math.sin(performance.now()/400)*0.14;
+    // v3.19 Jane 2026-04-25: STRONGER START pulse so kids always see
+    // where they began. Brighter cyan halo + faster pulse + an outer
+    // ring that breathes at 0.92 -> 1.18 scale. Always visible regardless
+    // of whether Moses is on the tile or has walked away.
+    const sPulse = 0.55 + Math.sin(performance.now()/240) * 0.30;
+    const sScaleP = 0.92 + Math.sin(performance.now()/360) * 0.13;
+    // outer breath ring
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120,220,255,' + (sPulse*0.85).toFixed(2) + ')';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(dx+TILE/2, dy+TILE/2, TILE*1.1*sScaleP, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
     // outer halo
-    const startGrad = ctx.createRadialGradient(dx+TILE/2, dy+TILE/2, 2, dx+TILE/2, dy+TILE/2, TILE*1.1);
-    startGrad.addColorStop(0, 'rgba(140,230,255,' + (a*1.3).toFixed(2) + ')');
-    startGrad.addColorStop(0.6, 'rgba(90,180,255,' + (a*0.55).toFixed(2) + ')');
+    const startGrad = ctx.createRadialGradient(dx+TILE/2, dy+TILE/2, 2, dx+TILE/2, dy+TILE/2, TILE*1.2);
+    startGrad.addColorStop(0, 'rgba(140,230,255,' + (sPulse*0.85).toFixed(2) + ')');
+    startGrad.addColorStop(0.55, 'rgba(90,180,255,' + (sPulse*0.4).toFixed(2) + ')');
     startGrad.addColorStop(1, 'rgba(60,120,220,0)');
     ctx.fillStyle = startGrad;
-    ctx.beginPath(); ctx.arc(dx+TILE/2, dy+TILE/2, TILE*1.1, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(dx+TILE/2, dy+TILE/2, TILE*1.2, 0, Math.PI*2); ctx.fill();
     // inner ring
-    ctx.strokeStyle = 'rgba(255,255,255,' + (0.55 + a).toFixed(2) + ')';
-    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = 'rgba(255,255,255,' + (0.7 + sPulse*0.2).toFixed(2) + ')';
+    ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(dx+TILE/2, dy+TILE/2, TILE*0.48, 0, Math.PI*2); ctx.stroke();
     // v2.3.3 Jane: desertStart PNG rendered LARGER (2.1x tile), aspect-ratio
     // preserved and pixel-snapped so the START cave reads unmistakably from
     // across the map and doesn't look squashed or blurry.
     if (game.scene === 2 && IMG.desertStart && IMG.desertStart.complete && IMG.desertStart.naturalWidth) {
-      const dsH = TILE * 2.1;
+      // v3.21 Jane 2026-04-25: bigger START. Height target 1.6 → 2.2× TILE,
+      // width cap 1.5 → 2.0× TILE (Rule 6: adjacent-tile-safe). If AR pushes
+      // width past cap, derive height from capped width to keep proportions
+      // (no squish, no right-side clip into col-2).
       const dsAR = (IMG.desertStart.naturalWidth || 1) / (IMG.desertStart.naturalHeight || 1);
-      const dsW = Math.round(dsH * dsAR);
-      const dsHInt = Math.round(dsH);
+      const dsHTarget = TILE * 2.2;
+      let dsW = Math.round(dsHTarget * dsAR);
+      let dsHInt = Math.round(dsHTarget);
+      const dsWMax = Math.round(TILE * 2.0);
+      if (dsW > dsWMax) {
+        dsHInt = Math.round(dsWMax / dsAR);
+        dsW = dsWMax;
+      }
       const dsOX = Math.round(dx + TILE/2 - dsW/2);
       const dsOY = Math.round(dy + TILE - dsHInt + TILE*0.18);
       ctx.save();
@@ -8993,18 +10814,10 @@ function drawTile(t, dx, dy, tx, ty){
       ctx.restore();
       ctx.drawImage(IMG.desertStart, dsOX, dsOY, dsW, dsHInt);
     }
-    // "START" label above the tile
-    if (game.scene === 2) {
-      ctx.save();
-      ctx.font = 'bold 11px Georgia';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#063';
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 3;
-      ctx.strokeText('START', dx + TILE/2, dy - 6);
-      ctx.fillText('START', dx + TILE/2, dy - 6);
-      ctx.restore();
-    }
+    // v3.17 Jane 2026-04-25: removed duplicate "START" canvas-text label.
+    // The desertStart PNG already has "START" green-vine text on the
+    // sprite itself — overlaying a second "START" text label was making
+    // it unreadable.
   } else if (t === 6) {
     // Scene 2: OASIS tile - lush palm + blue water puddle that restores 1 heart.
     // v2.2.8 FIX (Jane): draw IMG.oasisTile PNG as the base, then layer the
@@ -9028,7 +10841,11 @@ function drawTile(t, dx, dy, tx, ty){
       ctx.ellipse(dx+TILE/2, dy+TILE-2, TILE*0.62, 6.5, 0, 0, Math.PI*2);
       ctx.fill();
       ctx.restore();
-      const oH = TILE * 2.0;
+      // v3.18 Jane 2026-04-25: oasis was 2.0x TILE, which made adjacent
+      // oasis tiles (e.g. col 17 + col 20 on same row) visually overlap
+      // and clip each other on the right edge. 1.45x stays clearly larger
+      // than the tile but doesn't reach into the neighbor's space.
+      const oH = TILE * 1.45;
       const oAR = (IMG.oasisTile.naturalWidth || 1) / (IMG.oasisTile.naturalHeight || 1);
       const oW = Math.round(oH * oAR);
       const oHInt = Math.round(oH);
@@ -9064,19 +10881,28 @@ function drawTile(t, dx, dy, tx, ty){
     ctx.beginPath();
     ctx.ellipse(dx+TILE/2, dy+3, 4, 1.8, 0, 0, Math.PI*2); ctx.fill();
   } else if (t === 9) {
-    // Scene 2: QUICKSAND tile - rippling darker-sand pit with warning shimmer
-    // so kids can spot it before stepping. Still walkable, but hurts.
+    // v3.17 Jane 2026-04-25: sinking sand PNG dominates the tile now.
+    // Vector ripple/dots overlay reduced so the PNG art reads clearly.
     const now = performance.now();
-    // darker sand base
-    ctx.fillStyle = '#8a5a22';
-    ctx.fillRect(dx+2, dy+2, TILE-4, TILE-4);
-    // concentric rings (sinking effect)
+    if (IMG.sinkingSand && IMG.sinkingSand.complete && IMG.sinkingSand.naturalWidth) {
+      // bigger overdraw — sprite extends slightly beyond tile so the
+      // sinking-sand visual unmistakably reads as a deeper hazard
+      const sScale = 1.15;
+      const sz = TILE * sScale;
+      const ox = Math.round(dx + (TILE - sz) / 2);
+      const oy = Math.round(dy + (TILE - sz) / 2);
+      ctx.drawImage(IMG.sinkingSand, ox, oy, sz, sz);
+    } else {
+      ctx.fillStyle = '#8a5a22';
+      ctx.fillRect(dx+2, dy+2, TILE-4, TILE-4);
+    }
+    // very light concentric ripple — just enough to show movement, not dominate
     for (let r = 0; r < 3; r++) {
-      const t0 = (now/500 + r*0.33) % 1;
-      const rad = t0 * (TILE*0.45);
-      const a = (1 - t0) * 0.55;
+      const t0 = (now/700 + r*0.33) % 1;
+      const rad = t0 * (TILE*0.4);
+      const a = (1 - t0) * 0.22;
       ctx.strokeStyle = 'rgba(40,25,10,' + a.toFixed(2) + ')';
-      ctx.lineWidth = 1.4;
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(dx+TILE/2, dy+TILE/2, Math.max(1, rad), 0, Math.PI*2);
       ctx.stroke();
@@ -9475,14 +11301,24 @@ function drawCaravanTrader(){
   const _ok = (im) => im && im.complete && im.naturalWidth;
   let ctImg = null, ctFlip = false;
   const face = caravanTrader.facing || 'right';
+  // v3.1 FIX E (Jane 2026-04-23): "caravan trader's left sprite not working".
+  // Dispatch order rewritten so a missing/late-loading caravanLeft.png falls
+  // through to a MIRRORED caravanRight (visually identical to a real left
+  // facing) BEFORE the front-view fallback. Previously we jumped straight
+  // to IMG.caravan flipped, which made the trader look face-on rather than
+  // in-profile when walking westward.
   if (face === 'up'    && _ok(IMG.caravanBack))                ctImg = IMG.caravanBack;
+  else if (face === 'down' && _ok(IMG.caravan))                ctImg = IMG.caravan;
   else if (face === 'left'  && _ok(IMG.caravanLeft))           ctImg = IMG.caravanLeft;
   else if (face === 'right' && _ok(IMG.caravanRight))          ctImg = IMG.caravanRight;
+  else if (face === 'left'  && _ok(IMG.caravanRight))          { ctImg = IMG.caravanRight; ctFlip = true; }
+  else if (face === 'right' && _ok(IMG.caravanLeft))           { ctImg = IMG.caravanLeft;  ctFlip = true; }
   else if (_ok(IMG.caravan))                                   { ctImg = IMG.caravan; ctFlip = (face === 'left'); }
   else if (_ok(IMG.merchant))                                  ctImg = IMG.merchant;
   if (ctImg) {
     // v2.3.3 Jane (anti-distortion): snap to int px + preserve aspect ratio
-    const CT_SCALE = 1.45;
+    // v3.2 LANE 2: 1.65. v3.11 Jane 2026-04-24: desktop bump to 1.85.
+    const CT_SCALE = (innerWidth >= 900) ? 1.85 : 1.65;
     const sz = TILE * CT_SCALE;
     const natW = ctImg.naturalWidth || 1;
     const natH = ctImg.naturalHeight || 1;
@@ -9632,7 +11468,8 @@ function drawGuard(g){
   else if (g.dir === 'right' && _ok(IMG.guardSide)) { img = IMG.guardSide; }
   else if (_ok(IMG.guardFront)) img = IMG.guardFront;
   else img = IMG.guard;
-  const GUARD_SCALE = 1.55;
+  // v3.2 LANE 2: 1.78 baseline. v3.11 Jane 2026-04-24: desktop bump to 1.95.
+  const GUARD_SCALE = (innerWidth >= 900) ? 1.95 : 1.78;
   const gsz = TILE * GUARD_SCALE;
   // drop shadow (drawn before sprite so it's layered underneath feet)
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
@@ -9705,7 +11542,9 @@ function drawMoses(){
   ctx.fill();
   // Moses draws LARGER than his tile (1.55x in v3.3, up from 1.45) so kids
   // can see his face and silhouette clearly against any tile palette.
-  const MOSES_SCALE = 1.55;
+  // v3.2 LANE 2: 1.78 baseline. v3.11 Jane 2026-04-24: bumped to 1.98 on
+  // desktop (>=900px) so Moses pops on bigger screens; mobile keeps 1.78.
+  const MOSES_SCALE = (innerWidth >= 900) ? 1.98 : 1.78;
   const mosesSize = TILE * MOSES_SCALE;
   // crouched shadow (wider when standing, tighter when crouched)
   ctx.fillStyle = 'rgba(0,0,0,0.4)';
@@ -9777,10 +11616,17 @@ function drawMoses(){
     // v2.3.3 Jane (anti-distortion): snap draw coords to integer pixels so
     // the browser's canvas scaler doesn't half-sample rows/columns and give
     // us the smeared look versus Game 1's clean PNG rendering.
+    // v3.9 VISUAL LIFT: subtle idle bob (~1.5 px sine) when Moses is NOT
+    // moving and not crouched. Adds a hint of life to the static sprite.
+    // Skipped while moving (handled by walking animation) and while
+    // crouched/hidden (would break the duck pose).
+    const _stillNow = !_hidingNow && !_inCave &&
+      (typeof player.lastMoveAt === 'number' ? (performance.now() - player.lastMoveAt > 320) : true);
+    const idleBob = _stillNow ? Math.sin(performance.now() / 380) * 1.4 : 0;
     const ox = Math.round(dx + (TILE - drawW) / 2);
     // When ducking in a cave we nudge Moses DOWN a few pixels so kids read
     // it as him hunkering into the mouth of the cave.
-    const oyRaw = dy + TILE - drawH + 2 + (_inCave ? 6 : 0);
+    const oyRaw = dy + TILE - drawH + 2 + (_inCave ? 6 : 0) + idleBob;
     const oy = Math.round(oyRaw);
     const dw = Math.round(drawW);
     const dh = Math.round(drawH);
@@ -9839,6 +11685,25 @@ function _mmPeekHandler(evt){
 }
 miniCanvas.addEventListener('click', _mmPeekHandler);
 miniCanvas.addEventListener('touchstart', _mmPeekHandler, { passive: false });
+// v3.9 Jane 2026-04-24: also catch taps on the surrounding minimap-box
+// label/legend (not just the canvas), so the kid doesn't miss-tap the
+// 8px-margin "DESERT MAP" header and get nothing. Tapping the label
+// opens a peek centred on Moses's current position.
+(function attachBoxPeek(){
+  const box = miniCanvas.parentElement;
+  if (!box) return;
+  const fallback = (evt) => {
+    if (evt.target === miniCanvas) return; // canvas already handles itself
+    try {
+      evt.preventDefault();
+      const tx = (typeof player !== 'undefined' && player) ? player.tx : Math.floor(MAP_W/2);
+      const ty = (typeof player !== 'undefined' && player) ? player.ty : Math.floor(MAP_H/2);
+      _showMapPeek(tx, ty);
+    } catch(e){}
+  };
+  box.addEventListener('click', fallback);
+  box.addEventListener('touchstart', fallback, { passive: false });
+})();
 
 // Find the nearest landmark at tile (tx,ty) within a small radius and
 // return a friendly name + flavor line. Falls back to the zone label.
@@ -9851,8 +11716,8 @@ function _findNearestLandmark(tx, ty){
       name:'Desert Start',
       flavor:'Moses begins his flight from Egypt here.' });
     if (MAP[y][x] === 7) candidates.push({ kind:'exit', tx:x, ty:y,
-      name:'Midian Cliff Climb (Exit)',
-      flavor:'Scale these cliffs to reach Midian and Jethro\u2019s well.' });
+      name:'Path to Midian Well',
+      flavor:'Cross all final checkpoints to reach Midian and Jethro\u2019s well.' });
     if (MAP[y][x] === 6) candidates.push({ kind:'oasis', tx:x, ty:y,
       name:'Oasis',
       flavor:'A lush palm + spring. Step on it to restore 1 heart.' });
@@ -9881,7 +11746,7 @@ function _findNearestLandmark(tx, ty){
       wadi:   { name:'Wadi Canyon',  flavor:'Narrow canyon. Watch for rockfalls on Hard.' },
       dunes:  { name:'Open Dune Sea', flavor:'Wind-blown dunes. Keep moving east.' },
       oasis:  { name:'Oasis Archipelago', flavor:'Palms and springs hide among mirages.' },
-      mesa:   { name:'Mesa Foothills', flavor:'Flat-topped rocks. Climb steps lead to Midian.' },
+      mesa:   { name:'Mesa Foothills', flavor:'Red sandstone country. The path to Midian opens to the east.' },
     };
     const zn = zoneNames[zone] || zoneNames.dunes;
     return { kind:'zone', tx, ty, name: zn.name, flavor: zn.flavor };
@@ -9890,6 +11755,18 @@ function _findNearestLandmark(tx, ty){
 }
 
 function _showMapPeek(tx, ty){
+  // v3.11 Jane 2026-04-24: minimap-tap used to open a tiny panel with a
+  // crop canvas that frequently rendered as a blank black square (the
+  // 7x7-CELL fill loop sometimes produced no output if MAP wasn't yet
+  // populated). Routing tap to the same `openMapPeek()` overlay the MAP
+  // button uses gives kids a real, working zoomed-tile preview with
+  // tap-zone-to-zoom support — instead of a broken cropped panel.
+  try {
+    if (typeof openMapPeek === 'function') {
+      openMapPeek();
+      return;
+    }
+  } catch(e){}
   const lm = _findNearestLandmark(tx, ty);
   // lazy-create a little toast-style peek panel attached to #gamePage
   let panel = document.getElementById('mmPeekPanel');
@@ -10487,6 +12364,9 @@ function loop(now){
       addFootprintIfMoving(dt);
       updateFootprints(dt);
       updateSandPuffs(dt);
+      // v3.8 PASS A VISUAL FEEL: score popups + zone entry banner
+      try { updateScorePopups(dt); } catch(e){}
+      try { updateZoneBanner(dt); maybeShowZoneBanner(); } catch(e){}
       // v2.1: Pharaoh scout pursuit + rolling boulders
       try { updatePursuitScouts(dt); } catch(e){}
       try { updateRollingBoulders(dt); } catch(e){}
