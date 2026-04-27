@@ -221,7 +221,14 @@
     flex-direction:column;
     background:#0d0500;
     overflow:hidden;
-    height:100vh;
+    /* v3.24 Jane 2026-04-26: 100vh is the LARGEST viewport (incl. URL bar
+       space), so when the mobile browser's address bar is showing, content
+       below the fold gets clipped intermittently — that's the "down arrow
+       getting cut sometimes" bug Jane saw. dvh adapts to current visible
+       viewport. svh is the fallback for browsers without dvh support. */
+    height: 100vh;          /* legacy fallback */
+    height: 100svh;         /* iOS 15.4+ / Chrome 108+ small viewport */
+    height: 100dvh;         /* dynamic — shrinks with URL bar */
   }
   .game-page.active { display:flex; }
   .hud {
@@ -230,6 +237,8 @@
     background: linear-gradient(180deg, rgba(40,14,3,0.96), rgba(58,22,7,0.92));
     border-bottom:2px solid #ffd976;
     flex-wrap:wrap; gap:6px;
+    /* v3.24: HUD never participates in shrink — it's always full size at top */
+    flex-shrink: 0;
     z-index:5;
   }
   .hud-group { display:flex; align-items:center; gap:8px; font-size:14px; color:#ffeaa3; }
@@ -537,6 +546,11 @@
     border-top:2px solid #ffd976;
     gap:10px;
     min-height:150px;
+    /* v3.24 Jane 2026-04-26: never let .controls be the part that overflows.
+       flex-shrink:0 means the canvas-wrapper above will shrink to make room
+       — so the d-pad and action buttons are ALWAYS visible regardless of
+       viewport height (URL bar visible/hidden, soft-keyboard up, etc.). */
+    flex-shrink: 0;
   }
   .dpad {
     display:grid;
@@ -1219,7 +1233,11 @@
     border:2px solid #2e5e2e;
     box-shadow: 0 0 6px rgba(120,220,120,0.6);
   }
-  .ch-maze-cell.exit::after { content:""; }
+  /* v3.27 Jane 2026-04-27: FINISH badge REMOVED per Jane's review. The
+     "FINISH ↓" header above the board is sufficient. DO NOT re-add a
+     ::after badge on .ch-maze-cell.exit — see CANONICAL doc Rule 8f
+     (now updated to "DO NOT add a FINISH badge"). */
+  .ch-maze-cell.exit::after { content: ""; }
   .ch-maze-cell.moses {
     background:#ffd976 url('assets/images/moses%20front%20facing.png') center/110% no-repeat;
     box-shadow: 0 0 8px rgba(255,200,80,0.85);
@@ -1309,13 +1327,29 @@
   .map-peek-box {
     background:#1a0830; border:3px solid #ffd976; border-radius:12px;
     padding:12px; box-shadow:0 0 40px rgba(255,215,0,0.5);
-    max-width: 96vw; max-height: 96vh;
+    /* v3.24 Jane 2026-04-26: use SMALL viewport units (svw/svh) so the box
+       always fits the visible viewport even when the URL bar is up.
+       max-content lets the box shrink to wrap the contents. */
+    max-width: 96svw;
+    max-height: 96svh;
+    display: flex; flex-direction: column; align-items: center;
+    overflow: hidden;
   }
   .map-peek-box canvas {
     display:block; background:#000; border:1px solid #ffd976;
-    /* v3.23 Jane: scale canvas down on small viewports while preserving
-       its native 640x400 backing-store so it stays crisp. */
-    max-width: 100%; height: auto;
+    /* v3.24 Jane: scale canvas to fit the viewport while preserving
+       its native 640x400 backing-store so it stays crisp. We cap by
+       BOTH width AND height so a wide-but-short landscape viewport
+       still gets a fully visible map (no vertical clipping). */
+    max-width: 100%;
+    /* The legend strip + close-hint reserve ~80px below the canvas.
+       Reserve 100px so the map never pushes those off-screen. */
+    max-height: calc(96svh - 100px);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    /* maintain native aspect ratio so canvas scales uniformly */
+    aspect-ratio: 640 / 400;
   }
   .map-peek-box p { color:#ffd976; text-align:center; margin:6px 0 0; font-size:12px; }
   /* v3.23 Jane 2026-04-25: legend strip — small color swatches with labels
@@ -1894,56 +1928,66 @@
       font-size: 10px !important; padding: 0 !important;
       border-radius: 15px !important;
     }
-    /* .controls becomes a thin transparent strip carrying ONLY the D-pad */
+    /* v3.24 Jane 2026-04-26: landscape controls are now part of the flex
+       column (not absolutely-positioned) — that was the root of the
+       d-pad-clipping bug. With the d-pad floating, the canvas-wrapper
+       didn't reserve room for it on short landscape phones, so the bottom
+       row of arrow buttons could fall outside the viewport. Now the
+       d-pad lives inside .controls (in-flow), which guarantees the
+       canvas shrinks if needed to keep the arrows visible. The action
+       buttons stay floating at the right edge but use safe inset and
+       larger pill-shaped buttons so "Interact" / "Hint" text fits with
+       breathing room from the borders. */
     .controls {
       min-height: unset;
       height: auto;
-      padding: 0;
-      background: transparent;
-      border-top: none;
-      position: absolute;
-      bottom: 6px;
-      left: 6px;
-      right: auto;
-      width: auto;
+      padding: 4px 6px;
+      background: linear-gradient(0deg, rgba(42,14,3,0.92) 0%, rgba(58,21,8,0.85) 100%);
+      border-top: 1px solid rgba(255,217,118,0.5);
+      position: relative;
       z-index: 30;
       gap: 0;
+      justify-content: flex-start;
+      flex-shrink: 0;
     }
-    /* D-pad: smaller, anchored bottom-left of canvas */
     .dpad {
-      width: 116px;
+      width: 132px;
       gap: 4px;
     }
-    .dpad-btn, .dpad-spacer { height: 30px; border-radius: 50%; font-size: 16px; }
-    /* Action panel: circular icons, fixed-position column on right edge.
-       Uses position:fixed (viewport-relative) instead of absolute because
-       .controls itself is now position:absolute, which would otherwise
-       become the offset parent and pin actions next to the D-pad. */
+    .dpad-btn, .dpad-spacer { height: 32px; border-radius: 50%; font-size: 16px; }
+    /* Action panel: pill-shaped floating buttons on the right, with safe
+       inset so they don't crowd the canvas edge. Wider (72px) so "Interact"
+       fits comfortably without hitting the borders. */
     .action-panel {
       position: fixed;
       top: 50%;
-      right: 6px;
+      right: max(8px, env(safe-area-inset-right, 8px));
       transform: translateY(-50%);
       flex: 0 0 auto;
       flex-direction: column !important;
-      gap: 7px;
+      gap: 8px;
       max-width: unset;
       width: auto;
       z-index: 30;
     }
     .action-btn {
-      width: 46px;
-      height: 46px;
+      width: 76px;
+      height: 36px;
       min-width: 0;
-      border-radius: 50%;
-      padding: 0;
-      font-size: 11px;
+      border-radius: 18px;
+      padding: 0 8px;
+      font-size: 12px;
       font-weight: 800;
       flex: 0 0 auto;
-      line-height: 1.05;
-      letter-spacing: 0;
-      background: rgba(0,0,0,0.55);
+      line-height: 1;
+      letter-spacing: 0.2px;
+      background: rgba(0,0,0,0.62);
+      border: 2px solid #ffd976;
+      color: #ffeaa3;
       box-shadow: 0 3px 10px rgba(0,0,0,0.55);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 </style>
@@ -2172,9 +2216,12 @@
       <!-- v3.5: free Hint button with kid-friendly learning fact -->
       <div id="chHintBox" style="display:none;margin-top:10px;padding:10px 12px;background:rgba(255,240,180,0.55);border:2px dashed #a0671c;border-radius:8px;color:#5a3410;font-size:13px;line-height:1.4;">
         <strong style="color:#8a4a10;">&#128161; Bible Clue:</strong> <span id="chHintText"></span>
+        <!-- v3.27 Jane 2026-04-27: scenario imagery for Bible clues. Populated
+             by getHintImagesForQuestion. Hidden when no relevant images. -->
+        <div id="chHintImages" style="display:none;margin-top:8px;justify-content:center;flex-wrap:wrap;gap:8px;"></div>
       </div>
       <button class="btn" id="chHintBtn" style="margin-top:8px;background:linear-gradient(145deg,#ffe08a,#f5c14a);color:#5a3410;border:2px solid #a0671c;">&#128161; Show Clue (free)</button>
-      <p id="chFeedback" style="margin-top:10px;display:none;"></p>
+      <div id="chFeedback" style="margin-top:10px;display:none;"></div>
     </div>
     <button class="btn ghost" id="chExitBtn">Exit to Main Menu</button>
   </div>
@@ -2572,6 +2619,28 @@ function setMusic(which /* 'bgm' | 'narration' | 'alerted' | null */){
 // paused, in a challenge modal, or mid-cinematic, these should be fully
 // silent -- otherwise Jane hears "guard footsteps" during the quiz modal.
 const PLAY_ONLY_WHILE_PLAYING = { footstep: 1 };
+// v3.25 Jane 2026-04-26: DENY-LIST of ambient/world SFX that should be
+// silenced during modals. Everything else (UI taps, answer-feedback chimes,
+// success/error/correct/hint/coin/etc. fired BY the modal itself) plays
+// normally. Earlier v3.24 used an allow-list which was too restrictive —
+// it blocked 'correct', 'success', 'hint', 'tap', etc. inside the
+// challenge modal so kids didn't hear answer feedback.
+const MODAL_AUDIO_DENY = new Set([
+  // Ambient atmosphere / proximity SFX — these should NEVER play under any modal
+  'footstep','sandWalk','fire','camelGrunt','vulture','oasisWater',
+  'mirageWoosh','sandstormSfx','boulderRumble','dog','fox','dangerAlert',
+  'friendlyAlert','sword'
+]);
+function _anyBlockingModalOpen(){
+  try {
+    const ids = ['challengeModal','dialogModal','dangerModal','pauseModal','mapPeekOverlay','truthChestModal','winModal','sceneBanner','tutorialModal'];
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el && el.classList.contains('active')) return true;
+    }
+  } catch(e){}
+  return false;
+}
 // v3.13 Jane 2026-04-25 AUDIO LAG FIX: rapid same-sound replays were
 // queueing on phones and causing the audio decoder to stutter/break.
 // Throttle each named sound to fire at most once per 90ms (well under
@@ -2581,6 +2650,9 @@ const _lastPlayAt = Object.create(null);
 function play(name) {
   const a = audio[name]; if (!a) return;
   if (PLAY_ONLY_WHILE_PLAYING[name] && (typeof game === 'undefined' || game.state !== 'playing')) return;
+  // v3.25: cross-cutting modal-audio gate — block only ambient/world SFX
+  // during modals; UI sounds + answer-feedback chimes pass through.
+  if (MODAL_AUDIO_DENY.has(name) && _anyBlockingModalOpen()) return;
   const now = performance.now();
   // skip if we just fired the same sound — prevents decode-stutter on weak phones
   if (_lastPlayAt[name] && (now - _lastPlayAt[name]) < 90) return;
@@ -2713,6 +2785,12 @@ const IMG_SRC = {
   // tile scale.
   checkpoint: 'assets/images/checkpoint%201.png',
   midianWell: 'assets/images/new%20midian.png',
+  // v3.27 Jane 2026-04-27: backstory clue imagery — wired into the Bible
+  // Clue panel by getHintImagesForQuestion. babyMosesBasket appears for
+  // basket/Nile/Pharaoh's daughter clues; princess appears for
+  // palace/adoption clues.
+  babyMosesBasket: 'assets/images/moses%20in%20basket.png',
+  princess:        'assets/images/newest%20princess.png',
   desertExitNew: 'assets/images/new%20desert%20exit.png',
   // v3.5 + v3.12 Jane 2026-04-24: red sandstone variant for Mesa zone
   // floor (cols 29-37). Falls through new -> old -> midian fallbacks.
@@ -2929,21 +3007,32 @@ const SKIP_PRERENDER = new Set([
   'caravan','caravanBack','caravanLeft','caravanRight',
   'camelFriendly','merchant','servant','foxLeft','foxRight'
 ]);
+// v3.26 Jane 2026-04-26: large STATIC sprites (oasis, exit, midian, etc.)
+// drawn at ~14× downscale every frame from a 1024×1024 source look smeared
+// even with imageSmoothingQuality='high'. This set targets ONLY those for
+// load-time multi-step bicubic to 256px. Per-frame ratio drops to ~3× —
+// crisp. Character sprites (guard/Moses/scout etc.) STAY OUT of this set
+// because the v3.22 attempt to apply this universally broke their renders.
+// Keep this set MINIMAL and TEST every addition on the live preview.
+const SPRITE_QUALITY_DOWNSCALE = new Set([
+  'oasisTile',     // tile-6 — 1.45× TILE, lots of fine palm/water detail
+  'desertExitNew', // EXIT sprite — 1.8× TILE, intricate "EXIT" red lettering
+  'midianWell',    // mini-maze finish + final destination art
+  'checkpoint',    // checkpoint tablet — 1.65× TILE
+]);
 for (const k in IMG_SRC) {
   const img = new Image();
   img.onload = () => {
     try {
       // v3.19: Bleed RGB into transparent edge pixels FIRST to kill white halos
       const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
-      // v3.23 Jane 2026-04-25: REVERTED v3.22's _preRender-for-sprite-critical
-      // change. It broke guard + Moses-back/right sprite rendering — likely
-      // because chaining _alphaBleed (returns canvas) into _preRender
-      // (returns ANOTHER canvas) lost some property the sprite render
-      // paths depend on. Safer: keep the alpha-bled canvas raw for sprite-
-      // critical keys (SKIP_PRERENDER set), let _preRender shrink only
-      // generic full-canvas backdrops. Blur on zoom is a softer issue
-      // than missing characters.
-      if (SKIP_PRERENDER.has(k)) {
+      // v3.26 Jane 2026-04-26: load-time multi-step downscale ONLY for the
+      // explicit SPRITE_QUALITY_DOWNSCALE set. Everything else keeps the
+      // safer SKIP_PRERENDER path (fixes Jane's "oasis is so distorted /
+      // blurred" without re-breaking guard / Moses-back / Moses-right).
+      if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
+        IMG[k] = _preRender(bled, 256);
+      } else if (SKIP_PRERENDER.has(k)) {
         IMG[k] = bled;
       } else {
         IMG[k] = _preRender(bled);
@@ -2982,27 +3071,31 @@ const MAP_STR = [
   // 0123456789012345678901234567890123456789
   "1111111111111111111111111111111111111111", //  0  north cliff edge (frame)
   "1000030000030000000300000030003000030001", //  1  mixed dunes/mesas, open
-  "1003000300000033000000003000000000300007", //  2  CLIMB STEP 1 (col 39)
+  "1003000300000033000000003000000000300007", //  2  EXIT (only tile-7 — topmost col 39)
   "1000050000005000000600040050300000003001", //  3  treasures + oasis Zone C + torch landmark
   "1030000003000000300003000003000030000001", //  4  wadi dune cluster
   "1000200200022002000000000040000300030001", //  5  scorpions Zone A+B, torch marker
   "1030000000000090030000000303000000050001", //  6  quicksand Zone B, treasure Zone D
-  "1003000300000000000063000000003030030007", //  7  CLIMB STEP 2, oasis mid
+  // v3.25 Jane 2026-04-26: legacy "CLIMB STEP" tile-7's at rows 7/12/17/22
+  // col 39 changed back to wall (1). With random checkpoint placement those
+  // positions no longer host gates, so the stepping-stone decoration drew
+  // as orphan markers next to the actual checkpoints.
+  "1003000300000000000063000000003030030001", //  7  oasis mid
   "1000303000000003000000030003003003000001", //  8  dunes
   "1000000000020000000005000300000400030001", //  9  scorpion, treasure Zone C, torch Zone D
   "1003000000030000060060000000030000030001", // 10  paired oases Zone C
   "1000030000000030000000030000060000003001", // 11  oasis Zone C
-  "1800000000090000030000000003000030000007", // 12  START (col 1), quicksand Zone B, CLIMB STEP 3
+  "1800000000090000030000000003000030000001", // 12  START (col 1), quicksand Zone B
   "1000030003000000000003000000000000000001", // 13
   "1003000000000300000002000030003003000001", // 14  viper Zone C
   "1000000000000003060000000500000030000001", // 15  oasis, treasure
   "1003000300000000003000000030000030030001", // 16
-  "1030000200000020000000030000003000000007", // 17  scorpions wadi/dunes, CLIMB STEP 4
+  "1030000200000020000000030000003000000001", // 17  scorpions wadi/dunes
   "1000000000003000030000000000000000050001", // 18  treasure Zone D
   "1003003000090000000000000300030000000001", // 19  quicksand Zone B
   "1000000300000000060003000000000000000001", // 20  oasis
   "1000030000300030000000000000300003000001", // 21
-  "1003000000000000030000030000000003003007", // 22  CLIMB STEP 5 (bottom)
+  "1003000000000000030000030000000003003001", // 22  bottom row
   "1000000000000030000000000000030000000001", // 23
   "1111111111111111111111111111111111111111", // 24  south cliff edge (frame)
 ];
@@ -3968,6 +4061,66 @@ const CHALLENGE_POSITIONS = [
 ];
 const challengeGates = [];  // populated once difficulty is chosen (legacy name preserved for downstream code)
 
+// v3.25 Jane 2026-04-26: random per-game checkpoint placement. Splits the
+// playable area into a 3×3 region grid and picks ONE walkable sand tile per
+// region — guarantees the 9 checkpoints are SPREAD across the screen instead
+// of clustered on the east edge. Avoids start (1,12), exit (39,2), and
+// keeps a min Manhattan distance of 4 between any two picks. Falls back to
+// CHALLENGE_POSITIONS for any region that fails to seed (e.g. all-wall).
+function _generateRandomChallengePositions(){
+  const out = [];
+  const colBands = [[1, 13], [14, 26], [27, 38]];
+  const rowBands = [[1,  8], [9,  16], [17, 23]];
+  const tooNear = (tx, ty) => {
+    if (Math.abs(tx - 1) + Math.abs(ty - 12) < 3) return true;  // near START
+    if (Math.abs(tx - 39) + Math.abs(ty - 2) < 3) return true;  // near EXIT
+    for (const p of out) {
+      if (Math.abs(tx - p.tx) + Math.abs(ty - p.ty) < 4) return true;
+    }
+    return false;
+  };
+  const labelFor = (tx) => (
+    tx <= 9  ? { name: 'Wadi',  zone: 'wadi' } :
+    tx <= 19 ? { name: 'Dunes', zone: 'dunes' } :
+    tx <= 28 ? { name: 'Oasis', zone: 'oasis' } :
+               { name: 'Mesa',  zone: 'mesa' }
+  );
+  for (let ri = 0; ri < 3; ri++) {
+    for (let ci = 0; ci < 3; ci++) {
+      const [cMin, cMax] = colBands[ci];
+      const [rMin, rMax] = rowBands[ri];
+      let pick = null;
+      for (let attempt = 0; attempt < 80 && !pick; attempt++) {
+        const tx = cMin + Math.floor(Math.random() * (cMax - cMin + 1));
+        const ty = rMin + Math.floor(Math.random() * (rMax - rMin + 1));
+        // Only place on plain sand (tile 0) — avoid walls, hazards,
+        // treasure tiles, oases, climb-steps, start, quicksand.
+        if (typeof MAP === 'undefined' || !MAP[ty]) continue;
+        if (MAP[ty][tx] !== 0) continue;
+        if (tooNear(tx, ty)) continue;
+        pick = { tx, ty };
+      }
+      if (pick) {
+        const z = labelFor(pick.tx);
+        out.push({
+          tx: pick.tx, ty: pick.ty,
+          kind: 'zone',
+          zone: z.zone,
+          label: z.name + ' Checkpoint ' + (out.length + 1),
+        });
+      }
+    }
+  }
+  // Fallback: pad from CHALLENGE_POSITIONS if any region failed
+  let fbIdx = 0;
+  while (out.length < 9 && fbIdx < CHALLENGE_POSITIONS.length) {
+    const fb = CHALLENGE_POSITIONS[fbIdx++];
+    if (out.some(p => p.tx === fb.tx && p.ty === fb.ty)) continue;
+    out.push({ ...fb });
+  }
+  return out;
+}
+
 // ======================================================================
 // v3.5 PER-PLAY LAYOUT SHUFFLE
 // Keeps ALL landmarks fixed (start=8, exit=7, treasures=5, bombs=6, urns=4,
@@ -4090,11 +4243,15 @@ function seedChallenges(difficulty) {
     return null;
   };
 
-  // v2.1 Scene 2: ALL 9 positions are mandatory (4 zone + 5 climb). The
-  // climb-step positions cannot be omitted or Moses can never summit. Zone
-  // checkpoints are also always active so scene length stays consistent.
-  // Question DIFFICULTY scales via difficulty-specific pool, not count.
-  const gatePool = CHALLENGE_POSITIONS.slice(); // preserve declaration order
+  // v3.25 Jane 2026-04-26: 9 checkpoints randomly spread across the map
+  // (3×3 region grid, one walkable sand tile per region). Replaces the old
+  // hard-coded CHALLENGE_POSITIONS layout — Jane wanted "randomly spread
+  // for each game" so the scene plays differently each replay.
+  // Falls back to CHALLENGE_POSITIONS for any region the random seeder
+  // failed to fill (rare — usually only if MAP is partially-loaded).
+  const gatePool = (game.scene === 2 && typeof _generateRandomChallengePositions === 'function')
+    ? _generateRandomChallengePositions()
+    : CHALLENGE_POSITIONS.slice();
 
   const bundles = [];
   for (let i = 0; i < gatePool.length; i++) {
@@ -4200,20 +4357,39 @@ function playIntroPan(onDone){
   if (game.scene !== 2) { try { onDone && onDone(); } catch(e){} return; }
   _introPanActive = true;
   camera.locked = true;
+  // v3.24 Jane 2026-04-26: pan now sweeps DIAGONALLY from Moses to the
+  // topmost EXIT tile (col 39, row 2 in scene 2). Previous version only
+  // moved on X, leaving the camera at row 12 — so the EXIT (row 2) was
+  // never on-screen and Jane saw "I don't see the new desert exit.png
+  // image during the pan". Diagonal pan + flag the EXIT_HIGHLIGHT mode
+  // for drawTile, so the exit pulses brighter + a giant arrow points at
+  // it during the HOLD frame.
+  // Compute exit tile from MAP — falls back to (39,2) if scan misses.
+  let exitTx = 39, exitTy = 2;
+  try {
+    let topY = MAP_H, topX = -1;
+    for (let _y = 0; _y < MAP_H; _y++) for (let _x = 0; _x < MAP_W; _x++) {
+      if (MAP[_y][_x] === 7 && _y < topY) { topY = _y; topX = _x; }
+    }
+    if (topX >= 0) { exitTx = topX; exitTy = topY; }
+  } catch(e){}
+  window._introPanExitTile = { tx: exitTx, ty: exitTy };
+  window._introPanShowArrow = false;
   const startX = clamp(player.px + TILE/2 - CANVAS_W/2, 0, MAP_W*TILE - CANVAS_W);
-  const eastX  = clamp((MAP_W - 1) * TILE - CANVAS_W/2, 0, MAP_W*TILE - CANVAS_W);
-  const peekY  = clamp(player.py + TILE/2 - CANVAS_H/2, 0, MAP_H*TILE - CANVAS_H);
-  camera.px = startX; camera.py = peekY;
+  const startY = clamp(player.py + TILE/2 - CANVAS_H/2, 0, MAP_H*TILE - CANVAS_H);
+  const exitPx = exitTx * TILE + TILE/2;
+  const exitPy = exitTy * TILE + TILE/2;
+  const targetX = clamp(exitPx - CANVAS_W/2, 0, MAP_W*TILE - CANVAS_W);
+  const targetY = clamp(exitPy - CANVAS_H/2, 0, MAP_H*TILE - CANVAS_H);
+  camera.px = startX; camera.py = startY;
   const t0 = performance.now();
-  // v3.12 Jane 2026-04-24: longer HOLD so kids can clearly see the EXIT/well
-  // before the camera glides back. Bumped 700ms -> 2400ms.
   const PAN_OUT = 1400, HOLD = 2400, PAN_BACK = 1200;
   // overlay label — added to body so it renders on top of the canvas
   try {
     const lbl = document.createElement('div');
     lbl.id = '_introPanLabel';
-    lbl.style.cssText = 'position:fixed;top:12%;left:50%;transform:translateX(-50%);z-index:55;background:linear-gradient(180deg,#3a1708,#5a2510);color:#ffd976;border:3px solid #ffd976;padding:10px 22px;border-radius:14px;font-family:Georgia,serif;font-weight:900;font-size:18px;letter-spacing:1px;box-shadow:0 6px 20px rgba(0,0,0,0.55);text-shadow:0 0 8px rgba(255,217,118,0.55);pointer-events:none;opacity:0;transition:opacity 0.35s;';
-    lbl.textContent = 'Help Moses reach the well at Midian!';
+    lbl.style.cssText = 'position:fixed;top:12%;left:50%;transform:translateX(-50%);z-index:55;background:linear-gradient(180deg,#3a1708,#5a2510);color:#ffd976;border:3px solid #ffd976;padding:10px 22px;border-radius:14px;font-family:Georgia,serif;font-weight:900;font-size:18px;letter-spacing:1px;box-shadow:0 6px 20px rgba(0,0,0,0.55);text-shadow:0 0 8px rgba(255,217,118,0.55);pointer-events:none;opacity:0;transition:opacity 0.35s, background 0.35s;text-align:center;line-height:1.35;';
+    lbl.innerHTML = 'Help Moses reach the well at Midian!';
     document.body.appendChild(lbl);
     _introPanLabel = lbl;
     setTimeout(() => { try { lbl.style.opacity = '1'; } catch(e){} }, 30);
@@ -4223,17 +4399,34 @@ function playIntroPan(onDone){
     if (t < PAN_OUT) {
       const k = t / PAN_OUT;
       const e = k * k * (3 - 2 * k); // smoothstep
-      camera.px = startX + (eastX - startX) * e;
+      camera.px = startX + (targetX - startX) * e;
+      camera.py = startY + (targetY - startY) * e;
+      window._introPanShowArrow = false;
     } else if (t < PAN_OUT + HOLD) {
-      camera.px = eastX;
+      camera.px = targetX;
+      camera.py = targetY;
+      // v3.24: HOLD frame — flag drawTile to render a giant pulsing arrow
+      // pointing at the EXIT, AND swap the label text to a clear prompt.
+      window._introPanShowArrow = true;
+      try {
+        if (_introPanLabel && !_introPanLabel.dataset.flipped) {
+          _introPanLabel.dataset.flipped = '1';
+          _introPanLabel.innerHTML = '→ REACH THIS EXIT ←<br><span style="font-size:13px;font-weight:600;letter-spacing:0.3px;">Solve checkpoints to unlock it!</span>';
+          _introPanLabel.style.background = 'linear-gradient(180deg,#0f3a1a,#1f6b2e)';
+          _introPanLabel.style.color = '#ffeaa3';
+          _introPanLabel.style.borderColor = '#ffeaa3';
+        }
+      } catch(e){}
     } else if (t < PAN_OUT + HOLD + PAN_BACK) {
       const k = (t - PAN_OUT - HOLD) / PAN_BACK;
       const e = k * k * (3 - 2 * k);
-      camera.px = eastX + (startX - eastX) * e;
+      camera.px = targetX + (startX - targetX) * e;
+      camera.py = targetY + (startY - targetY) * e;
+      window._introPanShowArrow = false;
     } else {
       camera.locked = false;
       _introPanActive = false;
-      // remove the overlay label
+      window._introPanShowArrow = false;
       try {
         if (_introPanLabel) {
           _introPanLabel.style.opacity = '0';
@@ -5484,8 +5677,20 @@ function getHintForQuestion(q){
       return 'Midian was a wilderness country east of Egypt -- long walks and hot sun.';
     if (hasWord('guard','guards','soldier','soldiers','palace'))
       return 'Pharaoh\'s palace was full of guards. Moses had to escape quietly.';
-    if (hasWord('moses'))
-      return 'Moses was a Hebrew baby adopted into Pharaoh\'s palace. God had big plans for him.';
+    // v3.27 Jane 2026-04-27: ADD shepherds + daughters + drove keyword
+    // matches so the "shepherds drove the priest's daughters away" question
+    // gets a relevant Midian-well clue instead of the generic baby-Moses
+    // fallback. \bshepherd\b in earlier rules misses 'shepherds' (plural).
+    if (hasWord('shepherds') || (hasWord('daughters') && hasWord('drove','away','priest')))
+      return 'At the Midian well, rough shepherds chased the priest\'s daughters away from the water. Moses stood up and rescued them, then watered their flock (Exodus 2:16-17).';
+    if (hasWord('basket','papyrus','reed','reeds','adopted','adopt'))
+      return 'Moses’ mother put him in a waterproof basket on the Nile. Pharaoh\'s daughter found him and raised him in the palace as her own (Exodus 2:3-10).';
+    // ONLY return the generic Moses-baby fallback if the question is
+    // actually about Moses as a BABY. For adult-Moses questions (kills the
+    // Egyptian, flees to Midian, marries Zipporah, etc.) skip this layer
+    // and fall through to verseHint / typeHint instead.
+    if (hasWord('moses') && hasWord('baby','infant','child','born','birth'))
+      return 'Moses was a Hebrew baby adopted into Pharaoh’s palace. God had big plans for him.';
     return null;
   })();
 
@@ -5502,6 +5707,29 @@ function getHintForQuestion(q){
   if (typeHint)          return typeHint;
   if (verseHint)         return verseHint;
   return 'Think about the Moses story and choose your best guess.';
+}
+
+// v3.27 Jane 2026-04-27: scenario-specific clue IMAGERY. Returns an array
+// of IMG_SRC keys to render alongside the text clue. Empty array = no
+// images (text clue stands alone). Add new image triggers here as new
+// scenes drop in their backstory art.
+function getHintImagesForQuestion(q){
+  const text = ((q.q || q.prompt || '') + ' ' + (q.clue || '')).toLowerCase();
+  const has = (...words) => words.some(w => new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i').test(text));
+  const out = [];
+  // Baby-Moses backstory imagery
+  if (has('basket','papyrus','reed','reeds','nile','adopted','adopt')) {
+    out.push('babyMosesBasket');
+  }
+  if (has('pharaoh\'s daughter','princess','palace','daughter of pharaoh') ||
+      (has('pharaoh') && has('daughter'))) {
+    out.push('princess');
+  }
+  // Midian rescue imagery
+  if (has('shepherds','priest\'s daughters','well in midian','seven daughters','seven sisters')) {
+    out.push('midianWell');
+  }
+  return out;
 }
 
 function openChallenge(gate) {
@@ -5535,18 +5763,31 @@ function openChallenge(gate) {
   }
   currentGate = gate;
   game.state = 'dialog';
-  // v3.6: fully silence movement/tension loops so the quiz is quiet-calm.
+  // v3.24 Jane 2026-04-26: COMPLETE silence of every ambient/SFX loop while
+  // the challenge modal is open. Previously bgm was only DIMMED (not paused)
+  // and narration was started AT THE SAME TIME — Jane heard both layered on
+  // top of each other ("cover music as well as desert tension.mp3 are both
+  // playing together") plus campfire fire-crackle ambient sneaking through
+  // the proximity check. Now: pause every audio element (bgm, alerted,
+  // footstep, fire, camel, etc.), then start ONLY narration as the calm bed.
   try { audio.footstep.pause(); audio.footstep.currentTime = 0; } catch(e){}
   try { if (audio.alerted) { audio.alerted.pause(); _alertMusicOn = false; } } catch(e){}
-  // v2.2.2 Jane feedback: "when i face the challenge modal after that, there is
-  // literally no music." — Start a quiet narration bed under the quiz so the
-  // scene never falls silent. Main BGM is lowered (not paused) to keep
-  // continuity between chase → quiz → chase.
+  try { if (audio.fire) { audio.fire.pause(); audio.fire.currentTime = 0; } } catch(e){}
   try {
     if (audio.bgm) {
       audio._prevBgmVolume = audio.bgm.volume;
-      audio.bgm.volume = Math.max(0.08, audio.bgm.volume * 0.35);
+      audio.bgm.pause();
     }
+  } catch(e){}
+  // Catch-all: pause any other looping ambient (camel grunt, sandstorm bed,
+  // etc.) so narration stands alone.
+  try {
+    Object.entries(audio).forEach(([k, a]) => {
+      if (!a || k === 'narration') return;
+      // skip one-shots that aren't currently playing (paused already)
+      if (a.paused) return;
+      try { a.pause(); } catch(e){}
+    });
   } catch(e){}
   try {
     if (audio.narration) {
@@ -5597,6 +5838,31 @@ function openChallenge(gate) {
   if (hintBox) hintBox.style.display = 'none';
   if (hintBtn) { hintBtn.style.display = 'inline-block'; hintBtn.disabled = false; }
   if (hintTxt) hintTxt.textContent = getHintForQuestion(q);
+  // v3.27 Jane 2026-04-27: populate scenario imagery in the clue panel.
+  try {
+    const imagesEl = $('chHintImages');
+    if (imagesEl) {
+      const imgKeys = (typeof getHintImagesForQuestion === 'function')
+        ? getHintImagesForQuestion(q)
+        : [];
+      imagesEl.innerHTML = '';
+      if (imgKeys.length > 0) {
+        imagesEl.style.display = 'flex';
+        imgKeys.forEach(k => {
+          const src = (typeof IMG_SRC !== 'undefined' && IMG_SRC[k]) ? IMG_SRC[k] : null;
+          if (!src) return;
+          const im = document.createElement('img');
+          im.src = src;
+          im.alt = k;
+          im.style.cssText = 'max-width:96px;max-height:96px;border-radius:8px;border:2px solid #a0671c;background:rgba(255,255,255,0.4);object-fit:contain;';
+          im.onerror = () => { try { im.style.display = 'none'; } catch(e){} };
+          imagesEl.appendChild(im);
+        });
+      } else {
+        imagesEl.style.display = 'none';
+      }
+    }
+  } catch(e){}
   // v3.6.2: normalize bank's 'unscr' -> 'unscramble' and 'seq' -> 'sequence'.
   // The bank also has 'seq' entries using {cards:[...], answer:[0,1,2,3]} shape;
   // we convert to renderSequence's expected {items:[...ordered correct...]} shape.
@@ -6395,7 +6661,11 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
     // (the big overlay golden answer flash already shows the answer
     // itself, so the verse card was redundant and was getting cut off
     // against the Exit button on small screens).
-    fb.innerHTML = '<div style="font-size:22px;color:#fff6cc;font-weight:900;letter-spacing:0.6px;text-shadow:0 2px 5px rgba(0,0,0,0.45);background:linear-gradient(145deg,#1f6b2e,#2e8b3e);border:3px solid #FFD700;border-radius:10px;padding:10px 14px;">&#10022; Correct! +3 stars &#10022;</div>'
+    // v3.25 Jane 2026-04-26: the inner gold-bordered green pill was overflowing
+    // the parent <p>'s right edge — Jane reported "the right border of this
+    // box is missing". Set box-sizing: border-box + width: 100% so the inner
+    // div fits exactly inside the parent's content area on every screen.
+    fb.innerHTML = '<div style="box-sizing:border-box;width:100%;font-size:22px;color:#fff6cc;font-weight:900;letter-spacing:0.6px;text-shadow:0 2px 5px rgba(0,0,0,0.45);background:linear-gradient(145deg,#1f6b2e,#2e8b3e);border:3px solid #FFD700;border-radius:10px;padding:10px 14px;text-align:center;">&#10022; Correct! +3 stars &#10022;</div>'
       + tail;
     // v3.4: bumped 3200 -> 4200ms so the golden flash lingers an extra second
     setTimeout(() => {
@@ -6550,9 +6820,13 @@ function _closeChallengeModalAudio(){
   try {
     if (audio.narration) { audio.narration.pause(); audio.narration.currentTime = 0; }
   } catch(e){}
+  // v3.24 Jane 2026-04-26: bgm is now PAUSED on open (not just dimmed) so
+  // we restore its volume AND resume playback. Without play() the desert
+  // tension loop stayed silent after the modal closed.
   try {
-    if (audio.bgm && typeof audio._prevBgmVolume === 'number') {
-      audio.bgm.volume = audio._prevBgmVolume;
+    if (audio.bgm) {
+      if (typeof audio._prevBgmVolume === 'number') audio.bgm.volume = audio._prevBgmVolume;
+      audio.bgm.play().catch(()=>{});
     }
   } catch(e){}
 }
@@ -7577,7 +7851,10 @@ function updatePursuitScouts(dt){
       s.caught = true;
       try {
         game.hearts = 0; updateHudHearts();
-        openDanger('Pharaoh\'s scouts caught up to Moses! Keep moving east and hide behind boulders!', IMG_SRC.guard, 'guard');
+        // v3.27 Jane 2026-04-26: SCOUT caught Moses → show SCOUT image
+        // (was incorrectly using `guard.png`). Message now includes caves
+        // since Scene 2 has both boulders and caves as cover.
+        openDanger("Pharaoh's scouts caught up to Moses! Keep moving east and hide behind boulders or inside caves!", IMG_SRC.scout || IMG_SRC.guard, 'scout');
       } catch(e){}
       return;
     }
@@ -8107,7 +8384,8 @@ function updateGuards(dt){
         // catch only if Moses is actually visible, adjacent, NOT hidden, and not in a modal
         if (g.tx === player.tx && g.ty === player.ty && canGuardSeePlayer(g)
             && !player.crouched && !isMosesInCave() && game.state === 'playing') {
-          openDanger("A scout caught Moses! Hide behind a boulder so it blocks the scout's line of sight.", IMG_SRC.guard, 'guard');
+          // v3.27 Jane: scout-caught uses SCOUT image; mention caves as alternate cover (scene 2 only)
+          openDanger("A scout caught Moses! Hide behind a boulder or inside a cave so the scout can't see you.", IMG_SRC.scout || IMG_SRC.guard, 'scout');
           return;
         }
       }
@@ -9807,6 +10085,20 @@ function drawAmbient(){
   }
 }
 
+// v3.25 Jane 2026-04-26: clamp helpers — keep an oversize sprite fully
+// inside the canvas viewport at edge tiles. The EXIT, START, oasis, and
+// other large sprites scale to 1.5×–3.2× TILE; at the canvas edge the
+// "draw centered on tile" math made them bleed past the canvas border so
+// the right (or left) half got chopped — exactly what Jane reported as
+// "EXIT in red is being cut", "START image cut", "oasis image cut on the
+// right side". These helpers shift the sprite inward at edges while
+// preserving its size.
+function _clampSpriteX(rawX, spriteW){
+  return Math.max(0, Math.min(CANVAS_W - spriteW, rawX));
+}
+function _clampSpriteY(rawY, spriteH){
+  return Math.max(0, Math.min(CANVAS_H - spriteH, rawY));
+}
 function drawTile(t, dx, dy, tx, ty){
   // --- FLOOR LAYER ---
   // v1.2 FIX (§3.11): Scene 2 now draws warm desert sand (not palace floor)
@@ -10598,19 +10890,28 @@ function drawTile(t, dx, dy, tx, ty){
         ctx.ellipse(dx+TILE/2, dy+TILE-2, TILE*0.58, 5, 0, 0, Math.PI*2);
         ctx.fill();
         ctx.restore();
-        // v3.21 Jane 2026-04-25: bump topmost EXIT another notch — 2.7 → 3.2× TILE
-        // tall, width cap 2.6 → 3.0× TILE wide. EXIT now visually dominates
-        // the entire top-right corner so kids spot it from anywhere on the map.
-        const esH = TILE * 3.2;
+        // v3.27 Jane 2026-04-27: REVERTED right-anchor (caused "EXIT
+        // disappears when camera pans" — the right-anchor at large scale
+        // shifted the sprite to extreme negative X during certain camera
+        // positions). Center-anchored at 1.5× TILE: sprite fits inside
+        // its tile + 0.5 of each neighbor, never disappears, never jumps.
+        // Visual prominence comes from the green corona + arrow, not raw
+        // sprite scale.
+        const esH = TILE * 1.5;
         const esAR = (exitPNG.naturalWidth || 1) / (exitPNG.naturalHeight || 1);
         let esW = Math.round(esH * esAR);
-        const esWMax = Math.round(TILE * 3.0);
+        const esWMax = Math.round(TILE * 1.5);
         let esHInt = Math.round(esH);
         if (esW > esWMax) {
           // keep aspect ratio: derive height from capped width
           esHInt = Math.round(esWMax / esAR);
           esW = esWMax;
         }
+        // v3.27: CENTER-anchor — sprite center = tile center. At 1.5× TILE
+        // the sprite fits within (tile ± 0.25 TILE), so it stays glued to
+        // the tile during the camera pan and never disappears. The big
+        // green corona + arrow + label give it visual weight without
+        // needing oversize scale.
         const esOX = Math.round(dx + TILE/2 - esW/2);
         const esOY = Math.round(dy + TILE - esHInt + TILE*0.14);
         // extra-bright corona behind the dominant exit
@@ -10636,31 +10937,91 @@ function drawTile(t, dx, dy, tx, ty){
         const arrowColor = _allGatesSolved
           ? 'rgba(120,255,140,' + goPulse.toFixed(2) + ')'
           : 'rgba(255,220,120,' + goPulse.toFixed(2) + ')';
+        // v3.27 Jane 2026-04-26: small up-arrow now sits BELOW the EXIT
+        // sprite (previously overlapped the image). Tip points UP at the
+        // EXIT image. Sits between the sprite bottom and the EXIT text
+        // pill, both fully visible.
+        const arrowBaseY = dy + TILE + 26;  // below sprite + label pill
+        const arrowTipY  = dy + TILE + 14;
         ctx.fillStyle = arrowColor;
         ctx.beginPath();
-        ctx.moveTo(ecx, dy - 6);
-        ctx.lineTo(ecx - 8, dy + 4);
-        ctx.lineTo(ecx - 3, dy + 4);
-        ctx.lineTo(ecx - 3, dy + 14);
-        ctx.lineTo(ecx + 3, dy + 14);
-        ctx.lineTo(ecx + 3, dy + 4);
-        ctx.lineTo(ecx + 8, dy + 4);
+        ctx.moveTo(ecx, arrowTipY);
+        ctx.lineTo(ecx - 8, arrowTipY + 10);
+        ctx.lineTo(ecx - 3, arrowTipY + 10);
+        ctx.lineTo(ecx - 3, arrowBaseY);
+        ctx.lineTo(ecx + 3, arrowBaseY);
+        ctx.lineTo(ecx + 3, arrowTipY + 10);
+        ctx.lineTo(ecx + 8, arrowTipY + 10);
         ctx.closePath();
         ctx.fill();
         ctx.strokeStyle = _allGatesSolved ? 'rgba(20,80,30,0.85)' : 'rgba(80,40,0,0.7)';
         ctx.lineWidth = 1.5;
         ctx.stroke();
-        // EXIT label
+        // v3.26 Jane 2026-04-26: EXIT label moved BELOW the sprite (was
+        // ABOVE, where it sat ON the sprite art and competed with the
+        // exit's own baked-in "EXIT" red text). Sits on a dark pill so
+        // it's always readable against any tile background.
         ctx.save();
-        ctx.font = 'bold 11px Georgia';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = _allGatesSolved ? '#28a040' : '#7a2';
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 3;
         const exitLabel = _allGatesSolved ? 'GO! EXIT' : 'EXIT';
-        ctx.strokeText(exitLabel, dx + TILE/2, dy - 14);
-        ctx.fillText(exitLabel, dx + TILE/2, dy - 14);
+        ctx.font = 'bold 12px Georgia';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const labelY = dy + TILE + 12;
+        const lblTextW = ctx.measureText(exitLabel).width;
+        const pillW = lblTextW + 14, pillH = 18;
+        const pillX = dx + TILE/2 - pillW/2;
+        const pillY = labelY - pillH/2;
+        ctx.fillStyle = 'rgba(20,10,40,0.78)';
+        if (typeof ctx.roundRect === 'function') {
+          ctx.beginPath(); ctx.roundRect(pillX, pillY, pillW, pillH, 9); ctx.fill();
+        } else {
+          ctx.fillRect(pillX, pillY, pillW, pillH);
+        }
+        ctx.fillStyle = _allGatesSolved ? '#7fff8a' : '#ffd976';
+        ctx.fillText(exitLabel, dx + TILE/2, labelY);
         ctx.restore();
+        // v3.25 Jane 2026-04-26: GIANT pulsing arrow during the intro pan
+        // HOLD — points HORIZONTALLY at the EXIT from the LEFT side so it
+        // doesn't cover the EXIT sprite (which extends ~3 tiles tall above
+        // its own tile). The arrow tip lands just to the left of the exit;
+        // "GOAL!" label sits to the LEFT of the arrow shaft.
+        if (window._introPanShowArrow) {
+          ctx.save();
+          const arrowPulse = 0.7 + Math.sin(now/180) * 0.3;
+          const bounce = Math.sin(now/200) * 6;
+          // Arrow lives in the tile column TO THE LEFT of the exit, pointing
+          // right at it. ecy is the exit center y.
+          const arrowTipX = dx - 4 + bounce;          // tip just left of EXIT tile
+          const arrowTailX = dx - TILE * 2.3 + bounce; // tail ~2 tiles left
+          const arrowMidY  = ecy;
+          const headHalf   = TILE * 0.55;             // arrow-head height
+          const shaftHalf  = TILE * 0.18;             // shaft thickness
+          // shaft + head (right-pointing)
+          ctx.fillStyle = 'rgba(255,80,40,' + arrowPulse.toFixed(2) + ')';
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(arrowTailX, arrowMidY - shaftHalf);
+          ctx.lineTo(arrowTipX - TILE * 0.55, arrowMidY - shaftHalf);
+          ctx.lineTo(arrowTipX - TILE * 0.55, arrowMidY - headHalf);
+          ctx.lineTo(arrowTipX, arrowMidY);
+          ctx.lineTo(arrowTipX - TILE * 0.55, arrowMidY + headHalf);
+          ctx.lineTo(arrowTipX - TILE * 0.55, arrowMidY + shaftHalf);
+          ctx.lineTo(arrowTailX, arrowMidY + shaftHalf);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          // "GOAL!" label sits to the LEFT of the arrow tail
+          ctx.font = 'bold 22px Georgia';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#fff';
+          ctx.strokeStyle = 'rgba(40,12,4,0.9)';
+          ctx.lineWidth = 5;
+          ctx.strokeText('GOAL!', arrowTailX - 8, arrowMidY);
+          ctx.fillText('GOAL!', arrowTailX - 8, arrowMidY);
+          ctx.restore();
+        }
         return;
       }
       // stepped cliff face (darker to lighter bottom-to-top = rising)
@@ -10804,6 +11165,7 @@ function drawTile(t, dx, dy, tx, ty){
         dsHInt = Math.round(dsWMax / dsAR);
         dsW = dsWMax;
       }
+      // v3.26 Jane 2026-04-26: removed clamp (causes "jump" during camera pan).
       const dsOX = Math.round(dx + TILE/2 - dsW/2);
       const dsOY = Math.round(dy + TILE - dsHInt + TILE*0.18);
       ctx.save();
@@ -10813,6 +11175,29 @@ function drawTile(t, dx, dy, tx, ty){
       ctx.fill();
       ctx.restore();
       ctx.drawImage(IMG.desertStart, dsOX, dsOY, dsW, dsHInt);
+      // v3.26 Jane 2026-04-26: clear "START" label BELOW the sprite, on a
+      // dark pill so it pops against any tile background. Was sitting ON
+      // the sprite art (the green vine "START" text baked into the PNG),
+      // but kids needed an unmistakable readable label below.
+      ctx.save();
+      const startLabel = 'START';
+      ctx.font = 'bold 12px Georgia';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const labelY = dy + TILE + 12;
+      const lblTW = ctx.measureText(startLabel).width;
+      const pillW = lblTW + 14, pillH = 18;
+      const pillX = dx + TILE/2 - pillW/2;
+      const pillY = labelY - pillH/2;
+      ctx.fillStyle = 'rgba(20,10,40,0.78)';
+      if (typeof ctx.roundRect === 'function') {
+        ctx.beginPath(); ctx.roundRect(pillX, pillY, pillW, pillH, 9); ctx.fill();
+      } else {
+        ctx.fillRect(pillX, pillY, pillW, pillH);
+      }
+      ctx.fillStyle = '#7fff8a';
+      ctx.fillText(startLabel, dx + TILE/2, labelY);
+      ctx.restore();
     }
     // v3.17 Jane 2026-04-25: removed duplicate "START" canvas-text label.
     // The desertStart PNG already has "START" green-vine text on the
@@ -10849,6 +11234,12 @@ function drawTile(t, dx, dy, tx, ty){
       const oAR = (IMG.oasisTile.naturalWidth || 1) / (IMG.oasisTile.naturalHeight || 1);
       const oW = Math.round(oH * oAR);
       const oHInt = Math.round(oH);
+      // v3.26 Jane 2026-04-26: removed clamp. The clamp caused the oasis
+      // sprite to "jump" during the camera pan (sprite shifted to canvas
+      // edge then snapped back to tile center as camera moved). At 1.45×
+      // TILE the oasis fits inside its tile + 1 neighbor without bleeding
+      // catastrophically — accept some edge clipping in exchange for the
+      // sprite always staying anchored to its true tile position.
       const oOX = Math.round(dx + TILE/2 - oW/2);
       const oOY = Math.round(dy + TILE - oHInt + 4);
       ctx.drawImage(IMG.oasisTile, oOX, oOY, oW, oHInt);
@@ -12302,6 +12693,23 @@ let lastT = performance.now();
 let _fireProxLastMs = 0;
 function _updateCampfireProximityAudio(){
   if (game.scene !== 2) return;
+  // v3.24 Jane 2026-04-26: hard-gate on game.state — fire crackle was leaking
+  // into the challenge modal, peek map, pause overlay, and game-over.
+  if (game.state !== 'playing') return;
+  // Belt-and-suspenders: also bail if any modal is up (modals can briefly
+  // open while game.state still says 'playing' before the dialog handler
+  // updates it).
+  try {
+    const _modalUp = !!(
+      (document.getElementById('challengeModal') && document.getElementById('challengeModal').classList.contains('active')) ||
+      (document.getElementById('dialogModal') && document.getElementById('dialogModal').classList.contains('active')) ||
+      (document.getElementById('dangerModal') && document.getElementById('dangerModal').classList.contains('active')) ||
+      (document.getElementById('pauseModal') && document.getElementById('pauseModal').classList.contains('active')) ||
+      (document.getElementById('mapPeekOverlay') && document.getElementById('mapPeekOverlay').classList.contains('active')) ||
+      (document.getElementById('truthChestModal') && document.getElementById('truthChestModal').classList.contains('active'))
+    );
+    if (_modalUp) return;
+  } catch(e){}
   const now = performance.now();
   if (now - _fireProxLastMs < 2500) return;
   if (!audio || !audio.fire) return;
