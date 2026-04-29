@@ -5577,7 +5577,7 @@ const SCENE_TUT_STEPS = [
   // steps were moved into CONTROLS_TUT_STEPS above (bundle-shared).
   // (movement + Interact steps moved into CONTROLS_TUT_STEPS above)
   { icon:'?',  title:'Solve every checkpoint', body:'Nine glowing checkpoints (?) are scattered across the desert. Walk near one and Moses pauses for 3 Bible questions. Solve ALL nine to open the EXIT — you cannot walk around them.' },
-  { icon:'⚠',  title:'Avoid Pharaoh's scouts', body:'Red guards and orange scouts patrol the desert. Stay near dunes, boulders, and caves to break line-of-sight. Caves are sanctuary; enemies cannot enter.' },
+  { icon:'⚠',  title:'Avoid Pharaoh’s scouts', body:'Red guards and orange scouts patrol the desert. Stay near dunes, boulders, and caves to break line-of-sight. Caves are sanctuary; enemies cannot enter.' },
   { icon:'\u2605',  title:'Reach Midian!', body:'After clearing all 9 checkpoints, the EXIT tile glows BRIGHT GREEN. Walk into it and Moses crosses into Midian. Tap Start to begin!' },
 ];
 // v3.28: Two flags. The bundle flag travels across all 3 scenes; the
@@ -6230,13 +6230,13 @@ function getHintForQuestion(q){
     if (hasWord('shepherds') || (hasWord('daughters') && hasWord('drove','away','priest')))
       return 'At the Midian well, rough shepherds chased the priest\'s daughters away from the water. Moses stood up and rescued them, then watered their flock (Exodus 2:16-17).';
     if (hasWord('basket','papyrus','reed','reeds','adopted','adopt'))
-      return 'Moses' mother put him in a waterproof basket on the Nile. Pharaoh\'s daughter found him and raised him in the palace as her own (Exodus 2:3-10).';
+      return 'Moses’ mother put him in a waterproof basket on the Nile. Pharaoh’s daughter found him and raised him in the palace as her own (Exodus 2:3-10).';
     // ONLY return the generic Moses-baby fallback if the question is
     // actually about Moses as a BABY. For adult-Moses questions (kills the
     // Egyptian, flees to Midian, marries Zipporah, etc.) skip this layer
     // and fall through to verseHint / typeHint instead.
     if (hasWord('moses') && hasWord('baby','infant','child','born','birth'))
-      return 'Moses was a Hebrew baby adopted into Pharaoh's palace. God had big plans for him.';
+      return 'Moses was a Hebrew baby adopted into Pharaoh’s palace. God had big plans for him.';
     return null;
   })();
 
