@@ -1192,7 +1192,9 @@
     font-size:28px; font-weight:900; cursor:pointer;
     display:flex; align-items:center; justify-content:center;
     transition:transform 0.12s, background 0.15s;
+    padding:2px; box-sizing:border-box; overflow:hidden;
   }
+  .ch-pair-tile img { max-width:100%; max-height:100%; object-fit:contain; }
   .ch-pair-tile:hover { transform:translateY(-3px); background:#fff1c2; }
   .ch-pair-tile:active { transform:scale(0.96); }
   /* -- COUNT: scene grid above, number buttons below -- */
@@ -1201,7 +1203,8 @@
     background: rgba(0,0,0,0.25); border:2px dashed #ffd976; border-radius:10px;
     padding:8px; max-width:360px; margin:6px auto 10px;
   }
-  .ch-count-cell { width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+  .ch-count-cell { width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-size:22px; overflow:hidden; }
+  .ch-count-cell img { max-width:100%; max-height:100%; object-fit:contain; }
   .ch-count-choices { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:6px 0; }
   .ch-count-btn {
     min-width:52px; height:46px; font-size:20px; font-weight:900;
@@ -1215,26 +1218,32 @@
      her screen (backface-visibility clipping). Rewritten as simple
      background-swap cards with big emoji faces. */
   .ch-memory-grid {
-    display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;
-    max-width:360px; margin:10px auto;
+    display:grid; grid-template-columns:repeat(3, minmax(60px,1fr)); gap:8px;
+    width:100%; max-width:300px; margin:10px auto;
   }
   .ch-memory-card {
-    position:relative; height:74px; width:100%;
+    position:relative; height:80px; width:100%;
     border:3px solid #7a4a00; border-radius:12px;
     display:flex; align-items:center; justify-content:center;
-    font-size:38px; line-height:1; cursor:pointer;
+    cursor:pointer;
     background:linear-gradient(135deg,#c59754,#8a5a22);
     color:#fff1c2;
     transition: background 0.25s, transform 0.2s, box-shadow 0.25s;
     user-select:none;
     box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+    overflow:hidden; padding:4px; box-sizing:border-box;
   }
-  .ch-memory-card::before {
-    content:"?";
+  .ch-memory-card .mem-back {
     font-size:34px; font-weight:900; color:#fff1c2;
-    display:block;
   }
-  .ch-memory-card.flipped::before { content:""; display:none; }
+  .ch-memory-card .mem-face {
+    display:none;
+  }
+  .ch-memory-card .mem-face img {
+    max-width:100%; max-height:68px; object-fit:contain;
+  }
+  .ch-memory-card.flipped .mem-back { display:none; }
+  .ch-memory-card.flipped .mem-face { display:flex; align-items:center; justify-content:center; }
   .ch-memory-card.flipped {
     background:#ffd976; color:#3a1a00;
     transform: scale(1.05);
@@ -1244,6 +1253,50 @@
     background:#9ed89e; color:#1f4d1f;
     border-color:#2e5e2e; opacity:0.85; pointer-events:none;
     transform: scale(1.0);
+  }
+  /* -- SLIDER PUZZLE: 3x3 image swap -- */
+  .ch-slider-thumb {
+    display:block; max-width:120px; max-height:120px; object-fit:contain;
+    margin:4px auto 6px; border:3px solid #ffd976; border-radius:10px;
+    background:rgba(255,255,255,0.15);
+  }
+  .ch-slider-hint {
+    text-align:center; font-size:13px; color:#5a2d0c; font-weight:700; margin-bottom:6px;
+  }
+  .ch-slider-grid {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:3px;
+    width:min(280px, 72vw); height:min(280px, 72vw); margin:0 auto 8px;
+    border:3px solid #ffd976; border-radius:8px; overflow:hidden;
+    background:#2a1508;
+  }
+  .ch-slider-tile {
+    background-size:300% 300%; border:none; cursor:pointer;
+    transition:outline 0.12s, filter 0.12s;
+  }
+  .ch-slider-tile.selected {
+    outline:3px solid #7fff8a; outline-offset:-2px; filter:brightness(1.25);
+  }
+  .ch-slider-tile.locked {
+    pointer-events:none; outline:2px solid #ffd976; filter:brightness(1.1);
+  }
+  /* -- SPOT THE DIFFERENCE: two images side by side -- */
+  .ch-spotdiff-wrapper {
+    display:flex; gap:6px; justify-content:center; margin:6px auto 4px;
+  }
+  .ch-spotdiff-img {
+    width:min(136px, 36vw); height:auto; object-fit:contain;
+    border:2px solid #ffd976; border-radius:8px;
+  }
+  /* -- COUNT (scene image mode): single scene image -- */
+  .ch-count-scene-img {
+    display:block; width:min(260px, 70vw); height:auto; object-fit:contain;
+    margin:0 auto 8px; border:3px solid #ffd976; border-radius:10px;
+  }
+  /* -- PICTIONARY: full-width scene image above verse MCQ buttons -- */
+  .ch-pict-img {
+    display:block; width:min(280px, 78vw); height:auto; max-height:190px;
+    object-fit:contain; margin:0 auto 12px;
+    border:3px solid #ffd976; border-radius:10px;
   }
   /* -- MINI-MAZE: 5x5 grid + arrow pad -- */
   /* v2.2.6 Jane feedback: kids didn't know which cell was START vs FINISH.
@@ -2036,7 +2089,13 @@
      grows from 224 px to ~310 px (+38%) and sprites finally read at a
      usable size on a landscape phone. */
   @media (max-height: 500px) and (orientation: landscape) {
+    .game-page.active {
+      display: grid !important;
+      grid-template-rows: auto 1fr;
+      grid-template-columns: 1fr auto;
+    }
     .hud {
+      grid-column: 1 / -1;
       padding: 4px 10px;
       min-height: auto;
       flex-wrap: nowrap;
@@ -2051,66 +2110,55 @@
       font-size: 10px !important; padding: 0 !important;
       border-radius: 15px !important;
     }
-    /* v3.24 Jane 2026-04-26: landscape controls are now part of the flex
-       column (not absolutely-positioned) — that was the root of the
-       d-pad-clipping bug. With the d-pad floating, the canvas-wrapper
-       didn't reserve room for it on short landscape phones, so the bottom
-       row of arrow buttons could fall outside the viewport. Now the
-       d-pad lives inside .controls (in-flow), which guarantees the
-       canvas shrinks if needed to keep the arrows visible. The action
-       buttons stay floating at the right edge but use safe inset and
-       larger pill-shaped buttons so "Interact" / "Hint" text fits with
-       breathing room from the borders. */
+    .canvas-wrapper {
+      grid-row: 2;
+      grid-column: 1;
+      min-height: 0;
+    }
     .controls {
+      grid-row: 2;
+      grid-column: 2;
+      flex-direction: column !important;
+      align-items: center;
+      justify-content: center;
       min-height: unset;
-      height: auto;
-      padding: 4px 6px;
-      background: linear-gradient(0deg, rgba(42,14,3,0.92) 0%, rgba(58,21,8,0.85) 100%);
-      border-top: 1px solid rgba(255,217,118,0.5);
+      height: 100%;
+      width: auto;
+      padding: 6px 4px;
+      background: linear-gradient(90deg, rgba(42,14,3,0.92) 0%, rgba(58,21,8,0.85) 100%);
+      border-left: 1px solid rgba(255,217,118,0.5);
+      border-top: none;
       position: relative;
       z-index: 30;
-      gap: 0;
-      justify-content: flex-start;
+      gap: 8px;
       flex-shrink: 0;
-    }
-    .controls {
-      flex-direction: row !important;
-      align-items: center;
-      justify-content: space-between !important;
-      gap: 8px !important;
+      overflow-y: auto;
     }
     .dpad {
-      width: 132px;
-      gap: 4px;
+      width: 110px;
+      gap: 3px;
       flex: 0 0 auto;
     }
-    .dpad-btn, .dpad-spacer { height: 32px; border-radius: 50%; font-size: 16px; }
-    /* v3.28 Jane 2026-04-27: action buttons now live IN the bottom controls
-       strip beside the d-pad (was: position:fixed floating right, which left
-       a big dead zone below the canvas in landscape AND covered map edges).
-       Horizontal pill row, right-aligned, fits within the same .controls
-       flex row so the canvas-wrapper above takes the full available width. */
+    .dpad-btn, .dpad-spacer { height: 30px; border-radius: 50%; font-size: 15px; }
     .action-panel {
       position: relative;
       top: auto; right: auto; transform: none;
-      flex: 1 1 auto;
-      flex-direction: row !important;
-      justify-content: flex-end;
+      flex-direction: column !important;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       max-width: unset;
       width: auto;
       z-index: 30;
-      padding-right: max(4px, env(safe-area-inset-right, 4px));
+      flex: 0 0 auto;
     }
     .action-btn {
-      width: auto;
-      min-width: 64px;
-      max-width: 90px;
-      height: 36px;
-      border-radius: 18px;
-      padding: 0 10px;
-      font-size: 12px;
+      width: 72px;
+      min-width: unset;
+      max-width: unset;
+      height: 32px;
+      border-radius: 16px;
+      padding: 0 8px;
+      font-size: 11px;
       font-weight: 800;
       flex: 0 0 auto;
       line-height: 1;
@@ -2255,7 +2303,7 @@
       <span class="hud-chip"><img src="assets/images/star%207.png" onerror="this.style.display='none'" alt=""><span id="hudStars">0</span></span>
       <span class="hud-chip"><img src="assets/images/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span>/3</span>
       <!-- v2.1 Scene 2: altitude chip (shown only on scene 2, updated by updateHudAltitude) -->
-      <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/5</span>
+      <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/9</span>
       <span class="hud-chip" id="hudTimer">3:00</span>
     </div>
     <div class="hud-group">
@@ -2384,7 +2432,7 @@
 <div class="modal-overlay challenge-modal" id="challengeModal">
   <div class="modal-content">
     <div class="ch-scroll">
-      <div id="chHeader" style="color:#6a3e10;font-size:12px;letter-spacing:1.5px;margin-bottom:4px;font-weight:800;">CHECKPOINT</div>
+      <div id="chHeader" style="color:#6a3e10;font-size:12px;letter-spacing:1.5px;margin-bottom:4px;font-weight:800;white-space:nowrap;">CHECKPOINT</div>
       <h2 id="chTitle">Answer to pass!</h2>
       <p id="chQ" style="font-size:16px;line-height:1.45;"></p>
       <div id="chOptions" style="display:flex;flex-direction:column;gap:6px;margin-top:10px;"></div>
@@ -3867,18 +3915,42 @@ const CHALLENGE_BANK = {
     // --- Pair: find the singleton ---
     { id:'eP1', type:'pair',
       q:'Tap the item with NO pair:',
-      items:['\u{1F476}','\u{1F476}','\u{1F33F}','\u{1F33F}','\u{1F30A}','\u{1F30A}','\u{1F451}'],
-      answer:'\u{1F451}',
-      verse:'Babies, leaves, and waves come in pairs — but there was only one Pharaoh.' },
+      items:[
+        {src:'assets/images/color basket.png',key:'basket',alt:'Basket'},
+        {src:'assets/images/color basket.png',key:'basket',alt:'Basket'},
+        {src:'assets/images/color spear.png',key:'spear',alt:'Spear'},
+        {src:'assets/images/color spear.png',key:'spear',alt:'Spear'},
+        {src:'assets/images/color shield.png',key:'shield',alt:'Shield'},
+        {src:'assets/images/color shield.png',key:'shield',alt:'Shield'},
+        {src:'assets/images/color crown.png',key:'crown',alt:'Crown'}
+      ],
+      answer:'crown',
+      verse:'Baskets, spears, and shields come in pairs — but there was only one Pharaoh\'s crown.' },
     { id:'eP2', type:'pair',
       q:'Find the lone item:',
-      items:['\u{1F4DC}','\u{1F4DC}','\u{2B50}','\u{2B50}','\u{1F525}','\u{1F525}','\u{1F9FA}'],
-      answer:'\u{1F9FA}',
-      verse:'One special basket hid baby Moses. (Exodus 2:3)' },
+      items:[
+        {src:'assets/images/scroll of strategy.png',key:'scroll',alt:'Scroll'},
+        {src:'assets/images/scroll of strategy.png',key:'scroll',alt:'Scroll'},
+        {src:'assets/images/star 7.png',key:'star',alt:'Star'},
+        {src:'assets/images/star 7.png',key:'star',alt:'Star'},
+        {src:'assets/images/color goblet.png',key:'goblet',alt:'Goblet'},
+        {src:'assets/images/color goblet.png',key:'goblet',alt:'Goblet'},
+        {src:'assets/images/color water pot.png',key:'pot',alt:'Water Pot'}
+      ],
+      answer:'pot',
+      verse:'One water pot at the well in Midian. (Exodus 2:15-16)' },
     { id:'eP3', type:'pair',
       q:'Which item stands alone?',
-      items:['\u{1F33F}','\u{1F33F}','\u{1F4A7}','\u{1F4A7}','\u{1F321}','\u{1F321}','\u{1F476}'],
-      answer:'\u{1F476}',
+      items:[
+        {src:'assets/images/color mortar.png',key:'mortar',alt:'Mortar'},
+        {src:'assets/images/color mortar.png',key:'mortar',alt:'Mortar'},
+        {src:'assets/images/water skin.png',key:'waterskin',alt:'Water Skin'},
+        {src:'assets/images/water skin.png',key:'waterskin',alt:'Water Skin'},
+        {src:'assets/images/stone tablet.png',key:'tablet',alt:'Tablet'},
+        {src:'assets/images/stone tablet.png',key:'tablet',alt:'Tablet'},
+        {src:'assets/images/color baby moses.png',key:'baby',alt:'Baby Moses'}
+      ],
+      answer:'baby',
       verse:'One brave baby — baby Moses. (Exodus 2:2)' },
     // --- Spot: odd-one-out ---
     { id:'eSp1', type:'spot',
@@ -3898,29 +3970,98 @@ const CHALLENGE_BANK = {
       verse:'Penguins live in cold places, not the Nile.' },
     // --- Count ---
     { id:'eC1', type:'count',
-      q:'Count the jars at the well (Moses helped Jethro\'s daughters draw water):',
-      grid:'\u{1FAD9} \u{1F33F} \u{1FAD9} \u{1F335} \u{1FAD9} \u{1F33F} \u{1FAD9} \u{1F335} \u{1FAD9}',
+      q:'Count the water pots at the well (Moses helped Jethro\'s daughters draw water):',
+      items:[
+        {src:'assets/images/color water pot.png',alt:'Pot'},{src:'assets/images/desert cactus.png',alt:'Cactus'},
+        {src:'assets/images/color water pot.png',alt:'Pot'},{src:'assets/images/rock.png',alt:'Rock'},
+        {src:'assets/images/color water pot.png',alt:'Pot'},{src:'assets/images/desert cactus.png',alt:'Cactus'},
+        {src:'assets/images/color water pot.png',alt:'Pot'},{src:'assets/images/rock.png',alt:'Rock'},
+        {src:'assets/images/color water pot.png',alt:'Pot'}
+      ],
       answer:5,
       clue:'At the well in Midian, sheep were waiting thirsty.',
       oasisRefill:true,
       verse:'"He drew water for them and watered their flock." (Exodus 2:17 NIV)' },
     { id:'eC2', type:'count',
-      q:'Count the palm trees at the oasis:',
-      grid:'\u{1F334} \u{1F33E} \u{1F334} \u{1F334} \u{1F33E} \u{1F334} \u{1F334}',
+      q:'Count the shields the guards are carrying:',
+      items:[
+        {src:'assets/images/color shield.png',alt:'Shield'},{src:'assets/images/color spear.png',alt:'Spear'},
+        {src:'assets/images/color shield.png',alt:'Shield'},{src:'assets/images/color shield.png',alt:'Shield'},
+        {src:'assets/images/color spear.png',alt:'Spear'},{src:'assets/images/color shield.png',alt:'Shield'},
+        {src:'assets/images/color shield.png',alt:'Shield'}
+      ],
       answer:5,
-      clue:'The oasis gave Moses shade after the long hot sand.',
+      clue:'Pharaoh\'s guards carried shields through the desert.',
       oasisRefill:true,
-      verse:'The desert wells gave rest to every weary traveler.' },
+      verse:'The guards searched, but God protected Moses in the desert.' },
     { id:'eC3', type:'count',
-      q:'Count the sheep in the priest of Midian\'s flock:',
-      grid:'\u{1F411} \u{1F33F} \u{1F411} \u{1F411} \u{1F33E} \u{1F411} \u{1F411} \u{1F411}',
+      q:'Count the treasure bags Moses found on his journey:',
+      items:[
+        {src:'assets/images/treasure bag blue.png',alt:'Bag'},{src:'assets/images/rock.png',alt:'Rock'},
+        {src:'assets/images/treasure bag blue.png',alt:'Bag'},{src:'assets/images/treasure bag blue.png',alt:'Bag'},
+        {src:'assets/images/desert cactus.png',alt:'Cactus'},{src:'assets/images/treasure bag blue.png',alt:'Bag'},
+        {src:'assets/images/treasure bag blue.png',alt:'Bag'},{src:'assets/images/treasure bag blue.png',alt:'Bag'}
+      ],
       answer:6,
-      clue:'In Midian, Moses stayed with the priest and his seven daughters.',
+      clue:'God provided for Moses even in the desert.',
       verse:'"Moses agreed to stay with the man, who gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
     // --- Memory (procedural) ---
     { id:'eMem1', type:'memory',
       q:'Match all 4 palace-treasure pairs:',
       verse:'God remembers His people — you remember the pairs!' },
+    // --- Slider puzzle ---
+    { id:'eSl1', type:'slider',
+      q:'Rearrange the tiles to reveal Moses as a shepherd in Midian:',
+      image:'assets/images/moses shepherd.png',
+      alt:'Moses as a shepherd',
+      clue:'Moses became a shepherd in Midian, tending the flock of his father-in-law Jethro (Exodus 3:1).',
+      verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
+    { id:'eSl2', type:'slider',
+      q:'Rearrange the tiles to reveal a scene from Moses\' journey:',
+      image:'assets/images/silder puzzle 1.png',
+      alt:'A Bible scene from Moses\' story',
+      clue:'Moses\' journey to Midian was long and full of God\'s protection (Exodus 2:15).',
+      verse:'"By faith he left Egypt, not fearing the king\'s anger; he persevered because he saw him who is invisible." (Hebrews 11:27 NIV)' },
+    // --- Spot the difference ---
+    { id:'eSdiff1', type:'spotdiff',
+      q:'How many differences can you spot between these two pictures of baby Moses?',
+      imgA:'assets/images/spot the difference moses in nile A.png',
+      imgB:'assets/images/spot the difference moses in nile B.png',
+      answer:4,
+      clue:'Look very carefully — some colours, shapes or objects have changed between the two pictures!',
+      verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
+    // --- Pictionary ---
+    { id:'ePict1', type:'pictionary',
+      q:'Which Bible verse does this picture illustrate?',
+      image:'assets/images/color princess holding baby.png',
+      alt:'The princess of Egypt finds baby Moses',
+      options:['Exodus 2:6','Genesis 21:14','Numbers 12:9','Hebrews 11:7'],
+      correct:0,
+      clue:'A royal woman opens a basket pulled from the river. She sees a crying Hebrew baby inside and feels sorry for him.',
+      verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
+    { id:'ePict2', type:'pictionary',
+      q:'Which Bible verse does this picture show?',
+      image:'assets/images/miriam watching moses.png',
+      alt:'Miriam watching the basket in the reeds',
+      options:['Genesis 3:6','Exodus 2:4','Leviticus 20:9','Numbers 6:23'],
+      correct:1,
+      clue:'A young girl stands at the edge of the river, quietly watching a basket floating among the reeds.',
+      verse:'"His sister stood at a distance to see what would happen to him." (Exodus 2:4 NIV)' },
+    // --- Count (scene image) ---
+    { id:'eCountImg1', type:'count',
+      q:'Count the daughters of the priest of Midian at the well:',
+      sceneImg:'assets/images/count the daughters_7.png',
+      sceneAlt:'Daughters of the priest of Midian at the well',
+      answer:7,
+      clue:'The priest of Midian had SEVEN daughters who came to draw water every day (Exodus 2:16).',
+      verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
+    { id:'eCountImg2', type:'count',
+      q:'Count the water pots in the picture:',
+      sceneImg:'assets/images/count the waterpots_5.png',
+      sceneAlt:'Water pots at the well',
+      answer:5,
+      clue:'Moses helped Jethro\'s daughters draw water into pots for their flock (Exodus 2:17).',
+      verse:'"He drew water for them and watered their flock." (Exodus 2:17 NIV)' },
     // --- Mini-maze (procedural) ---
     { id:'eMz1', type:'maze',
       q:'Help baby Moses\' basket reach safety through the reeds:',
@@ -3945,6 +4086,7 @@ const CHALLENGE_BANK = {
       verse:'"Moses got up and came to their rescue and watered their flock." (Exodus 2:17 NIV)' },
     { id:'m6', type:'trivia', q:'Who did Moses marry in Midian?',
       options:['Miriam','Zipporah','Rebekah','Rachel'], correct:1,
+      clue:'She was one of the seven daughters of Jethro the priest. Moses watered her flock at the well before Jethro invited him to stay. (Exodus 2:16-21)',
       verse:'"Moses agreed to stay... and he gave his daughter Zipporah to Moses." (Exodus 2:21 NIV)' },
     { id:'m7', type:'tf', q:'True or False: By faith, Moses refused to be known as the son of Pharaoh\'s daughter.',
       options:['True','False'], correct:0,
@@ -4002,7 +4144,7 @@ const CHALLENGE_BANK = {
     // --- Match ---
     { id:'mM1', type:'match',
       q:'Match each name to its role in the Exodus 1-2 story:',
-      clue:'A king rules Egypt, a priest in Midian welcomes Moses, midwives fear God, a wife and a son share Moses\' tent, a sister and brother share his blood.',
+      clue:'Tip: Jethro and Reuel are the SAME person — two different names for Moses\' father-in-law. Match Jethro to "Priest of Midian" and Reuel to "Jethro\'s other name." A king rules Egypt, midwives fear God, a wife and son share Moses\' tent, a sister and brother share his blood.',
       pairs:[
         ['Pharaoh','King of Egypt'],
         ['Jethro','Priest of Midian'],
@@ -4068,18 +4210,42 @@ const CHALLENGE_BANK = {
     // --- Pair: find the singleton ---
     { id:'mP1', type:'pair',
       q:'Find the lone Midian item (no pair):',
-      items:['\u{1F411}','\u{1F411}','\u{1F33E}','\u{1F33E}','\u{1F495}','\u{1F495}','\u{1F4A7}'],
-      answer:'\u{1F4A7}',
+      items:[
+        {src:'assets/images/camel friendly.png',key:'camel',alt:'Camel'},
+        {src:'assets/images/camel friendly.png',key:'camel',alt:'Camel'},
+        {src:'assets/images/bread.png',key:'bread',alt:'Bread'},
+        {src:'assets/images/bread.png',key:'bread',alt:'Bread'},
+        {src:'assets/images/cave 1.png',key:'cave',alt:'Cave'},
+        {src:'assets/images/cave 1.png',key:'cave',alt:'Cave'},
+        {src:'assets/images/midian well.png',key:'well',alt:'Well'}
+      ],
+      answer:'well',
       verse:'Moses drew water at the well. (Exodus 2:17)' },
     { id:'mP2', type:'pair',
       q:'Which item stands alone?',
-      items:['\u{26F2}','\u{26F2}','\u{1F3D5}','\u{1F3D5}','\u{1F33F}','\u{1F33F}','\u{1F40F}'],
-      answer:'\u{1F40F}',
+      items:[
+        {src:'assets/images/treasure bag green.png',key:'bag',alt:'Bag'},
+        {src:'assets/images/treasure bag green.png',key:'bag',alt:'Bag'},
+        {src:'assets/images/desert cactus.png',key:'cactus',alt:'Cactus'},
+        {src:'assets/images/desert cactus.png',key:'cactus',alt:'Cactus'},
+        {src:'assets/images/palm shade.png',key:'palm',alt:'Palm'},
+        {src:'assets/images/palm shade.png',key:'palm',alt:'Palm'},
+        {src:'assets/images/water skin.png',key:'waterskin',alt:'Water Skin'}
+      ],
+      answer:'waterskin',
       verse:'Moses became a shepherd in Midian.' },
     { id:'mP3', type:'pair',
       q:'Tap the item with NO pair:',
-      items:['\u{1F525}','\u{1F525}','\u{1F31E}','\u{1F31E}','\u{2B50}','\u{2B50}','\u{1F48D}'],
-      answer:'\u{1F48D}',
+      items:[
+        {src:'assets/images/color flame torch stand.png',key:'torch',alt:'Torch'},
+        {src:'assets/images/color flame torch stand.png',key:'torch',alt:'Torch'},
+        {src:'assets/images/color goblet.png',key:'goblet',alt:'Goblet'},
+        {src:'assets/images/color goblet.png',key:'goblet',alt:'Goblet'},
+        {src:'assets/images/stone tablet 2.png',key:'tablet',alt:'Tablet'},
+        {src:'assets/images/stone tablet 2.png',key:'tablet',alt:'Tablet'},
+        {src:'assets/images/color zipporah.png',key:'zipporah',alt:'Zipporah'}
+      ],
+      answer:'zipporah',
       verse:'Moses married Zipporah — one faithful wife. (Exodus 2:21)' },
     // --- Spot: odd-one-out ---
     { id:'mSp1', type:'spot',
@@ -4096,29 +4262,93 @@ const CHALLENGE_BANK = {
       q:'Which person did Moses NOT meet in Midian?',
       options:['Jethro','Zipporah','Gershom','Goliath'],
       answer:'Goliath',
+      clue:'Three of these people ARE in Moses’ Midian story — Jethro (the priest who welcomed him), Zipporah (his wife), and Gershom (his firstborn son). One belongs to a completely different Bible story, hundreds of years later!',
       verse:'Goliath lived much later, in David\'s time. (1 Samuel 17)' },
     // --- Count ---
     { id:'mC1', type:'count',
-      q:'Count the daughters at the well:',
-      grid:'\u{1F467} \u{1F4A7} \u{1F467} \u{1F467} \u{1F4A7} \u{1F467} \u{1F467} \u{1F4A7} \u{1F467} \u{1F467}',
+      q:'Count the cave entrances Moses could hide in:',
+      items:[
+        {src:'assets/images/cave 1.png',alt:'Cave'},{src:'assets/images/rock.png',alt:'Rock'},
+        {src:'assets/images/cave 2.png',alt:'Cave'},{src:'assets/images/cave 3.png',alt:'Cave'},
+        {src:'assets/images/rock.png',alt:'Rock'},{src:'assets/images/cave 1.png',alt:'Cave'},
+        {src:'assets/images/rock.png',alt:'Rock'},{src:'assets/images/cave 2.png',alt:'Cave'},
+        {src:'assets/images/desert cactus.png',alt:'Cactus'},{src:'assets/images/cave 3.png',alt:'Cave'},
+        {src:'assets/images/cave 1.png',alt:'Cave'}
+      ],
       answer:7,
       oasisRefill:true,
       verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
     { id:'mC2', type:'count',
-      q:'Count the water drops Moses drew:',
-      grid:'\u{1F4A7} \u{26F2} \u{1F4A7} \u{1F4A7} \u{26F2} \u{1F4A7} \u{1F4A7}',
+      q:'Count the goblets on Pharaoh\'s table:',
+      items:[
+        {src:'assets/images/color goblet.png',alt:'Goblet'},{src:'assets/images/color crown.png',alt:'Crown'},
+        {src:'assets/images/color goblet.png',alt:'Goblet'},{src:'assets/images/color goblet.png',alt:'Goblet'},
+        {src:'assets/images/color spear.png',alt:'Spear'},{src:'assets/images/color goblet.png',alt:'Goblet'},
+        {src:'assets/images/color goblet.png',alt:'Goblet'}
+      ],
       answer:5,
       oasisRefill:true,
       verse:'"Moses... watered their flock." (Exodus 2:17 NIV)' },
     { id:'mC3', type:'count',
-      q:'Count the sheep Moses watered at the well of Midian:',
-      grid:'\u{1F411} \u{1F33E} \u{1F411} \u{1F411} \u{1F33E} \u{1F411} \u{1F33E} \u{1F411}',
+      q:'Count the scouts searching for Moses:',
+      items:[
+        {src:'assets/images/scout.png',alt:'Scout'},{src:'assets/images/rock.png',alt:'Rock'},
+        {src:'assets/images/scout.png',alt:'Scout'},{src:'assets/images/scout.png',alt:'Scout'},
+        {src:'assets/images/desert cactus.png',alt:'Cactus'},{src:'assets/images/scout.png',alt:'Scout'},
+        {src:'assets/images/rock.png',alt:'Rock'},{src:'assets/images/scout.png',alt:'Scout'}
+      ],
       answer:5,
       verse:'"Moses got up and came to their rescue and watered their flock." (Exodus 2:17 NIV)' },
     // --- Memory (procedural) ---
     { id:'mMem1', type:'memory',
       q:'Flip the cards and match all 4 pairs:',
       verse:'God remembers his people in every land.' },
+    // --- Slider puzzle ---
+    { id:'mSl1', type:'slider',
+      q:'Rearrange the tiles to reveal Miriam watching baby Moses:',
+      image:'assets/images/miriam watching moses.png',
+      alt:'Miriam watching baby Moses',
+      clue:"Miriam, Moses’ big sister, stood watch by the riverbank to see what would happen to the basket (Exodus 2:4).",
+      verse:'"His sister stood at a distance to see what would happen." (Exodus 2:4 NIV)' },
+    { id:'mSl2', type:'slider',
+      q:'Rearrange the tiles to reveal the well in Midian where Moses rested:',
+      image:'assets/images/midian well.png',
+      alt:'The well in Midian',
+      clue:'Moses fled Egypt and walked all the way to Midian, where he sat down by a well — tired, alone, but watched over by God (Exodus 2:15).',
+      verse:'"Moses fled from Pharaoh and went to live in Midian, where he sat down by a well." (Exodus 2:15 NIV)' },
+    // --- Spot the difference ---
+    { id:'mSdiff1', type:'spotdiff',
+      q:'How many differences can you spot between these two pictures of Moses running?',
+      imgA:'assets/images/spot the difference moses running A.png',
+      imgB:'assets/images/spot the difference moses running B.png',
+      answer:4,
+      clue:'Look very carefully at both pictures — some things have changed!',
+      verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
+    // --- Pictionary ---
+    { id:'mPict1', type:'pictionary',
+      q:'Which Bible verse does this picture illustrate?',
+      image:'assets/images/color hebrew slaves.png',
+      alt:'Hebrew slaves building in Egypt',
+      options:['Genesis 47:3','Exodus 1:11','Deuteronomy 5:15','Ezra 1:1'],
+      correct:1,
+      clue:'Tired workers toiling under the sun, building great store cities for a king who has forgotten who they are. This is NOT freedom.',
+      verse:'"So they put slave masters over them to oppress them with forced labor, and they built Pithom and Rameses as store cities for Pharaoh." (Exodus 1:11 NIV)' },
+    { id:'mPict2', type:'pictionary',
+      q:'Which Bible verse does this picture show?',
+      image:'assets/images/jochebed holding moses.png',
+      alt:'Moses\'s mother hiding him',
+      options:['Genesis 21:3','Luke 2:7','Numbers 26:59','Hebrews 11:23'],
+      correct:3,
+      clue:'A brave mother hides her baby to protect him from a king\'s cruel order. She is not afraid — she acts by faith.',
+      verse:'"By faith Moses\' parents hid him for three months after he was born, because they saw he was no ordinary child." (Hebrews 11:23 NIV)' },
+    // --- Count (scene image) ---
+    { id:'mCountImg1', type:'count',
+      q:'Count the sheep in the flock Moses tended for Jethro:',
+      sceneImg:'assets/images/count the sheep_12.png',
+      sceneAlt:'A flock of sheep in Midian',
+      answer:12,
+      clue:'Moses tended Jethro\’s flock in Midian for forty years before God called him (Exodus 3:1).',
+      verse:'"Moses was tending the flock of Jethro his father-in-law..." (Exodus 3:1 NIV)' },
     // --- Mini-maze (procedural) ---
     { id:'mMz1', type:'maze',
       q:'Help Moses find the well of Midian:',
@@ -4269,18 +4499,42 @@ const CHALLENGE_BANK = {
     // --- Pair: find the singleton ---
     { id:'hP1', type:'pair',
       q:'Which Bible symbol has NO pair?',
-      items:['\u{1F4DC}','\u{1F4DC}','\u{1F451}','\u{1F451}','\u{1F3DB}','\u{1F3DB}','\u{1F51D}'],
-      answer:'\u{1F51D}',
+      items:[
+        {src:'assets/images/scroll of strategy.png',key:'scroll',alt:'Scroll'},
+        {src:'assets/images/scroll of strategy.png',key:'scroll',alt:'Scroll'},
+        {src:'assets/images/color crown.png',key:'crown',alt:'Crown'},
+        {src:'assets/images/color crown.png',key:'crown',alt:'Crown'},
+        {src:'assets/images/color shield.png',key:'shield',alt:'Shield'},
+        {src:'assets/images/color shield.png',key:'shield',alt:'Shield'},
+        {src:'assets/images/moses adult.png',key:'moses',alt:'Moses'}
+      ],
+      answer:'moses',
       verse:'Moses looked ahead to his reward. (Hebrews 11:26)' },
     { id:'hP2', type:'pair',
       q:'Find the one that stands alone:',
-      items:['\u{1F321}','\u{1F321}','\u{1F525}','\u{1F525}','\u{2B50}','\u{2B50}','\u{1F4C7}'],
-      answer:'\u{1F4C7}',
+      items:[
+        {src:'assets/images/egyptian guard.png',key:'guard',alt:'Guard'},
+        {src:'assets/images/egyptian guard.png',key:'guard',alt:'Guard'},
+        {src:'assets/images/vulture.png',key:'vulture',alt:'Vulture'},
+        {src:'assets/images/vulture.png',key:'vulture',alt:'Vulture'},
+        {src:'assets/images/scorpion.png',key:'scorpion',alt:'Scorpion'},
+        {src:'assets/images/scorpion.png',key:'scorpion',alt:'Scorpion'},
+        {src:'assets/images/jethro daughter.png',key:'daughter',alt:'Daughter'}
+      ],
+      answer:'daughter',
       verse:'Moses chose disgrace over Egypt\'s treasures. (Hebrews 11:26)' },
     { id:'hP3', type:'pair',
       q:'Which item has no pair?',
-      items:['\u{1F4A7}','\u{1F4A7}','\u{1F33E}','\u{1F33E}','\u{1F411}','\u{1F411}','\u{1F451}'],
-      answer:'\u{1F451}',
+      items:[
+        {src:'assets/images/treasure bag red.png',key:'bag',alt:'Bag'},
+        {src:'assets/images/treasure bag red.png',key:'bag',alt:'Bag'},
+        {src:'assets/images/color chariot wheel.png',key:'wheel',alt:'Wheel'},
+        {src:'assets/images/color chariot wheel.png',key:'wheel',alt:'Wheel'},
+        {src:'assets/images/rolling boulder.png',key:'boulder',alt:'Boulder'},
+        {src:'assets/images/rolling boulder.png',key:'boulder',alt:'Boulder'},
+        {src:'assets/images/color pyramids.png',key:'pyramid',alt:'Pyramid'}
+      ],
+      answer:'pyramid',
       verse:'Moses refused Pharaoh\'s crown by faith. (Hebrews 11:24)' },
     // --- Spot: odd-one-out ---
     { id:'hSp1', type:'spot',
@@ -4296,29 +4550,88 @@ const CHALLENGE_BANK = {
       verse:'Isaac is a patriarch in Genesis — not Exodus 1-2.' },
     { id:'hSp3', type:'spot',
       q:'Which was NOT one of Moses\' Midian family?',
-      options:['Jethro','Zipporah','Gershom','Aaron'],
-      answer:'Aaron',
-      verse:'Aaron was Moses\' brother in Egypt — not from Midian. (Exodus 2 family context)' },
+      options:['Jethro','Zipporah','Gershom','David'],
+      answer:'David',
+      clue:'Moses\' Midian family: Jethro (father-in-law), Zipporah (wife), Gershom (firstborn son). David was a shepherd-king who lived CENTURIES after Moses — completely different era!',
+      verse:'David became king of Israel long after Moses. (1 Samuel 16:13)' },
     // --- Count ---
     { id:'hC1', type:'count',
-      q:'How many months did Moses\' parents hide him?',
-      grid:'\u{1F31E} \u{1F31E} \u{1F31E}',
+      q:'Count the baskets hidden in the reeds (Moses\' parents hid him):',
+      items:[
+        {src:'assets/images/color basket.png',alt:'Basket'},{src:'assets/images/desert cactus.png',alt:'Cactus'},
+        {src:'assets/images/color basket.png',alt:'Basket'},{src:'assets/images/color basket.png',alt:'Basket'}
+      ],
       answer:3,
       verse:'"By faith Moses\' parents hid him for three months..." (Hebrews 11:23 NIV)' },
     { id:'hC2', type:'count',
-      q:'Moses lived how many decades (tens of years) in Midian?',
-      grid:'\u{23F3} \u{23F3} \u{23F3} \u{23F3}',
+      q:'Count the crowns on Pharaoh\'s display:',
+      items:[
+        {src:'assets/images/color crown.png',alt:'Crown'},{src:'assets/images/color goblet.png',alt:'Goblet'},
+        {src:'assets/images/color crown.png',alt:'Crown'},{src:'assets/images/color crown.png',alt:'Crown'},
+        {src:'assets/images/color spear.png',alt:'Spear'},{src:'assets/images/color crown.png',alt:'Crown'}
+      ],
       answer:4,
       verse:'Moses was 40 years in Midian before God called him. (Acts 7:30 NIV)' },
     { id:'hC3', type:'count',
-      q:'Count the bricks of hard labor:',
-      grid:'\u{1F9F1} \u{1F9F1} \u{1F525} \u{1F9F1} \u{1F9F1} \u{1F525} \u{1F9F1}',
+      q:'Count the spears the guards carry:',
+      items:[
+        {src:'assets/images/color spear.png',alt:'Spear'},{src:'assets/images/color shield.png',alt:'Shield'},
+        {src:'assets/images/color spear.png',alt:'Spear'},{src:'assets/images/color spear.png',alt:'Spear'},
+        {src:'assets/images/color shield.png',alt:'Shield'},{src:'assets/images/color spear.png',alt:'Spear'},
+        {src:'assets/images/color spear.png',alt:'Spear'}
+      ],
       answer:5,
       verse:'"...harsh labor in brick and mortar." (Exodus 1:14 NIV)' },
     // --- Memory (procedural) ---
     { id:'hMem1', type:'memory',
       q:'Flip the cards and match all 4 pairs:',
       verse:'"God heard their groaning and he remembered his covenant with Abraham." (Exodus 2:24 NIV)' },
+    // --- Slider puzzle ---
+    { id:'hSl1', type:'slider',
+      q:'Rearrange the tiles to reveal Moses in the palace:',
+      image:'assets/images/moses in palace.png',
+      alt:'Moses in the palace',
+      clue:"Moses grew up in Pharaoh’s palace as the son of Pharaoh’s daughter, but by faith he chose God’s people (Hebrews 11:24).",
+      verse:'"By faith Moses, when he had grown up, refused to be known as the son of Pharaoh\’s daughter." (Hebrews 11:24 NIV)' },
+    { id:'hSl2', type:'slider',
+      q:'Rearrange the tiles to reveal the royal palace Moses grew up in:',
+      image:'assets/images/color palace.png',
+      alt:'The royal palace of Egypt',
+      clue:'Moses was raised as a prince in this grand Egyptian palace. By faith he gave it all up to stand with God\’s people instead. (Hebrews 11:24-26)',
+      verse:'"He chose to be mistreated along with the people of God rather than enjoy the fleeting pleasures of sin." (Hebrews 11:25 NIV)' },
+    // --- Spot the difference ---
+    { id:'hSdiff1', type:'spotdiff',
+      q:'How many differences can you spot between these two pictures of the princess rescuing Moses?',
+      imgA:'assets/images/spot the difference princess rescue A.png',
+      imgB:'assets/images/spot the difference princess rescue B.png',
+      answer:4,
+      clue:'Look very carefully at both pictures — some things have changed between them!',
+      verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
+    // --- Pictionary ---
+    { id:'hPict1', type:'pictionary',
+      q:'Which Bible verse does this picture illustrate?',
+      image:'assets/images/color numerous israelites.png',
+      alt:'The Israelites multiplying greatly in Egypt',
+      options:['Numbers 1:46','Genesis 12:2','Exodus 1:7','Acts 7:14'],
+      correct:2,
+      clue:'A huge crowd of God\'s people, exceedingly fruitful and filling the land. The new Pharaoh looked at them and feared.',
+      verse:'"The Israelites were exceedingly fruitful; they multiplied greatly, increased in numbers and became so numerous that the land was filled with them." (Exodus 1:7 NIV)' },
+    { id:'hPict2', type:'pictionary',
+      q:'Which Bible verse does this picture show?',
+      image:'assets/images/moses with sheep color 2.png',
+      alt:'Moses tending the flock in Midian',
+      options:['Genesis 4:2','Psalm 23:1','Ezekiel 34:11','Exodus 3:1'],
+      correct:3,
+      clue:'Moses has become a shepherd in a foreign land, tending the flock of his father-in-law near the mountain of God.',
+      verse:'"Moses was tending the flock of Jethro his father-in-law, the priest of Midian." (Exodus 3:1 NIV)' },
+    // --- Count (scene image) ---
+    { id:'hCountImg1', type:'count',
+      q:'Count the soldiers searching for Moses:',
+      sceneImg:'assets/images/count the soldiers_6.png',
+      sceneAlt:'Soldiers searching for Moses',
+      answer:6,
+      clue:'Pharaoh sent soldiers to search for Moses after he fled Egypt (Exodus 2:15).',
+      verse:'"When Pharaoh heard of this, he tried to kill Moses, but Moses fled from Pharaoh." (Exodus 2:15 NIV)' },
     // --- Mini-maze (procedural) ---
     { id:'hMz1', type:'maze',
       q:'Help Moses find the path to safety:',
@@ -4514,7 +4827,7 @@ function seedChallenges(difficulty) {
   let seen = [];
   try { seen = JSON.parse(localStorage.getItem('bek.moses2.seenQ') || '[]'); } catch(e){}
   const seenByType = {};
-  ['trivia','tf','fill','unscramble','match','sequence','memory','maze','spot','pair','count'].forEach(tp => {
+  ['trivia','tf','fill','unscramble','match','sequence','memory','maze','spot','pair','count','slider','spotdiff','pictionary'].forEach(tp => {
     try { seenByType[tp] = new Set(JSON.parse(localStorage.getItem('bek.moses2.seenQ.' + tp) || '[]')); }
     catch(e){ seenByType[tp] = new Set(); }
   });
@@ -4542,19 +4855,37 @@ function seedChallenges(difficulty) {
     maze:       shuffle(pool.filter(q => q.type === 'maze')),
     spot:       shuffle(pool.filter(q => q.type === 'spot')),
     pair:       shuffle(pool.filter(q => q.type === 'pair')),
-    count:      shuffle(pool.filter(q => q.type === 'count')),
+    // Image-based count questions are placed FIRST so the scene image version
+    // is always picked when the count slot comes up in the rotation.
+    count: pool.filter(q => q.type === 'count' && q.sceneImg)
+             .concat(shuffle(pool.filter(q => q.type === 'count' && !q.sceneImg))),
+    slider:     shuffle(pool.filter(q => q.type === 'slider')),
+    spotdiff:   shuffle(pool.filter(q => q.type === 'spotdiff')),
+    pictionary: shuffle(pool.filter(q => q.type === 'pictionary')),
   };
   // Sort each type so fresh questions come first.
-  for (const k in byType) byType[k].sort((a,b) => freshnessScore(a) - freshnessScore(b));
+  // For count, preserve sceneImg-first order within each freshness tier.
+  for (const k in byType) {
+    if (k === 'count') {
+      byType[k].sort((a,b) => {
+        const fa = freshnessScore(a), fb = freshnessScore(b);
+        if (fa !== fb) return fa - fb;
+        // within same freshness: image version first
+        return (b.sceneImg ? 1 : 0) - (a.sceneImg ? 1 : 0);
+      });
+    } else {
+      byType[k].sort((a,b) => freshnessScore(a) - freshnessScore(b));
+    }
+  }
 
-  // Per-gate recipe: 1 classic (trivia/tf/fill), 1 interactive (unscramble/match/sequence),
-  // 1 bonus (another classic). That way EVERY gate has at least one interactive
-  // challenge type -- so kids never see MCQ-only gates.
+  // Per-gate recipe: 1 classic (trivia/tf/fill), 1 interactive, 1 classic.
+  // interactiveQueues is SHUFFLED each run so no single type is always skipped
+  // when the pool has more types (11) than gates (9).
   const classicQueues     = [byType.trivia, byType.fill, byType.tf];
-  const interactiveQueues = [
+  const interactiveQueues = shuffle([
     byType.unscramble, byType.match, byType.sequence,
-    byType.memory, byType.maze, byType.spot, byType.pair, byType.count
-  ];
+    byType.memory, byType.maze, byType.spot, byType.pair, byType.count, byType.slider, byType.spotdiff, byType.pictionary
+  ]);
   const cycle = (queues) => {
     // pop next-available question from the rotating family of queues
     for (let k=0;k<queues.length;k++) {
@@ -4584,15 +4915,19 @@ function seedChallenges(difficulty) {
     const iq = cycle(interactiveQueues); if (iq) bundle.push(iq);
     // slot 3: another classic, preferring a DIFFERENT sub-type from slot 1
     const c2 = cycle(classicQueues); if (c2) bundle.push(c2);
-    // If we ran out of any family, pad from the full pool.
     while (bundle.length < CHALLENGES_PER_GATE) {
-      const all = [].concat(
+      const usedIds = new Set(bundles.flat().map(q => q.id).concat(bundle.map(q => q.id)));
+      const remaining = [].concat(
         byType.trivia, byType.tf, byType.fill,
         byType.unscramble, byType.match, byType.sequence,
-        byType.memory, byType.maze, byType.spot, byType.pair, byType.count,
-        pool // last-resort fallback
-      ).filter(Boolean);
-      bundle.push(all[Math.floor(Math.random()*all.length)]);
+        byType.memory, byType.maze, byType.spot, byType.pair, byType.count, byType.slider, byType.spotdiff, byType.pictionary
+      ).filter(q => q && !usedIds.has(q.id));
+      if (remaining.length) {
+        bundle.push(remaining[Math.floor(Math.random()*remaining.length)]);
+      } else {
+        const fallback = pool.filter(q => !usedIds.has(q.id));
+        bundle.push((fallback.length ? fallback : pool)[Math.floor(Math.random()*(fallback.length||pool.length))]);
+      }
     }
     bundles.push(bundle);
   }
@@ -4957,7 +5292,7 @@ function attemptMove(dir) {
   // optional and shouldn't pop without a tap. truthchest IS auto-opened
   // because it's the special mid-scene reveal moment.
   try {
-    const _autoPickKinds = { bread:1, crown:1, jug:1, scroll:1, tablet:1, waterskin:1, water:1, coin:1, treasure:1, truthchest:1 };
+    const _autoPickKinds = { bread:1, dates:1, crown:1, jug:1, scroll:1, tablet:1, waterskin:1, water:1, coin:1, treasure:1, truthchest:1 };
     for (const obj of interactables) {
       if (obj.used) continue;
       if (!_autoPickKinds[obj.kind]) continue;
@@ -5105,7 +5440,13 @@ $('startBtn').addEventListener('click', () => {
     $('coverPage').style.display = 'none';
     const overlay = document.getElementById('preloadOverlay');
     if (overlay) overlay.classList.remove('active');
-    openCinematic();
+    // Check for a mid-game save — show a resume prompt instead of the cinematic.
+    const _savedGame = _loadCheckpoint();
+    if (_savedGame) {
+      showResumePrompt(_savedGame);
+    } else {
+      openCinematic();
+    }
   };
   if (_preloadPct() >= 100) {
     launchCinematic();
@@ -5291,6 +5632,13 @@ function resetScene2Cinematic(){
 const _SAVE_KEY = 'bek.moses2.scene2.save';
 function _saveCheckpoint(){
   try {
+    // Record which treasure tiles (type 5 in _mapInitial) have already been consumed.
+    const collectedTiles = [];
+    try {
+      for (let y=0; y<MAP_H; y++) for (let x=0; x<MAP_W; x++) {
+        if (_mapInitial[y][x] === 5 && MAP[y][x] !== 5) collectedTiles.push([x,y]);
+      }
+    } catch(e){}
     const payload = {
       v: 1,
       scene: 2,
@@ -5301,6 +5649,7 @@ function _saveCheckpoint(){
       treasureCount: game.treasureCount,
       altitudeCleared: game.altitudeCleared || 0,
       timeLeft: Math.max(0, Math.round(game.timeLeft || 0)),
+      collectedTiles: collectedTiles,
       gates: (challengeGates || []).map(g => ({
         tx: g.tx, ty: g.ty,
         kind: g.kind, step: g.step || 0, label: g.label,
@@ -5359,10 +5708,49 @@ function _applyCheckpointAfterSeed(){
       player.px = player.tx * TILE; player.py = player.ty * TILE;
       if (p.player.dir) player.dir = p.player.dir;
     }
+    // Re-consume treasure tiles that were already collected in the saved session.
+    if (Array.isArray(p.collectedTiles)) {
+      try {
+        for (const ct of p.collectedTiles) {
+          const cx = ct[0], cy = ct[1];
+          if (MAP[cy] && MAP[cy][cx] === 5) MAP[cy][cx] = 0;
+        }
+      } catch(e){}
+    }
     try { updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); updateHudAltitude(); } catch(e){}
-    try { toast('Welcome back! Resumed from your last checkpoint.'); } catch(e){}
     return true;
   } catch(e) { return false; }
+}
+
+function showResumePrompt(p) {
+  const gatesCleared = Array.isArray(p.gates) ? p.gates.filter(g => g.solved).length : 0;
+  const totalGates   = Array.isArray(p.gates) ? p.gates.length : 9;
+  const diffLabel    = (p.difficulty || 'easy').charAt(0).toUpperCase() + (p.difficulty || 'easy').slice(1);
+  const overlay = document.createElement('div');
+  overlay.id = 'resumePromptOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  overlay.innerHTML = '<div style="background:linear-gradient(160deg,#2a1800,#3e2000);border:3px solid #FFD700;border-radius:18px;padding:28px 26px;max-width:380px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.7);">'
+    + '<div style="font-size:28px;margin-bottom:8px;">🗓️</div>'
+    + '<div style="font-size:20px;font-weight:900;color:#FFD700;margin-bottom:10px;">Welcome back, Explorer!</div>'
+    + '<div style="font-size:15px;color:#fff5cc;line-height:1.55;margin-bottom:18px;">'
+    + 'You have a saved <strong>' + diffLabel + '</strong> adventure —<br>'
+    + '<strong>' + gatesCleared + ' of ' + totalGates + '</strong> checkpoints already cleared.'
+    + '</div>'
+    + '<button id="resumeBtn" style="display:block;width:100%;margin-bottom:10px;padding:13px 0;font-size:17px;font-weight:900;color:#2a1800;background:linear-gradient(135deg,#FFD700,#ffa500);border:none;border-radius:10px;cursor:pointer;">Continue Adventure →</button>'
+    + '<button id="startFreshBtn" style="display:block;width:100%;padding:10px 0;font-size:14px;font-weight:700;color:#ffd976;background:rgba(255,255,255,0.07);border:2px solid #ffd97688;border-radius:10px;cursor:pointer;">Start Fresh (lose saved progress)</button>'
+    + '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#resumeBtn').addEventListener('click', () => {
+    play('click');
+    overlay.remove();
+    startScene1();
+  });
+  overlay.querySelector('#startFreshBtn').addEventListener('click', () => {
+    play('click');
+    _clearCheckpoint();
+    overlay.remove();
+    openCinematic();
+  });
 }
 
 function startScene1() {
@@ -5471,6 +5859,7 @@ function startScene1() {
 const _guardsInitial = JSON.parse(JSON.stringify(guards));
 const _mapInitial = MAP_STR.map(row => row.split('').map(ch => parseInt(ch, 10) || 0));
 function restartScene() {
+  game.cinStep = 0;
   // v3.28: explicit restart — drop any saved checkpoint so the kid restarts
   // truly fresh (otherwise the very next startScene1 would auto-resume).
   try { _clearCheckpoint(); } catch(e){}
@@ -5577,7 +5966,7 @@ const SCENE_TUT_STEPS = [
   // steps were moved into CONTROLS_TUT_STEPS above (bundle-shared).
   // (movement + Interact steps moved into CONTROLS_TUT_STEPS above)
   { icon:'?',  title:'Solve every checkpoint', body:'Nine glowing checkpoints (?) are scattered across the desert. Walk near one and Moses pauses for 3 Bible questions. Solve ALL nine to open the EXIT — you cannot walk around them.' },
-  { icon:'⚠',  title:'Avoid Pharaoh’s scouts', body:'Red guards and orange scouts patrol the desert. Stay near dunes, boulders, and caves to break line-of-sight. Caves are sanctuary; enemies cannot enter.' },
+  { icon:'⚠',  title:'Avoid Pharaoh\'s scouts', body:'Red guards and orange scouts patrol the desert. Stay near dunes, boulders, and caves to break line-of-sight. Caves are sanctuary; enemies cannot enter.' },
   { icon:'\u2605',  title:'Reach Midian!', body:'After clearing all 9 checkpoints, the EXIT tile glows BRIGHT GREEN. Walk into it and Moses crosses into Midian. Tap Start to begin!' },
 ];
 // v3.28: Two flags. The bundle flag travels across all 3 scenes; the
@@ -5634,8 +6023,16 @@ $('tutNextBtn').addEventListener('click', () => {
     // start branch in initGame() above.
     if (game._timersDeferred) {
       game._timersDeferred = false;
-      game.state = 'playing';
-      try { startTimers(); } catch(e){}
+      try {
+        game.state = 'paused';
+        playIntroPan(() => {
+          game.state = 'playing';
+          startTimers();
+        });
+      } catch(e) {
+        game.state = 'playing';
+        try { startTimers(); } catch(e2){}
+      }
     }
   }
 });
@@ -6128,6 +6525,7 @@ function getHintForQuestion(q){
     tf:         'Riddle: the Bible tells the true story. Read the sentence with a careful eye — is even ONE word a pebble in the shoe? If yes, it is False.',
     fill:       'Riddle: the blank is a missing stone in a wall. Which word makes the wall stand straight when you slot it in?',
     trivia:     'Riddle: every answer sleeps inside the Bible story. Picture the scene in your head — the person, the place, the moment — and the right one will stand up.',
+    slider:     'Riddle: the picture is a jigsaw with mixed-up pieces. Look at the small picture above, then tap two tiles to swap them until the big picture matches.',
   };
   const typeHint = byType[q.type];
 
@@ -6230,13 +6628,13 @@ function getHintForQuestion(q){
     if (hasWord('shepherds') || (hasWord('daughters') && hasWord('drove','away','priest')))
       return 'At the Midian well, rough shepherds chased the priest\'s daughters away from the water. Moses stood up and rescued them, then watered their flock (Exodus 2:16-17).';
     if (hasWord('basket','papyrus','reed','reeds','adopted','adopt'))
-      return 'Moses’ mother put him in a waterproof basket on the Nile. Pharaoh’s daughter found him and raised him in the palace as her own (Exodus 2:3-10).';
+      return 'Moses\' mother put him in a waterproof basket on the Nile. Pharaoh\'s daughter found him and raised him in the palace as her own (Exodus 2:3-10).';
     // ONLY return the generic Moses-baby fallback if the question is
     // actually about Moses as a BABY. For adult-Moses questions (kills the
     // Egyptian, flees to Midian, marries Zipporah, etc.) skip this layer
     // and fall through to verseHint / typeHint instead.
     if (hasWord('moses') && hasWord('baby','infant','child','born','birth'))
-      return 'Moses was a Hebrew baby adopted into Pharaoh’s palace. God had big plans for him.';
+      return 'Moses was a Hebrew baby adopted into Pharaoh\'s palace. God had big plans for him.';
     return null;
   })();
 
@@ -6279,6 +6677,7 @@ function getHintImagesForQuestion(q){
 }
 
 function openChallenge(gate) {
+  gate._submitting = false;
   // v2.3.1 (Jane) BULLETPROOF: if the gate or its questions are missing,
   // treat the gate as already-solved so Moses can walk past it instead of
   // getting stuck in a 'dialog' state with no modal. Fixes Jane's bug:
@@ -6429,6 +6828,9 @@ function openChallenge(gate) {
     else if (q.type === 'spot')       { renderSpot(gate, q, opts); }
     else if (q.type === 'pair')       { renderPair(gate, q, opts); }
     else if (q.type === 'count')      { renderCount(gate, q, opts); }
+    else if (q.type === 'slider')     { renderSlider(gate, q, opts); }
+    else if (q.type === 'spotdiff')   { renderSpotDiff(gate, q, opts); }
+    else if (q.type === 'pictionary') { renderPictionary(gate, q, opts); }
     else {
       // trivia / fill / tf -> MCQ-style buttons
       (q.options || []).forEach((opt, i) => {
@@ -6856,21 +7258,29 @@ function renderSpot(gate, q, container){
    Bank entry shape: { type:'pair', prompt, items:[emoji strings, most appear 2x], answer: 'SINGLETON' } */
 function renderPair(gate, q, container){
   const items = Array.isArray(q.items) ? q.items.slice() : [];
-  // shuffle positions
   for (let i = items.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [items[i], items[j]] = [items[j], items[i]];
   }
   const grid = document.createElement('div');
   grid.className = 'ch-pair-grid';
-  items.forEach((label) => {
+  items.forEach((item) => {
     const tile = document.createElement('button');
     tile.className = 'ch-pair-tile';
-    tile.textContent = label;
+    const isImg = item && typeof item === 'object' && item.src;
+    const key   = isImg ? item.key : String(item);
+    const correct = key === String(q.answer);
+    if (isImg) {
+      const img = document.createElement('img');
+      img.src = item.src; img.alt = item.alt || '';
+      tile.appendChild(img);
+    } else {
+      tile.textContent = String(item);
+    }
     tile.addEventListener('click', () => {
-      const correct = String(label) === String(q.answer);
       try { play(correct ? 'chime' : 'tap'); } catch(e){}
-      handleChallengeAnswer(gate, correct ? 0 : -1, tile, { answerLabel: String(q.answer) });
+      handleChallengeAnswer(gate, correct ? 0 : -1, tile,
+        { answerLabel: isImg ? (item.alt || String(q.answer)) : String(q.answer) });
     });
     grid.appendChild(tile);
   });
@@ -6880,19 +7290,39 @@ function renderPair(gate, q, container){
 /* ---------- COUNT -- count items in a scene ----------
    Bank entry shape: { type:'count', prompt, grid:'emoji string', answer: N } */
 function renderCount(gate, q, container){
-  const gridStr = q.grid || '';
-  // render the grid as big emoji tiles (wrap-friendly)
+  if (q.sceneImg) {
+    const img = document.createElement('img');
+    img.src = q.sceneImg;
+    img.alt = q.sceneAlt || 'Count the items in this picture';
+    img.className = 'ch-count-scene-img';
+    container.appendChild(img);
+  } else {
   const scene = document.createElement('div');
   scene.className = 'ch-count-scene';
-  // Emoji iteration is tricky (surrogate pairs). Array.from handles it.
-  Array.from(gridStr).forEach((ch) => {
-    if (ch === ' ' || ch === '\n') return;
-    const cell = document.createElement('div');
-    cell.className = 'ch-count-cell';
-    cell.textContent = ch;
-    scene.appendChild(cell);
-  });
+  if (Array.isArray(q.items)) {
+    q.items.forEach((item) => {
+      const cell = document.createElement('div');
+      cell.className = 'ch-count-cell';
+      if (item && item.src) {
+        const img = document.createElement('img');
+        img.src = item.src; img.alt = item.alt || '';
+        cell.appendChild(img);
+      } else {
+        cell.textContent = String(item.text || item);
+      }
+      scene.appendChild(cell);
+    });
+  } else {
+    Array.from(q.grid || '').forEach((ch) => {
+      if (ch === ' ' || ch === '\n') return;
+      const cell = document.createElement('div');
+      cell.className = 'ch-count-cell';
+      cell.textContent = ch;
+      scene.appendChild(cell);
+    });
+  }
   container.appendChild(scene);
+  } // end else (sceneImg handled above)
   // Build 4 number-option buttons around the true answer
   const answer = Number(q.answer);
   const choices = new Set([answer]);
@@ -6928,45 +7358,47 @@ function renderCount(gate, q, container){
    Bank entry shape: { type:'memory', prompt } (no pair data)
    We procedurally generate 4 palace-themed emoji pairs (8 cards, 2x4 grid). */
 function renderMemory(gate, q, container){
-  // v3.9 Jane 2026-04-24 CHALLENGE UPGRADE: bumped from 4 pairs (8 cards)
-  // to 6 pairs (12 cards) so the memory load is real instead of trivial.
-  // Renders as 4 columns × 3 rows in the existing .ch-memory-grid CSS.
-  const PAIR_COUNT = 6;
-  // Pool kept inside the function so it's not subject to TDZ during page load.
+  const PAIR_COUNT = 4;
   const MEMORY_POOL = [
-    ['\u{1F451}','CROWN'], ['\u{1F6E1}','SHIELD'], ['\u{1F4DC}','SCROLL'],
-    ['\u{1F5DD}','KEY'],   ['\u{1FA94}','LAMP'],    ['\u{1F393}','HAT'],
-    ['\u{1F300}','SPIRAL'],['\u{1F31F}','STAR'],    ['\u{1F3F9}','BOW'],
-    ['\u{1F3FA}','JAR'],   ['\u{1F343}','LEAF'],    ['\u{26CF}','PICK']
+    {src:'assets/images/color crown.png',           alt:'Crown'},
+    {src:'assets/images/color shield.png',          alt:'Shield'},
+    {src:'assets/images/scroll of strategy.png',    alt:'Scroll'},
+    {src:'assets/images/color water pot.png',       alt:'Jar'},
+    {src:'assets/images/color goblet.png',          alt:'Goblet'},
+    {src:'assets/images/color basket.png',          alt:'Basket'},
+    {src:'assets/images/color spear.png',           alt:'Spear'},
+    {src:'assets/images/bread loaf.png',            alt:'Bread'},
+    {src:'assets/images/water jar.png',             alt:'Flask'},
+    {src:'assets/images/color mortar.png',          alt:'Mortar'},
+    {src:'assets/images/stone tablet.png',          alt:'Tablet'},
+    {src:'assets/images/treasure chest closed.png', alt:'Chest'},
   ];
-  // pick 4 random pair templates
   const pool = MEMORY_POOL.slice();
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
   const picks = pool.slice(0, PAIR_COUNT);
-  // build 8 cards (each pair twice)
   const cards = [];
   picks.forEach((p, pairIdx) => {
-    cards.push({ face: p[0], key: pairIdx, matched:false });
-    cards.push({ face: p[0], key: pairIdx, matched:false });
+    cards.push({ src: p.src, alt: p.alt, key: pairIdx, matched:false });
+    cards.push({ src: p.src, alt: p.alt, key: pairIdx, matched:false });
   });
-  // shuffle
   for (let i = cards.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [cards[i], cards[j]] = [cards[j], cards[i]];
   }
-  gate._memState = { first: null, second: null, lock: false, matchedCount: 0, totalPairs: PAIR_COUNT };
+  gate._memState = { first: null, second: null, lock: false, matchedCount: 0 };
   const grid = document.createElement('div');
   grid.className = 'ch-memory-grid';
+  grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
   cards.forEach((c, idx) => {
     const cell = document.createElement('button');
     cell.className = 'ch-memory-card';
     cell.setAttribute('data-idx', String(idx));
     cell.setAttribute('data-key', String(c.key));
-    cell.setAttribute('data-face', c.face);
-    cell.innerHTML = '<span class="mem-back">?</span><span class="mem-face">' + c.face + '</span>';
+    cell.setAttribute('data-face', String(c.key));
+    cell.innerHTML = '<span class="mem-back">?</span><span class="mem-face"><img src="' + c.src + '" alt="' + c.alt + '"></span>';
     cell.addEventListener('click', () => handleMemoryFlip(gate, cell, cards, grid));
     grid.appendChild(cell);
   });
@@ -7000,7 +7432,7 @@ function handleMemoryFlip(gate, cell, cards, grid){
     st.matchedCount += 1;
     try { play('chime'); } catch(e){}
     st.first = null; st.second = null; st.lock = false;
-    if (st.matchedCount >= (st.totalPairs || 4)) {
+    if (st.matchedCount >= cards.length / 2) {
       // success -- all pairs matched
       setTimeout(() => {
         handleChallengeAnswer(gate, 0, grid.parentNode, { answerLabel: 'All pairs matched!' });
@@ -7014,6 +7446,136 @@ function handleMemoryFlip(gate, cell, cards, grid){
       st.first = null; st.second = null; st.lock = false;
     }, 800);
   }
+}
+
+/* ---------- SLIDER PUZZLE -- swap tiles to restore an image ----------
+   Bank entry shape: { type:'slider', q, image:'path.png', alt:'desc' } */
+function renderSlider(gate, q, container){
+  const SZ = 3;
+  const TOTAL = SZ * SZ;
+  const src = q.image || '';
+  const positions = [];
+  for (let i = 0; i < TOTAL; i++) positions.push(i);
+  for (let i = positions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = positions[i]; positions[i] = positions[j]; positions[j] = t;
+  }
+  if (positions.every((p, i) => p === i)) {
+    const t = positions[0]; positions[0] = positions[1]; positions[1] = t;
+  }
+  if (src) {
+    const thumb = document.createElement('img');
+    thumb.className = 'ch-slider-thumb';
+    thumb.src = src;
+    thumb.alt = q.alt || 'Target image';
+    container.appendChild(thumb);
+  }
+  const hint = document.createElement('div');
+  hint.className = 'ch-slider-hint';
+  hint.textContent = 'Tap two tiles to swap them. Match the picture above to win!';
+  container.appendChild(hint);
+  const grid = document.createElement('div');
+  grid.className = 'ch-slider-grid';
+  const tiles = [];
+  const state = { selectedSlot: null, positions: positions };
+  function setBg(tile, piece){
+    const x = (piece % SZ) / (SZ - 1) * 100;
+    const y = Math.floor(piece / SZ) / (SZ - 1) * 100;
+    tile.style.backgroundImage = 'url("' + src + '")';
+    tile.style.backgroundSize = (SZ * 100) + '% ' + (SZ * 100) + '%';
+    tile.style.backgroundPosition = x + '% ' + y + '%';
+  }
+  function checkSolved(){ return state.positions.every((p, i) => p === i); }
+  for (let slot = 0; slot < TOTAL; slot++) {
+    const tile = document.createElement('button');
+    tile.className = 'ch-slider-tile';
+    tile.dataset.slot = String(slot);
+    setBg(tile, state.positions[slot]);
+    tile.addEventListener('click', () => {
+      if (state.selectedSlot === null) {
+        state.selectedSlot = slot;
+        tile.classList.add('selected');
+        return;
+      }
+      if (state.selectedSlot === slot) {
+        state.selectedSlot = null;
+        tile.classList.remove('selected');
+        return;
+      }
+      const a = state.selectedSlot, b = slot;
+      const tmp = state.positions[a];
+      state.positions[a] = state.positions[b];
+      state.positions[b] = tmp;
+      setBg(tiles[a], state.positions[a]);
+      setBg(tiles[b], state.positions[b]);
+      tiles[a].classList.remove('selected');
+      state.selectedSlot = null;
+      try { play('tap'); } catch(e){}
+      if (checkSolved()) {
+        try { play('chime'); } catch(e){}
+        tiles.forEach(t => t.classList.add('locked'));
+        setTimeout(() => {
+          handleChallengeAnswer(gate, 0, grid, { answerLabel: 'Puzzle solved!' });
+        }, 380);
+      }
+    });
+    tiles.push(tile);
+    grid.appendChild(tile);
+  }
+  container.appendChild(grid);
+  const giveUp = document.createElement('button');
+  giveUp.className = 'btn ghost';
+  giveUp.textContent = 'I give up';
+  giveUp.style.marginTop = '10px';
+  giveUp.addEventListener('click', () => {
+    try { play('tap'); } catch(e){}
+    openGiveUpGameOver();
+  });
+  container.appendChild(giveUp);
+}
+
+/* ---------- SPOT THE DIFFERENCE -- two images, count the differences ----------
+   Bank entry shape: { type:'spotdiff', q, imgA, imgB, answer:4 } */
+function renderSpotDiff(gate, q, container){
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ch-spotdiff-wrapper';
+  ['imgA','imgB'].forEach(key => {
+    const img = document.createElement('img');
+    img.src = q[key] || '';
+    img.alt = (key === 'imgA') ? 'Picture 1' : 'Picture 2';
+    img.className = 'ch-spotdiff-img';
+    wrapper.appendChild(img);
+  });
+  container.appendChild(wrapper);
+  const hint = document.createElement('div');
+  hint.className = 'ch-slider-hint';
+  hint.textContent = 'Look carefully at both pictures. How many differences can you find?';
+  container.appendChild(hint);
+  const answer = Number(q.answer) || 4;
+  const choices = new Set([answer]);
+  while (choices.size < 4) {
+    const n = answer + (Math.random() < 0.5 ? -1 : 1) * (Math.floor(Math.random() * 3) + 1);
+    if (n > 0) choices.add(n);
+  }
+  const arr = Array.from(choices);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  const row = document.createElement('div');
+  row.className = 'ch-count-choices';
+  arr.forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'ch-count-btn';
+    b.textContent = String(n) + ' difference' + (n === 1 ? '' : 's');
+    b.addEventListener('click', () => {
+      const correct = (n === answer);
+      try { play(correct ? 'chime' : 'tap'); } catch(e){}
+      handleChallengeAnswer(gate, correct ? 0 : -1, b, { answerLabel: String(answer) + ' differences' });
+    });
+    row.appendChild(b);
+  });
+  container.appendChild(row);
 }
 
 /* ---------- MINI-MAZE -- tap-arrow navigate Moses to exit ----------
@@ -7150,13 +7712,35 @@ function renderMiniMaze(gate, q, container){
   container.appendChild(giveUp);
 }
 
+/* ---------- PICTIONARY -- decode a Bible scene image, pick the verse ----------
+   Bank entry shape: { type:'pictionary', q, image, alt, options:[verse,verse,verse,verse], correct:N } */
+function renderPictionary(gate, q, container) {
+  // Scene image
+  const img = document.createElement('img');
+  img.src = q.image || '';
+  img.alt = q.alt || 'A Bible scene';
+  img.className = 'ch-pict-img';
+  img.onerror = () => { try { img.style.display = 'none'; } catch(e){} };
+  container.appendChild(img);
+  // MCQ verse buttons
+  (q.options || []).forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'ch-option';
+    b.textContent = String.fromCharCode(65 + i) + '. ' + opt;
+    b.addEventListener('click', () => handleChallengeAnswer(gate, i, b));
+    container.appendChild(b);
+  });
+}
+
 function handleChallengeAnswer(gate, index, btnEl, opts) {
+  if (gate._submitting) return;
+  gate._submitting = true;
   opts = opts || {};
   const q = gate.questions[gate.bundleIndex];
   // For trivia/fill/tf: correctness is index === q.correct
   // For unscramble/match/sequence: caller passes index=0 if correct, -1 if wrong
   let correct;
-  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count'];
+  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count','slider','spotdiff'];
   if (CUSTOM_TYPES.indexOf(q.type) !== -1) {
     correct = (index === 0);
   } else {
@@ -7225,7 +7809,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
     // the parent <p>'s right edge — Jane reported "the right border of this
     // box is missing". Set box-sizing: border-box + width: 100% so the inner
     // div fits exactly inside the parent's content area on every screen.
-    fb.innerHTML = '<div style="box-sizing:border-box;width:100%;font-size:22px;color:#fff6cc;font-weight:900;letter-spacing:0.6px;text-shadow:0 2px 5px rgba(0,0,0,0.45);background:linear-gradient(145deg,#1f6b2e,#2e8b3e);border:3px solid #FFD700;border-radius:10px;padding:10px 14px;text-align:center;">&#10022; Correct! +3 stars &#10022;</div>'
+    fb.innerHTML = '<div style="box-sizing:border-box;width:100%;font-size:22px;color:#fff6cc;font-weight:900;letter-spacing:0.6px;text-shadow:0 2px 5px rgba(0,0,0,0.45);background:linear-gradient(145deg,#1f6b2e,#2e8b3e);border:3px solid #FFD700;border-radius:10px;padding:10px 14px;text-align:center;white-space:nowrap;">&#10022; Correct! +3 stars &#10022;</div>'
       + tail;
     // v3.4: bumped 3200 -> 4200ms so the golden flash lingers an extra second
     setTimeout(() => {
@@ -7342,6 +7926,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
       fb.innerHTML = '<div style="font-size:15px;color:#ffb3b3;">Try a different match! ('
         + strikesLeft + ' tr' + (strikesLeft===1?'y':'ies') + ' left)</div>';
       setTimeout(() => {
+        gate._submitting = false;
         fb.style.display = 'none';
         document.querySelectorAll('#chOptions .ch-confirm-btn').forEach(b => b.disabled = false);
       }, 1400);
@@ -7366,6 +7951,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         + '<div style="margin-top:9px;font-size:14px;color:#fff8d8;font-weight:800;text-align:center;background:linear-gradient(180deg,#1a4a6e,#0d2f4a);border:2px solid #6ec6ff;border-radius:8px;padding:7px 10px;box-shadow:0 2px 6px rgba(0,0,0,0.4);">&#9888; <strong>' + strikesLeft + ' tr' + (strikesLeft===1?'y':'ies') + ' left</strong> &#8212; tap <em style="color:#ffd976;">Show Clue</em> for a hint!</div>';
       // re-enable / re-render the SAME question so child learns the answer
       setTimeout(() => {
+        gate._submitting = false;
         document.querySelectorAll('#chOptions .ch-option').forEach(b => {
           b.disabled = false; b.classList.remove('wrong', 'correct');
         });
@@ -7484,8 +8070,7 @@ function onHazardHit(tx, ty){
   // the killing blow.
   try { triggerCameraShake(game.hearts <= 0 ? 12 : 6); } catch(e){}
   if (game.hearts <= 0) {
-    // v2.2.6 BUGFIX: sandstorm imagery belongs here, not palace torch.
-    openDanger('A sudden sandstorm drove Moses back - try again!', IMG_SRC.sandstorm2 || IMG_SRC.sandstormA || IMG_SRC.sandstorm, 'sandstorm');
+    openDanger('Moses stepped on burning campfire coals! Watch out for the flames next time.', IMG_SRC.campfire || IMG_SRC.torch || IMG_SRC.sandstorm2 || IMG_SRC.sandstorm, 'campfire');
   } else {
     toast('Ouch! Campfire coals - step around them!');
     // v2.2.2: bounce Moses off the hazard tile so he doesn't just stand in the fire
@@ -7822,12 +8407,13 @@ function openDanger(msg, imgSrc, kind){
     const titleEl = document.querySelector('#dangerModal h2');
     if (titleEl) {
       if (kind === 'time')         titleEl.textContent = "Time's Up!";
-      else if (kind === 'guard')   titleEl.textContent = 'Caught!';
+      else if (kind === 'guard' || kind === 'scout') titleEl.textContent = 'Caught!';
       else if (kind === 'mirage')  titleEl.textContent = 'Mirage Trap!';
       else if (kind === 'rock')    titleEl.textContent = 'Rockfall!';
       else if (kind === 'vulture') titleEl.textContent = 'Vulture Strike!';
       else if (kind === 'sandstorm') titleEl.textContent = 'Sandstorm!';
       else if (kind === 'quicksand') titleEl.textContent = 'Quicksand!';
+      else if (kind === 'campfire') titleEl.textContent = 'Campfire!';
       // v4.2 Jane fix: 'questions' => kid-friendly "learning moment" title,
       // not a scare title. Keep tone encouraging, not punishing.
       else if (kind === 'questions') titleEl.textContent = 'Out of Tries!';
@@ -8742,10 +9328,12 @@ function onMirageStep(nx, ny){
     if (m.triggered) continue;
     if (m.tx === nx && m.ty === ny) {
       m.triggered = true;
-      try { play('mirageWoosh'); } catch(e){}  // v2.2.7 mirage shimmer whoosh
+      const _now = performance.now();
+      if (_now < game.invulnerableUntil) continue;
+      game.invulnerableUntil = _now + 1200;
+      try { play('mirageWoosh'); } catch(e){}
       try { play('error'); } catch(e){}
-      try { triggerCameraShake(8); } catch(e){}  // v3.10 mirage warp shake
-      // v2.2.2 (Jane): remove uhoh; use dangerAlert if an extra sting is wanted
+      try { triggerCameraShake(8); } catch(e){}
       try { setTimeout(() => { try { play('dangerAlert'); } catch(e){} }, 180); } catch(e){}
       try { game.hearts = Math.max(0, game.hearts - 1); updateHudHearts(); } catch(e){}
       try { toast('A mirage! Moses stumbles backward.'); } catch(e){}
@@ -8863,6 +9451,9 @@ function updateRollingBoulders(dt){
     // Collision with Moses — cave hiding negates damage
     if (b.tx === player.tx && b.ty === player.ty && !isMosesInCave()) {
       b.alive = false;
+      const _bNow = performance.now();
+      if (_bNow < game.invulnerableUntil) continue;
+      game.invulnerableUntil = _bNow + 1200;
       try { play('error'); } catch(e){}
       try { game.hearts = Math.max(0, game.hearts - 1); updateHudHearts(); } catch(e){}
       try { toast('Moses was struck by the rolling rock!'); } catch(e){}
@@ -9118,8 +9709,7 @@ function updateGuards(dt){
         // catch only if Moses is actually visible, adjacent, NOT hidden, and not in a modal
         if (g.tx === player.tx && g.ty === player.ty && canGuardSeePlayer(g)
             && !player.crouched && !isMosesInCave() && game.state === 'playing') {
-          // v3.27 Jane: scout-caught uses SCOUT image; mention caves as alternate cover (scene 2 only)
-          openDanger("A scout caught Moses! Hide behind a boulder or inside a cave so the scout can't see you.", IMG_SRC.scout || IMG_SRC.guard, 'scout');
+          openDanger("A guard caught Moses! Hide behind a boulder or inside a cave to stay out of sight.", IMG_SRC.guard || IMG_SRC.scout, 'guard');
           return;
         }
       }
@@ -9533,13 +10123,15 @@ function updateActiveVultures(dt){
       const dy = Math.abs(vty - player.ty);
       if (dx <= 1 && dy <= 1) {
         v.hit = true;
+        const _vNow = performance.now();
+        if (_vNow < game.invulnerableUntil) continue;
+        game.invulnerableUntil = _vNow + 1200;
         try {
           game.hearts--;
           game.perfectRun = false;
           updateHudHearts();
         } catch(e){}
         try { play('dangerAlert') || play('error'); } catch(e){}
-        // pulsing red vignette briefly
         try {
           const vignette = $('pulseVignette');
           if (vignette) {
@@ -9682,6 +10274,9 @@ function updateActiveFoxes(dt){
       const fty = Math.round(f.py / TILE);
       if (Math.abs(ftx - player.tx) <= 1 && Math.abs(fty - player.ty) <= 1){
         f.hit = true;
+        const _fNow = performance.now();
+        if (_fNow < game.invulnerableUntil) continue;
+        game.invulnerableUntil = _fNow + 1200;
         try {
           game.hearts = Math.max(0, game.hearts - 1);
           game.perfectRun = false;
@@ -10371,6 +10966,42 @@ function drawChallengeGate(gate){
     }
     return;
   }
+  // Zone-gate checkpoint tablet sprite (same art as climb gates for visual consistency)
+  const _okZ = (im) => im && im.complete && im.naturalWidth;
+  const zpImg = _okZ(IMG.checkpoint) ? IMG.checkpoint
+              : _okZ(IMG.tablet) ? IMG.tablet
+              : _okZ(IMG.tablet2) ? IMG.tablet2
+              : null;
+  if (zpImg) {
+    const haloR = TILE * 0.55;
+    const haloG = ctx.createRadialGradient(dx+TILE/2, dy+TILE/2, 2, dx+TILE/2, dy+TILE/2, haloR);
+    haloG.addColorStop(0, 'rgba(255,220,120,' + (0.55*pulse).toFixed(2) + ')');
+    haloG.addColorStop(1, 'rgba(255,180,60,0)');
+    ctx.fillStyle = haloG;
+    ctx.beginPath(); ctx.arc(dx+TILE/2, dy+TILE/2, haloR, 0, Math.PI*2); ctx.fill();
+    const zScale = (innerWidth >= 900) ? 1.65 : 1.4;
+    const zSz = TILE * zScale;
+    const zAr = (zpImg.naturalWidth || 1) / (zpImg.naturalHeight || 1);
+    const zH = Math.round(zSz);
+    const zW = Math.round(zSz * zAr);
+    const zOx = Math.round(dx + (TILE - zW) / 2);
+    const zOy = Math.round(dy + (TILE - zH) / 2);
+    ctx.save();
+    ctx.shadowColor = 'rgba(40,20,5,0.45)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 2;
+    ctx.drawImage(zpImg, zOx, zOy, zW, zH);
+    ctx.restore();
+    ctx.save();
+    ctx.fillStyle = '#3a1a00';
+    ctx.font = 'bold ' + Math.max(12, Math.floor(TILE*0.45)) + 'px Georgia';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(255,235,170,0.65)';
+    ctx.shadowBlur = 1.5;
+    ctx.fillText('?', dx + TILE/2, dy + TILE/2);
+    ctx.restore();
+  }
   const bob = Math.sin(performance.now()/360 + gate.tx*0.7) * 1.6;
   // v3.6 PASS A Jane 2026-04-24: floating glowing "!" indicator above every
   // unsolved checkpoint. Pulses. Lets kids spot a checkpoint from across the
@@ -10387,7 +11018,7 @@ function drawChallengeGate(gate){
   ctx.beginPath();
   ctx.arc(indX, indY, 18, 0, Math.PI*2);
   ctx.fill();
-  // "!" badge
+  // "?" badge (matches the tutorial description "Nine glowing checkpoints (?)")
   ctx.save();
   ctx.font = 'bold ' + Math.max(15, Math.floor(TILE * 0.55)) + 'px Georgia';
   ctx.textAlign = 'center';
@@ -10398,8 +11029,8 @@ function drawChallengeGate(gate){
   ctx.shadowColor = 'rgba(0,0,0,0.55)';
   ctx.shadowBlur = 4;
   ctx.shadowOffsetY = 2;
-  ctx.strokeText('!', indX, indY);
-  ctx.fillText('!', indX, indY);
+  ctx.strokeText('?', indX, indY);
+  ctx.fillText('?', indX, indY);
   ctx.restore();
 }
 
@@ -11527,6 +12158,18 @@ function drawTile(t, dx, dy, tx, ty){
                     : (IMG.cliffStep     && IMG.cliffStep.complete     && IMG.cliffStep.naturalWidth)     ? IMG.cliffStep
                     : (IMG.desertExit    && IMG.desertExit.complete    && IMG.desertExit.naturalWidth)    ? IMG.desertExit
                     : null;
+      if (!exitPNG) {
+        ctx.save();
+        const _fbG = ctx.createLinearGradient(dx, dy+TILE, dx, dy);
+        _fbG.addColorStop(0, '#5a3818'); _fbG.addColorStop(1, '#c0884a');
+        ctx.fillStyle = _fbG;
+        ctx.fillRect(dx+2, dy+2, TILE-4, TILE-4);
+        ctx.fillStyle = '#ffd976';
+        ctx.font = 'bold 14px Georgia';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('EXIT', ecx, ecy);
+        ctx.restore();
+      }
       if (exitPNG) {
         // v3.28 Jane 2026-04-27: EXIT was being clipped at the right canvas
         // edge (col 39's right edge = canvas right edge) at center-anchor
@@ -11543,7 +12186,7 @@ function drawTile(t, dx, dy, tx, ty){
         ctx.ellipse(dx+TILE/2, dy+TILE-2, TILE*0.62, 5.5, 0, 0, Math.PI*2);
         ctx.fill();
         ctx.restore();
-        const esH = TILE * 1.7;
+        const esH = TILE * 1.85;
         const esAR = (exitPNG.naturalWidth || 1) / (exitPNG.naturalHeight || 1);
         let esW = Math.round(esH * esAR);
         const esWMax = Math.round(TILE * 1.8);
@@ -11557,9 +12200,9 @@ function drawTile(t, dx, dy, tx, ty){
         // past canvas right edge. Stays glued to its tile during pan.
         const esOX = Math.round(dx + TILE - esW);
         const esOY = Math.round(dy + TILE - esHInt + TILE*0.14);
-        // BIGGER, BREATHING corona — radius 1.6 → 2.4 TILE, deeper pulse
         ctx.save();
-        const coronaR = TILE * (2.0 + 0.4 * Math.sin(now/300));
+        const coronaRaw = TILE * (2.0 + 0.4 * Math.sin(now/300));
+        const coronaR = Math.max(4, Math.min(coronaRaw, CANVAS_W - ecx, ecx));
         const exitGlow = ctx.createRadialGradient(ecx, ecy, 4, ecx, ecy, coronaR);
         const exitGlowA = (_allGatesSolved ? 0.70 : 0.45) + 0.22 * Math.sin(now/240);
         exitGlow.addColorStop(0, _allGatesSolved
@@ -11619,7 +12262,7 @@ function drawTile(t, dx, dy, tx, ty){
         // it's always readable against any tile background.
         ctx.save();
         const exitLabel = _allGatesSolved ? 'GO! EXIT' : 'EXIT';
-        ctx.font = 'bold 12px Georgia';
+        ctx.font = 'bold 14px Georgia';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const labelY = dy + TILE + 12;
@@ -11817,16 +12460,26 @@ function drawTile(t, dx, dy, tx, ty){
     // v2.3.3 Jane: desertStart PNG rendered LARGER (2.1x tile), aspect-ratio
     // preserved and pixel-snapped so the START cave reads unmistakably from
     // across the map and doesn't look squashed or blurry.
+    if (game.scene === 2 && !(IMG.desertStart && IMG.desertStart.complete && IMG.desertStart.naturalWidth)) {
+      ctx.save();
+      ctx.fillStyle = '#3a6b3a';
+      ctx.fillRect(dx+2, dy+2, TILE-4, TILE-4);
+      ctx.fillStyle = '#7fff8a';
+      ctx.font = 'bold 12px Georgia';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('START', dx+TILE/2, dy+TILE/2);
+      ctx.restore();
+    }
     if (game.scene === 2 && IMG.desertStart && IMG.desertStart.complete && IMG.desertStart.naturalWidth) {
       // v3.21 Jane 2026-04-25: bigger START. Height target 1.6 → 2.2× TILE,
       // width cap 1.5 → 2.0× TILE (Rule 6: adjacent-tile-safe). If AR pushes
       // width past cap, derive height from capped width to keep proportions
       // (no squish, no right-side clip into col-2).
       const dsAR = (IMG.desertStart.naturalWidth || 1) / (IMG.desertStart.naturalHeight || 1);
-      const dsHTarget = TILE * 2.2;
+      const dsHTarget = TILE * 2.5;
       let dsW = Math.round(dsHTarget * dsAR);
       let dsHInt = Math.round(dsHTarget);
-      const dsWMax = Math.round(TILE * 2.0);
+      const dsWMax = Math.round(TILE * 2.3);
       if (dsW > dsWMax) {
         dsHInt = Math.round(dsWMax / dsAR);
         dsW = dsWMax;
@@ -13154,6 +13807,7 @@ function drawCompass(){
    readable long enough for younger kids to finish reading them. */
 let toastTimer = null;
 function toast(msg){
+  if (_introPanActive) return;
   const el = $('toast');
   el.textContent = msg;
   el.classList.add('show');
