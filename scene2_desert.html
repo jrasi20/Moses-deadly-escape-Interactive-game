@@ -2140,6 +2140,7 @@
       flex: 0 0 auto;
     }
     .dpad-btn, .dpad-spacer { height: 30px; border-radius: 50%; font-size: 15px; }
+    .dpad-text { display: none; }
     .action-panel {
       position: relative;
       top: auto; right: auto; transform: none;
@@ -2301,7 +2302,7 @@
     </div>
     <div class="hud-group">
       <span class="hud-chip"><img src="assets/images/star%207.png" onerror="this.style.display='none'" alt=""><span id="hudStars">0</span></span>
-      <span class="hud-chip"><img src="assets/images/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span>/3</span>
+      <span class="hud-chip"><img src="assets/images/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span>/<span id="hudTreasureTotal">0</span></span>
       <!-- v2.1 Scene 2: altitude chip (shown only on scene 2, updated by updateHudAltitude) -->
       <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/9</span>
       <span class="hud-chip" id="hudTimer">3:00</span>
@@ -2432,7 +2433,7 @@
 <div class="modal-overlay challenge-modal" id="challengeModal">
   <div class="modal-content">
     <div class="ch-scroll">
-      <div id="chHeader" style="color:#6a3e10;font-size:12px;letter-spacing:1.5px;margin-bottom:4px;font-weight:800;white-space:nowrap;">CHECKPOINT</div>
+      <div id="chHeader" style="color:#6a3e10;font-size:11px;letter-spacing:0.5px;margin-bottom:4px;font-weight:800;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">CHECKPOINT</div>
       <h2 id="chTitle">Answer to pass!</h2>
       <p id="chQ" style="font-size:16px;line-height:1.45;"></p>
       <div id="chOptions" style="display:flex;flex-direction:column;gap:6px;margin-top:10px;"></div>
@@ -4035,7 +4036,7 @@ const CHALLENGE_BANK = {
       q:'Which Bible verse does this picture illustrate?',
       image:'assets/images/color princess holding baby.png',
       alt:'The princess of Egypt finds baby Moses',
-      options:['Exodus 2:6','Genesis 21:14','Numbers 12:9','Hebrews 11:7'],
+      options:['Exodus 2:6 — She opened the basket and saw a baby','Genesis 21:14 — Hagar wandered in the desert','Numbers 12:9 — God was angry with Miriam','Hebrews 11:7 — Noah built the ark by faith'],
       correct:0,
       clue:'A royal woman opens a basket pulled from the river. She sees a crying Hebrew baby inside and feels sorry for him.',
       verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
@@ -4043,7 +4044,7 @@ const CHALLENGE_BANK = {
       q:'Which Bible verse does this picture show?',
       image:'assets/images/miriam watching moses.png',
       alt:'Miriam watching the basket in the reeds',
-      options:['Genesis 3:6','Exodus 2:4','Leviticus 20:9','Numbers 6:23'],
+      options:['Genesis 3:6 — Eve took the forbidden fruit','Exodus 2:4 — His sister watched from a distance','Leviticus 20:9 — Laws about honouring parents','Numbers 6:23 — A blessing for God\'s people'],
       correct:1,
       clue:'A young girl stands at the edge of the river, quietly watching a basket floating among the reeds.',
       verse:'"His sister stood at a distance to see what would happen to him." (Exodus 2:4 NIV)' },
@@ -4329,7 +4330,7 @@ const CHALLENGE_BANK = {
       q:'Which Bible verse does this picture illustrate?',
       image:'assets/images/color hebrew slaves.png',
       alt:'Hebrew slaves building in Egypt',
-      options:['Genesis 47:3','Exodus 1:11','Deuteronomy 5:15','Ezra 1:1'],
+      options:['Genesis 47:3 — Joseph\'s brothers meet Pharaoh','Exodus 1:11 — Slave masters oppressed Israel','Deuteronomy 5:15 — Remember you were slaves in Egypt','Ezra 1:1 — King Cyrus freed the exiles'],
       correct:1,
       clue:'Tired workers toiling under the sun, building great store cities for a king who has forgotten who they are. This is NOT freedom.',
       verse:'"So they put slave masters over them to oppress them with forced labor, and they built Pithom and Rameses as store cities for Pharaoh." (Exodus 1:11 NIV)' },
@@ -4337,7 +4338,7 @@ const CHALLENGE_BANK = {
       q:'Which Bible verse does this picture show?',
       image:'assets/images/jochebed holding moses.png',
       alt:'Moses\'s mother hiding him',
-      options:['Genesis 21:3','Luke 2:7','Numbers 26:59','Hebrews 11:23'],
+      options:['Genesis 21:3 — Abraham named his son Isaac','Luke 2:7 — Mary wrapped baby Jesus in cloths','Numbers 26:59 — Moses\' parents are named','Hebrews 11:23 — Moses hid by his parents\' faith'],
       correct:3,
       clue:'A brave mother hides her baby to protect him from a king\'s cruel order. She is not afraid — she acts by faith.',
       verse:'"By faith Moses\' parents hid him for three months after he was born, because they saw he was no ordinary child." (Hebrews 11:23 NIV)' },
@@ -4612,7 +4613,7 @@ const CHALLENGE_BANK = {
       q:'Which Bible verse does this picture illustrate?',
       image:'assets/images/color numerous israelites.png',
       alt:'The Israelites multiplying greatly in Egypt',
-      options:['Numbers 1:46','Genesis 12:2','Exodus 1:7','Acts 7:14'],
+      options:['Numbers 1:46 — Israel counted 603,550 fighting men','Genesis 12:2 — God promised Abraham a great nation','Exodus 1:7 — The Israelites filled the land','Acts 7:14 — Jacob\'s family came to Egypt, 75 people'],
       correct:2,
       clue:'A huge crowd of God\'s people, exceedingly fruitful and filling the land. The new Pharaoh looked at them and feared.',
       verse:'"The Israelites were exceedingly fruitful; they multiplied greatly, increased in numbers and became so numerous that the land was filled with them." (Exodus 1:7 NIV)' },
@@ -4620,7 +4621,7 @@ const CHALLENGE_BANK = {
       q:'Which Bible verse does this picture show?',
       image:'assets/images/moses with sheep color 2.png',
       alt:'Moses tending the flock in Midian',
-      options:['Genesis 4:2','Psalm 23:1','Ezekiel 34:11','Exodus 3:1'],
+      options:['Genesis 4:2 — Abel kept flocks of sheep','Psalm 23:1 — The LORD is my shepherd','Ezekiel 34:11 — God searches for his scattered sheep','Exodus 3:1 — Moses tended Jethro\'s flock'],
       correct:3,
       clue:'Moses has become a shepherd in a foreign land, tending the flock of his father-in-law near the mountain of God.',
       verse:'"Moses was tending the flock of Jethro his father-in-law, the priest of Midian." (Exodus 3:1 NIV)' },
@@ -6049,7 +6050,11 @@ function updateHudHearts(){
   else el.classList.remove('hud-hearts-low');
 }
 function updateHudStars(){ $('hudStars').textContent = game.stars; }
-function updateHudTreasure(){ $('hudTreasure').textContent = game.treasureCount; }
+function updateHudTreasure(){
+  $('hudTreasure').textContent = game.treasureCount;
+  const tot = $('hudTreasureTotal');
+  if (tot) tot.textContent = game.treasuresTotal || 0;
+}
 // v2.2.6 Jane feedback: HUD now tracks ALL mandatory Desert Gates (not just
 // climbs) so kids see a single "Gates 3/9" progress indicator and know they
 // must solve EVERY gate to unlock the exit. Icon is a question mark ? to
@@ -6751,14 +6756,14 @@ function openChallenge(gate) {
   // entire modal body -- leaving only the Exit button. Target the caption
   // element directly by id.
   const header = $('chHeader');
-  let headerText = 'CHECKPOINT - QUESTION ' + (idx + 1) + ' OF ' + total;
+  let headerText = 'CHECKPOINT  ·  Q' + (idx + 1) + ' of ' + total;
   let titleText  = 'Answer to pass this checkpoint!';
   if (game.scene === 2 && gate && gate.kind === 'climb') {
-    headerText = 'CHECKPOINT ' + (gate.step || '?') + ' - QUESTION ' + (idx + 1) + ' OF ' + total;
+    headerText = 'CHECKPOINT  ·  Q' + (idx + 1) + ' of ' + total;
     titleText  = 'Answer correctly to press on through the desert!';
   } else if (game.scene === 2 && gate && gate.kind === 'zone') {
-    const zn = (gate.label || 'Desert Checkpoint').toUpperCase();
-    headerText = zn + ' - QUESTION ' + (idx + 1) + ' OF ' + total;
+    const zn = (gate.label || 'Desert Checkpoint').replace(/\s*Checkpoint\s*/i,'').trim().toUpperCase() || 'DESERT';
+    headerText = zn + ' CHECKPOINT  ·  Q' + (idx + 1) + ' of ' + total;
     const zone = gate.zone || '';
     titleText = zone
       ? 'Answer to cross the ' + zone + '!'
@@ -8178,10 +8183,10 @@ function showWin(){
   // BELOW stars, not as a duplicate title above.
   const tierTitle = starRating === 3 ? 'DESERT CONQUEROR' : starRating === 2 ? 'BRAVE TRAVELER' : 'FAITHFUL JOURNEY';
   const tierHeadline = starRating === 3
-    ? 'Moses reached Midian — a wise & faithful crossing!'
+    ? 'Moses conquered the desert! God's plan is unstoppable!'
     : starRating === 2
-    ? 'Moses reached Midian — a brave crossing!'
-    : 'Moses reached Midian — by faith alone.';
+    ? 'Moses reached Midian — so close to 3 stars!'
+    : 'Moses escaped to Midian. Keep growing in faith!';
 
   // Sub-achievements: bonus badges (not titles) shown as secondary chips
   const badges = [];
@@ -8251,9 +8256,12 @@ function showWin(){
   }
 
   // motivate based on what's missing
-  let motivate = 'Collect more Truth Cards in the next scene to unlock the Truth Finder badge!';
-  if (starRating < 3) motivate = 'Try Replay and aim for all 3 stars to earn PHARAOH\u2019S DEFEAT!';
-  if (game.treasureCount < game.treasuresTotal) motivate = 'Next time find all ' + game.treasuresTotal + ' treasures AND look for the Hidden Crown!';
+  let motivate = 'Continue to Scene 3 \u2014 the well and Jethro\u2019s tent await!';
+  if (starRating < 3) motivate = 'Replay and chase 3 stars \u2014 can you become a DESERT CONQUEROR?';
+  if (game.treasureCount < game.treasuresTotal) {
+    const missed = game.treasuresTotal - game.treasureCount;
+    motivate = 'You missed ' + missed + ' treasure' + (missed !== 1 ? 's' : '') + '! Find them all next run.';
+  }
   $('winMotivate').textContent = motivate;
 
   // play scene-complete banner first, then the win modal after 2s
