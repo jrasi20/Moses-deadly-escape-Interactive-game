@@ -681,7 +681,8 @@
   /* Win modal */
   .win-modal .modal-content {
     background: linear-gradient(155deg, #3a006e, #6a1b9a, #7b1fa2);
-    border:3px solid rgba(255,215,0,0.6);
+    border: 4px solid #ffd700;
+    box-shadow: 0 0 0 2px #b8860b, 0 0 32px rgba(255,215,0,0.55), inset 0 0 0 1px rgba(255,255,200,0.12);
     overflow:visible;
   }
   .win-modal h2 {
@@ -1018,6 +1019,20 @@
   .ch-memory-card.flipped .mem-face { display:flex; }
   .ch-memory-card.matched .mem-face { display:flex; }
   .ch-memory-card .mem-face img { max-width:78%; max-height:78%; object-fit:contain; }
+  /* -- SPOT THE DIFFERENCE: two images side by side -- */
+  .ch-spotdiff-wrapper {
+    display:flex; gap:6px; justify-content:center; margin:6px auto 4px;
+  }
+  .ch-spotdiff-img {
+    width:min(136px, 36vw); height:auto; object-fit:contain;
+    border:2px solid #ffd976; border-radius:8px;
+  }
+  /* -- PICTIONARY: full-width scene image above verse MCQ buttons -- */
+  .ch-pict-img {
+    display:block; width:min(280px, 78vw); height:auto; max-height:190px;
+    object-fit:contain; margin:0 auto 12px;
+    border:3px solid #ffd976; border-radius:10px;
+  }
   /* -- SLIDER PUZZLE: tap-two-tiles to swap, 3x3 grid -- */
   .ch-slider-thumb {
     display:block; width:90px; height:90px; margin:6px auto 4px;
@@ -1728,7 +1743,7 @@
       flex: 0 0 auto;
     }
     .dpad-btn, .dpad-spacer { height: 32px; border-radius: 50%; font-size: 16px; }
-    .dpad-text { font-size: 8px; margin-top: 1px; }
+    .dpad-text { display: none; }
     .action-panel {
       position: relative;
       top: auto; right: auto; transform: none;
@@ -1917,7 +1932,7 @@
     </div>
     <div class="hud-group">
       <span class="hud-chip"><img src="assets/images/star%207.png" onerror="this.style.display='none'" alt=""><span id="hudStars">0</span></span>
-      <span class="hud-chip"><img src="assets/images/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span>/3</span>
+      <span class="hud-chip"><img src="assets/images/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span>/<span id="hudTreasureTotal">0</span></span>
       <!-- v2.1 Scene 2: altitude chip (shown only on scene 2, updated by updateHudAltitude) -->
       <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/5</span>
       <span class="hud-chip" id="hudTimer">3:00</span>
@@ -2037,7 +2052,7 @@
 <div class="modal-overlay challenge-modal" id="challengeModal">
   <div class="modal-content">
     <div class="ch-scroll">
-      <div id="chHeader" style="color:#6a3e10;font-size:12px;letter-spacing:1.5px;margin-bottom:4px;font-weight:800;">CHECKPOINT</div>
+      <div id="chHeader" style="color:#6a3e10;font-size:11px;letter-spacing:0.5px;margin-bottom:4px;font-weight:800;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">CHECKPOINT</div>
       <h2 id="chTitle">Answer to pass!</h2>
       <p id="chQ" style="font-size:16px;line-height:1.45;"></p>
       <div id="chOptions" style="display:flex;flex-direction:column;gap:6px;margin-top:10px;"></div>
@@ -4433,16 +4448,19 @@ const CHALLENGE_BANK = {
       q:'Spot the ODD ONE OUT (not part of the Midian well scene):',
       options:['Jethro','Zipporah','Seven daughters','Pharaoh\'s chariots'],
       answer:'Pharaoh\'s chariots',
+      clue:'Three of the four choices ARE part of the peaceful well scene in Midian. One belongs to a powerful army far away in Egypt.',
       verse:'Pharaoh\'s army did not follow Moses to Midian. God gave Moses a safe place to rest. (Exodus 2:15-21)' },
     { id:'eSp2', type:'spot',
       q:'Which word does NOT belong in Moses\' life in Midian?',
       options:['Flock','Well','Zipporah','Pyramid'],
       answer:'Pyramid',
+      clue:'Three of these belong to Midian — a land of desert wells, sheep, and shepherd families. One belongs to a famous building far away in Egypt.',
       verse:'Pyramids were in Egypt. Midian had wells, flocks, and Jethro\'s tent. (Exodus 2:15-22)' },
     { id:'eSp3', type:'spot',
       q:'Which is NOT one of the things Moses did at the well in Midian?',
       options:['Drove away rude shepherds','Drew water for the flock','Built a boat','Helped seven daughters'],
       answer:'Built a boat',
+      clue:'Three of these are things Moses really did at the well — they are all in Exodus 2. One thing was NEVER done at a desert well.',
       verse:'"Moses got up and came to their rescue and watered their flock." (Exodus 2:17 NIV)' },
     // --- Count ---
     { id:'eC1', type:'count',
@@ -4479,6 +4497,38 @@ const CHALLENGE_BANK = {
       image:'assets/images/moses shepherd.png',
       alt:'Shepherd Moses with the flock',
       verse:'"Now Moses was tending the flock of Jethro his father-in-law." (Exodus 3:1 NIV)' },
+    // --- Spot the Difference ---
+    { id:'s3eSdiff1', type:'spotdiff',
+      q:'How many differences can you spot between these two pictures of baby Moses?',
+      imgA:'assets/images/spot the difference moses in nile A.png',
+      imgB:'assets/images/spot the difference moses in nile B.png',
+      answer:4,
+      clue:'Look very carefully — some colours, shapes or objects have changed between the two pictures!',
+      verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
+    { id:'s3eSdiff2', type:'spotdiff',
+      q:'How many differences can you spot between these two pictures of Moses fleeing Egypt?',
+      imgA:'assets/images/spot the difference moses running A.png',
+      imgB:'assets/images/spot the difference moses running B.png',
+      answer:4,
+      clue:'Look carefully at both pictures — things like clothes, colours, or objects may have changed!',
+      verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
+    // --- Pictionary ---
+    { id:'s3ePict1', type:'pictionary',
+      q:'Which Bible verse does this picture illustrate?',
+      image:'assets/images/color zipporah.png',
+      alt:'Zipporah, daughter of Jethro, given to Moses',
+      options:['Exodus 2:21 — Jethro gave his daughter Zipporah to Moses','Genesis 29:18 — Jacob loved Rachel and worked seven years','Ruth 1:4 — Orpah and Ruth married men of Moab','Judges 4:4 — Deborah was a prophetess in Israel'],
+      correct:0,
+      clue:'One of the seven daughters of the priest of Midian. Her father gave her to a stranger who had been kind to his daughters at the well.',
+      verse:'"[Jethro] gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
+    { id:'s3ePict2', type:'pictionary',
+      q:'Which Bible verse does this picture show?',
+      image:'assets/images/jethro.png',
+      alt:'Jethro, the priest of Midian',
+      options:['Exodus 2:16 — A priest of Midian had seven daughters','Genesis 14:18 — Melchizedek was a priest of God Most High','Numbers 22:5 — Balaam was summoned by Balak','Deuteronomy 18:1 — The Levitical priests had no land'],
+      correct:0,
+      clue:'A priest and shepherd in the land of Midian. He welcomed a stranger who rescued his daughters at the well. He later became Moses’ father-in-law.',
+      verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
   ],
   medium: [
     // --- Moses as a young man: the turning point ---
@@ -4641,16 +4691,19 @@ const CHALLENGE_BANK = {
       q:'Which is NOT mentioned in Moses\' flight to Midian?',
       options:['Well','Shepherds','Zipporah','Helicopter'],
       answer:'Helicopter',
+      clue:'Three of these appear in Exodus 2:15-22 — a water source, workers at a well, and the woman Moses married. One is from a very different century.',
       verse:'Exodus 2:15-22 NIV' },
     { id:'mSp2', type:'spot',
       q:'Which word does NOT fit the desert?',
       options:['Sand','Sun','Wind','Snow'],
       answer:'Snow',
+      clue:'The Midian desert is a hot, dry land. Three of these words belong there. One belongs to cold mountains far away — never in the desert heat.',
       verse:'The Midian desert is hot and dry.' },
     { id:'mSp3', type:'spot',
       q:'Which person did Moses NOT meet in Midian?',
       options:['Jethro','Zipporah','Gershom','Goliath'],
       answer:'Goliath',
+      clue:'Three of these people are part of Moses\' story in Midian — a priest, a wife, and a son. The fourth is a famous giant who lived centuries later, in the time of David.',
       verse:'Goliath lived much later, in David\'s time. (1 Samuel 17)' },
     // --- Count ---
     { id:'mC1', type:'count',
@@ -4683,6 +4736,38 @@ const CHALLENGE_BANK = {
       q:'Solve the puzzle: Miriam watching baby Moses on the Nile.',
       image:'assets/images/miriam watching moses.png',
       alt:'Miriam watching Moses',
+      verse:'"His sister stood at a distance to see what would happen to him." (Exodus 2:4 NIV)' },
+    // --- Spot the Difference ---
+    { id:'s3mSdiff1', type:'spotdiff',
+      q:'How many differences can you spot between these two pictures of the princess rescuing Moses?',
+      imgA:'assets/images/spot the difference princess rescue A.png',
+      imgB:'assets/images/spot the difference princess rescue B.png',
+      answer:4,
+      clue:'Look carefully at both pictures — some colours, objects or details have changed!',
+      verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
+    { id:'s3mSdiff2', type:'spotdiff',
+      q:'How many differences can you spot in these two pictures of Moses by the Nile?',
+      imgA:'assets/images/spot the difference moses in nile A.png',
+      imgB:'assets/images/spot the difference moses in nile B.png',
+      answer:4,
+      clue:'Some shapes, colours or background details have changed between the two pictures. Look closely!',
+      verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
+    // --- Pictionary ---
+    { id:'s3mPict1', type:'pictionary',
+      q:'Which Bible verse does this picture illustrate?',
+      image:'assets/images/moses shepherd.png',
+      alt:'Moses tending the flock in Midian',
+      options:['Exodus 3:1 — Moses was tending the flock of Jethro his father-in-law','Psalm 23:1 — The LORD is my shepherd, I lack nothing','Genesis 4:2 — Abel kept flocks and Cain worked the soil','John 10:11 — I am the good shepherd who lays down his life'],
+      correct:0,
+      clue:'A man who was once raised as a prince is now tending sheep in a foreign land. He serves his father-in-law faithfully.',
+      verse:'"Now Moses was tending the flock of Jethro his father-in-law, the priest of Midian." (Exodus 3:1 NIV)' },
+    { id:'s3mPict2', type:'pictionary',
+      q:'Which Bible verse does this picture show?',
+      image:'assets/images/miriam watching moses.png',
+      alt:'Miriam watching baby Moses in the reeds',
+      options:['Exodus 2:4 — His sister stood at a distance to see what would happen','Numbers 12:1 — Miriam and Aaron criticized Moses','Deuteronomy 34:5 — Moses died in Moab as the LORD had said','Judges 11:34 — His daughter came out to meet him'],
+      correct:0,
+      clue:'A brave young girl stands quietly near the river, watching and waiting to see if her baby brother is safe.',
       verse:'"His sister stood at a distance to see what would happen to him." (Exodus 2:4 NIV)' },
   ],
   hard: [
@@ -4857,11 +4942,13 @@ const CHALLENGE_BANK = {
       q:'Which is NOT in Exodus 1-2?',
       options:['Shiphrah','Puah','Pharaoh','Isaac'],
       answer:'Isaac',
+      clue:'Three of these names appear in Exodus chapters 1 or 2 — two brave midwives, and the king who oppressed Israel. One is a patriarch from Genesis who lived long before Exodus.',
       verse:'Isaac is a patriarch in Genesis — not Exodus 1-2.' },
     { id:'hSp3', type:'spot',
       q:'Which was NOT one of Moses\' Midian family?',
       options:['Jethro','Zipporah','Gershom','Aaron'],
       answer:'Aaron',
+      clue:'Three of these people were part of Moses\' new life in Midian — a father-in-law, a wife, a son. The fourth was Moses\' brother back in Egypt.',
       verse:'Aaron was Moses\' brother in Egypt — not from Midian. (Exodus 2 family context)' },
     // --- Count ---
     { id:'hC1', type:'count',
@@ -4892,6 +4979,38 @@ const CHALLENGE_BANK = {
       q:'Solve the puzzle: Moses raised in Pharaoh\'s palace.',
       image:'assets/images/moses in palace.png',
       alt:'Moses in the palace',
+      verse:'"By faith Moses, when he had grown up, refused to be known as the son of Pharaoh\'s daughter." (Hebrews 11:24 NIV)' },
+    // --- Spot the Difference ---
+    { id:'s3hSdiff1', type:'spotdiff',
+      q:'How many differences can you spot between these two pictures of Moses fleeing?',
+      imgA:'assets/images/spot the difference moses running A.png',
+      imgB:'assets/images/spot the difference moses running B.png',
+      answer:4,
+      clue:'Study both images carefully. Not everything is as it seems — colours, objects, or backgrounds may have changed.',
+      verse:'"By faith he left Egypt, not fearing the king\'s anger." (Hebrews 11:27 NIV)' },
+    { id:'s3hSdiff2', type:'spotdiff',
+      q:'How many differences can you spot between these two pictures of the princess at the Nile?',
+      imgA:'assets/images/spot the difference princess rescue A.png',
+      imgB:'assets/images/spot the difference princess rescue B.png',
+      answer:4,
+      clue:'Examine the pictures closely — some details, colours or items have been changed in one of them.',
+      verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
+    // --- Pictionary ---
+    { id:'s3hPict1', type:'pictionary',
+      q:'Which Bible verse does this picture illustrate?',
+      image:'assets/images/color hebrew slaves.png',
+      alt:'Hebrew slaves building in Egypt',
+      options:['Exodus 1:11 — Slave masters oppressed Israel with forced labour','Numbers 1:46 — Israel counted 603,550 fighting men','Genesis 47:3 — Joseph\'s brothers told Pharaoh they were shepherds','Deuteronomy 5:15 — Remember you were slaves in Egypt'],
+      correct:0,
+      clue:'Workers toil under the sun building great store cities for a king who has forgotten who they are. This scene comes before Moses is born.',
+      verse:'"So they put slave masters over them to oppress them with forced labor, and they built Pithom and Rameses as store cities for Pharaoh." (Exodus 1:11 NIV)' },
+    { id:'s3hPict2', type:'pictionary',
+      q:'Which Bible verse does this picture show?',
+      image:'assets/images/moses in palace.png',
+      alt:'Moses raised in the palace of Egypt',
+      options:['Hebrews 11:24 — Moses refused to be known as the son of Pharaoh\'s daughter','Acts 7:22 — Moses was educated in all the wisdom of the Egyptians','Numbers 12:3 — Moses was a very humble man','Exodus 2:10 — She named him Moses saying she drew him from the water'],
+      correct:0,
+      clue:'A Hebrew man raised with royal wealth and power. By faith he made a choice that cost him everything.',
       verse:'"By faith Moses, when he had grown up, refused to be known as the son of Pharaoh\'s daughter." (Hebrews 11:24 NIV)' },
   ],
 };
@@ -5107,6 +5226,8 @@ function seedChallenges(difficulty) {
     pair:       shuffle(pool.filter(q => q.type === 'pair')),
     count:      shuffle(pool.filter(q => q.type === 'count')),
     slider:     shuffle(pool.filter(q => q.type === 'slider')),
+    spotdiff:   shuffle(pool.filter(q => q.type === 'spotdiff')),
+    pictionary: shuffle(pool.filter(q => q.type === 'pictionary')),
   };
   // Sort each type so fresh questions come first.
   for (const k in byType) byType[k].sort((a,b) => freshnessScore(a) - freshnessScore(b));
@@ -5115,7 +5236,7 @@ function seedChallenges(difficulty) {
   // + 1 visual (pair/count/spot/memory/maze). Every gate gets balanced variety.
   const knowledgeQueues = [byType.trivia, byType.tf];
   const wordQueues      = [byType.fill, byType.unscramble, byType.match, byType.sequence];
-  const visualQueues    = [byType.pair, byType.count, byType.spot, byType.memory, byType.maze, byType.slider];
+  const visualQueues    = [byType.pair, byType.count, byType.spot, byType.memory, byType.maze, byType.slider, byType.spotdiff, byType.pictionary];
   const cycle = (queues) => {
     // pop next-available question from the rotating family of queues
     for (let k=0;k<queues.length;k++) {
@@ -5146,6 +5267,7 @@ function seedChallenges(difficulty) {
         byType.trivia, byType.tf, byType.fill,
         byType.unscramble, byType.match, byType.sequence,
         byType.memory, byType.maze, byType.spot, byType.pair, byType.count, byType.slider,
+        byType.spotdiff, byType.pictionary,
         pool // last-resort fallback
       ).filter(Boolean);
       bundle.push(all[Math.floor(Math.random()*all.length)]);
@@ -5591,7 +5713,12 @@ $('startBtn').addEventListener('click', () => {
     $('coverPage').style.display = 'none';
     const overlay = document.getElementById('preloadOverlay');
     if (overlay) overlay.classList.remove('active');
-    openCinematic();
+    const _savedGame = _loadCheckpoint();
+    if (_savedGame) {
+      showResumePrompt(_savedGame);
+    } else {
+      openCinematic();
+    }
   };
   if (_preloadPct() >= 100) {
     launchCinematic();
@@ -6022,6 +6149,12 @@ function resetScene2Cinematic(){
 const _SAVE_KEY = 'bek.moses3.scene3.save';
 function _saveCheckpoint(){
   try {
+    const collectedTiles = [];
+    try {
+      for (let y=0; y<MAP_H; y++) for (let x=0; x<MAP_W; x++) {
+        if (_mapInitial[y][x] === 5 && MAP[y][x] !== 5) collectedTiles.push([x,y]);
+      }
+    } catch(e){}
     const payload = {
       v: 1,
       scene: 3,
@@ -6039,6 +6172,7 @@ function _saveCheckpoint(){
         bundleIndex: g.bundleIndex || 0,
         bundleCorrect: g.bundleCorrect || 0,
       })),
+      collectedTiles: collectedTiles,
       savedAt: Date.now(),
     };
     localStorage.setItem(_SAVE_KEY, JSON.stringify(payload));
@@ -6056,6 +6190,33 @@ function _loadCheckpoint(){
 }
 function _clearCheckpoint(){
   try { localStorage.removeItem(_SAVE_KEY); } catch(e){}
+}
+function showResumePrompt(p) {
+  const gatesCleared = Array.isArray(p.gates) ? p.gates.filter(g => g.solved).length : 0;
+  const totalGates = Array.isArray(p.gates) ? p.gates.length : 9;
+  const diffLabel = (p.difficulty || 'easy').charAt(0).toUpperCase() + (p.difficulty || 'easy').slice(1);
+  const overlay = document.createElement('div');
+  overlay.id = 'resumePromptOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;z-index:9999;font-family:Georgia,serif;';
+  overlay.innerHTML = '<div style="background:linear-gradient(160deg,#3a1405,#1a0a00);border:3px solid #ffd976;border-radius:18px;padding:28px 26px;max-width:360px;width:90vw;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.7);">'
+    + '<div style="font-size:34px;margin-bottom:8px;">\u{1F3D5}️</div>'
+    + '<h2 style="color:#ffd976;font-size:22px;margin-bottom:6px;">Welcome back, Explorer!</h2>'
+    + '<p style="color:#ffeecf;font-size:15px;line-height:1.55;margin-bottom:18px;">You have a saved adventure on <strong style="color:#ffd976;">' + diffLabel + '</strong> difficulty &mdash; <strong style="color:#ffd976;">' + gatesCleared + ' of ' + totalGates + '</strong> checkpoints cleared.</p>'
+    + '<button id="resumeSavedBtn" style="display:block;width:100%;background:linear-gradient(135deg,#c8860a,#f0a500);color:#1a0a00;font-weight:900;font-size:17px;padding:13px 0;border-radius:40px;margin-bottom:10px;border:none;cursor:pointer;letter-spacing:0.5px;">Continue Adventure →</button>'
+    + '<button id="startFreshFromSaveBtn" style="display:block;width:100%;background:transparent;color:#ffb86a;font-size:14px;padding:10px 0;border-radius:40px;border:1px solid rgba(255,184,106,0.4);cursor:pointer;">Start Fresh (lose saved progress)</button>'
+    + '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#resumeSavedBtn').addEventListener('click', () => {
+    try { play('click'); } catch(e){}
+    overlay.remove();
+    startScene1();
+  });
+  overlay.querySelector('#startFreshFromSaveBtn').addEventListener('click', () => {
+    try { play('click'); } catch(e){}
+    _clearCheckpoint();
+    overlay.remove();
+    openCinematic();
+  });
 }
 function _applyCheckpointAfterSeed(){
   const p = _loadCheckpoint();
@@ -6086,6 +6247,14 @@ function _applyCheckpointAfterSeed(){
       player.tx = p.player.tx; player.ty = p.player.ty;
       player.px = player.tx * TILE; player.py = player.ty * TILE;
       if (p.player.dir) player.dir = p.player.dir;
+    }
+    if (Array.isArray(p.collectedTiles)) {
+      try {
+        for (const ct of p.collectedTiles) {
+          const cx = ct[0], cy = ct[1];
+          if (MAP[cy] && MAP[cy][cx] === 5) MAP[cy][cx] = 0;
+        }
+      } catch(e){}
     }
     try { updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); updateHudAltitude(); } catch(e){}
     try { toast('Welcome back! Resumed from your last checkpoint.'); } catch(e){}
@@ -6314,7 +6483,11 @@ function updateHudHearts(){
   $('hudHearts').innerHTML = s;
 }
 function updateHudStars(){ $('hudStars').textContent = game.stars; }
-function updateHudTreasure(){ $('hudTreasure').textContent = game.treasureCount; }
+function updateHudTreasure(){
+  $('hudTreasure').textContent = game.treasureCount;
+  const tot = $('hudTreasureTotal');
+  if (tot) tot.textContent = game.treasuresTotal || 0;
+}
 // v2.2.6 Jane feedback: HUD now tracks ALL mandatory Desert Gates (not just
 // climbs) so kids see a single "Gates 3/9" progress indicator and know they
 // must solve EVERY gate to unlock the exit. Icon is a question mark ? to
@@ -7057,7 +7230,7 @@ function openChallenge(gate) {
   // entire modal body -- leaving only the Exit button. Target the caption
   // element directly by id.
   const header = $('chHeader');
-  let headerText = 'CHECKPOINT - QUESTION ' + (idx + 1) + ' OF ' + total;
+  let headerText = 'CHECKPOINT  ·  Q ' + (idx + 1) + ' of ' + total;
   let titleText  = 'Answer to pass this checkpoint!';
   if (game.scene === 2 && gate && gate.kind === 'climb') {
     headerText = 'CHECKPOINT ' + (gate.step || '?') + ' - QUESTION ' + (idx + 1) + ' OF ' + total;
@@ -7110,6 +7283,8 @@ function openChallenge(gate) {
     else if (q.type === 'pair')       { renderPair(gate, q, opts); }
     else if (q.type === 'count')      { renderCount(gate, q, opts); }
     else if (q.type === 'slider')     { renderSlider(gate, q, opts); }
+    else if (q.type === 'spotdiff')   { renderSpotDiff(gate, q, opts); }
+    else if (q.type === 'pictionary') { renderPictionary(gate, q, opts); }
     else {
       // trivia / fill / tf -> MCQ-style buttons
       (q.options || []).forEach((opt, i) => {
@@ -7919,13 +8094,75 @@ function renderSlider(gate, q, container){
   container.appendChild(giveUp);
 }
 
+/* ---------- SPOT THE DIFFERENCE -- two images, count the differences ----------
+   Bank entry shape: { type:'spotdiff', q, imgA, imgB, answer:4 } */
+function renderSpotDiff(gate, q, container){
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ch-spotdiff-wrapper';
+  ['imgA','imgB'].forEach(key => {
+    const img = document.createElement('img');
+    img.src = q[key] || '';
+    img.alt = (key === 'imgA') ? 'Picture 1' : 'Picture 2';
+    img.className = 'ch-spotdiff-img';
+    wrapper.appendChild(img);
+  });
+  container.appendChild(wrapper);
+  const hint = document.createElement('div');
+  hint.className = 'ch-slider-hint';
+  hint.textContent = 'Look carefully at both pictures. How many differences can you find?';
+  container.appendChild(hint);
+  const answer = Number(q.answer) || 4;
+  const choices = new Set([answer]);
+  while (choices.size < 4) {
+    const n = answer + (Math.random() < 0.5 ? -1 : 1) * (Math.floor(Math.random() * 3) + 1);
+    if (n > 0) choices.add(n);
+  }
+  const arr = Array.from(choices);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  const row = document.createElement('div');
+  row.className = 'ch-count-choices';
+  arr.forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'ch-count-btn';
+    b.textContent = String(n) + ' difference' + (n === 1 ? '' : 's');
+    b.addEventListener('click', () => {
+      const correct = (n === answer);
+      try { play(correct ? 'chime' : 'tap'); } catch(e){}
+      handleChallengeAnswer(gate, correct ? 0 : -1, b, { answerLabel: String(answer) + ' differences' });
+    });
+    row.appendChild(b);
+  });
+  container.appendChild(row);
+}
+
+/* ---------- PICTIONARY -- decode a Bible scene image, pick the verse ----------
+   Bank entry shape: { type:'pictionary', q, image, alt, options:[verse,...], correct:N } */
+function renderPictionary(gate, q, container) {
+  const img = document.createElement('img');
+  img.src = q.image || '';
+  img.alt = q.alt || 'A Bible scene';
+  img.className = 'ch-pict-img';
+  img.onerror = () => { try { img.style.display = 'none'; } catch(e){} };
+  container.appendChild(img);
+  (q.options || []).forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'ch-option';
+    b.textContent = String.fromCharCode(65 + i) + '. ' + opt;
+    b.addEventListener('click', () => handleChallengeAnswer(gate, i, b));
+    container.appendChild(b);
+  });
+}
+
 function handleChallengeAnswer(gate, index, btnEl, opts) {
   opts = opts || {};
   const q = gate.questions[gate.bundleIndex];
   // For trivia/fill/tf: correctness is index === q.correct
   // For unscramble/match/sequence: caller passes index=0 if correct, -1 if wrong
   let correct;
-  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count','slider'];
+  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count','slider','spotdiff','pictionary'];
   if (CUSTOM_TYPES.indexOf(q.type) !== -1) {
     correct = (index === 0);
   } else {
@@ -8134,6 +8371,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
       fb.innerHTML = '<div style="font-size:15px;color:#ffb3b3;">Try a different match! ('
         + strikesLeft + ' tr' + (strikesLeft===1?'y':'ies') + ' left)</div>';
       setTimeout(() => {
+        gate._submitting = false;
         fb.style.display = 'none';
         document.querySelectorAll('#chOptions .ch-confirm-btn').forEach(b => b.disabled = false);
       }, 1400);
@@ -8153,6 +8391,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         + '<div style="margin-top:10px;font-size:15px;color:#5a2a10;font-weight:800;text-align:center;background:rgba(255,230,128,0.55);border:1px solid rgba(90,42,16,0.35);border-radius:8px;padding:6px 10px;"><strong>' + strikesLeft + ' tr' + (strikesLeft===1?'y':'ies') + ' left</strong> for this question. Tap Show Clue for help.</div>';
       // re-enable / re-render the SAME question so child learns the answer
       setTimeout(() => {
+        gate._submitting = false;
         document.querySelectorAll('#chOptions .ch-option').forEach(b => {
           b.disabled = false; b.classList.remove('wrong', 'correct');
         });
@@ -8344,6 +8583,7 @@ function onOasisStep(tx, ty){
 /* ---------- EXIT ---------- */
 function onReachExit(){
   game.state = 'ended';
+  try { audio.bgm.pause(); } catch(e){}
   play('gate');
   try { play('reachedExit'); } catch(e){}
   // v3.28: scene complete — clear the mid-game save so the next play is fresh.
@@ -8369,10 +8609,10 @@ function showWin(){
   // SINGLE tier title based on star rating (mutually exclusive)
   const tierTitle = starRating === 3 ? 'DESERT CONQUEROR' : starRating === 2 ? 'BRAVE TRAVELER' : 'FAITHFUL JOURNEY';
   const tierHeadline = starRating === 3
-    ? 'Moses crossed the desert with wisdom, endurance, and faith!'
+    ? 'Moses found refuge in Midian! God’s plan is unstoppable!'
     : starRating === 2
-    ? 'Moses reached the Midian well - a brave crossing!'
-    : 'Moses made it through by faith alone.';
+    ? 'Moses reached the well — so close to 3 stars!'
+    : 'Moses found shelter in Midian. Keep growing in faith!';
 
   // Sub-achievements: bonus badges (not titles) shown as secondary chips
   const badges = [];
@@ -8437,9 +8677,12 @@ function showWin(){
   }
 
   // motivate based on what's missing
-  let motivate = 'Collect more Truth Cards in the next scene to unlock the Truth Finder badge!';
-  if (starRating < 3) motivate = 'Try Replay and aim for all 3 stars to earn PHARAOH\u2019S DEFEAT!';
-  if (game.treasureCount < game.treasuresTotal) motivate = 'Next time find all ' + game.treasuresTotal + ' treasures AND look for the Hidden Crown!';
+  let motivate = 'Moses found his home! Replay to beat your score.';
+  if (starRating < 3) motivate = 'Replay and chase 3 stars \u2014 can you become a MIDIAN CHAMPION?';
+  if (game.treasureCount < game.treasuresTotal) {
+    const missed = game.treasuresTotal - game.treasureCount;
+    motivate = 'You missed ' + missed + ' treasure' + (missed !== 1 ? 's' : '') + '! Find them all next run.';
+  }
   $('winMotivate').textContent = motivate;
 
   // Scene 3 closing flow: scene-complete banner (2s) -> 5-panel Refuge in

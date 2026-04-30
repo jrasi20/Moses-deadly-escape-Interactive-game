@@ -824,8 +824,9 @@
   /* Win modal */
   .win-modal .modal-content {
     background: linear-gradient(155deg, #3a006e, #6a1b9a, #7b1fa2);
-    border:3px solid rgba(255,215,0,0.6);
-    overflow:visible;
+    border: 4px solid #ffd700;
+    box-shadow: 0 0 0 2px #b8860b, 0 0 32px rgba(255,215,0,0.55), inset 0 0 0 1px rgba(255,255,200,0.12);
+    overflow: visible;
   }
   .win-modal h2 {
     color:#ffd976;
@@ -4712,6 +4713,15 @@ function _generateRandomChallengePositions(){
           }
         }
       }
+      // Don't overlap NPC patrol routes (caravan trader row 20, camel row 15)
+      if (typeof caravanTrader !== 'undefined') {
+        if (Math.abs(ty - caravanTrader.ty) <= 2 &&
+            tx >= caravanTrader.minTx - 2 && tx <= caravanTrader.maxTx + 2) return true;
+      }
+      if (typeof friendlyCamel !== 'undefined') {
+        if (Math.abs(ty - friendlyCamel.ty) <= 2 &&
+            tx >= friendlyCamel.minTx - 2 && tx <= friendlyCamel.maxTx + 2) return true;
+      }
     } catch(e){}
     return false;
   };
@@ -6756,14 +6766,14 @@ function openChallenge(gate) {
   // entire modal body -- leaving only the Exit button. Target the caption
   // element directly by id.
   const header = $('chHeader');
-  let headerText = 'CHECKPOINT  ·  Q' + (idx + 1) + ' of ' + total;
+  let headerText = 'CHECKPOINT  ·  Q ' + (idx + 1) + ' of ' + total;
   let titleText  = 'Answer to pass this checkpoint!';
   if (game.scene === 2 && gate && gate.kind === 'climb') {
-    headerText = 'CHECKPOINT  ·  Q' + (idx + 1) + ' of ' + total;
+    headerText = 'CHECKPOINT  ·  Q ' + (idx + 1) + ' of ' + total;
     titleText  = 'Answer correctly to press on through the desert!';
   } else if (game.scene === 2 && gate && gate.kind === 'zone') {
     const zn = (gate.label || 'Desert Checkpoint').replace(/\s*Checkpoint\s*/i,'').trim().toUpperCase() || 'DESERT';
-    headerText = zn + ' CHECKPOINT  ·  Q' + (idx + 1) + ' of ' + total;
+    headerText = zn + ' CHECKPOINT  ·  Q ' + (idx + 1) + ' of ' + total;
     const zone = gate.zone || '';
     titleText = zone
       ? 'Answer to cross the ' + zone + '!'
@@ -8154,6 +8164,7 @@ function onOasisStep(tx, ty){
 /* ---------- EXIT ---------- */
 function onReachExit(){
   game.state = 'ended';
+  try { audio.bgm.pause(); } catch(e){}
   play('gate');
   try { play('reachedExit'); } catch(e){}  // v2.2.7: exit-tile celebratory sfx
   // v3.28: scene complete — clear the mid-game save so the next play
@@ -8183,7 +8194,7 @@ function showWin(){
   // BELOW stars, not as a duplicate title above.
   const tierTitle = starRating === 3 ? 'DESERT CONQUEROR' : starRating === 2 ? 'BRAVE TRAVELER' : 'FAITHFUL JOURNEY';
   const tierHeadline = starRating === 3
-    ? 'Moses conquered the desert! God's plan is unstoppable!'
+    ? 'Moses conquered the desert! God’s plan is unstoppable!'
     : starRating === 2
     ? 'Moses reached Midian — so close to 3 stars!'
     : 'Moses escaped to Midian. Keep growing in faith!';
