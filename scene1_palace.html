@@ -221,7 +221,9 @@
     flex-direction:column;
     background:#0d0500;
     overflow:hidden;
-    height:100vh;
+    height:100vh;       /* legacy fallback */
+    height:100svh;      /* iOS 15.4+ / Chrome 108+ small viewport */
+    height:100dvh;      /* dynamic — shrinks with URL bar */
   }
   .game-page.active { display:flex; }
   .hud {
@@ -370,6 +372,8 @@
   }
   .dpad-btn:active { transform:translateY(2px); box-shadow:0 1px 0 #7a4809; }
   .dpad-spacer { visibility:hidden; }
+  .dpad-glyph { display:block; line-height:1; }
+  .dpad-text { display:block; font-size:9px; font-weight:700; letter-spacing:0.5px; opacity:0.85; }
 
   .action-panel {
     flex:1;
@@ -473,7 +477,8 @@
   /* Win modal */
   .win-modal .modal-content {
     background: linear-gradient(155deg, #3a006e, #6a1b9a, #7b1fa2);
-    border:3px solid rgba(255,215,0,0.6);
+    border:4px solid #ffd700;
+    box-shadow:0 0 24px rgba(255,215,0,0.45);
     overflow:visible;
   }
   .win-modal h2 {
@@ -988,10 +993,12 @@
   /* v3.6: on the cream papyrus background, yellow text is invisible.
      Force dark brown for the header strip AND the ghost exit button so
      both read clearly against the tablet. */
-  .challenge-modal .modal-content > div:first-child {
+  .challenge-modal .modal-content > div:first-child,
+  #chHeader {
     color: #6a3e10 !important;
     text-shadow: 0 1px 0 rgba(255,245,210,0.65);
     font-weight: 800;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .challenge-modal .btn.ghost {
     background: rgba(255, 245, 210, 0.45) !important;
@@ -1120,7 +1127,64 @@
     .controls { min-height:unset; padding:4px 10px; }
     .dpad-btn { height:38px; }
     .action-btn { height:36px; }
+    .dpad-text { display:none; }
   }
+  /* Landscape phone: controls move to a side column so canvas fills the viewport */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .game-page.active {
+      display:grid !important;
+      grid-template-rows:auto 1fr;
+      grid-template-columns:1fr auto;
+    }
+    .hud { grid-column:1 / -1; padding:4px 10px; min-height:auto; flex-wrap:nowrap; gap:5px; }
+    .hud-chip { font-size:11px; padding:2px 6px; }
+    .canvas-wrapper { grid-row:2; grid-column:1; min-height:0; }
+    .controls {
+      grid-row:2; grid-column:2;
+      flex-direction:column !important;
+      align-items:center; justify-content:center;
+      min-height:unset; height:100%; width:auto;
+      padding:6px 4px;
+      background:linear-gradient(90deg, rgba(42,14,3,0.92) 0%, rgba(58,21,8,0.85) 100%);
+      border-left:1px solid rgba(255,217,118,0.5);
+      border-top:none;
+      gap:8px; flex-shrink:0; overflow-y:auto;
+    }
+    .dpad { width:110px; gap:3px; flex:0 0 auto; }
+    .dpad-btn, .dpad-spacer { height:30px; border-radius:50%; font-size:15px; }
+    .dpad-text { display:none; }
+    .action-panel { flex-direction:column !important; align-items:center; gap:6px; max-width:unset; width:auto; flex:0 0 auto; }
+    .action-btn { height:34px; font-size:12px; padding:0 8px; flex:unset; }
+  }
+  .preload-overlay {
+    display:none;
+    position:fixed; inset:0;
+    background:linear-gradient(180deg, rgba(8,5,2,0.92) 0%, rgba(28,16,6,0.96) 100%);
+    z-index:60;
+    flex-direction:column; align-items:center; justify-content:center;
+    padding:24px;
+    color:#ffd976;
+    font-family:Georgia,serif;
+    text-align:center;
+  }
+  .preload-overlay.active { display:flex; }
+  .preload-overlay h2 { font-size:22px; margin-bottom:8px; text-shadow:1px 1px 0 #000; }
+  .preload-overlay p { font-size:14px; color:#f4e4c1; margin-bottom:18px; max-width:340px; line-height:1.45; }
+  .preload-bar-track {
+    width:min(360px,86vw); height:14px;
+    background:rgba(255,215,118,0.12);
+    border:1px solid rgba(255,215,118,0.45);
+    border-radius:8px; overflow:hidden;
+    box-shadow:inset 0 1px 3px rgba(0,0,0,0.35);
+  }
+  .preload-bar-fill {
+    height:100%; width:0%;
+    background:linear-gradient(90deg, #ffd976 0%, #f2a83a 100%);
+    transition:width 0.18s ease-out;
+    border-radius:7px;
+  }
+  .preload-pct { margin-top:10px; font-size:13px; color:#ffd976; font-weight:700; letter-spacing:0.5px; }
+  .preload-tip { margin-top:14px; font-size:11px; color:#f2cd8e; opacity:0.7; max-width:300px; font-style:italic; }
 </style>
 </head>
 <body>
@@ -1177,10 +1241,29 @@
 
   <button class="start-btn" id="startBtn">Begin Adventure</button>
 
+  <!-- Inline progress bar — visible while images + audio are loading -->
+  <div id="coverPreload" style="display:none; margin:14px auto 0; width:min(340px,86vw);">
+    <div class="preload-bar-track" aria-label="Loading game assets" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+      <div class="preload-bar-fill" id="coverPreloadFill"></div>
+    </div>
+    <div class="preload-pct" id="coverPreloadPct">Loading game assets... 0%</div>
+  </div>
+
   <div class="cover-footer">
     copyright 2026 Bible Explorer Kids - For personal use only<br>
     Part of "The Deliverer is Born" Bible Adventure Bundle
   </div>
+</div>
+
+<!-- Full-screen overlay shown after Begin if assets aren't ready yet -->
+<div class="preload-overlay" id="preloadOverlay">
+  <h2>Preparing the Palace...</h2>
+  <p>Loading sprites and music. This usually takes a few seconds on Wi-Fi, longer on cellular.</p>
+  <div class="preload-bar-track" aria-label="Loading game assets" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+    <div class="preload-bar-fill" id="preloadFill"></div>
+  </div>
+  <div class="preload-pct" id="preloadPct">0%</div>
+  <div class="preload-tip">Tip: the canvas auto-scales for your screen — pinch-zoom is disabled in-game.</div>
 </div>
 
 <!-- ================ CINEMATIC OPENING ================ -->
@@ -1208,7 +1291,7 @@
     </div>
     <div class="hud-group">
       <span class="hud-chip"><img src="assets/IMAGES/star%207.png" onerror="this.style.display='none'" alt=""><span id="hudStars">0</span></span>
-      <span class="hud-chip"><img src="assets/IMAGES/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span>/3</span>
+      <span class="hud-chip"><img src="assets/IMAGES/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span>/<span id="hudTreasureTotal">3</span></span>
       <span class="hud-chip" id="hudTimer">3:00</span>
     </div>
     <div class="hud-group">
@@ -1245,13 +1328,13 @@
   <div class="controls">
     <div class="dpad">
       <span class="dpad-spacer"></span>
-      <button class="dpad-btn" data-dir="up">&#9650;</button>
+      <button class="dpad-btn" data-dir="up" aria-label="Move up"><span class="dpad-glyph">&#9650;</span><span class="dpad-text">UP</span></button>
       <span class="dpad-spacer"></span>
-      <button class="dpad-btn" data-dir="left">&#9664;</button>
+      <button class="dpad-btn" data-dir="left" aria-label="Move left"><span class="dpad-glyph">&#9664;</span><span class="dpad-text">LEFT</span></button>
       <span class="dpad-spacer"></span>
-      <button class="dpad-btn" data-dir="right">&#9654;</button>
+      <button class="dpad-btn" data-dir="right" aria-label="Move right"><span class="dpad-glyph">&#9654;</span><span class="dpad-text">RIGHT</span></button>
       <span class="dpad-spacer"></span>
-      <button class="dpad-btn" data-dir="down">&#9660;</button>
+      <button class="dpad-btn" data-dir="down" aria-label="Move down"><span class="dpad-glyph">&#9660;</span><span class="dpad-text">DOWN</span></button>
       <span class="dpad-spacer"></span>
     </div>
     <div class="action-panel">
@@ -1536,18 +1619,69 @@ if (audio.captured)  audio.captured.volume = 0.85;   // v3.6: dramatic guard cap
 if (audio.timeUp)    audio.timeUp.volume = 0.80;     // v3.6: timer-out sting
 
 let audioUnlocked = false;
+let _audioUnlockSucceeded = 0;
+let _audioUnlockFailed = 0;
+let _audioUnlockToastShown = false;
+function _maybeShowMutedToast() {
+  if (_audioUnlockToastShown) return;
+  if ((_audioUnlockSucceeded + _audioUnlockFailed) === 0) return;
+  if (_audioUnlockSucceeded > 0) return;
+  _audioUnlockToastShown = true;
+  try { toast("No sound? Check your phone’s silent switch and turn the volume up."); } catch(e){}
+}
 function unlockAudio() {
   if (audioUnlocked) return;
   audioUnlocked = true;
-  Object.values(audio).forEach(a => { try { a.play().then(()=>a.pause()).catch(()=>{}); a.currentTime = 0; } catch(e){} });
+  Object.values(audio).forEach(a => {
+    if (!a) return;
+    try {
+      const wasMuted = a.muted;
+      a.muted = true;
+      const p = a.play();
+      if (p && typeof p.then === 'function') {
+        p.then(() => {
+          try { a.pause(); a.currentTime = 0; } catch(e){}
+          a.muted = wasMuted;
+          _audioUnlockSucceeded++;
+          _maybeShowMutedToast();
+        }).catch(() => {
+          a.muted = wasMuted;
+          _audioUnlockFailed++;
+          _maybeShowMutedToast();
+        });
+      } else {
+        a.muted = wasMuted;
+        _audioUnlockSucceeded++;
+      }
+    } catch(e) { _audioUnlockFailed++; }
+  });
+  setTimeout(_maybeShowMutedToast, 2000);
 }
-// v3.6: sounds that only make sense during active play. When the game is
-// paused, in a challenge modal, or mid-cinematic, these should be fully
-// silent -- otherwise Jane hears "guard footsteps" during the quiz modal.
+// v3.6: sounds that only make sense during active play.
 const PLAY_ONLY_WHILE_PLAYING = { footstep: 1 };
+// Ambient/world SFX that must never play under any blocking modal (challenge,
+// pause, danger, win). UI feedback chimes + answer sounds pass through.
+const MODAL_AUDIO_DENY = new Set([
+  'footstep','sword','dog','alerted','captured'
+]);
+function _anyBlockingModalOpen() {
+  try {
+    const ids = ['challengeModal','dangerModal','pauseModal','winModal','dialogModal','tutorialModal','sceneBanner','mapPeekOverlay','truthChestModal'];
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el && el.classList.contains('active')) return true;
+    }
+  } catch(e){}
+  return false;
+}
+const _lastPlayAt = {};
 function play(name) {
   const a = audio[name]; if (!a) return;
   if (PLAY_ONLY_WHILE_PLAYING[name] && (typeof game === 'undefined' || game.state !== 'playing')) return;
+  if (MODAL_AUDIO_DENY.has(name) && _anyBlockingModalOpen()) return;
+  const now = performance.now();
+  if (_lastPlayAt[name] && (now - _lastPlayAt[name]) < 90) return;
+  _lastPlayAt[name] = now;
   try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){}
 }
 
@@ -1578,15 +1712,227 @@ const IMG_SRC = {
 const IMG = {};
 let imagesReady = 0, imagesTotal = Object.keys(IMG_SRC).length;
 let imagesLoadedCallback = null;
+
+/* Images are 1024×1024 RGBA. Drawing them every frame at 32–48px via
+   ctx.drawImage forces the browser to downscale 20–30× per call, producing
+   washed-out colors and fuzzy edges. Pre-render each image ONCE into an
+   offscreen canvas at ~512px max, then point IMG[k] at the canvas. */
+function _preRender(srcImg, _maxDimOverride) {
+  try {
+    const maxDim = _maxDimOverride || 512;
+    const w0 = srcImg.naturalWidth || srcImg.width;
+    const h0 = srcImg.naturalHeight || srcImg.height;
+    if (!w0 || !h0) return srcImg;
+    if (w0 <= maxDim && h0 <= maxDim) return srcImg;
+    const scale = Math.min(maxDim / w0, maxDim / h0);
+    let cw = w0, ch = h0;
+    let cur = srcImg;
+    const finalTargetW = Math.max(1, Math.round(w0 * scale));
+    const finalTargetH = Math.max(1, Math.round(h0 * scale));
+    let safety = 8;
+    while ((cw / finalTargetW > 1.5 || ch / finalTargetH > 1.5) && safety-- > 0) {
+      cw = Math.max(finalTargetW, Math.round(cw / 1.5));
+      ch = Math.max(finalTargetH, Math.round(ch / 1.5));
+      if (cw <= finalTargetW && ch <= finalTargetH) break;
+      const step = document.createElement('canvas');
+      step.width = cw; step.height = ch;
+      const sctx = step.getContext('2d');
+      sctx.imageSmoothingEnabled = true;
+      sctx.imageSmoothingQuality = 'high';
+      sctx.drawImage(cur, 0, 0, cw, ch);
+      cur = step;
+    }
+    const finalW = Math.max(1, Math.round(w0 * scale));
+    const finalH = Math.max(1, Math.round(h0 * scale));
+    const out = document.createElement('canvas');
+    out.width = finalW; out.height = finalH;
+    const octx = out.getContext('2d');
+    octx.imageSmoothingEnabled = true;
+    octx.imageSmoothingQuality = 'high';
+    octx.drawImage(cur, 0, 0, finalW, finalH);
+    try {
+      out.complete = true;
+      out.naturalWidth = finalW;
+      out.naturalHeight = finalH;
+    } catch(e){}
+    return out;
+  } catch(e) { return srcImg; }
+}
+
+// Track which IMG keys fail to load — inspectable from DevTools.
+window._imgFailures = [];
+
+/* ALPHA BLEED — kill white halos on sprite PNGs. Transparent edge pixels
+   store RGB=(255,255,255); bilinear filtering bleeds that white into visible
+   edges on dark backgrounds. Fix: copy opaque-neighbor RGB into transparent
+   pixels before the sprite is ever drawn. Alpha stays 0, so pixels remain
+   invisible — but the sampler now mixes colour-correct RGB. Also chroma-keys
+   border-connected near-white opaque pixels (flood-fill from the four edges)
+   that create a hard white box around the sprite. */
+function _alphaBleed(srcImg) {
+  try {
+    const w = srcImg.naturalWidth || srcImg.width;
+    const h = srcImg.naturalHeight || srcImg.height;
+    if (!w || !h) return srcImg;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const cx = c.getContext('2d');
+    cx.drawImage(srcImg, 0, 0);
+    let id;
+    try { id = cx.getImageData(0, 0, w, h); }
+    catch(e) { return srcImg; }
+    const d = id.data;
+    const isNearWhite = (i) => d[i] >= 248 && d[i+1] >= 248 && d[i+2] >= 248 && d[i+3] === 255;
+    const visited = new Uint8Array(w * h);
+    const stack = [];
+    const seed = (x, y) => {
+      if (x < 0 || y < 0 || x >= w || y >= h) return;
+      const p = y * w + x;
+      if (visited[p]) return;
+      const i = p * 4;
+      if (!isNearWhite(i)) return;
+      visited[p] = 1; stack.push(p);
+    };
+    for (let x = 0; x < w; x++) { seed(x, 0); seed(x, h - 1); }
+    for (let y = 0; y < h; y++) { seed(0, y); seed(w - 1, y); }
+    while (stack.length) {
+      const p = stack.pop();
+      const x = p % w, y = (p / w) | 0;
+      d[p * 4 + 3] = 0;
+      if (x > 0)     seed(x - 1, y);
+      if (x < w - 1) seed(x + 1, y);
+      if (y > 0)     seed(x, y - 1);
+      if (y < h - 1) seed(x, y + 1);
+    }
+    for (let pass = 0; pass < 2; pass++) {
+      const snap = new Uint8ClampedArray(d);
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = (y * w + x) * 4;
+          if (snap[i+3] !== 0) continue;
+          let r=0,g=0,b=0,n=0;
+          for (let dy=-1; dy<=1; dy++) for (let dx=-1; dx<=1; dx++) {
+            if (!dx && !dy) continue;
+            const nx=x+dx, ny=y+dy;
+            if (nx<0||ny<0||nx>=w||ny>=h) continue;
+            const j = (ny*w+nx)*4;
+            if (snap[j+3] > 0) { r+=snap[j]; g+=snap[j+1]; b+=snap[j+2]; n++; }
+          }
+          if (n > 0) {
+            d[i] = (r/n)|0; d[i+1] = (g/n)|0; d[i+2] = (b/n)|0;
+          }
+        }
+      }
+    }
+    cx.putImageData(id, 0, 0);
+    try {
+      c.complete = true;
+      c.naturalWidth = w;
+      c.naturalHeight = h;
+      c.src = srcImg.src;
+    } catch(e){}
+    return c;
+  } catch(e) { return srcImg; }
+}
+
+// Character and collectible sprites — run alpha-bleed to remove white halos.
+const SPRITE_BLEED = new Set([
+  'moses','guard','guardSide','dog','servant','torch',
+  'star','treasureB','treasureG','treasureR','crown','chest','censer','goblet'
+]);
+// These sprites store the bled raw Image (not a pre-rendered canvas) so that
+// sprite render paths that check .naturalWidth continue to work correctly.
+const SKIP_PRERENDER = new Set([
+  'moses','guard','guardSide','dog','servant','torch',
+  'star','treasureB','treasureG','treasureR','crown','chest','censer','goblet'
+]);
+// Large static environment sprites drawn at high downscale every frame —
+// apply load-time multi-step bicubic to 256px so per-frame ratio stays ~3×.
+const SPRITE_QUALITY_DOWNSCALE = new Set([
+  'wall','floor','exitDoor','throne','statue'
+]);
+
 for (const k in IMG_SRC) {
   const img = new Image();
-  img.onload = img.onerror = () => {
+  img.onload = () => {
+    try {
+      const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
+      if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
+        IMG[k] = _preRender(bled, 256);
+      } else if (SKIP_PRERENDER.has(k)) {
+        IMG[k] = bled;
+      } else {
+        IMG[k] = _preRender(bled);
+      }
+    } catch(e) { IMG[k] = img; }
+    imagesReady++;
+    if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+  };
+  img.onerror = () => {
+    try {
+      window._imgFailures.push({ key: k, src: IMG_SRC[k] });
+      console.warn('[IMG load FAILED]', k, '->', IMG_SRC[k]);
+    } catch(e){}
     imagesReady++;
     if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
   };
   img.src = IMG_SRC[k];
   IMG[k] = img;
 }
+
+/* ---------- PRELOAD PROGRESS TRACKING ----------
+   Asset bundle can be large on first load. Track images + audio readiness
+   and update the inline cover bar + full-screen overlay so kids on slow
+   connections see a progress bar instead of a frozen screen. */
+let _audioReady = 0;
+const _audioEls = Array.from(document.querySelectorAll('audio[id^="aud"]'));
+const _audioTotal = _audioEls.length;
+_audioEls.forEach(a => {
+  let counted = false;
+  const mark = () => { if (counted) return; counted = true; _audioReady++; _updatePreloadUi(); };
+  a.addEventListener('canplaythrough', mark, { once: true });
+  a.addEventListener('error', mark, { once: true });
+  setTimeout(mark, 6000); // ceiling: some mobile browsers never fire canplaythrough
+});
+function _preloadPct() {
+  const total = imagesTotal + Math.max(1, _audioTotal);
+  const ready = imagesReady + _audioReady;
+  return Math.min(100, Math.round((ready / total) * 100));
+}
+function _updatePreloadUi() {
+  try {
+    const pct = _preloadPct();
+    const fill1 = document.getElementById('coverPreloadFill');
+    const pct1  = document.getElementById('coverPreloadPct');
+    const fill2 = document.getElementById('preloadFill');
+    const pct2  = document.getElementById('preloadPct');
+    if (fill1) fill1.style.width = pct + '%';
+    if (pct1)  pct1.textContent  = 'Loading game assets... ' + pct + '%';
+    if (fill2) fill2.style.width = pct + '%';
+    if (pct2)  pct2.textContent  = pct + '%';
+    const cover = document.getElementById('coverPreload');
+    if (cover) cover.style.display = (pct < 100) ? 'block' : 'none';
+    if (pct >= 100) {
+      const overlay = document.getElementById('preloadOverlay');
+      if (overlay) overlay.classList.remove('active');
+      if (_pendingBeginTap) {
+        const fn = _pendingBeginTap; _pendingBeginTap = null; fn();
+      }
+    }
+  } catch(e){}
+}
+(function(){
+  let last = -1;
+  function tick() {
+    if (imagesReady + _audioReady !== last) {
+      _updatePreloadUi();
+      last = imagesReady + _audioReady;
+    }
+    if (_preloadPct() < 100) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+let _pendingBeginTap = null;
 
 /* ---------- PALACE MAP (40 x 25)  ----------
    Hand-authored tilemap for Scene 1. Moses starts near the throne room (top-left)
@@ -2213,11 +2559,11 @@ function seedChallenges(difficulty) {
   // Per-gate recipe: 1 classic (trivia/tf/fill), 1 interactive (unscramble/match/sequence),
   // 1 bonus (another classic). That way EVERY gate has at least one interactive
   // challenge type -- so kids never see MCQ-only gates.
-  const classicQueues     = [byType.trivia, byType.fill, byType.tf];
-  const interactiveQueues = [
+  const classicQueues     = shuffle([byType.trivia, byType.fill, byType.tf]);
+  const interactiveQueues = shuffle([
     byType.unscramble, byType.match, byType.sequence,
     byType.memory, byType.maze, byType.spot, byType.pair, byType.count
-  ];
+  ]);
   const cycle = (queues) => {
     // pop next-available question from the rotating family of queues
     for (let k=0;k<queues.length;k++) {
@@ -2422,20 +2768,49 @@ $('startBtn').addEventListener('click', () => {
     return;
   }
   play('click');
-  $('coverPage').style.display = 'none';
-  openCinematic();
+  const launchCinematic = () => {
+    $('coverPage').style.display = 'none';
+    const overlay = document.getElementById('preloadOverlay');
+    if (overlay) overlay.classList.remove('active');
+    const savedGame = _loadCheckpoint();
+    if (savedGame) {
+      showResumePrompt(savedGame);
+    } else {
+      openCinematic();
+    }
+  };
+  if (_preloadPct() >= 100) {
+    launchCinematic();
+  } else {
+    const overlay = document.getElementById('preloadOverlay');
+    if (overlay) overlay.classList.add('active');
+    _pendingBeginTap = launchCinematic;
+    setTimeout(() => {
+      if (_pendingBeginTap) { const fn = _pendingBeginTap; _pendingBeginTap = null; fn(); }
+    }, 12000);
+  }
 });
 
 /* ---------- ACCESS GATE (Etsy buyer code) ----------
    Valid codes live here. Update this list as codes are issued on Etsy.
    Keep codes short (6-10 chars), uppercase, no spaces. */
-const VALID_CODES = [
-  'MOSES2026',
-  'BEKMOSES1',
-  'PALACE26',
-  'EXODUS12',
-  'DELIVERER'
-];
+/* Access codes stored as SHA-256 hex digests (\u00a711). Plaintext never in source.
+   To add a new code: SHA-256(uppercase trimmed code) \u2192 append hex to the Set.
+   Fallback VALID_CODE_PLAINTEXTS catches browsers that lack crypto.subtle. */
+const VALID_CODE_HASHES = new Set([
+  '0a7b35a935e29ce3474b7bb5f0073503f6cdec843c4e2368254f4c97a79a1cf8',
+  'fd750c0dba41357f20a51d354bbb20710e94224cbe0ae165984f66d05e2cd3b6',
+  'fe98100869c0c034270b481b1a9b287719468cbf5c6de23bc2972c515a8cfddc',
+  '8c752f2181e7d41997a738e459b62a7042937031dd5d0b6f92be7460aa5deb0c',
+  'aaf2285ccce61c29485ce614b3a353a33b2ada07de55af13ce03dd1e7e432c00'
+]);
+const VALID_CODE_PLAINTEXTS = new Set(['MOSES2026','BEKMOSES1','PALACE26','EXODUS12','DELIVERER']);
+async function _sha256Hex(str){
+  if (!window.crypto || !window.crypto.subtle) return null;
+  const bytes = new TextEncoder().encode(str);
+  const buf = await window.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 function unlockGame() {
   const gate = $('accessGate');
   const cover = $('coverPage');
@@ -2450,10 +2825,19 @@ try {
 const accessInput = $('accessInput');
 const accessErr   = $('accessError');
 const accessSub   = $('accessSubmit');
-function tryAccessCode(){
+async function tryAccessCode(){
   const val = (accessInput.value || '').trim().toUpperCase();
   if (!val) { accessErr.textContent = 'Please enter your access code.'; return; }
-  if (VALID_CODES.includes(val)) {
+  let ok = false;
+  try {
+    const hex = await _sha256Hex(val);
+    if (hex && VALID_CODE_HASHES.has(hex)) {
+      ok = true;
+    } else if (!hex) {
+      ok = VALID_CODE_PLAINTEXTS.has(val);
+    }
+  } catch(e){}
+  if (ok) {
     accessErr.textContent = '';
     play('chime');
     unlockGame();
@@ -2564,6 +2948,64 @@ function startScene1() {
   startTimers();
 }
 
+/* ---------- CHECKPOINT SAVE / RESUME ----------
+   Saves mid-run state so returning players can continue where they left off.
+   Key: bek.moses1.checkpoint. Cleared on fresh start or scene completion. */
+const _CKPT_KEY = 'bek.moses1.checkpoint';
+function _saveCheckpoint() {
+  try {
+    const collectedTiles = [];
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        if (_mapInitial && _mapInitial[y][x] === 5 && MAP[y][x] !== 5) {
+          collectedTiles.push([x, y]);
+        }
+      }
+    }
+    const payload = {
+      difficulty: game.difficulty,
+      gatesCleared: challengeGates.filter(g => g.solved).length,
+      totalGates: challengeGates.length,
+      collectedTiles,
+      hearts: game.hearts,
+      stars: game.stars,
+      tx: player.tx,
+      ty: player.ty,
+    };
+    localStorage.setItem(_CKPT_KEY, JSON.stringify(payload));
+  } catch(e){}
+}
+function _loadCheckpoint() {
+  try {
+    const raw = localStorage.getItem(_CKPT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e){ return null; }
+}
+function _clearCheckpoint() {
+  try { localStorage.removeItem(_CKPT_KEY); } catch(e){}
+}
+function showResumePrompt(p) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffd976;font-family:Georgia,serif;text-align:center;padding:24px;';
+  const diff = (p.difficulty || 'easy').charAt(0).toUpperCase() + (p.difficulty || 'easy').slice(1);
+  overlay.innerHTML = '<h2 style="font-size:22px;margin-bottom:10px;text-shadow:1px 1px 0 #000;">Welcome back, Moses!</h2>'
+    + '<p style="font-size:15px;color:#f4e4c1;margin-bottom:18px;">You were playing on <strong>' + diff + '</strong>.<br>'
+    + (p.gatesCleared || 0) + ' of ' + (p.totalGates || 6) + ' Bible Gates cleared.</p>'
+    + '<button id="resumeSavedBtn" style="margin:8px;padding:14px 28px;font-size:16px;background:#c59754;border:none;border-radius:10px;color:#fff;font-weight:700;cursor:pointer;font-family:Georgia,serif;">Continue Adventure →</button><br>'
+    + '<button id="startFreshFromSaveBtn" style="margin:8px;padding:10px 22px;font-size:14px;background:transparent;border:2px solid #ffd976;border-radius:10px;color:#ffd976;cursor:pointer;font-family:Georgia,serif;">Start Fresh</button>';
+  document.body.appendChild(overlay);
+  document.getElementById('resumeSavedBtn').addEventListener('click', () => {
+    overlay.remove();
+    startScene1();
+  });
+  document.getElementById('startFreshFromSaveBtn').addEventListener('click', () => {
+    _clearCheckpoint();
+    overlay.remove();
+    openCinematic();
+  });
+}
+
 /* ---------- SNAPSHOT FOR IN-SCENE RESTART ----------
    Capture initial guard state + map so Restart Scene can reset without a page reload
    (which would force kids back to the cover page).
@@ -2599,7 +3041,7 @@ function restartScene() {
   // reset game stats
   game.hearts = 3; game.stars = 0; game.treasureCount = 0;
   game.perfectRun = true;
-  game.timeLeft = game.timeLimit; game.startedAt = performance.now();
+  game.timeLeft = game.timeLimit; game.startedAt = Date.now();
   game.guardAlertActive = false;
   // v3.3 resets
   game.crownFound = false;
@@ -2668,7 +3110,10 @@ function updateHudHearts(){
   $('hudHearts').innerHTML = s;
 }
 function updateHudStars(){ $('hudStars').textContent = game.stars; }
-function updateHudTreasure(){ $('hudTreasure').textContent = game.treasureCount; }
+function updateHudTreasure(){
+  $('hudTreasure').textContent = Math.min(game.treasureCount, game.treasuresTotal);
+  const tot = $('hudTreasureTotal'); if (tot) tot.textContent = game.treasuresTotal;
+}
 function updateHudTimer(){
   const m = Math.floor(game.timeLeft / 60);
   const s = Math.floor(game.timeLeft % 60);
@@ -2995,12 +3440,13 @@ function openChallenge(gate) {
   // v3.6: fully silence movement/tension loops so the quiz is quiet-calm.
   try { audio.footstep.pause(); audio.footstep.currentTime = 0; } catch(e){}
   try { if (audio.alerted) { audio.alerted.pause(); _alertMusicOn = false; } } catch(e){}
+  try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); } } catch(e){}
   const idx = gate.bundleIndex;
   const total = gate.questions.length;
   const q = gate.questions[idx];
   // strip-header tells the child exactly how many questions at this gate
   const header = document.querySelector('#challengeModal .modal-content > div');
-  if (header) header.textContent = 'BIBLE GATE - QUESTION ' + (idx + 1) + ' OF ' + total;
+  if (header) header.textContent = 'BIBLE GATE  ·  Q ' + (idx + 1) + ' of ' + total;
   $('chTitle').textContent = 'Answer to pass this gate!';
   $('chQ').textContent = q.q;
   const opts = $('chOptions');
@@ -3689,6 +4135,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
       if (gate.bundleIndex >= gate.questions.length) {
         // whole bundle cleared -> gate solved
         gate.solved = true;
+        try { _saveCheckpoint(); } catch(e){}
         if (gate.bundleCorrect === gate.questions.length && gate.strikes === 0) {
           // first-try-perfect bundle bonus
           game.stars += 5;
@@ -3698,6 +4145,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
           toast('Gate cleared!');
         }
         $('challengeModal').classList.remove('active');
+        try { if (audio.bgm) { if (typeof audio._prevBgmVolume === 'number') audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
         game.state = 'playing';
         currentGate = null;
         // step onto the now-open gate
@@ -3853,6 +4301,7 @@ function onHazardHit(tx, ty){
 /* ---------- EXIT ---------- */
 function onReachExit(){
   game.state = 'ended';
+  try { _clearCheckpoint(); } catch(e){}
   play('gate');
   showLessonThenWin();
 }
@@ -3873,11 +4322,11 @@ function showWin(){
   const starRating = pct >= 0.85 ? 3 : pct >= 0.55 ? 2 : 1;
 
   // SINGLE tier title based on star rating (mutually exclusive)
-  const tierTitle = starRating === 3 ? 'PHARAOH\u2019S DEFEAT' : starRating === 2 ? 'BRAVE EXPLORER' : 'FAITHFUL JOURNEY';
+  const tierTitle = starRating === 3 ? 'PALACE CHAMPION' : starRating === 2 ? 'BRAVE EXPLORER' : 'FAITHFUL JOURNEY';
   const tierHeadline = starRating === 3
     ? 'Moses escaped with wisdom, speed, and courage!'
     : starRating === 2
-    ? 'Moses reached safety - a brave escape!'
+    ? 'Moses reached safety \u2014 a brave escape!'
     : 'Moses made it out by faith alone.';
 
   // Sub-achievements: bonus badges (not titles) shown as secondary chips
@@ -3937,7 +4386,7 @@ function showWin(){
 
   // motivate based on what's missing
   let motivate = 'Collect more Truth Cards in the next scene to unlock the Truth Finder badge!';
-  if (starRating < 3) motivate = 'Try Replay and aim for all 3 stars to earn PHARAOH\u2019S DEFEAT!';
+  if (starRating < 3) motivate = 'Try Replay and aim for all 3 stars \u2014 can you become the Palace Champion?';
   if (game.treasureCount < game.treasuresTotal) motivate = 'Next time find all ' + game.treasuresTotal + ' treasures AND look for the Hidden Crown!';
   $('winMotivate').textContent = motivate;
 
@@ -4132,9 +4581,12 @@ function togglePause(){
 let timerInterval = null;
 function startTimers(){
   if (timerInterval) clearInterval(timerInterval);
+  if (!game.startedAt) game.startedAt = Date.now();
   timerInterval = setInterval(() => {
     if (game.state !== 'playing') return;
-    game.timeLeft--;
+    // Wall-clock based: immune to JS-thread stalls and backgrounded tabs.
+    const elapsed = Math.floor((Date.now() - game.startedAt) / 1000);
+    game.timeLeft = Math.max(0, game.timeLimit - elapsed);
     updateHudTimer();
     if (game.timeLeft <= 0) {
       clearInterval(timerInterval);
