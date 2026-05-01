@@ -286,6 +286,32 @@
     pointer-events:none;
     z-index:3;
   }
+  /* Phase 2 active-event banner. Sits BELOW the verse ticker so neither
+     overlaps. Pulses gently to read as "something is happening right now"
+     without competing visually with the gameplay. Only shown by JS while
+     a palace event (torch-outage / falling-torch / dim cycle) is active. */
+  .event-hud {
+    position:absolute; top:36px; left:50%; transform:translateX(-50%);
+    background:linear-gradient(180deg, rgba(60,30,8,0.92), rgba(40,18,4,0.92));
+    border:2px solid #ffd976;
+    color:#fff7c8;
+    padding:5px 16px;
+    border-radius:14px;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    text-align:center;
+    pointer-events:none;
+    z-index:4;
+    box-shadow:0 0 18px rgba(255,215,80,0.55), 0 0 8px rgba(255,180,40,0.3) inset;
+    animation: eventHudPulse 1.4s ease-in-out infinite;
+    max-width:80%;
+    white-space:nowrap;
+  }
+  @keyframes eventHudPulse {
+    0%, 100% { box-shadow:0 0 18px rgba(255,215,80,0.55), 0 0 8px rgba(255,180,40,0.3) inset; transform:translateX(-50%) scale(1); }
+    50%      { box-shadow:0 0 28px rgba(255,215,80,0.85), 0 0 12px rgba(255,180,40,0.5) inset; transform:translateX(-50%) scale(1.04); }
+  }
   /* mini-map in top-right */
   .minimap-box {
     position:absolute; top:8px; right:10px;
@@ -494,16 +520,33 @@
     display:flex; gap:10px; justify-content:center; font-size:54px; margin:12px 0 8px;
     line-height:1;
   }
-  .win-stars span { display:inline-block; transition: all 0.3s; }
+  .win-stars span { display:inline-block; transition: all 0.3s; transform-origin:center; }
+  /* Phase 2 polish: cinematic staggered star reveal — each earned star
+     pops in from scale(0) at its own delay, settles, and then begins the
+     existing pulse loop. Combined animation runs once (starReveal 0.55s)
+     then chains to starPulse infinite. */
   .win-stars span.earned {
     color:#ffd700;
     filter: drop-shadow(0 0 16px #ffd700) drop-shadow(0 0 28px #ffb300);
-    animation: starPulse 1.6s ease-in-out infinite;
+    animation: starReveal 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) backwards,
+               starPulse 1.6s ease-in-out infinite 0.55s;
   }
-  .win-stars span.dim { color:#4a3b6b; opacity:0.45; filter:none; }
-  .win-stars span:nth-child(1).earned { animation-delay:0s; }
-  .win-stars span:nth-child(2).earned { animation-delay:0.25s; }
-  .win-stars span:nth-child(3).earned { animation-delay:0.5s; }
+  .win-stars span.dim {
+    color:#4a3b6b; opacity:0.45; filter:none;
+    animation: starDimReveal 0.45s ease-out backwards;
+  }
+  .win-stars span:nth-child(1) { animation-delay:0.15s, 0.7s !important; }
+  .win-stars span:nth-child(2) { animation-delay:0.55s, 1.1s !important; }
+  .win-stars span:nth-child(3) { animation-delay:0.95s, 1.5s !important; }
+  @keyframes starReveal {
+    0%   { transform:scale(0) rotate(-30deg); opacity:0; }
+    60%  { transform:scale(1.5) rotate(8deg);  opacity:1; }
+    100% { transform:scale(1) rotate(-4deg);   opacity:1; }
+  }
+  @keyframes starDimReveal {
+    0%   { transform:scale(0); opacity:0; }
+    100% { transform:scale(1); opacity:0.45; }
+  }
   @keyframes starPulse {
     0%,100% { transform:scale(1) rotate(-4deg); }
     50%     { transform:scale(1.18) rotate(4deg); }
@@ -799,6 +842,51 @@
   .ch-memory-card.flipped .mem-face { transform:rotateY(0deg); }
   .ch-memory-card.matched { opacity:0.65; pointer-events:none; }
   .ch-memory-card.matched .mem-face { background:#9ed89e; border-color:#2e5e2e; }
+  /* -- SLIDER PUZZLE: 3x3 image swap (ported from scene2) -- */
+  .ch-slider-thumb {
+    display:block; max-width:120px; max-height:120px; object-fit:contain;
+    margin:4px auto 6px; border:3px solid #ffd976; border-radius:10px;
+    background:rgba(255,255,255,0.15);
+  }
+  .ch-slider-hint {
+    text-align:center; font-size:13px; color:#5a2d0c; font-weight:700; margin-bottom:6px;
+  }
+  .ch-slider-grid {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:3px;
+    width:min(280px, 72vw); height:min(280px, 72vw); margin:0 auto 8px;
+    border:3px solid #ffd976; border-radius:8px; overflow:hidden;
+    background:#2a1508;
+  }
+  .ch-slider-tile {
+    background-size:300% 300%; border:none; cursor:pointer;
+    transition:outline 0.12s, filter 0.12s;
+  }
+  .ch-slider-tile.selected {
+    outline:3px solid #7fff8a; outline-offset:-2px; filter:brightness(1.25);
+  }
+  .ch-slider-tile.locked {
+    pointer-events:none; outline:2px solid #ffd976; filter:brightness(1.1);
+  }
+  /* -- SPOT THE DIFFERENCE: two images side-by-side, count differences -- */
+  .ch-spotdiff-wrapper {
+    display:flex; gap:6px; justify-content:center; margin:6px auto 4px;
+  }
+  .ch-spotdiff-img {
+    width:min(136px, 36vw); height:auto; object-fit:contain;
+    border:2px solid #ffd976; border-radius:8px;
+  }
+  /* -- PICTIONARY: full-width scene image above verse MCQ buttons -- */
+  .ch-pict-img {
+    display:block; width:min(280px, 78vw); height:auto; max-height:190px;
+    object-fit:contain; margin:0 auto 12px;
+    border:3px solid #ffd976; border-radius:10px;
+  }
+  /* -- COUNT (scene image mode): single scene image, used by counting puzzles
+        whose bank entry includes a sceneImg path -- */
+  .ch-count-scene-img {
+    display:block; width:min(260px, 70vw); height:auto; object-fit:contain;
+    margin:0 auto 8px; border:3px solid #ffd976; border-radius:10px;
+  }
   /* -- MINI-MAZE: 5x5 grid + arrow pad -- */
   .ch-maze-board {
     --maze-size: 5;
@@ -971,6 +1059,14 @@
       inset 0 0 24px rgba(120,70,20,0.25);
     position: relative;
     color: #3a1a00;
+    /* FIX (port from scene2 v2.2.8 / v3.0): cap challenge-modal height so
+       tall MCQs (4 long verses + hint box + feedback) never push the Exit
+       button below the visible viewport on phones. min(75dvh, 640px) keeps
+       it always reachable; overflow-y:auto lets the question text scroll
+       inside the papyrus card itself. */
+    max-height: min(75dvh, 640px);
+    overflow-y: auto;
+    overflow-x: hidden;
   }
   /* Scroll-roll caps (top and bottom) */
   .challenge-modal .modal-content::before,
@@ -1311,6 +1407,10 @@
   <div class="canvas-wrapper">
     <div class="pulse-vignette" id="pulseVignette"></div>
     <div class="verse-ticker" id="verseTicker">Exodus 2:13-15a (NIV)</div>
+    <!-- Phase 2 polish: active-event banner. Shown only while a palace event
+         (torch outage / falling torch / dim cycle) is in effect. Set via
+         updateEventHud() in the main loop. -->
+    <div class="event-hud" id="eventHud" style="display:none;"></div>
     <div class="compass-box" aria-label="Compass">
       <canvas id="compass" width="52" height="52"></canvas>
     </div>
@@ -1555,15 +1655,42 @@ function resizeCanvas() {
   VIEW_ROWS = Math.min(MAP_H, Math.floor(availH / TILE));
   CANVAS_W = VIEW_COLS * TILE;
   CANVAS_H = VIEW_ROWS * TILE;
-  // set canvas backing store AND CSS size identically => no stretching, crisp
-  canvas.width = CANVAS_W;
-  canvas.height = CANVAS_H;
+  // FIX (port from scene2 v3.21): DPR + browser-zoom aware canvas backing
+  // store. Without this, kids on phones get a blurry sprite layer when the
+  // device pixel ratio is >1 (Retina, modern Android), and desktop users on
+  // 125%/150% browser zoom see a soft, half-sampled rendering. We:
+  //  1. Read window.devicePixelRatio (capped at 4 to avoid GPU OOM on the
+  //     occasional ratio-5 e-reader),
+  //  2. Multiply by browser-zoom factor (outerWidth / innerWidth) which is
+  //     >1 when the user has Ctrl-+ zoomed in,
+  //  3. Set the canvas backing store to CANVAS_W * dpr × CANVAS_H * dpr,
+  //  4. Keep CSS size at CANVAS_W × CANVAS_H so layout is unaffected,
+  //  5. Scale the 2D context so all our existing draw coords (which assume
+  //     CSS pixels) keep working unchanged.
+  let dpr = Math.min(4, window.devicePixelRatio || 1);
+  try {
+    const zoom = (window.outerWidth && window.innerWidth)
+      ? (window.outerWidth / window.innerWidth) : 1;
+    if (zoom > 1.05) dpr *= zoom;
+    dpr = Math.min(4, dpr);
+  } catch(e){}
+  canvas.width = Math.round(CANVAS_W * dpr);
+  canvas.height = Math.round(CANVAS_H * dpr);
   canvas.style.width = CANVAS_W + 'px';
   canvas.style.height = CANVAS_H + 'px';
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
   ctx.imageSmoothingEnabled = false;
   updateCamera();
 }
 window.addEventListener('resize', () => { resizeCanvas(); });
+// FIX (scene2 v3.21): listen for browser-zoom changes via visualViewport so
+// the canvas re-sharpens when the user changes zoom mid-game.
+try {
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => { resizeCanvas(); });
+  }
+} catch(e){}
 
 /* ---------- TILE TYPES ----------
    0 = floor (walkable)
@@ -1657,6 +1784,22 @@ function unlockAudio() {
   });
   setTimeout(_maybeShowMutedToast, 2000);
 }
+// Single source-of-truth music switcher. Pauses every looping track except
+// the one requested, so we never hear two musics at once. Ported from scene2
+// (v2.3.1) — prevents the bgm/narration/alerted overlap bug Jane caught in
+// scene2 from ever surfacing in scene1.
+const _LOOP_TRACKS = ['bgm','narration','alerted'];
+function setMusic(which /* 'bgm' | 'narration' | 'alerted' | null */){
+  _LOOP_TRACKS.forEach(k => {
+    const a = audio[k]; if (!a) return;
+    if (k !== which) {
+      try { a.pause(); a.currentTime = 0; } catch(e){}
+    }
+  });
+  if (!which) return;
+  const a = audio[which]; if (!a) return;
+  try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){}
+}
 // v3.6: sounds that only make sense during active play.
 const PLAY_ONLY_WHILE_PLAYING = { footstep: 1 };
 // Ambient/world SFX that must never play under any blocking modal (challenge,
@@ -1687,9 +1830,33 @@ function play(name) {
 
 /* ---------- IMAGE ASSETS ---------- */
 const IMG_SRC = {
+  // v1.1 (2026-05-01) Directional Moses + guard + Royal Captain sprite sets,
+  // ported from scene2's pattern. All four directions exist on disk under
+  // assets/IMAGES/. The legacy `moses` / `guard` keys stay as last-resort
+  // fallbacks so a missing-file load failure never leaves Moses invisible.
   moses:      'assets/IMAGES/moses%20adult.png',
+  mosesFront: 'assets/IMAGES/moses%20front%20facing.png',
+  mosesBack:  'assets/IMAGES/moses%20back%20facing.png',
+  mosesLeft:  'assets/IMAGES/moses%20left%20facing.png',
+  mosesRight: 'assets/IMAGES/moses%20right%20facing.png',
+  // Ducking variants for the crouched / hidden state — pose authenticity
+  mosesDuckFront: 'assets/IMAGES/moses%20ducking%20front%20facing.png',
+  mosesDuckLeft:  'assets/IMAGES/moses%20ducking%20left%20facing.png',
+  mosesDuckRight: 'assets/IMAGES/moses%20ducking%20right%20facing.png',
+  mosesCrouchRight: 'assets/IMAGES/moses%20crouching%20right%20facing.png',
+  // Egyptian guard — 4 directions + legacy fallback
   guard:      'assets/IMAGES/egyptian%20guard.png',
   guardSide:  'assets/IMAGES/egyptian%20guard%20side%20facing.png',
+  guardFront: 'assets/IMAGES/egyptian%20guard%20front%20facing.png',
+  guardBack:  'assets/IMAGES/egyptian%20guard%20back%20facing.png',
+  guardLeft:  'assets/IMAGES/egyptian%20guard%20left%20facing.png',
+  guardRight: 'assets/IMAGES/egyptian%20guard%20right%20facing.png',
+  // Royal Captain (Phase 1 escalation guard) — 4 directions on disk
+  captainFront: 'assets/IMAGES/royal%20captain%20front.png',
+  captainBack:  'assets/IMAGES/royal%20captain%20back.png',
+  captainLeft:  'assets/IMAGES/royal%20captain%20left.png',
+  captainRight: 'assets/IMAGES/royal%20captain%20right.png',
+  // Other sprites
   dog:        'assets/IMAGES/palace%20dog.png',
   torch:      'assets/IMAGES/alarm%20torch.png',
   star:       'assets/IMAGES/star%207.png',
@@ -1700,10 +1867,13 @@ const IMG_SRC = {
   floor:      'assets/IMAGES/palace%20floor.png',
   servant:    'assets/IMAGES/gossiping%20servant.png',
   sceneBg:    'assets/IMAGES/scene1%20background.png',
-  // v3.5 NEW ASSET SLOTS - fall back to canvas art until PNGs are dropped in
+  // Landmarks — actual on-disk filenames (royal circlet, oil lamp censer,
+  // palace throne, falcon statue, golden goblet, treasure chest variants).
   exitDoor:   'assets/IMAGES/exit%20door.png',
   crown:      'assets/IMAGES/royal%20circlet.png',
-  chest:      'assets/IMAGES/treasure%20chest.png',
+  chest:        'assets/IMAGES/treasure%20chest%20closed.png',
+  chestClosed:  'assets/IMAGES/treasure%20chest%20closed.png',
+  chestOpen:    'assets/IMAGES/treasure%20chest%20open.png',
   censer:     'assets/IMAGES/oil%20lamp%20censer.png',
   throne:     'assets/IMAGES/palace%20throne.png',
   statue:     'assets/IMAGES/falcon%20statue.png',
@@ -1837,14 +2007,24 @@ function _alphaBleed(srcImg) {
 
 // Character and collectible sprites — run alpha-bleed to remove white halos.
 const SPRITE_BLEED = new Set([
-  'moses','guard','guardSide','dog','servant','torch',
-  'star','treasureB','treasureG','treasureR','crown','chest','censer','goblet'
+  'moses','mosesFront','mosesBack','mosesLeft','mosesRight',
+  'mosesDuckFront','mosesDuckLeft','mosesDuckRight','mosesCrouchRight',
+  'guard','guardSide','guardFront','guardBack','guardLeft','guardRight',
+  'captainFront','captainBack','captainLeft','captainRight',
+  'dog','servant','torch',
+  'star','treasureB','treasureG','treasureR',
+  'crown','chest','chestClosed','chestOpen','censer','goblet'
 ]);
 // These sprites store the bled raw Image (not a pre-rendered canvas) so that
 // sprite render paths that check .naturalWidth continue to work correctly.
 const SKIP_PRERENDER = new Set([
-  'moses','guard','guardSide','dog','servant','torch',
-  'star','treasureB','treasureG','treasureR','crown','chest','censer','goblet'
+  'moses','mosesFront','mosesBack','mosesLeft','mosesRight',
+  'mosesDuckFront','mosesDuckLeft','mosesDuckRight','mosesCrouchRight',
+  'guard','guardSide','guardFront','guardBack','guardLeft','guardRight',
+  'captainFront','captainBack','captainLeft','captainRight',
+  'dog','servant','torch',
+  'star','treasureB','treasureG','treasureR',
+  'crown','chest','chestClosed','chestOpen','censer','goblet'
 ]);
 // Large static environment sprites drawn at high downscale every frame —
 // apply load-time multi-step bicubic to 256px so per-frame ratio stays ~3×.
@@ -1978,10 +2158,17 @@ function tileAt(tx, ty) {
 function setTile(tx, ty, v) { if (ty>=0&&ty<MAP_H&&tx>=0&&tx<MAP_W) MAP[ty][tx] = v; }
 function isWalkable(tx, ty) {
   const t = tileAt(tx, ty);
-  // pillars (3) are now SOLID obstacles (they provide cover by blocking sight)
-  return t === 0 || t === 5 || t === 6 || t === 7 || t === 8;
+  // Pillars (3) and statue bases (10) are SOLID — they provide cover by
+  // blocking sight, so they must also block movement. Slippery marble (9)
+  // is walkable but triggers a one-tile slide (see attemptMove).
+  return t === 0 || t === 5 || t === 6 || t === 7 || t === 8 || t === 9;
 }
-function isCover(tx, ty) { return tileAt(tx, ty) === 3; }
+// Cover-tile predicate: any tile that hides Moses from a guard's vision cone.
+// Pillars (3) AND the new statue base (10) both qualify.
+function isCover(tx, ty) {
+  const t = tileAt(tx, ty);
+  return t === 3 || t === 10;
+}
 function isAdjacentToCover(tx, ty) {
   return isCover(tx-1,ty)||isCover(tx+1,ty)||isCover(tx,ty-1)||isCover(tx,ty+1);
 }
@@ -1997,7 +2184,7 @@ function hasLineOfSight(x1, y1, x2, y2) {
     const cx = Math.round(x1 + sx*i);
     const cy = Math.round(y1 + sy*i);
     const t = tileAt(cx, cy);
-    if (t === 1 || t === 3) return false; // wall or pillar blocks
+    if (t === 1 || t === 3 || t === 10) return false; // wall, pillar, or statue base blocks
   }
   return true;
 }
@@ -2059,7 +2246,15 @@ const player = {
   States: 'patrol', 'suspicious', 'alerted', 'returning'
 */
 const guards = [
-  { tx:14, ty:8, patrolPath:[{x:14,y:8},{x:22,y:8},{x:22,y:11},{x:14,y:11}], pi:0, dir:'right',
+  // Phase 2: guard 1 is also the "Royal Gate Sentry" — its patrol now
+  // detours UP through gate (17, 7) before circling back, so the gate is
+  // physically blocked for ~patrolMs each crossing. Kid times the run for
+  // when the sentry has stepped clear. Combined with the new gate-blocked
+  // check in attemptMove, this gives the storyboard "wait for the guard,
+  // then dash through" beat.
+  { tx:14, ty:8,
+    patrolPath:[{x:14,y:8},{x:22,y:8},{x:17,y:8},{x:17,y:6},{x:17,y:8}],
+    pi:0, dir:'right',
     state:'patrol', timer:0, swordOut:false, swordAnim:0, seeRadius:4, patrolMs:700 },
   { tx:30, ty:14, patrolPath:[{x:30,y:14},{x:34,y:14},{x:34,y:17},{x:30,y:17}], pi:0, dir:'right',
     state:'patrol', timer:0, swordOut:false, swordAnim:0, seeRadius:4, patrolMs:700 },
@@ -2533,7 +2728,7 @@ function shufflePalaceLayout(){
 function seedChallenges(difficulty) {
   // fetch already-seen IDs from localStorage (unique-question memory)
   let seen = [];
-  try { seen = JSON.parse(localStorage.getItem('bek.moses2.seenQ') || '[]'); } catch(e){}
+  try { seen = JSON.parse(localStorage.getItem('bek.moses1.seenQ') || '[]'); } catch(e){}
   const pool = CHALLENGE_BANK[difficulty] || CHALLENGE_BANK.easy;
 
   // v3.4: GUARANTEE CHALLENGE-TYPE DIVERSITY PER GATE
@@ -2552,6 +2747,13 @@ function seedChallenges(difficulty) {
     spot:       shuffle(pool.filter(q => q.type === 'spot')),
     pair:       shuffle(pool.filter(q => q.type === 'pair')),
     count:      shuffle(pool.filter(q => q.type === 'count')),
+    // Renderers ported from scene2; bank entries land once Jane provides the
+    // imagery (palace pictionary scenes, throne-room spot-diff pair, and a
+    // slide-puzzle target image — see ASSET_HAVE_NEED_DELTA.md). Empty
+    // queues are harmless: cycle() simply skips them.
+    slider:     shuffle(pool.filter(q => q.type === 'slider')),
+    spotdiff:   shuffle(pool.filter(q => q.type === 'spotdiff')),
+    pictionary: shuffle(pool.filter(q => q.type === 'pictionary')),
   };
   // Sort each type so fresh questions come first.
   for (const k in byType) byType[k].sort((a,b) => freshnessScore(a) - freshnessScore(b));
@@ -2562,7 +2764,8 @@ function seedChallenges(difficulty) {
   const classicQueues     = shuffle([byType.trivia, byType.fill, byType.tf]);
   const interactiveQueues = shuffle([
     byType.unscramble, byType.match, byType.sequence,
-    byType.memory, byType.maze, byType.spot, byType.pair, byType.count
+    byType.memory, byType.maze, byType.spot, byType.pair, byType.count,
+    byType.slider, byType.spotdiff, byType.pictionary
   ]);
   const cycle = (queues) => {
     // pop next-available question from the rotating family of queues
@@ -2596,6 +2799,7 @@ function seedChallenges(difficulty) {
         byType.trivia, byType.tf, byType.fill,
         byType.unscramble, byType.match, byType.sequence,
         byType.memory, byType.maze, byType.spot, byType.pair, byType.count,
+        byType.slider, byType.spotdiff, byType.pictionary,
         pool // last-resort fallback
       ).filter(Boolean);
       bundle.push(all[Math.floor(Math.random()*all.length)]);
@@ -2618,7 +2822,63 @@ function seedChallenges(difficulty) {
   // remember which IDs were used this run so next play prefers fresh ones
   const usedIds = bundles.flat().map(q => q.id);
   const allSeen = [...new Set([...seen, ...usedIds])].slice(-60);
-  try { localStorage.setItem('bek.moses2.seenQ', JSON.stringify(allSeen)); } catch(e){}
+  try { localStorage.setItem('bek.moses1.seenQ', JSON.stringify(allSeen)); } catch(e){}
+}
+
+/* ---------- PALACE TERRAIN (Phase 2) ----------
+   Hand-picked positions for two NEW palace tile types layered on top of the
+   base MAP_STR. We do this at runtime (not in MAP_STR) because MAP_STR's
+   single-digit format can't encode tile 10, and because keeping these as a
+   declarative array makes them easy to retune from one place.
+
+   Tile 9  = slippery polished marble (walkable, +1-tile slide on contact).
+             Placed in corridors near guard patrols so a slip can push Moses
+             into a vision cone — real risk/reward.
+   Tile 10 = Pharaoh statue base (solid + cover, like a pillar). Distinct
+             silhouette so the kid sees a SECOND class of cover, scattered
+             where pillars are sparse.
+
+   Only painted onto plain floor (0). Walls, gates, treasure, exit, start
+   tiles are never overwritten. Re-run on every scene start/restart so the
+   shuffled-pillar pass doesn't blow them away. */
+const PALACE_TERRAIN = [
+  // Slippery patch in guard 1's patrol corridor (between row-7 east gate and
+  // the row-12 wall). Three tiles long so the slide step is meaningful.
+  { kind: 'slippery', tx: 18, ty: 8 },
+  { kind: 'slippery', tx: 19, ty: 8 },
+  { kind: 'slippery', tx: 20, ty: 8 },
+  // Slippery patch in the final corridor (between row-18 gate and exit row).
+  { kind: 'slippery', tx: 15, ty: 19 },
+  { kind: 'slippery', tx: 16, ty: 19 },
+  // Pharaoh statue covers — extra hide spots where pillars are thin.
+  // These also double as natural FURNITURE BARRIERS (palace decor that
+  // blocks movement and line-of-sight, not just abstract pillars). Placed
+  // so they create real navigation choices: a kid running south can duck
+  // behind one of these instead of round-tripping back to the nearest
+  // pillar. Three were the original set; the additions below thicken the
+  // throne room, the mid corridor, and the final stretch so EVERY major
+  // gameplay zone has at least one piece of furniture-cover within 4 tiles.
+  { kind: 'statue', tx: 12, ty: 8  },   // mid-north corridor
+  { kind: 'statue', tx: 24, ty: 8  },   // mid-north corridor (east twin)
+  { kind: 'statue', tx: 28, ty: 17 },   // pre-exit corridor
+  // Throne quadrant pair — frame the throne room (NW area).
+  { kind: 'statue', tx: 5,  ty: 4  },
+  { kind: 'statue', tx: 8,  ty: 4  },
+  // Mid-corridor side-table cover — tactical hide near the row-12 west gate.
+  { kind: 'statue', tx: 9,  ty: 11 },
+  // Far-east corridor cover — gives the right-half symmetry to the
+  // left half so neither side feels naked.
+  { kind: 'statue', tx: 35, ty: 13 },
+];
+function placePalaceTerrain(){
+  for (const t of PALACE_TERRAIN) {
+    if (!MAP[t.ty]) continue;
+    const cur = MAP[t.ty][t.tx];
+    // Only paint onto plain floor — never overwrite walls/gates/treasure/etc.
+    if (cur !== 0) continue;
+    if (t.kind === 'slippery') MAP[t.ty][t.tx] = 9;
+    else if (t.kind === 'statue') MAP[t.ty][t.tx] = 10;
+  }
 }
 
 /* ---------- COLLECTIBLES ----------
@@ -2676,6 +2936,21 @@ function attemptMove(dir) {
   // challenge gate: block until solved, then present the question
   const gate = challengeGates.find(g => g.tx === nx && g.ty === ny && !g.solved);
   if (gate) {
+    // Phase 2: a guard standing on the gate tile blocks passage. Moses must
+    // wait for the patrol to step clear before he can engage the challenge.
+    // Any guard state counts — patrol, suspicious, alerted, or returning —
+    // since the body is still in the way. Toast is throttled to once per
+    // 1.2 s so a frantic kid mashing the d-pad doesn't get spammed.
+    const sentryOnGate = guards.find(g => g.tx === nx && g.ty === ny);
+    if (sentryOnGate) {
+      play('pop');
+      const _now = performance.now();
+      if (!attemptMove._lastSentryToast || _now - attemptMove._lastSentryToast > 1200) {
+        attemptMove._lastSentryToast = _now;
+        try { toast('A sentry is at the gate! Wait for them to pass.'); } catch(e){}
+      }
+      return;
+    }
     play('pop');
     openChallenge(gate);
     return;
@@ -2696,6 +2971,29 @@ function attemptMove(dir) {
   else if (t === 5) onTreasure(nx, ny);
   else if (t === 7) onReachExit();
   else if (t === 8) { /* start */ }
+  else if (t === 9) {
+    // Phase 2: slippery polished marble — Moses slides ONE additional tile in
+    // the same direction. The slide bypasses cooldown so it feels immediate,
+    // but it CANNOT push Moses through a wall, into a non-walkable tile, or
+    // onto an unsolved gate (gate logic still gates entry).
+    let slideX = nx, slideY = ny;
+    if (dir === 'up') slideY--; else if (dir === 'down') slideY++;
+    else if (dir === 'left') slideX--; else if (dir === 'right') slideX++;
+    if (isWalkable(slideX, slideY)) {
+      const blockingGate = challengeGates.find(g => g.tx === slideX && g.ty === slideY && !g.solved);
+      if (!blockingGate) {
+        try { play('pop'); } catch(e){}
+        player.tx = slideX; player.ty = slideY;
+        player.px = slideX * TILE; player.py = slideY * TILE;
+        // re-evaluate effects on the slide-end tile (so a slide INTO a torch
+        // hazard or treasure still applies)
+        const t2 = tileAt(slideX, slideY);
+        if (t2 === 2) onHazardHit(slideX, slideY);
+        else if (t2 === 5) onTreasure(slideX, slideY);
+        else if (t2 === 7) onReachExit();
+      }
+    }
+  }
 
   // dog proximity
   checkDogInteraction();
@@ -2912,7 +3210,12 @@ $('cinSkipBtn').addEventListener('click', () => {
 /* ---------- START SCENE ---------- */
 function startScene1() {
   game.state = 'playing';
-  game.startedAt = performance.now();
+  // FIX: must use Date.now() (wall-clock) so startTimers' elapsed math
+  // (Date.now() - game.startedAt) is meaningful. Earlier v1.0 stored
+  // performance.now() here, which mixed page-load-relative ms with
+  // wall-clock ms in the timer subtraction — the timer would zero out
+  // immediately on first run because the difference was ~1.7e12.
+  game.startedAt = Date.now();
   // v3.6: hand off from narration bed -> palace tension for actual gameplay
   try { if (audio.narration) audio.narration.pause(); } catch(e){}
   try {
@@ -2930,6 +3233,10 @@ function startScene1() {
   // v3.5: randomize map (walls, hazards, gate positions) while keeping
   // landmarks (throne, crown, chest, exit, start) fixed.
   if (typeof shufflePalaceLayout === 'function') shufflePalaceLayout();
+  // Phase 2: paint slippery marble + Pharaoh statue cover on top of the
+  // shuffled layout. MUST run AFTER shufflePalaceLayout because the shuffle
+  // can clear/repaint floor tiles where these terrain pieces sit.
+  if (typeof placePalaceTerrain === 'function') placePalaceTerrain();
   // seed 6 mandatory challenge gates (each a 3-question bundle)
   seedChallenges(game.difficulty || 'easy');
   updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer();
@@ -2941,9 +3248,16 @@ function startScene1() {
   player.py = player.ty * TILE;
   updateCamera();
   // tutorial on first play
-  if (!localStorage.getItem('bek.moses2.tutDone')) {
+  if (!localStorage.getItem('bek.moses1.tutDone')) {
     showTutorial(0);
   }
+  // Phase 2: reset random-event flags & start the local clock so torch-
+  // outage / falling-torch can fire fresh each play.
+  _resetPalaceEvents();
+  // Phase 1 (re-skinned scene2 systems): start the torchlight cycle clock
+  // and clear any spawned Royal Captain from a prior run.
+  _resetTorchlight();
+  _resetRoyalCaptain();
   render();
   startTimers();
 }
@@ -3034,6 +3348,8 @@ function restartScene() {
   applyDifficultyConfig(game.difficulty || 'easy');
   // v3.5: reshuffle the map for a fresh-feeling replay
   if (typeof shufflePalaceLayout === 'function') shufflePalaceLayout();
+  // Phase 2: re-paint slippery marble + statue covers after the reshuffle
+  if (typeof placePalaceTerrain === 'function') placePalaceTerrain();
   // reset interactables (rebuild NPCs & pickups)
   interactables.forEach(o => { o.used = false; });
   // reset treasure count and re-seed treasures total
@@ -3068,6 +3384,11 @@ function restartScene() {
   $('pulseVignette').classList.remove('alerted');
   // re-seed challenge gates (fresh questions!)
   seedChallenges(game.difficulty || 'easy');
+  // Phase 2: reset random events so a restart re-rolls torch-outage etc.
+  _resetPalaceEvents();
+  // Phase 1: reset cycle clock + Royal Captain so the restart feels fresh.
+  _resetTorchlight();
+  _resetRoyalCaptain();
   updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer();
   updateCamera();
   game.state = 'playing';
@@ -3079,9 +3400,12 @@ function restartScene() {
 /* ---------- TUTORIAL ---------- */
 const TUT_STEPS = [
   { icon:'[>]',  title:'Move Moses', body:'Tap the arrows below, swipe the screen, or use arrow keys on a keyboard to move Moses through the palace.' },
-  { icon:'[#]',  title:'Hide Behind Pillars', body:'Step beside a pillar [#] to crouch. Crouching makes it harder for guards to spot you!' },
+  { icon:'[#]',  title:'Hide Behind Pillars and Statues', body:'Step beside a stone pillar [#] OR a tall Pharaoh statue to crouch. Crouching makes it harder for guards to spot you!' },
   { icon:'[?]',  title:'Bible Gates (Mandatory)', body:'Glowing scroll gates block every corridor. Each gate asks 3 Bible questions from the story of Moses - answer them ALL correctly to pass through.' },
-  { icon:'[!]',  title:'Avoid the Guards', body:'Guards patrol the halls. If they see you, they will draw their swords! Stay in cover and move quickly. Collect stars for bonus points - and reach the east gate to escape.' },
+  { icon:'[!]',  title:'Avoid the Guards', body:'Guards patrol the halls. If they see you, they will draw their swords! Stay in cover and move quickly.' },
+  { icon:'[~]',  title:'Watch the Polished Marble', body:'Some palace floors are slippery polished marble (cool blue). If you step on it you will SLIDE one extra tile - so make sure that next tile is safe!' },
+  { icon:'[G]',  title:'Time the Sentry at the Gate', body:'A guard sometimes stops RIGHT on a Bible gate. Wait for them to step away, then run through. The gate will not open while a guard is standing on it.' },
+  { icon:'[*]',  title:'The Royal Captain', body:'After you solve your first gate, Pharaoh sends a Royal Captain (gold halo) with sharper eyes and faster steps. Be extra careful in the back half of the palace!' },
 ];
 function showTutorial(step){
   game.tutorialStep = step;
@@ -3099,7 +3423,7 @@ $('tutNextBtn').addEventListener('click', () => {
     showTutorial(game.tutorialStep+1);
   } else {
     $('tutorialModal').classList.remove('active');
-    localStorage.setItem('bek.moses2.tutDone', '1');
+    localStorage.setItem('bek.moses1.tutDone', '1');
   }
 });
 
@@ -3435,6 +3759,12 @@ function getHintForQuestion(q){
 }
 
 function openChallenge(gate) {
+  // FIX (port from scene2 v3.28 bug 1): clear the per-gate submission lock at
+  // the top of every challenge open. Without this, a kid who triggers a wrong
+  // answer right before a re-render would arrive in the new modal with the
+  // submission flag still set, and every subsequent tap would no-op silently
+  // — the question is permanently un-answerable until full restart.
+  gate._submitting = false;
   currentGate = gate;
   game.state = 'dialog';
   // v3.6: fully silence movement/tension loops so the quiz is quiet-calm.
@@ -3487,6 +3817,12 @@ function openChallenge(gate) {
     renderPair(gate, q, opts);
   } else if (q.type === 'count') {
     renderCount(gate, q, opts);
+  } else if (q.type === 'slider') {
+    renderSlider(gate, q, opts);
+  } else if (q.type === 'spotdiff') {
+    renderSpotDiff(gate, q, opts);
+  } else if (q.type === 'pictionary') {
+    renderPictionary(gate, q, opts);
   } else {
     // trivia / fill / tf -> MCQ-style buttons
     (q.options || []).forEach((opt, i) => {
@@ -4079,13 +4415,168 @@ function renderMiniMaze(gate, q, container){
   container.appendChild(giveUp);
 }
 
+/* ---------- SLIDE PUZZLE -- 3x3 picture-swap reassembly (ported from scene2) ----------
+   Bank entry shape: { type:'slider', q, image, alt } */
+function renderSlider(gate, q, container){
+  const SZ = 3;
+  const TOTAL = SZ * SZ;
+  const src = q.image || '';
+  const positions = [];
+  for (let i = 0; i < TOTAL; i++) positions.push(i);
+  for (let i = positions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = positions[i]; positions[i] = positions[j]; positions[j] = t;
+  }
+  if (positions.every((p, i) => p === i)) {
+    const t = positions[0]; positions[0] = positions[1]; positions[1] = t;
+  }
+  if (src) {
+    const thumb = document.createElement('img');
+    thumb.className = 'ch-slider-thumb';
+    thumb.src = src;
+    thumb.alt = q.alt || 'Target image';
+    container.appendChild(thumb);
+  }
+  const hint = document.createElement('div');
+  hint.className = 'ch-slider-hint';
+  hint.textContent = 'Tap two tiles to swap them. Match the picture above to win!';
+  container.appendChild(hint);
+  const grid = document.createElement('div');
+  grid.className = 'ch-slider-grid';
+  const tiles = [];
+  const state = { selectedSlot: null, positions: positions };
+  function setBg(tile, piece){
+    const x = (piece % SZ) / (SZ - 1) * 100;
+    const y = Math.floor(piece / SZ) / (SZ - 1) * 100;
+    tile.style.backgroundImage = 'url("' + src + '")';
+    tile.style.backgroundSize = (SZ * 100) + '% ' + (SZ * 100) + '%';
+    tile.style.backgroundPosition = x + '% ' + y + '%';
+  }
+  function checkSolved(){ return state.positions.every((p, i) => p === i); }
+  for (let slot = 0; slot < TOTAL; slot++) {
+    const tile = document.createElement('button');
+    tile.className = 'ch-slider-tile';
+    tile.dataset.slot = String(slot);
+    setBg(tile, state.positions[slot]);
+    tile.addEventListener('click', () => {
+      if (state.selectedSlot === null) {
+        state.selectedSlot = slot;
+        tile.classList.add('selected');
+        return;
+      }
+      if (state.selectedSlot === slot) {
+        state.selectedSlot = null;
+        tile.classList.remove('selected');
+        return;
+      }
+      const a = state.selectedSlot, b = slot;
+      const tmp = state.positions[a];
+      state.positions[a] = state.positions[b];
+      state.positions[b] = tmp;
+      setBg(tiles[a], state.positions[a]);
+      setBg(tiles[b], state.positions[b]);
+      tiles[a].classList.remove('selected');
+      state.selectedSlot = null;
+      try { play('tap'); } catch(e){}
+      if (checkSolved()) {
+        try { play('chime'); } catch(e){}
+        tiles.forEach(t => t.classList.add('locked'));
+        setTimeout(() => {
+          handleChallengeAnswer(gate, 0, grid, { answerLabel: 'Puzzle solved!' });
+        }, 380);
+      }
+    });
+    tiles.push(tile);
+    grid.appendChild(tile);
+  }
+  container.appendChild(grid);
+  const giveUp = document.createElement('button');
+  giveUp.className = 'btn ghost';
+  giveUp.textContent = 'I give up';
+  giveUp.style.marginTop = '10px';
+  giveUp.addEventListener('click', () => {
+    try { play('tap'); } catch(e){}
+    handleChallengeAnswer(gate, -1, giveUp, { answerLabel: 'Match the picture' });
+  });
+  container.appendChild(giveUp);
+}
+
+/* ---------- SPOT THE DIFFERENCE -- two images, count the differences (ported from scene2) ----------
+   Bank entry shape: { type:'spotdiff', q, imgA, imgB, answer:4 } */
+function renderSpotDiff(gate, q, container){
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ch-spotdiff-wrapper';
+  ['imgA','imgB'].forEach(key => {
+    const img = document.createElement('img');
+    img.src = q[key] || '';
+    img.alt = (key === 'imgA') ? 'Picture 1' : 'Picture 2';
+    img.className = 'ch-spotdiff-img';
+    wrapper.appendChild(img);
+  });
+  container.appendChild(wrapper);
+  const hint = document.createElement('div');
+  hint.className = 'ch-slider-hint';
+  hint.textContent = 'Look carefully at both pictures. How many differences can you find?';
+  container.appendChild(hint);
+  const answer = Number(q.answer) || 4;
+  const choices = new Set([answer]);
+  while (choices.size < 4) {
+    const n = answer + (Math.random() < 0.5 ? -1 : 1) * (Math.floor(Math.random() * 3) + 1);
+    if (n > 0) choices.add(n);
+  }
+  const arr = Array.from(choices);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  const row = document.createElement('div');
+  row.className = 'ch-count-choices';
+  arr.forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'ch-count-btn';
+    b.textContent = String(n) + ' difference' + (n === 1 ? '' : 's');
+    b.addEventListener('click', () => {
+      const correct = (n === answer);
+      try { play(correct ? 'chime' : 'tap'); } catch(e){}
+      handleChallengeAnswer(gate, correct ? 0 : -1, b, { answerLabel: String(answer) + ' differences' });
+    });
+    row.appendChild(b);
+  });
+  container.appendChild(row);
+}
+
+/* ---------- PICTIONARY -- decode a Bible scene image, pick the verse (ported from scene2) ----------
+   Bank entry shape: { type:'pictionary', q, image, alt, options:[verse,verse,verse,verse], correct:N }
+   Pictionary is NOT a CUSTOM_TYPE — its correctness flows through the standard
+   MCQ index === q.correct path in handleChallengeAnswer. */
+function renderPictionary(gate, q, container){
+  const img = document.createElement('img');
+  img.src = q.image || '';
+  img.alt = q.alt || 'A Bible scene';
+  img.className = 'ch-pict-img';
+  img.onerror = () => { try { img.style.display = 'none'; } catch(e){} };
+  container.appendChild(img);
+  (q.options || []).forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'ch-option';
+    b.textContent = String.fromCharCode(65 + i) + '. ' + opt;
+    b.addEventListener('click', () => handleChallengeAnswer(gate, i, b));
+    container.appendChild(b);
+  });
+}
+
 function handleChallengeAnswer(gate, index, btnEl, opts) {
+  // FIX (port from scene2 v3.28 bug 1): re-entrancy guard. Without this, a
+  // kid mashing answer buttons during the feedback delay would double-fire
+  // the strike counter or land on a stale gate.bundleIndex.
+  if (gate._submitting) return;
+  gate._submitting = true;
   opts = opts || {};
   const q = gate.questions[gate.bundleIndex];
   // For trivia/fill/tf: correctness is index === q.correct
   // For unscramble/match/sequence: caller passes index=0 if correct, -1 if wrong
   let correct;
-  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count'];
+  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count','slider','spotdiff'];
   if (CUSTOM_TYPES.indexOf(q.type) !== -1) {
     correct = (index === 0);
   } else {
@@ -4136,6 +4627,10 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         // whole bundle cleared -> gate solved
         gate.solved = true;
         try { _saveCheckpoint(); } catch(e){}
+        // Phase 1: a Royal Captain joins the patrol after the FIRST gate
+        // solved. The function self-gates with `_royalCaptain.spawned`, so
+        // calling on every gate-solve is safe and cheap.
+        try { _maybeSpawnRoyalCaptain(); } catch(e){}
         if (gate.bundleCorrect === gate.questions.length && gate.strikes === 0) {
           // first-try-perfect bundle bonus
           game.stars += 5;
@@ -4183,6 +4678,8 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
       fb.innerHTML = '<div style="font-size:15px;color:#ffb3b3;">Try a different match! ('
         + strikesLeft + ' tr' + (strikesLeft===1?'y':'ies') + ' left)</div>';
       setTimeout(() => {
+        // FIX: release the submission lock so the next tap is honoured.
+        gate._submitting = false;
         fb.style.display = 'none';
         document.querySelectorAll('#chOptions .ch-confirm-btn').forEach(b => b.disabled = false);
       }, 1400);
@@ -4193,6 +4690,10 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         + '<div style="margin-top:8px;font-size:14px;color:#ffd966;"><strong>' + strikesLeft + ' tr' + (strikesLeft===1?'y':'ies') + ' left</strong> for this question.</div>';
       // re-enable / re-render the SAME question so child learns the answer
       setTimeout(() => {
+        // FIX: release the submission lock BEFORE openChallenge re-runs (it
+        // also clears the flag at its top, but we release here so the MCQ
+        // path that doesn't go through openChallenge also unlocks cleanly).
+        gate._submitting = false;
         document.querySelectorAll('#chOptions .ch-option').forEach(b => {
           b.disabled = false; b.classList.remove('wrong', 'correct');
         });
@@ -4699,6 +5200,277 @@ function updateGuards(dt){
   updateAlertMusic(anyAlerted);
 }
 
+/* ---------- PALACE RANDOM EVENTS (Phase 2) ----------
+   Two seeded thrills that fire at most ONCE per playthrough:
+   - torch-outage  : 5 s of dim torchlight, ALL guard cones shrink by 2 tiles
+                     (kid's window to sprint past a sentry)
+   - falling-torch : a wall torch falls, lighting a 1-tile floor patch on fire
+                     for 8 s (a temporary hazard that reverts to floor cleanly)
+
+   Both events pick fresh from a small pool each play, so back-to-back runs
+   feel different. Skipped if game.state isn't 'playing' so a paused / dialog
+   tab can never fire one in the background. */
+const _palaceEvents = {
+  fired: { 'torch-outage': false, 'falling-torch': false },
+  // Per-event earliest-firing window measured from this scene's local
+  // timestamp (set in _resetPalaceEvents). Decoupled from game.startedAt
+  // because that field's units (Date.now vs performance.now) differ
+  // between startScene1 and the timer module — known v1.0 inconsistency
+  // not worth touching from this seat.
+  earliest: { 'torch-outage': 12000, 'falling-torch': 22000 },
+  // Per-tick chance once eligible. Tick is the main render loop, ~60 fps,
+  // so 0.0006 ≈ 1-in-1670 frames ≈ ~28 s expected gap. The 'fired' flag
+  // guarantees one-shot.
+  chance: 0.0006,
+  startedAt: 0,           // performance.now() snapshot, set on scene start
+  active: null,           // current active event name, if any
+  endsAt: 0,              // performance.now() when the active event resolves
+  fallingTile: null,      // {x, y, prev} restore record for falling-torch
+  guardSeeBackup: null,   // [...] of original seeRadius values, for outage
+};
+function _maybeFirePalaceEvent(){
+  if (game.state !== 'playing') return;
+  if (_palaceEvents.active) {
+    if (performance.now() >= _palaceEvents.endsAt) _resolvePalaceEvent();
+    return;
+  }
+  const elapsed = performance.now() - (_palaceEvents.startedAt || performance.now());
+  // pick a candidate that is eligible AND not yet fired
+  const candidates = ['torch-outage','falling-torch'].filter(name =>
+    !_palaceEvents.fired[name] && elapsed >= _palaceEvents.earliest[name]
+  );
+  if (!candidates.length) return;
+  if (Math.random() >= _palaceEvents.chance) return;
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  _firePalaceEvent(pick);
+}
+function _firePalaceEvent(name){
+  _palaceEvents.active = name;
+  _palaceEvents.fired[name] = true;
+  if (name === 'torch-outage') {
+    // shrink every guard cone by 2 tiles for 5 s
+    _palaceEvents.guardSeeBackup = guards.map(g => g.seeRadius);
+    guards.forEach(g => { g.seeRadius = Math.max(1, g.seeRadius - 2); });
+    _palaceEvents.endsAt = performance.now() + 5000;
+    try { toast('🪔 The palace torches dim. The guards can\'t see as far!'); } catch(e){}
+    try { play('chime'); } catch(e){}
+  } else if (name === 'falling-torch') {
+    // pick an existing torch tile (value 2). Carve a 1-tile hazard patch on
+    // a walkable floor tile next to it. Fall back to a random floor tile in
+    // a corridor if no torch is nearby. Lasts 8 s, then reverts.
+    const torchPositions = [];
+    for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
+      if (MAP[y][x] === 2) torchPositions.push({x, y});
+    }
+    let target = null;
+    for (let attempt = 0; attempt < 12 && torchPositions.length && !target; attempt++) {
+      const t = torchPositions[Math.floor(Math.random() * torchPositions.length)];
+      const offsets = [[0,1],[0,-1],[1,0],[-1,0]];
+      for (const [ox, oy] of offsets) {
+        const nx = t.x + ox, ny = t.y + oy;
+        if (MAP[ny] && MAP[ny][nx] === 0) { target = {x:nx, y:ny}; break; }
+      }
+    }
+    if (!target) { _palaceEvents.active = null; return; }
+    _palaceEvents.fallingTile = { x: target.x, y: target.y, prev: MAP[target.y][target.x] };
+    MAP[target.y][target.x] = 2;   // re-use torch tile so render + hazard logic kicks in for free
+    _palaceEvents.endsAt = performance.now() + 8000;
+    try { toast('🔥 A wall torch fell! Step around the flames.'); } catch(e){}
+    try { play('error'); } catch(e){}
+  }
+}
+function _resolvePalaceEvent(){
+  const name = _palaceEvents.active;
+  if (name === 'torch-outage' && _palaceEvents.guardSeeBackup) {
+    guards.forEach((g, i) => {
+      const orig = _palaceEvents.guardSeeBackup[i];
+      if (typeof orig === 'number') g.seeRadius = orig;
+    });
+    _palaceEvents.guardSeeBackup = null;
+  } else if (name === 'falling-torch' && _palaceEvents.fallingTile) {
+    const f = _palaceEvents.fallingTile;
+    if (MAP[f.y] && typeof f.prev === 'number') MAP[f.y][f.x] = f.prev;
+    _palaceEvents.fallingTile = null;
+  }
+  _palaceEvents.active = null;
+  _palaceEvents.endsAt = 0;
+}
+function _resetPalaceEvents(){
+  _palaceEvents.fired = { 'torch-outage': false, 'falling-torch': false };
+  if (_palaceEvents.active) _resolvePalaceEvent();
+  _palaceEvents.startedAt = performance.now();
+}
+
+/* ---------- TORCHLIGHT CYCLE (Phase 1 — scene2 day/night re-skinned) ----------
+   A continuous 30 s pulse that dims the palace torches for the last 5 s of
+   every cycle. While dim, ALL guard cones shrink by 1 tile — a small but
+   real "sneak window" that arrives reliably (kids learn the rhythm) without
+   being as dramatic as the one-shot torch-outage event. Cycle and event
+   stack independently: a kid lucky enough to hit both gets a –3 cone for
+   their sprint. Reset on every scene start so timing is fresh per play. */
+const _torchlight = {
+  tCycleMs: 30000,        // total cycle length
+  dimMs: 5000,            // length of the dim phase at the start of each cycle
+  startedAt: 0,
+  isDim: false,
+  guardSeeBackup: null,   // [...] of seeRadius values at dim-start
+};
+function _resetTorchlight(){
+  if (_torchlight.guardSeeBackup) {
+    guards.forEach((g, i) => {
+      const orig = _torchlight.guardSeeBackup[i];
+      if (typeof orig === 'number') g.seeRadius = orig;
+    });
+    _torchlight.guardSeeBackup = null;
+  }
+  _torchlight.isDim = false;
+  _torchlight.startedAt = performance.now();
+}
+function _updateTorchlight(){
+  if (game.state !== 'playing') return;
+  const elapsed = performance.now() - (_torchlight.startedAt || performance.now());
+  const phase = elapsed % _torchlight.tCycleMs;
+  const shouldBeDim = (phase < _torchlight.dimMs);
+  if (shouldBeDim && !_torchlight.isDim) {
+    _torchlight.isDim = true;
+    _torchlight.guardSeeBackup = guards.map(g => g.seeRadius);
+    guards.forEach(g => { g.seeRadius = Math.max(1, g.seeRadius - 1); });
+  } else if (!shouldBeDim && _torchlight.isDim) {
+    _torchlight.isDim = false;
+    if (_torchlight.guardSeeBackup) {
+      guards.forEach((g, i) => {
+        const orig = _torchlight.guardSeeBackup[i];
+        if (typeof orig === 'number') g.seeRadius = orig;
+      });
+      _torchlight.guardSeeBackup = null;
+    }
+  }
+}
+
+/* Active-event HUD updater. Reads torchlight + palace-event state and
+   reflects whichever is currently in effect into the banner above the
+   canvas. Priority ladder: torch-outage > falling-torch > dim cycle.
+   Shows nothing during normal play so the banner doesn't become noise. */
+function _updateEventHud(){
+  const el = document.getElementById('eventHud');
+  if (!el) return;
+  let label = null;
+  if (_palaceEvents.active === 'torch-outage') {
+    label = '\u{1FA94} TORCHES DIMMED — guard sight reduced!';
+  } else if (_palaceEvents.active === 'falling-torch') {
+    label = '\u{1F525} A torch fell! Watch the flames.';
+  } else if (_torchlight.isDim) {
+    label = '\u{1FA94} The palace dims for a moment...';
+  }
+  if (label) {
+    if (el.textContent !== label) el.textContent = label;
+    if (el.style.display !== 'flex') el.style.display = 'flex';
+  } else if (el.style.display !== 'none') {
+    el.style.display = 'none';
+  }
+}
+
+/* ---------- ROYAL CAPTAIN ESCALATION (Phase 1 — palace re-skin of scene2's
+   pursuit scout). The captain spawns the moment Moses solves his first
+   challenge gate — Pharaoh has heard the disturbance and dispatches a
+   senior officer. The captain has +1 sight radius and ~25% faster patrol
+   than a base guard, and patrols the wide middle corridor where the
+   later gates sit. Distinct gold halo so kids see "this one is different".
+   Spawned at most once per play; cleared on _resetRoyalCaptain. */
+const _royalCaptain = {
+  spawned: false,
+  guardRef: null,
+};
+function _resetRoyalCaptain(){
+  _royalCaptain.spawned = false;
+  _royalCaptain.guardRef = null;
+  _royalCaptain.entranceAt = 0;
+  _royalCaptain.entranceTx = null;
+  _royalCaptain.entranceTy = null;
+}
+function _maybeSpawnRoyalCaptain(){
+  if (_royalCaptain.spawned) return;
+  const gatesSolved = challengeGates.filter(g => g.solved).length;
+  if (gatesSolved < 1) return;
+  _royalCaptain.spawned = true;
+  // Base stats from the difficulty config so the captain scales with the
+  // chosen difficulty — never a fixed-difficulty intruder.
+  const baseSeeRadius = (DIFFICULTY_CONFIG[game.difficulty] || DIFFICULTY_CONFIG.easy).guardSeeRadius;
+  const basePatrolMs  = (DIFFICULTY_CONFIG[game.difficulty] || DIFFICULTY_CONFIG.easy).guardPatrolMs;
+  const captain = {
+    tx: 22, ty: 14,
+    // Wide rectangular patrol over the middle corridor (between the row-12
+    // gates and the row-18 final gate). Touches several lanes Moses must
+    // cross, so the kid feels real pressure on the back half of the run.
+    patrolPath: [{x:14,y:14},{x:30,y:14},{x:30,y:17},{x:14,y:17}],
+    pi: 0, dir: 'right',
+    state: 'patrol', timer: 0,
+    swordOut: false, swordAnim: 0,
+    seeRadius: baseSeeRadius + 1,
+    patrolMs:  Math.max(320, basePatrolMs - 120),
+    isCaptain: true,
+  };
+  guards.push(captain);
+  _royalCaptain.guardRef = captain;
+  // Cinematic entrance: kick off a 1.4 s gold particle burst at the captain's
+  // first tile. drawCaptainEntranceFx (called from render) reads this state
+  // and fades naturally, so the captain "arrives in a shimmer" rather than
+  // popping into existence.
+  _royalCaptain.entranceAt = performance.now();
+  _royalCaptain.entranceTx = captain.tx;
+  _royalCaptain.entranceTy = captain.ty;
+  try { toast('⚔️ Pharaoh has summoned a Royal Captain! Move quickly.'); } catch(e){}
+  try { play('sword'); } catch(e){}
+}
+/* Cinematic gold-shimmer burst on the tile where the Royal Captain spawns.
+   Lasts 1.4 s. Idempotent — when the elapsed window passes, it draws
+   nothing. Called every frame from render() so the burst layers above
+   sprites and below HUD. */
+function drawCaptainEntranceFx(){
+  const t0 = _royalCaptain.entranceAt || 0;
+  if (!t0) return;
+  const elapsed = performance.now() - t0;
+  if (elapsed > 1400) return;
+  const tx = _royalCaptain.entranceTx, ty = _royalCaptain.entranceTy;
+  if (typeof tx !== 'number') return;
+  const cx = tx * TILE - camera.px + TILE / 2;
+  const cy = ty * TILE - camera.py + TILE / 2;
+  const fade = 1 - (elapsed / 1400);
+  // expanding gold halo ring
+  const ringR = 6 + (elapsed / 1400) * (TILE * 1.4);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,215,80,' + (fade * 0.85).toFixed(2) + ')';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+  ctx.stroke();
+  // 12 gold spark particles flung outward, sizes vary
+  for (let i = 0; i < 12; i++) {
+    const ang = (i / 12) * Math.PI * 2 + Math.sin(t0 * 0.001 + i);
+    const dist = (elapsed / 1400) * (TILE * 1.1) * (0.7 + (i % 3) * 0.1);
+    const px = cx + Math.cos(ang) * dist;
+    const py = cy + Math.sin(ang) * dist;
+    const sz = 2.4 + Math.sin(elapsed * 0.02 + i) * 0.8;
+    ctx.fillStyle = 'rgba(255,235,140,' + (fade * 0.95).toFixed(2) + ')';
+    ctx.beginPath();
+    ctx.arc(px, py, sz, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // central bright flash (peaks early then fades)
+  const coreA = Math.max(0, 0.9 - elapsed / 350);
+  if (coreA > 0) {
+    const grd = ctx.createRadialGradient(cx, cy, 2, cx, cy, TILE * 0.7);
+    grd.addColorStop(0,    'rgba(255,250,200,' + coreA.toFixed(2) + ')');
+    grd.addColorStop(0.4,  'rgba(255,210,90,'  + (coreA * 0.6).toFixed(2) + ')');
+    grd.addColorStop(1,    'rgba(255,180,40,0.00)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(cx, cy, TILE * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 /* v3.6 -- HARD swap between "palace tension" (calm) and "guards tension"
    (chase). Previously we ducked bgm volume to 0.10 while the alert loop
    played, which made both tracks audible at once (Jane's overlap bug).
@@ -4709,12 +5481,11 @@ function updateAlertMusic(isAlerted){
   if (!audio.alerted) return;
   if (isAlerted && !_alertMusicOn) {
     _alertMusicOn = true;
-    try { audio.bgm.pause(); } catch(e){}
-    try { audio.alerted.currentTime = 0; audio.alerted.play().catch(()=>{}); } catch(e){}
+    setMusic('alerted');
   } else if (!isAlerted && _alertMusicOn) {
     _alertMusicOn = false;
-    try { audio.alerted.pause(); } catch(e){}
-    try { audio.bgm.volume = 0.28; audio.bgm.play().catch(()=>{}); } catch(e){}
+    try { audio.bgm.volume = 0.28; } catch(e){}
+    setMusic('bgm');
   }
 }
 
@@ -4753,10 +5524,57 @@ function render(){
     }
   }
 
+  // PALACE ESSENCE: warm radial glow centered on the throne. A gentle 4 s
+  // pulse so the throne quadrant always reads brighter / warmer than the
+  // rest of the map — the kid's eye is naturally drawn to the seat of
+  // Pharaoh's power. Drawn AFTER tiles so it tints the floor without
+  // washing it out. NW corner only — desert / Midian scenes get nothing
+  // like this (their lighting is open-sky), so it's a clean per-scene
+  // marker.
+  {
+    const _now = performance.now();
+    const _pulse = 0.88 + Math.sin(_now / 1500) * 0.12;
+    const tcx = 2 * TILE - camera.px + TILE / 2;
+    const tcy = 2 * TILE - camera.py + TILE / 2;
+    const tR  = TILE * 7;
+    const grd = ctx.createRadialGradient(tcx, tcy, 4, tcx, tcy, tR);
+    grd.addColorStop(0.00, 'rgba(255,210,120,' + (0.18 * _pulse).toFixed(2) + ')');
+    grd.addColorStop(0.45, 'rgba(255,170,80,'  + (0.08 * _pulse).toFixed(2) + ')');
+    grd.addColorStop(1.00, 'rgba(255,140,50,0.00)');
+    ctx.save();
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(tcx, tcy, tR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
   // v3.4: decorative palace furnishings (purely cosmetic; not walkable/blocked)
   drawPalaceDecor();
   // challenge gates (drawn before other sprites so they sit "on the floor")
   for (const gate of challengeGates) drawChallengeGate(gate);
+  // PALACE ESSENCE: spotlight pulse on the nearest unsolved gate when Moses
+  // is within ~3 tiles. Tells the kid "this is the door" without text. The
+  // gate already has its own draw treatment; this is a SECOND pulse layer
+  // on top of it so the highlight reads as proximity, not a static label.
+  for (const gate of challengeGates) {
+    if (gate.solved) continue;
+    const dxT = Math.abs(gate.tx - player.tx);
+    const dyT = Math.abs(gate.ty - player.ty);
+    if (Math.max(dxT, dyT) > 3) continue;
+    const sx = gate.tx * TILE - camera.px + TILE / 2;
+    const sy = gate.ty * TILE - camera.py + TILE / 2;
+    const _pp = 0.55 + Math.sin(performance.now() / 360) * 0.30;
+    ctx.save();
+    const sgrd = ctx.createRadialGradient(sx, sy, 2, sx, sy, TILE * 1.1);
+    sgrd.addColorStop(0,    'rgba(255,235,140,' + (0.55 * _pp).toFixed(2) + ')');
+    sgrd.addColorStop(0.55, 'rgba(255,200,90,'  + (0.18 * _pp).toFixed(2) + ')');
+    sgrd.addColorStop(1,    'rgba(255,180,60,0.00)');
+    ctx.fillStyle = sgrd;
+    ctx.beginPath();
+    ctx.arc(sx, sy, TILE * 1.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
   // interactables
   for (const obj of interactables) drawInteractable(obj);
   // dog (with soft orange halo for visibility)
@@ -4766,6 +5584,8 @@ function render(){
   drawCenser();
   // guards
   for (const g of guards) drawGuard(g);
+  // Phase 1 cinematic: gold-shimmer burst on Royal Captain spawn (1.4 s)
+  drawCaptainEntranceFx();
   // moses
   drawMoses();
   // v3.5: discoverability cues so kids know WHEN they can interact & hide
@@ -4773,6 +5593,27 @@ function render(){
   drawHidingBadge();
   // ambient: warm light rays + dust motes
   drawAmbient();
+  // Phase 1: torchlight dim overlay — soft cool wash + slight darken so kids
+  // visibly read "the torches just dimmed" without losing readability of
+  // sprites or tiles. Eased in/out by quadratic ramp at start and end of the
+  // dim phase so it doesn't pop. Applied only to the play area (NOT the HUD
+  // canvases), so the mini-map and compass stay legible.
+  if (_torchlight.isDim) {
+    const elapsed = performance.now() - (_torchlight.startedAt || performance.now());
+    const phase   = elapsed % _torchlight.tCycleMs;          // 0..tCycle
+    // ramp 0->1 over first 0.5s of dim, 1->0 over last 0.5s of dim
+    const rampIn  = Math.min(1, phase / 500);
+    const rampOut = Math.min(1, (_torchlight.dimMs - phase) / 500);
+    const ramp    = Math.min(rampIn, rampOut);
+    ctx.save();
+    // cool blue-grey wash
+    ctx.fillStyle = 'rgba(40,52,80,' + (0.18 * ramp).toFixed(2) + ')';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    // slight darken
+    ctx.fillStyle = 'rgba(0,0,0,' + (0.10 * ramp).toFixed(2) + ')';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.restore();
+  }
   // HUD-on-canvas: pulsing red overlay already in DOM
 
   // side HUD canvases (mini-map & compass)
@@ -5183,6 +6024,69 @@ function drawTile(t, dx, dy, tx, ty){
       ctx.lineTo(dx+TILE/2, dy+TILE);
       ctx.stroke();
     }
+    // PALACE ESSENCE: a faint hieroglyph etching every few wall tiles. 4 carved
+    // glyph variants — eye, ankh, sun-disc, jackal-bar — drawn in muted gold at
+    // ~32% opacity so they whisper rather than shout. This is the single most
+    // visually-distinctive marker that says "interior Egyptian palace" and not
+    // "cliff" (scene 2) or "rocky outcrop" (scene 3).
+    const _glyphCell = (tx * 5 + ty * 11) % 9;
+    if (_glyphCell < 4) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(220,180,90,0.32)';
+      ctx.fillStyle   = 'rgba(220,180,90,0.32)';
+      ctx.lineWidth = 1.4;
+      const _hgcx = dx + TILE / 2;
+      const _hgcy = dy + TILE / 2 + 7;
+      if (_glyphCell === 0) {
+        // Eye-of-Horus simplified: an almond + dot + tear
+        ctx.beginPath();
+        ctx.ellipse(_hgcx, _hgcy, 5, 2.4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(_hgcx, _hgcy, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(_hgcx + 4, _hgcy + 2);
+        ctx.lineTo(_hgcx + 5, _hgcy + 5);
+        ctx.stroke();
+      } else if (_glyphCell === 1) {
+        // Ankh
+        ctx.beginPath();
+        ctx.arc(_hgcx, _hgcy - 2.5, 2.2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(_hgcx, _hgcy);
+        ctx.lineTo(_hgcx, _hgcy + 6);
+        ctx.moveTo(_hgcx - 3, _hgcy + 1.5);
+        ctx.lineTo(_hgcx + 3, _hgcy + 1.5);
+        ctx.stroke();
+      } else if (_glyphCell === 2) {
+        // Sun-disc with rays (Ra)
+        ctx.beginPath();
+        ctx.arc(_hgcx, _hgcy, 2.4, 0, Math.PI * 2);
+        ctx.stroke();
+        for (let r = 0; r < 6; r++) {
+          const ang = (r / 6) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(_hgcx + Math.cos(ang) * 3.2, _hgcy + Math.sin(ang) * 3.2);
+          ctx.lineTo(_hgcx + Math.cos(ang) * 5,   _hgcy + Math.sin(ang) * 5);
+          ctx.stroke();
+        }
+      } else {
+        // Jackal-bar: stylized horizontal stroke with a triangular head
+        ctx.beginPath();
+        ctx.moveTo(_hgcx - 5, _hgcy);
+        ctx.lineTo(_hgcx + 4, _hgcy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(_hgcx + 4, _hgcy - 2);
+        ctx.lineTo(_hgcx + 7, _hgcy);
+        ctx.lineTo(_hgcx + 4, _hgcy + 2);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
   } else if (t === 2) {
     // torch (hazard) - v3.5 rich multi-ring glow + flame flicker
     const now = performance.now();
@@ -5243,6 +6147,66 @@ function drawTile(t, dx, dy, tx, ty){
     ctx.fillRect(dx+6, dy+TILE-6, TILE-12, 4);
     ctx.strokeStyle = '#4a2a0a'; ctx.lineWidth = 1;
     ctx.strokeRect(dx+6.5, dy+2.5, TILE-13, TILE-5);
+  } else if (t === 9) {
+    // Phase 2: slippery polished marble — pale blue-veined sheen so kids
+    // recognise the hazard at a glance. Code-rendered (no asset needed).
+    // The placeholder is intentionally cool-toned so it pops against the
+    // warm sandstone floor.
+    const _now = performance.now();
+    ctx.save();
+    // base polished slab
+    const grad = ctx.createLinearGradient(dx, dy, dx + TILE, dy + TILE);
+    grad.addColorStop(0,    '#cfe9f0');
+    grad.addColorStop(0.45, '#9fd0e0');
+    grad.addColorStop(1,    '#6fa0b8');
+    ctx.fillStyle = grad;
+    ctx.fillRect(dx + 1, dy + 1, TILE - 2, TILE - 2);
+    // diagonal vein
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(dx + 4, dy + TILE - 6);
+    ctx.lineTo(dx + TILE - 6, dy + 4);
+    ctx.stroke();
+    // moving glint sweeps across the tile so it reads as "slippery"
+    const phase = ((_now / 1400) + (tx * 0.13) + (ty * 0.07)) % 1;
+    const gx = dx + phase * TILE;
+    ctx.fillStyle = 'rgba(255,255,255,' + (0.32 * (1 - Math.abs(phase - 0.5) * 2)).toFixed(2) + ')';
+    ctx.beginPath();
+    ctx.ellipse(gx, dy + TILE / 2, 6, 2.4, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    // edge bevel for depth
+    ctx.strokeStyle = 'rgba(40,40,80,0.35)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(dx + 1.5, dy + 1.5, TILE - 3, TILE - 3);
+    ctx.restore();
+  } else if (t === 10) {
+    // Phase 2: statue base (Pharaoh statue cover). Solid + LoS-blocking like
+    // a pillar (3), distinct silhouette so kids see a SECOND class of cover.
+    // Tall stone block + crowned bust shape.
+    ctx.save();
+    // pedestal
+    ctx.fillStyle = '#5a3a14';
+    ctx.fillRect(dx + 4, dy + TILE - 12, TILE - 8, 12);
+    ctx.fillStyle = '#7a5320';
+    ctx.fillRect(dx + 4, dy + TILE - 12, TILE - 8, 3);
+    // bust core (tall stone with rounded shoulders)
+    ctx.fillStyle = '#8a5a22';
+    ctx.fillRect(dx + 7, dy + 8, TILE - 14, TILE - 18);
+    // shoulder rounding
+    ctx.beginPath();
+    ctx.moveTo(dx + 7, dy + TILE - 12);
+    ctx.quadraticCurveTo(dx + TILE / 2, dy + 4, dx + TILE - 7, dy + TILE - 12);
+    ctx.fillStyle = '#9c6a2a';
+    ctx.fill();
+    // crown / nemes — subtle gold band so it reads as Pharaoh statue
+    ctx.fillStyle = '#ffd976';
+    ctx.fillRect(dx + 9, dy + 7, TILE - 18, 3);
+    // shadow ridge for depth
+    ctx.strokeStyle = '#3a1a00';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(dx + 6.5, dy + 6.5, TILE - 13, TILE - 9);
+    ctx.restore();
   } else if (t === 4) {
     // landmark (decorative urn)
     ctx.fillStyle = '#6b3a14';
@@ -5601,39 +6565,82 @@ function drawGuard(g){
   const dx = g.tx*TILE - camera.px;
   const dy = g.ty*TILE - camera.py;
   if (dx < -TILE || dx > CANVAS_W || dy < -TILE || dy > CANVAS_H) return;
-  // === HALO for visibility: red glow on alerted, yellow on suspicious, subtle on patrol
-  const haloColor = g.state === 'alerted' ? 'rgba(255,60,60,' :
-                    g.state === 'suspicious' ? 'rgba(255,230,100,' :
-                    'rgba(200,70,70,';
+  // === HALO for visibility: red glow on alerted, yellow on suspicious, subtle on patrol.
+  // Phase 1: Royal Captain wears a GOLD halo so kids instantly recognise the
+  // escalation arrival. Alerted state still wins (red overrides gold so the
+  // "danger" cue stays unambiguous when the captain spots Moses).
+  let haloColor;
+  if (g.state === 'alerted')          haloColor = 'rgba(255,60,60,';
+  else if (g.state === 'suspicious')  haloColor = 'rgba(255,230,100,';
+  else if (g.isCaptain)               haloColor = 'rgba(255,200,60,';
+  else                                haloColor = 'rgba(200,70,70,';
   const haloPulse = 0.4 + 0.25 * Math.sin(performance.now()/280 + g.tx);
   ctx.fillStyle = haloColor + haloPulse.toFixed(2) + ')';
   ctx.beginPath();
-  ctx.arc(dx+TILE/2, dy+TILE/2+2, TILE*0.72, 0, Math.PI*2);
+  ctx.arc(dx+TILE/2, dy+TILE/2+2, g.isCaptain ? TILE*0.85 : TILE*0.72, 0, Math.PI*2);
   ctx.fill();
-  // v3.6: guards drawn 1.55x -- same scale as Moses (was 1.35) so the
-  // sprites feel proportional side-by-side instead of Moses looking tiny.
-  const img = (g.dir==='left'||g.dir==='right') ? IMG.guardSide : IMG.guard;
+  // Phase 1: an extra soft gold ring around the captain for unmistakable id.
+  if (g.isCaptain) {
+    ctx.strokeStyle = 'rgba(255,215,80,0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(dx+TILE/2, dy+TILE/2+2, TILE*0.55, 0, Math.PI*2);
+    ctx.stroke();
+  }
+  // v1.1 (2026-05-01): directional guard sprites + Royal Captain variants.
+  // Mirrors scene2's pattern: prefer the 4-direction set, then guardSide
+  // mirror, then guard fallback. Captain uses its OWN 4-direction set so
+  // the gold-trimmed officer sprite reads visually distinct from regular
+  // guards even before the gold halo highlights it.
+  const _ok = (im) => im && im.complete && im.naturalWidth;
+  let img;
+  let _flipGuard = false;
+  if (g.isCaptain) {
+    if      (g.dir === 'up'    && _ok(IMG.captainBack))  img = IMG.captainBack;
+    else if (g.dir === 'down'  && _ok(IMG.captainFront)) img = IMG.captainFront;
+    else if (g.dir === 'left'  && _ok(IMG.captainLeft))  img = IMG.captainLeft;
+    else if (g.dir === 'right' && _ok(IMG.captainRight)) img = IMG.captainRight;
+    else if (_ok(IMG.captainFront)) img = IMG.captainFront;
+  }
+  if (!img) {
+    if      (g.dir === 'up'    && _ok(IMG.guardBack))  img = IMG.guardBack;
+    else if (g.dir === 'down'  && _ok(IMG.guardFront)) img = IMG.guardFront;
+    else if (g.dir === 'left'  && _ok(IMG.guardLeft))  img = IMG.guardLeft;
+    else if (g.dir === 'right' && _ok(IMG.guardRight)) img = IMG.guardRight;
+    else if (g.dir === 'left'  && _ok(IMG.guardSide)) { img = IMG.guardSide; _flipGuard = true; }
+    else if (g.dir === 'right' && _ok(IMG.guardSide)) { img = IMG.guardSide; }
+    else if (_ok(IMG.guardFront)) img = IMG.guardFront;
+    else img = IMG.guard;
+  }
   const GUARD_SCALE = 1.55;
   const gsz = TILE * GUARD_SCALE;
-  const gox = dx + (TILE - gsz) / 2;
-  const goy = dy + TILE - gsz + 2;
-  // drop shadow
+  // drop shadow drawn before sprite so it sits underneath feet
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
   ctx.beginPath();
   ctx.ellipse(dx+TILE/2, dy+TILE-3, 14, 4.5, 0, 0, Math.PI*2);
   ctx.fill();
   if (img && img.complete && img.naturalWidth) {
+    // Aspect-ratio-aware draw (port from scene2 v2.2.8). Portrait sprites
+    // were getting squashed into a square — preserve natW/natH ratio and
+    // anchor feet to bottom-center.
+    const gNatW = img.naturalWidth || 1;
+    const gNatH = img.naturalHeight || 1;
+    const gAr   = gNatW / gNatH;
+    const gDrawH = gsz;
+    const gDrawW = gsz * gAr;
+    const gox = dx + (TILE - gDrawW) / 2;
+    const goy = dy + TILE - gDrawH + 2;
     ctx.save();
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.shadowColor = 'rgba(0,0,0,0.7)';
     ctx.shadowBlur = 5;
-    if (g.dir === 'left') {
-      ctx.translate(gox+gsz, goy);
+    if (_flipGuard) {
+      ctx.translate(gox+gDrawW, goy);
       ctx.scale(-1,1);
-      ctx.drawImage(img, 0, 0, gsz, gsz);
+      ctx.drawImage(img, 0, 0, gDrawW, gDrawH);
     } else {
-      ctx.drawImage(img, gox, goy, gsz, gsz);
+      ctx.drawImage(img, gox, goy, gDrawW, gDrawH);
     }
     ctx.restore();
   } else {
@@ -5677,6 +6684,16 @@ function drawMoses(){
   ctx.beginPath();
   ctx.arc(dx+TILE/2, dy+TILE/2+2, TILE*0.8, 0, Math.PI*2);
   ctx.fill();
+  // PALACE ESSENCE: gentle idle "breathing" bob when the kid isn't actively
+  // pressing a direction. Adds life so the scene doesn't feel like a
+  // freeze-frame between moves. Stops while crouched (held breath) and while
+  // any guard is alerted (pinned still in fear). Uses a tiny vertical offset
+  // (max ~1.5 px) so it reads as breathing, not as floating off the tile.
+  const _now = performance.now();
+  const _idle = (game.state === 'playing')
+    && !player.crouched
+    && !guards.some(g => g.state === 'alerted');
+  const _bobY = _idle ? Math.sin(_now / 480) * 1.4 : 0;
   // Moses draws LARGER than his tile (1.55x in v3.3, up from 1.45) so kids
   // can see his face and silhouette clearly against any tile palette.
   const MOSES_SCALE = 1.55;
@@ -5690,26 +6707,60 @@ function drawMoses(){
               0, 0, Math.PI*2);
   ctx.fill();
 
-  if (IMG.moses && IMG.moses.complete && IMG.moses.naturalWidth) {
+  // v1.1 (2026-05-01): pick the right Moses sprite from the directional set
+  // (mosesFront/Back/Left/Right) and the ducking variants when hidden. Falls
+  // back through each level so a missing PNG never leaves Moses invisible.
+  // Mirrors scene2_desert.html's _pickMosesSprite() pattern.
+  function _pickMosesSprite(dir, hidden){
+    const ok = (im) => im && im.complete && im.naturalWidth;
+    if (hidden) {
+      if (dir === 'down'  && ok(IMG.mosesDuckFront)) return { img: IMG.mosesDuckFront, flip:false };
+      if (dir === 'left'  && ok(IMG.mosesDuckLeft))  return { img: IMG.mosesDuckLeft,  flip:false };
+      if (dir === 'right' && ok(IMG.mosesDuckRight)) return { img: IMG.mosesDuckRight, flip:false };
+      if (dir === 'up'    && ok(IMG.mosesDuckFront)) return { img: IMG.mosesDuckFront, flip:false };
+      if (ok(IMG.mosesDuckFront)) return { img: IMG.mosesDuckFront, flip:false };
+      if (ok(IMG.mosesCrouchRight)) return { img: IMG.mosesCrouchRight, flip: (dir === 'left') };
+    }
+    if (dir === 'up'    && ok(IMG.mosesBack))  return { img: IMG.mosesBack,  flip:false };
+    if (dir === 'down'  && ok(IMG.mosesFront)) return { img: IMG.mosesFront, flip:false };
+    if (dir === 'left'  && ok(IMG.mosesLeft))  return { img: IMG.mosesLeft,  flip:false };
+    if (dir === 'right' && ok(IMG.mosesRight)) return { img: IMG.mosesRight, flip:false };
+    if (ok(IMG.mosesFront)) return { img: IMG.mosesFront, flip:false };
+    if (ok(IMG.moses))      return { img: IMG.moses,      flip: (player.dir === 'right') };
+    return null;
+  }
+  const _mosesSprite = _pickMosesSprite(player.dir, player.crouched);
+  if (_mosesSprite) {
     ctx.save();
-    // smooth scaling for a crisper look at large sizes
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    const crouchScale = player.crouched ? 0.88 : 1.0;
+    // Aspect-ratio-aware draw. Portrait PNGs were getting squashed into a
+    // square — port the natW/natH fix from scene2 v2.2.8.
+    const _usingDuckSprite = player.crouched && (
+      _mosesSprite.img === IMG.mosesDuckFront ||
+      _mosesSprite.img === IMG.mosesDuckLeft  ||
+      _mosesSprite.img === IMG.mosesDuckRight ||
+      _mosesSprite.img === IMG.mosesCrouchRight
+    );
+    const crouchScale = _usingDuckSprite ? 1.0 : (player.crouched ? 0.88 : 1.0);
     const sz = mosesSize * crouchScale;
-    // anchor feet to bottom-center of the tile so he doesn't appear to float
-    const ox = dx + (TILE - sz) / 2;
-    const oy = dy + TILE - sz + 2;  // slight lift so he sits in the tile center
-    // gentle drop-shadow glow behind the sprite for separation from bg
+    const natW = _mosesSprite.img.naturalWidth || 1;
+    const natH = _mosesSprite.img.naturalHeight || 1;
+    const ar   = natW / natH;
+    const drawH = sz;
+    const drawW = sz * ar;
+    const ox = Math.round(dx + (TILE - drawW) / 2);
+    const oy = Math.round(dy + TILE - drawH + 2 + _bobY);
+    const dw = Math.round(drawW);
+    const dh = Math.round(drawH);
     ctx.shadowColor = 'rgba(10,6,2,0.55)';
     ctx.shadowBlur = 4;
     ctx.shadowOffsetY = 2;
-    // moses adult.png faces LEFT by default, so flip when going right
-    if (player.dir === 'right') {
-      ctx.translate(ox+sz, oy); ctx.scale(-1,1);
-      ctx.drawImage(IMG.moses, 0, 0, sz, sz);
+    if (_mosesSprite.flip) {
+      ctx.translate(ox+dw, oy); ctx.scale(-1,1);
+      ctx.drawImage(_mosesSprite.img, 0, 0, dw, dh);
     } else {
-      ctx.drawImage(IMG.moses, ox, oy, sz, sz);
+      ctx.drawImage(_mosesSprite.img, ox, oy, dw, dh);
     }
     ctx.restore();
   } else {
@@ -5751,6 +6802,10 @@ function drawMiniMap(){
       else if (t === 2) col = '#ff7a2a';
       else if (t === 5) col = '#ffd976';
       else if (t === 7) col = '#5ce05c';
+      // Phase 2: slippery marble (cool cyan) and statue base (light tan) so
+      // kids can scout the palace's hazards/cover at a glance from the mini-map.
+      else if (t === 9)  col = '#7fc8e0';
+      else if (t === 10) col = '#bfa470';
       if (col) {
         miniCtx.fillStyle = col;
         miniCtx.fillRect(x*MINI_CELL_X, y*MINI_CELL_Y, Math.ceil(MINI_CELL_X), Math.ceil(MINI_CELL_Y));
@@ -5762,10 +6817,20 @@ function drawMiniMap(){
     miniCtx.fillStyle = gate.solved ? '#7ae07a' : '#7ad2ff';
     miniCtx.fillRect(gate.tx*MINI_CELL_X - 1, gate.ty*MINI_CELL_Y - 1, 3, 3);
   }
-  // guards (red)
+  // guards (red); Royal Captain renders as gold so kids can spot the
+  // escalation guard separately on the mini-map.
   for (const g of guards) {
-    miniCtx.fillStyle = g.state==='alerted' ? '#ff3a3a' : '#d04545';
-    miniCtx.fillRect(g.tx*MINI_CELL_X - 1, g.ty*MINI_CELL_Y - 1, 3, 3);
+    if (g.isCaptain) {
+      miniCtx.fillStyle = g.state==='alerted' ? '#ffb13a' : '#ffd976';
+      miniCtx.fillRect(g.tx*MINI_CELL_X - 1, g.ty*MINI_CELL_Y - 1, 4, 4);
+      // gold ring for unmistakable id
+      miniCtx.strokeStyle = '#fff7c8';
+      miniCtx.lineWidth = 1;
+      miniCtx.strokeRect(g.tx*MINI_CELL_X - 1.5, g.ty*MINI_CELL_Y - 1.5, 5, 5);
+    } else {
+      miniCtx.fillStyle = g.state==='alerted' ? '#ff3a3a' : '#d04545';
+      miniCtx.fillRect(g.tx*MINI_CELL_X - 1, g.ty*MINI_CELL_Y - 1, 3, 3);
+    }
   }
   // dog (orange)
   miniCtx.fillStyle = '#ffb86a';
@@ -5969,6 +7034,16 @@ function loop(now){
     updateCenser(dt);
     updateServantNPC(dt);
     updateDog(dt);
+    // Phase 1 (torchlight cycle): pulse the palace dim phase every 30 s.
+    // MUST run BEFORE the random event tick so a one-shot torch-outage
+    // captures the cycle-adjusted seeRadius as its baseline (and thus
+    // restores cleanly to it on resolve).
+    _updateTorchlight();
+    // Phase 2: roll for palace random events (torch outage / falling torch)
+    _maybeFirePalaceEvent();
+    // Polish: drive the active-event HUD banner. Single source of truth so
+    // the kid always sees what's currently affecting their guards/floors.
+    _updateEventHud();
     // recompute hiding status each frame (guards move, so LoS changes)
     player.crouched = isHiddenFromAnyGuard();
   }
