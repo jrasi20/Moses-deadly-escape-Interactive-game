@@ -1282,11 +1282,45 @@
   }
   /* -- SPOT THE DIFFERENCE: two images side by side -- */
   .ch-spotdiff-wrapper {
-    display:flex; gap:6px; justify-content:center; margin:6px auto 4px;
+    display:flex; flex-direction:column; gap:8px; align-items:center;
+    margin:6px auto 4px; max-height:52vh; overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .ch-spotdiff-container {
+    position:relative; display:inline-block; width:min(300px,80vw);
   }
   .ch-spotdiff-img {
-    width:min(136px, 36vw); height:auto; object-fit:contain;
+    width:100%; height:auto; display:block; object-fit:contain;
     border:2px solid #ffd976; border-radius:8px;
+    user-select:none; -webkit-user-select:none;
+    -webkit-touch-callout:none;
+  }
+  .ch-spotdiff-label {
+    position:absolute; top:4px; left:4px;
+    background:rgba(0,0,0,0.6); color:#fff;
+    padding:2px 8px; border-radius:4px;
+    font-size:12px; font-weight:700; pointer-events:none;
+  }
+  .ch-spotdiff-counter {
+    font-size:15px; font-weight:700; color:#ffe066;
+    text-align:center; margin:2px 0;
+  }
+  .ch-spotdiff-hit {
+    position:absolute; border:3px solid #00ff88; border-radius:50%;
+    pointer-events:none; box-shadow:0 0 8px rgba(0,255,136,0.5);
+    animation:sdiff-pop 0.4s ease-out forwards;
+  }
+  .ch-spotdiff-miss {
+    position:absolute; width:30px; height:30px;
+    border:3px solid #ff4444; border-radius:50%;
+    pointer-events:none; opacity:0;
+    animation:sdiff-miss 0.6s ease-out forwards;
+  }
+  @keyframes sdiff-pop {
+    0%{transform:scale(0);opacity:0}50%{transform:scale(1.3)}100%{transform:scale(1);opacity:1}
+  }
+  @keyframes sdiff-miss {
+    0%{opacity:1;transform:scale(0.5)}100%{opacity:0;transform:scale(1.5)}
   }
   /* -- COUNT (scene image mode): single scene image -- */
   .ch-count-scene-img {
@@ -4026,10 +4060,11 @@ const CHALLENGE_BANK = {
       verse:'"By faith he left Egypt, not fearing the king\'s anger; he persevered because he saw him who is invisible." (Hebrews 11:27 NIV)' },
     // --- Spot the difference ---
     { id:'eSdiff1', type:'spotdiff',
-      q:'How many differences can you spot between these two pictures of baby Moses?',
+      q:'Tap on the 4 differences between these pictures of baby Moses!',
       imgA:'assets/images/spot the difference moses in nile A.png',
       imgB:'assets/images/spot the difference moses in nile B.png',
       answer:4,
+      diffs:[{x:22,y:28,r:10},{x:72,y:18,r:10},{x:45,y:68,r:10},{x:78,y:72,r:10}],
       clue:'Look very carefully — some colours, shapes or objects have changed between the two pictures!',
       verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
     // --- Pictionary ---
@@ -4320,10 +4355,11 @@ const CHALLENGE_BANK = {
       verse:'"Moses fled from Pharaoh and went to live in Midian, where he sat down by a well." (Exodus 2:15 NIV)' },
     // --- Spot the difference ---
     { id:'mSdiff1', type:'spotdiff',
-      q:'How many differences can you spot between these two pictures of Moses running?',
+      q:'Tap on the 4 differences between these pictures of Moses running!',
       imgA:'assets/images/spot the difference moses running A.png',
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
+      diffs:[{x:30,y:25,r:10},{x:65,y:35,r:10},{x:20,y:70,r:10},{x:75,y:65,r:10}],
       clue:'Look very carefully at both pictures — some things have changed!',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     // --- Pictionary ---
@@ -4588,25 +4624,13 @@ const CHALLENGE_BANK = {
     { id:'hMem1', type:'memory',
       q:'Flip the cards and match all 4 pairs:',
       verse:'"God heard their groaning and he remembered his covenant with Abraham." (Exodus 2:24 NIV)' },
-    // --- Slider puzzle ---
-    { id:'hSl1', type:'slider',
-      q:'Rearrange the tiles to reveal Moses in the palace:',
-      image:'assets/images/moses in palace.png',
-      alt:'Moses in the palace',
-      clue:"Moses grew up in Pharaoh’s palace as the son of Pharaoh’s daughter, but by faith he chose God’s people (Hebrews 11:24).",
-      verse:'"By faith Moses, when he had grown up, refused to be known as the son of Pharaoh\’s daughter." (Hebrews 11:24 NIV)' },
-    { id:'hSl2', type:'slider',
-      q:'Rearrange the tiles to reveal the royal palace Moses grew up in:',
-      image:'assets/images/color palace.png',
-      alt:'The royal palace of Egypt',
-      clue:'Moses was raised as a prince in this grand Egyptian palace. By faith he gave it all up to stand with God\’s people instead. (Hebrews 11:24-26)',
-      verse:'"He chose to be mistreated along with the people of God rather than enjoy the fleeting pleasures of sin." (Hebrews 11:25 NIV)' },
     // --- Spot the difference ---
     { id:'hSdiff1', type:'spotdiff',
-      q:'How many differences can you spot between these two pictures of the princess rescuing Moses?',
+      q:'Tap on the 4 differences between these pictures of the princess rescuing Moses!',
       imgA:'assets/images/spot the difference princess rescue A.png',
       imgB:'assets/images/spot the difference princess rescue B.png',
       answer:4,
+      diffs:[{x:25,y:22,r:10},{x:68,y:30,r:10},{x:40,y:65,r:10},{x:80,y:58,r:10}],
       clue:'Look very carefully at both pictures — some things have changed between them!',
       verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
     // --- Pictionary ---
@@ -4622,7 +4646,7 @@ const CHALLENGE_BANK = {
       q:'Which Bible verse does this picture show?',
       image:'assets/images/moses with sheep color 2.png',
       alt:'Moses tending the flock in Midian',
-      options:['Genesis 4:2 — Abel kept flocks of sheep','Psalm 23:1 — The LORD is my shepherd','Ezekiel 34:11 — God searches for his scattered sheep','Exodus 3:1 — Moses tended Jethro\'s flock'],
+      options:['Exodus 2:15 — Moses fled from Pharaoh and went to Midian','1 Samuel 16:11 — The youngest son was tending the sheep','Genesis 29:9 — Rachel came with her father Laban\'s sheep','Exodus 3:1 — Moses tended Jethro\'s flock'],
       correct:3,
       clue:'Moses has become a shepherd in a foreign land, tending the flock of his father-in-law near the mountain of God.',
       verse:'"Moses was tending the flock of Jethro his father-in-law, the priest of Midian." (Exodus 3:1 NIV)' },
@@ -5650,6 +5674,13 @@ function _saveCheckpoint(){
         if (_mapInitial[y][x] === 5 && MAP[y][x] !== 5) collectedTiles.push([x,y]);
       }
     } catch(e){}
+    // Record which interactables (crown, tablet, bread, etc.) have been picked up.
+    const usedInteractables = [];
+    try {
+      for (const obj of interactables) {
+        if (obj.used) usedInteractables.push({ tx: obj.tx, ty: obj.ty, kind: obj.kind });
+      }
+    } catch(e){}
     const payload = {
       v: 1,
       scene: 2,
@@ -5661,6 +5692,7 @@ function _saveCheckpoint(){
       altitudeCleared: game.altitudeCleared || 0,
       timeLeft: Math.max(0, Math.round(game.timeLeft || 0)),
       collectedTiles: collectedTiles,
+      usedInteractables: usedInteractables,
       gates: (challengeGates || []).map(g => ({
         tx: g.tx, ty: g.ty,
         kind: g.kind, step: g.step || 0, label: g.label,
@@ -5725,6 +5757,19 @@ function _applyCheckpointAfterSeed(){
         for (const ct of p.collectedTiles) {
           const cx = ct[0], cy = ct[1];
           if (MAP[cy] && MAP[cy][cx] === 5) MAP[cy][cx] = 0;
+        }
+      } catch(e){}
+    }
+    // Re-mark interactables (crown, tablet, bread, etc.) that were already picked up.
+    if (Array.isArray(p.usedInteractables)) {
+      try {
+        for (const saved of p.usedInteractables) {
+          for (const obj of interactables) {
+            if (obj.tx === saved.tx && obj.ty === saved.ty && obj.kind === saved.kind) {
+              obj.used = true;
+              break;
+            }
+          }
         }
       } catch(e){}
     }
@@ -7549,48 +7594,98 @@ function renderSlider(gate, q, container){
   container.appendChild(giveUp);
 }
 
-/* ---------- SPOT THE DIFFERENCE -- two images, count the differences ----------
-   Bank entry shape: { type:'spotdiff', q, imgA, imgB, answer:4 } */
+/* ---------- SPOT THE DIFFERENCE -- tap on differences ----------
+   Bank entry shape: { type:'spotdiff', q, imgA, imgB, answer:4,
+     diffs:[{x:%,y:%,r:%},...] } — x,y = center %, r = tap radius % */
 function renderSpotDiff(gate, q, container){
-  const wrapper = document.createElement('div');
+  const totalDiffs = Number(q.answer) || 4;
+  const diffs = Array.isArray(q.diffs) ? q.diffs : [];
+  const found = new Set();
+  var sdiffDone = false;
+
+  var counter = document.createElement('div');
+  counter.className = 'ch-spotdiff-counter';
+  counter.textContent = 'Found: 0 / ' + totalDiffs;
+  container.appendChild(counter);
+
+  var hint = document.createElement('div');
+  hint.className = 'ch-slider-hint';
+  hint.textContent = 'Compare the two pictures and tap on the differences!';
+  container.appendChild(hint);
+
+  var wrapper = document.createElement('div');
   wrapper.className = 'ch-spotdiff-wrapper';
-  ['imgA','imgB'].forEach(key => {
-    const img = document.createElement('img');
+
+  var imgContainers = [];
+  ['imgA','imgB'].forEach(function(key, idx){
+    var c = document.createElement('div');
+    c.className = 'ch-spotdiff-container';
+    var img = document.createElement('img');
     img.src = q[key] || '';
-    img.alt = (key === 'imgA') ? 'Picture 1' : 'Picture 2';
+    img.alt = idx === 0 ? 'Picture A' : 'Picture B';
     img.className = 'ch-spotdiff-img';
-    wrapper.appendChild(img);
+    img.draggable = false;
+    c.appendChild(img);
+    var lbl = document.createElement('div');
+    lbl.className = 'ch-spotdiff-label';
+    lbl.textContent = idx === 0 ? 'A' : 'B';
+    c.appendChild(lbl);
+    imgContainers.push(c);
+    wrapper.appendChild(c);
   });
   container.appendChild(wrapper);
-  const hint = document.createElement('div');
-  hint.className = 'ch-slider-hint';
-  hint.textContent = 'Look carefully at both pictures. How many differences can you find?';
-  container.appendChild(hint);
-  const answer = Number(q.answer) || 4;
-  const choices = new Set([answer]);
-  while (choices.size < 4) {
-    const n = answer + (Math.random() < 0.5 ? -1 : 1) * (Math.floor(Math.random() * 3) + 1);
-    if (n > 0) choices.add(n);
+
+  function handleTap(e, imgC){
+    if (sdiffDone || found.size >= totalDiffs) return;
+    var img = imgC.querySelector('.ch-spotdiff-img');
+    if (!img) return;
+    var rect = img.getBoundingClientRect();
+    var tapX = ((e.clientX - rect.left) / rect.width) * 100;
+    var tapY = ((e.clientY - rect.top) / rect.height) * 100;
+    var hitIdx = -1;
+    for (var i = 0; i < diffs.length; i++){
+      if (found.has(i)) continue;
+      var d = diffs[i];
+      var dx = tapX - d.x, dy = tapY - d.y;
+      if (Math.sqrt(dx*dx + dy*dy) <= (d.r || 10)){
+        hitIdx = i; break;
+      }
+    }
+    if (hitIdx >= 0){
+      found.add(hitIdx);
+      var dd = diffs[hitIdx];
+      try { play('chime'); } catch(ex){}
+      imgContainers.forEach(function(ic){
+        var circle = document.createElement('div');
+        circle.className = 'ch-spotdiff-hit';
+        var r = dd.r || 10;
+        circle.style.left = (dd.x - r) + '%';
+        circle.style.top = (dd.y - r) + '%';
+        circle.style.width = (r * 2) + '%';
+        circle.style.height = (r * 2) + '%';
+        ic.appendChild(circle);
+      });
+      counter.textContent = 'Found: ' + found.size + ' / ' + totalDiffs;
+      if (found.size >= totalDiffs){
+        sdiffDone = true;
+        setTimeout(function(){
+          handleChallengeAnswer(gate, 0, null, { answerLabel: totalDiffs + ' differences found' });
+        }, 800);
+      }
+    } else {
+      try { play('tap'); } catch(ex){}
+      var miss = document.createElement('div');
+      miss.className = 'ch-spotdiff-miss';
+      miss.style.left = 'calc(' + tapX + '% - 15px)';
+      miss.style.top = 'calc(' + tapY + '% - 15px)';
+      imgC.appendChild(miss);
+      setTimeout(function(){ try{miss.remove();}catch(ex){} }, 700);
+    }
   }
-  const arr = Array.from(choices);
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  const row = document.createElement('div');
-  row.className = 'ch-count-choices';
-  arr.forEach(n => {
-    const b = document.createElement('button');
-    b.className = 'ch-count-btn';
-    b.textContent = String(n) + ' difference' + (n === 1 ? '' : 's');
-    b.addEventListener('click', () => {
-      const correct = (n === answer);
-      try { play(correct ? 'chime' : 'tap'); } catch(e){}
-      handleChallengeAnswer(gate, correct ? 0 : -1, b, { answerLabel: String(answer) + ' differences' });
-    });
-    row.appendChild(b);
+
+  imgContainers.forEach(function(ic){
+    ic.addEventListener('click', function(e){ handleTap(e, ic); });
   });
-  container.appendChild(row);
 }
 
 /* ---------- MINI-MAZE -- tap-arrow navigate Moses to exit ----------
@@ -7761,15 +7856,13 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
   } else {
     correct = (index === q.correct);
   }
-  // disable all option buttons while feedback shows (MCQ only)
-  document.querySelectorAll('#chOptions .ch-option').forEach(b => b.disabled = true);
-  // Disable submit/confirm on custom types
-  document.querySelectorAll('#chOptions .ch-confirm-btn').forEach(b => b.disabled = true);
+  // disable all option/confirm/count buttons while feedback shows
+  document.querySelectorAll('#chOptions .ch-option, #chOptions .ch-confirm-btn, #chOptions .ch-count-btn').forEach(b => b.disabled = true);
   const fb = $('chFeedback');
   // ensure per-question strike counter exists
   if (typeof gate.strikes !== 'number') gate.strikes = 0;
   if (correct) {
-    btnEl.classList.add('correct');
+    if (btnEl) btnEl.classList.add('correct');
     // v3.6.1: for SEQUENCE challenges the ordered answer is already visibly
     // locked in by the kid's own drag order, and the text is long enough
     // that the golden flash turns into an illegible wall of UPPERCASE.
@@ -7777,7 +7870,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
     // v3.6.2: skip giant answer flash on multi-step puzzle types where
     // the answer would overflow the banner (sequence/memory/maze) -- those
     // show a simple "CORRECT!" instead.
-    const _noBigFlash = ['sequence','memory','maze'];
+    const _noBigFlash = ['sequence','memory','maze','spotdiff'];
     if (_noBigFlash.indexOf(q.type) === -1) {
       const answerText = (opts && opts.answerLabel)
         ? opts.answerLabel
@@ -7824,7 +7917,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
     // the parent <p>'s right edge — Jane reported "the right border of this
     // box is missing". Set box-sizing: border-box + width: 100% so the inner
     // div fits exactly inside the parent's content area on every screen.
-    fb.innerHTML = '<div style="box-sizing:border-box;width:100%;font-size:22px;color:#fff6cc;font-weight:900;letter-spacing:0.6px;text-shadow:0 2px 5px rgba(0,0,0,0.45);background:linear-gradient(145deg,#1f6b2e,#2e8b3e);border:3px solid #FFD700;border-radius:10px;padding:10px 14px;text-align:center;white-space:nowrap;">&#10022; Correct! +3 stars &#10022;</div>'
+    fb.innerHTML = '<div style="box-sizing:border-box;width:100%;font-size:22px;color:#fff6cc;font-weight:900;letter-spacing:0.6px;text-shadow:0 2px 5px rgba(0,0,0,0.45);background:linear-gradient(145deg,#1f6b2e,#2e8b3e);border:3px solid #FFD700;border-radius:10px;padding:10px 12px;text-align:center;overflow:hidden;">&#10022; Correct! +3 stars &#10022;</div>'
       + tail;
     // v3.4: bumped 3200 -> 4200ms so the golden flash lingers an extra second
     setTimeout(() => {
@@ -7902,7 +7995,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
       }
     }, 4200);
   } else {
-    btnEl.classList.add('wrong');
+    if (btnEl) btnEl.classList.add('wrong');
     play('error');
     gate.strikes++;
     game.hearts--; game.perfectRun = false; updateHudHearts();
