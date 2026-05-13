@@ -948,6 +948,22 @@
     100% { transform:scale(1.9); opacity:0; }
   }
   .danger-img-box img { width:150px; height:150px; object-fit:contain; position:relative; z-index:1; animation:dangerBounce 1.6s ease-in-out infinite; }
+  /* 2026-05-13 PM20 (Jane: "on landscape, look at the caught modal- the
+     image is getting cut"). On short-viewport landscape phones, shrink
+     the danger-img-box + image so the full modal (title + body + two
+     buttons) fits inside max-height:92vh without scrolling/cutoff. */
+  @media (orientation: landscape) and (max-height: 540px) {
+    .danger-img-box { width:96px; height:96px; margin:4px auto 8px; }
+    .danger-img-box img { width:78px; height:78px; }
+    .danger-modal .modal-content {
+      max-height: 94vh;
+      max-height: 94dvh;
+      overflow-y: auto;
+      padding: 10px 16px 14px;
+    }
+    .danger-modal h2 { font-size:18px; margin-bottom:4px; }
+    .danger-modal p  { font-size:13px; margin-bottom:6px; line-height:1.35; }
+  }
   @keyframes dangerBounce {
     0%,100% { transform:scale(1) translateY(0); }
     25% { transform:scale(1.12) translateY(-8px) rotate(-6deg); }
@@ -963,7 +979,18 @@
     background: linear-gradient(155deg, #3a006e, #6a1b9a, #7b1fa2);
     border:4px solid #ffd700;
     box-shadow: 0 0 0 2px #b8860b, 0 0 32px rgba(255,215,0,0.55), inset 0 0 0 1px rgba(255,255,200,0.12);
-    overflow:visible;
+    /* 2026-05-12 PM18 (Jane: "from the winning modal, i am not able to
+       close or go to main menu or play again or anything. there are no
+       options on that. i see blank space in the bottom of that modal.
+       towards the bottom i see 'no hearts lost', 'truth keeper', 'all
+       gates cleared', 'hidden crown found' almost touching the lower
+       border"). Force overflow-y:auto so buttons below the badge strip
+       are reachable on small phones. Added padding-bottom so badges
+       don't sit on the lower border. */
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    max-height:92vh;
+    padding-bottom:24px;
   }
   .win-modal h2 {
     color:#ffd976;
@@ -1329,14 +1356,35 @@
      Added `flex-shrink:0` and `white-space:nowrap` won't let text
      wrap to zero width either. Bumped min-width 120 → 140 px and
      padding for better touch targets on phone. */
-  .ch-match-grid { display:flex; gap:14px; justify-content:center; margin:8px 0; flex-wrap:wrap; }
-  .ch-match-col { display:flex; flex-direction:column; gap:8px; flex-shrink:0; }
+  /* 2026-05-13 PM20 (Jane: "on portrait, the match the following is not
+     shown as 2 columns. it is shown all in 1 column"). Switched from
+     flex+wrap (which collapses to 1 column on narrow screens) to an
+     explicit 2-column CSS grid that ALWAYS shows side-by-side. Each
+     .ch-match-col fills its grid cell; items inside stack vertically. */
+  .ch-match-grid {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px 14px;
+    justify-items:stretch;
+    margin:8px auto;
+    max-width:480px;
+  }
+  .ch-match-col { display:flex; flex-direction:column; gap:8px; min-width:0; }
   .ch-match-item {
     background: rgba(255, 245, 210, 0.85); color:#3a1a00; border:2px solid #8a5a22;
-    padding:10px 14px; border-radius:10px; cursor:pointer;
-    font-size:14px; font-weight:700; min-width:140px;
+    padding:10px 12px; border-radius:10px; cursor:pointer;
+    font-size:14px; font-weight:700;
+    min-width:0; width:100%;
     flex-shrink:0; box-sizing:border-box; text-align:center;
     transition:all 0.15s;
+    /* Allow long labels to wrap on phone */
+    white-space:normal;
+    line-height:1.25;
+    word-break:break-word;
+  }
+  @media (max-width: 420px) {
+    .ch-match-grid { gap:6px 8px; }
+    .ch-match-item { font-size:12.5px; padding:8px 8px; }
   }
   .ch-match-item.selected { background:#ffd976; color:#3a1a00; border-color:#6a3e10; }
   .ch-match-item.matched  { opacity:0.65; pointer-events:none; background:#6b9f6b; color:#fff; border-color:#2e5e2e; }
@@ -2629,33 +2677,58 @@
   }
 
   /* ===== PORTRAIT PHONE: controls at bottom — action LEFT, dpad RIGHT ===== */
-  @media (orientation: portrait) and (max-width: 760px) {
+  /* 2026-05-13 PM20 (Jane: "look how bad portrait on phone is . i told
+     you n phone portrait, the controls and the 3 buttons have to be in
+     the bottom and not split screen. look at game 1 for reference").
+     EXPLICIT column layout. Canvas takes ALL remaining vertical space
+     between the HUD and the controls bar. Controls bar is FULL-WIDTH
+     at the bottom with action buttons LEFT and dpad RIGHT. No grid,
+     no side pane, no split-screen. */
+  @media (orientation: portrait) and (max-width: 900px) {
+    .game-page.active {
+      display:flex !important;
+      flex-direction:column !important;
+    }
+    .canvas-wrapper {
+      flex:1 1 auto !important;
+      width:100% !important;
+      min-height:0 !important;
+    }
+    /* In case any prior media query injected grid placement, RESET it. */
+    .game-page.active > .hud,
+    .game-page.active > .canvas-wrapper,
+    .game-page.active > .controls {
+      grid-row:auto !important;
+      grid-column:auto !important;
+    }
     .controls {
       flex-direction:row !important;
       align-items:center; justify-content:space-between;
-      padding:6px 10px;
+      width:100% !important;
+      padding:8px 12px;
       min-height:auto;
       gap:10px;
+      border-top:2px solid #ffd976;
+      border-left:none;
     }
     .action-panel {
       flex-direction:column !important;
       width:48%; max-width:48%;
-      gap:5px;
+      gap:6px;
       order:1;            /* LEFT side */
     }
-    .action-btn { height:34px; font-size:12px; padding:0 8px; }
+    .action-btn { height:38px; font-size:13px; padding:0 8px; width:100%; }
     .dpad {
-      width:140px; max-width:48%;
+      width:44%; max-width:170px;
+      display:grid !important;
       grid-template-columns: 1fr 1fr 1fr;
       gap:4px;
       order:2;            /* RIGHT side */
       flex:0 0 auto;
     }
-    .dpad-btn, .dpad-spacer { height:36px; border-radius:8px; font-size:16px; }
+    .dpad-btn, .dpad-spacer { height:40px; border-radius:8px; font-size:18px; }
     .dpad-text { display:none; }
-    /* 2026-05-12 PM17 (Jane: "the top bar where timer is and everything
-       is not aligned correctly on mobile"). HUD wraps onto two rows on
-       very narrow screens; flex-wrap + min-width:0 keeps chips intact. */
+    /* HUD compact + wrap-safe */
     .hud {
       padding:6px 8px;
       gap:4px;
@@ -3232,7 +3305,7 @@
       <span class="tc-label">&#9733; Truth Card Collected! &#9733;</span>
       <div class="tc-body" id="midTruthText"></div>
     </div>
-    <button class="btn" id="midChestContinueBtn">Continue to the Gate -></button>
+    <button class="btn" id="midChestContinueBtn">Continue your Escape -></button>
   </div>
 </div>
 
@@ -3373,6 +3446,7 @@
 <audio id="audSuccessModal"   preload="auto" src="assets/audio/success%20modal.mp3"></audio>
 <audio id="audWaterSkin"      preload="auto" src="assets/audio/water%20skin.mp3"></audio>
 <audio id="audTimpaniRoll"    preload="auto" src="assets/audio/timpani%20roll.mp3"></audio>
+<audio id="audEat"            preload="auto" src="assets/audio/eat.mp3"></audio>
 
 <script>
 /* ============================================================================
@@ -3533,6 +3607,7 @@ const audio = {
   successModal:     $('audSuccessModal'),     // Moses reaches the exit
   waterSkin:        $('audWaterSkin'),        // waterskin / jug pickup
   timpaniRoll:      $('audTimpaniRoll'),      // drum roll on chariot appearance
+  eat:              $('audEat'),              // bread / figs pickup
 };
 // volumes
 audio.bgm.volume = 0.28;
@@ -3574,6 +3649,7 @@ if (audio.rankReveal)      audio.rankReveal.volume      = 0.78;
 if (audio.successModal)    audio.successModal.volume    = 0.85;
 if (audio.waterSkin)       audio.waterSkin.volume       = 0.70;
 if (audio.timpaniRoll)     audio.timpaniRoll.volume     = 0.78;
+if (audio.eat)             audio.eat.volume             = 0.65;
 
 let audioUnlocked = false;
 let _audioUnlockSucceeded = 0;
@@ -4646,27 +4722,26 @@ function hasLineOfSight(x1, y1, x2, y2) {
 /* Is the player hidden from every guard that is currently looking toward him?
    Used to compute the "crouched / hiding" cosmetic flag. */
 function isHiddenFromAnyGuard() {
-  // True only when adjacent to cover AND a guard's sight is BLOCKED by it.
+  // 2026-05-12 PM18 (Jane: "i am no longer seeing the hiding label when
+  // moses tries to hide behind certain objects"). The PM15 v1 patch
+  // added a "nearby-guard required" gate which was over-restrictive —
+  // when no guard was within 6 tiles, no badge ever appeared, even
+  // though the kid was correctly using the stealth mechanic. Now: the
+  // HIDING badge appears whenever Moses is adjacent to valid cover.
+  // If a guard CAN currently see him through the cover, the badge
+  // turns off (because he's not actually hidden). This is the simpler
+  // mental model: "if I'm beside a pillar AND no guard sees me, I'm
+  // hiding." The cover-list (_HIDE_DECOR_KINDS) already filters out
+  // non-hideable decor so the "hiding behind a floor rug" bug stays
+  // fixed.
   if (!isAdjacentToCover(player.tx, player.ty)) return false;
-  // 2026-05-09 PM15 (Jane: "certain objects are not hideable. yet
-  // message says moses is hiding"). Only show HIDING when there's
-  // actually a guard CLOSE ENOUGH that the cover is meaningful — a
-  // guard within 6 tiles AND with a sightline blocked by cover. If
-  // no guard is nearby, the badge would just be cosmetic noise, so
-  // leave Moses standing.
-  let nearbyGuardWouldSee = false;
   for (const g of guards) {
-    const dist = Math.abs(g.tx - player.tx) + Math.abs(g.ty - player.ty);
-    if (dist > 6) continue;
-    // Check if WITHOUT cover, this guard would see Moses (i.e. the
-    // sightline is broken only by cover, not by walls).
     if (hasLineOfSight(g.tx, g.ty, player.tx, player.ty)) {
-      // Guard CAN see — Moses isn't hidden.
+      // Some guard can see through / past the cover — not actually hidden.
       return false;
     }
-    nearbyGuardWouldSee = true;
   }
-  return nearbyGuardWouldSee;
+  return true;
 }
 
 /* find start tile */
@@ -4919,6 +4994,17 @@ const interactables = [
     name:'A Hebrew Worker’s Water Skin',
     body:'A Hebrew worker has left a water skin near the wall. Moses takes it gratefully — he will need it for the long road ahead. +25 stars, +1 kindness.',
     used:false, reward:'stars25' },
+  // 2026-05-13 PM20 (Jane: "The golden key should not suddenly appear.
+  // it should be present constantly"). Spawn the Golden Key at a fixed
+  // visible tile in the mid-south corridor so the kid sees it from the
+  // start. The clue-scroll puzzle still exists as bonus content (gives
+  // 3 truth-card scrolls + Library entries), but the key no longer
+  // depends on solving it. Exit still requires (a) all gates solved
+  // AND (b) `game.hasExitKey === true` set by picking up THIS key.
+  { tx: 22, ty: 19, kind:'goldenKey', icon:'[K]',
+    name:'The Golden Key',
+    body:'A heavy gold key — etched with hieroglyphs of the Most High. The EXIT door will open at its turn.',
+    used:false, reward:'goldenKeyPickup' },
   // === Wave 3c: CLUE-SCROLL PUZZLE (2026-05-08) ===
   // Three scrolls scattered across the post-gate-1 corridors. Each scroll
   // hides a single LETTER. Collecting all three opens an arrange-letters
@@ -5645,13 +5731,114 @@ const CHALLENGE_BANK = {
       imgB:'assets/images/spot-courtyard-1b.png',
       answer:4,
       diffs:[
-        { x:80, y:35, r:18 },   // soldier in rear right (missing in B)
-        { x:22, y:60, r:18 },  // chariot wheel center-left (missing in B)
-        { x:50, y:25, r:18 },   // eagle statue rear-center (missing in B)
-        { x:42, y:70, r:18 },   // golden goblet on the table next to Moses (missing in B)
+        { x:80, y:35, r:18 },
+        { x:22, y:60, r:18 },
+        { x:50, y:25, r:18 },
+        { x:42, y:70, r:18 },
       ],
       clue:'Look at the soldier, the chariot wheel, the eagle statue, and the goblet.',
       verse:'Exodus 2:10 NIV' },
+    // 2026-05-12 PM18 v2 (Jane: "i still see repeated questions. i want
+    // more interactive questions"). Easy-bank pool was too small for the
+    // interactive types — match, memory, count, sequence, pair each had
+    // only 1 question each, so kids saw the SAME one on every gate-pick
+    // of that type. Doubled / tripled each small pool with new entries.
+    // --- More match-pairs ---
+    { id:'eM2', type:'match',
+      q:'Match each item with where Moses found it in Exodus 1-2:',
+      pairs:[
+        ['Papyrus basket','Among the Nile reeds'],
+        ['Royal palace','Where Moses grew up'],
+        ['Egyptian guard','Beating a Hebrew worker'],
+        ['Well in Midian','Where Moses met Zipporah'],
+      ],
+      clue:'Each place tells one piece of Moses’ story — the basket on the river, the palace as home, the fight that made him flee, the well where he met his wife.',
+      verse:'Exodus 2:3, 2:10, 2:11, 2:15-21 NIV' },
+    { id:'eM3', type:'match',
+      q:'Match each Bible character with what Pharaoh thought of them:',
+      pairs:[
+        ['Hebrew midwives','Disobeyed his order'],
+        ['Hebrew baby boys','Threat to his kingdom'],
+        ['Moses (as a baby)','Loved like a grandson'],
+        ['Moses (as a man)','Wanted him dead'],
+      ],
+      clue:'Pharaoh’s feelings about Moses changed completely — from love to hate — once Moses chose his own people.',
+      verse:'Exodus 1-2 NIV' },
+    // --- More memory ---
+    { id:'eMem2', type:'memory',
+      q:'Match all 4 Exodus-story pairs (cards reset each play):',
+      clue:'Tap a card to flip it; tap a second to try a match. Two of a kind stay face-up.',
+      verse:'God remembers His people — you remember the pairs!' },
+    { id:'eMem3', type:'memory',
+      q:'Find every matching pair of palace treasures:',
+      clue:'Memory + courage — just like Moses’ mother kept track of her baby in the reeds.',
+      verse:'Hebrews 11:23 NIV' },
+    // --- More count ---
+    { id:'eC2', type:'count',
+      q:'How many treasure bags can you count?',
+      sceneImg:'assets/images/count%20the%20waterpots_5.png',
+      sceneAlt:'Palace treasure bags',
+      answer:5,
+      clue:'Count carefully — some are tucked behind columns.',
+      verse:'God multiplies what we offer Him.' },
+    // --- More sequence ---
+    { id:'eS2', type:'sequence',
+      q:'Put Moses’ escape from Egypt in order:',
+      items:[
+        'Moses saw the Egyptian beating a Hebrew',
+        'Moses fought back to save the Hebrew',
+        'Pharaoh heard about it and got angry',
+        'Moses fled all the way to Midian',
+      ],
+      clue:'First Moses SAW the wrong, then ACTED, then Pharaoh REACTED, then Moses RAN — a chain reaction.',
+      verse:'Exodus 2:11-15 NIV' },
+    { id:'eS3', type:'sequence',
+      q:'Put baby Moses’ rescue in order:',
+      items:[
+        'Mother hides Moses for 3 months',
+        'Mother places him in a basket on the Nile',
+        'Princess finds the basket and takes pity',
+        'Miriam fetches a Hebrew nurse — Moses’ own mom!',
+      ],
+      clue:'Hide → float → found → reunited — God’s rescue plan in 4 steps.',
+      verse:'Exodus 2:1-9 NIV' },
+    // --- More pair (singleton) ---
+    { id:'eP2', type:'pair',
+      q:'Tap the palace item that has NO matching pair:',
+      items:[
+        {src:'assets/images/clue-scroll-A.png',key:'scrollA',alt:'Scroll'},
+        {src:'assets/images/clue-scroll-A.png',key:'scrollA',alt:'Scroll'},
+        {src:'assets/images/falcon%20statue.png',key:'falcon',alt:'Falcon'},
+        {src:'assets/images/falcon%20statue.png',key:'falcon',alt:'Falcon'},
+        {src:'assets/images/golden%20goblet.png',key:'goblet',alt:'Goblet'},
+        {src:'assets/images/golden%20goblet.png',key:'goblet',alt:'Goblet'},
+        {src:'assets/images/golden-key.png',key:'key',alt:'Key'},
+      ],
+      answer:'key',
+      clue:'Most palace items have a twin. Only one Golden Key opens the exit — unique like Moses’ calling.',
+      verse:'Exodus 2:10 NIV' },
+    // --- More unscramble ---
+    { id:'eU3', type:'unscramble',
+      q:'Unscramble the name of Moses’ sister who watched the basket:',
+      answer:'MIRIAM',
+      clue:'6 letters. She was brave enough to talk to Pharaoh’s daughter!',
+      verse:'"His sister stood at a distance to see what would happen to him." (Exodus 2:4 NIV)' },
+    { id:'eU4', type:'unscramble',
+      q:'Unscramble the land where Moses fled to:',
+      answer:'MIDIAN',
+      clue:'6 letters. Far from Pharaoh, where Moses met a kind priest named Jethro.',
+      verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
+    // --- New True/False (small pool boost too) ---
+    { id:'eTF6', type:'tf',
+      q:'True or False: God HEARD the Israelites groaning under Pharaoh’s harsh rule.',
+      options:['True','False'], correct:0,
+      clue:'True. Exodus 2:24 says God HEARD, REMEMBERED, SAW, and KNEW.',
+      verse:'"God heard their groaning and remembered his covenant." (Exodus 2:24 NIV)' },
+    { id:'eTF7', type:'tf',
+      q:'True or False: The princess gave baby Moses BACK to a Hebrew nurse — his own mother!',
+      options:['True','False'], correct:0,
+      clue:'True. God arranged it so Moses’ own mom got to nurse him AND get paid for it.',
+      verse:'"Pharaoh’s daughter said, Take this baby and nurse him for me, and I will pay you." (Exodus 2:9 NIV)' },
   ],
   medium: [
     // --- Moses as a young man: the turning point ---
@@ -6140,10 +6327,16 @@ const CHALLENGE_BANK = {
 // through each one to reach the exit.
 // Hardcoded fallback positions — the SAFE wall-row gaps that always work.
 // Used only if random generation fails to fill 6 valid cells.
+// 2026-05-13 PM20 (Jane: "one of the gates is not accessible. on every
+// direction it is surrounded by walls. col 29 row 7"). MAP_STR row 7
+// is "1111101111111111101111111111101111111111" — the actual gaps are
+// at cols 5, 17, and 30 (NOT 29). The (29,7) entry was off-by-one and
+// placed the gate on a WALL tile, surrounded by walls on every side.
+// Fixed to (30, 7) which is the true east gap.
 const CHALLENGE_POSITIONS = [
   { tx: 5,  ty: 7  },   // west single-tile break (row 7)
   { tx: 17, ty: 7  },   // mid single-tile break (row 7)
-  { tx: 29, ty: 7  },   // east single-tile break (row 7)
+  { tx: 30, ty: 7  },   // east single-tile break (row 7) — was 29 (wall)
   { tx: 12, ty: 12 },   // mid corridor west break (row 12)
   { tx: 24, ty: 12 },   // mid corridor east break (row 12)
   { tx: 4,  ty: 18 },   // final single-tile break before exit (row 18)
@@ -6361,7 +6554,24 @@ function seedChallenges(difficulty) {
   // We KEEP the per-play randomisation (which N of the wall-gap positions
   // are active) but the POOL is fixed to CHALLENGE_POSITIONS.
   const wantedGates = Math.max(3, Math.min(CHALLENGE_POSITIONS.length, game.gateCount || 6));
-  const gatePool = shuffle(CHALLENGE_POSITIONS.slice()).slice(0, wantedGates);
+  // 2026-05-13 PM20 — validate every CHALLENGE_POSITIONS entry is on a
+  // walkable tile (MAP === 0). Filter out any that sits on a wall (=1)
+  // or hazard, then warn in console so we catch the regression in dev.
+  // Without this, a typo'd coordinate becomes an inaccessible gate that
+  // permanently blocks the level (Jane PM20: "col 29 row 7" surrounded
+  // by walls).
+  const _safePositions = CHALLENGE_POSITIONS.filter(p => {
+    try {
+      if (!MAP[p.ty]) return false;
+      const t = MAP[p.ty][p.tx];
+      if (t === 1 || t === 2) {
+        try { console.warn('[gate-seed] INACCESSIBLE position (', p.tx, ',', p.ty, ') tile=', t, '— skipped'); } catch(e){}
+        return false;
+      }
+      return true;
+    } catch(e){ return false; }
+  });
+  const gatePool = shuffle(_safePositions.slice()).slice(0, wantedGates);
 
   const bundles = [];
   for (let i = 0; i < gatePool.length; i++) {
@@ -8049,6 +8259,23 @@ function restartScene() {
     .forEach(id => { const el = $(id); if (el) el.classList.remove('active'); });
   // Wave 1b: clear JIT-tip flags so the kid can re-learn corner cases on retry
   try { _resetJitTips(); } catch(e){}
+  // 2026-05-12 PM18 (Jane: "scribe's wisdom should reset when the game
+  // is restarted. it is still following the timer from the previous
+  // run"). Force-reset ALL power-up cooldown + active timers + per-
+  // scene flags so a restart feels truly fresh. Without this, a kid
+  // who used Scribe's Wisdom in run A would see "recharging 67s" in
+  // run B even though run B just started.
+  try {
+    window._puCooldownUntil = {};
+    window._puActiveUntil   = {};
+    window._powerupUsedThisScene = { pharaohsMercy:false };
+    window._speedBurstUntil    = 0;
+    window._guardFreezeUntil   = 0;
+    window._royalVisionUntil   = 0;
+    window._truthSeekerArmed   = false;
+    window._scribesWisdomArmed = false;
+    if (typeof _refreshUnlockButtons === 'function') _refreshUnlockButtons();
+  } catch(e){}
   // lift any lingering capture FX on the canvas wrapper
   const _wr = document.querySelector('.canvas-wrapper');
   if (_wr) _wr.classList.remove('capture-freeze','capture-shake');
@@ -8580,6 +8807,10 @@ function triggerInteractable(obj){
     if (game.hearts < 3) { game.hearts++; updateHudHearts(); }
   } else if (obj.reward === 'stars2') {
     game.stars += 2; updateHudStars();
+    // 2026-05-12 PM18 (Jane: "when moses picks up bread, play eat.mp3").
+    // bread/figs/dates interactables all use reward:'stars2', so this
+    // branch is the bread pickup SFX hook. Falls back to chime.
+    try { play('eat') || play('chime'); } catch(e){}
     spawnGlitterBurstAtPlayer(12);
   } else if (obj.reward === 'stars3') {
     game.stars += 3; updateHudStars();
@@ -8996,20 +9227,36 @@ function playMidSceneTruthChestReveal(){
     'When his own mother put him in the river, God put him into the arms of a princess. The river that was meant for death became the road to the palace.',
     'Pharaoh was the most powerful man on earth. God used a baby in a basket to break his throne. With God, the smallest things become the strongest things.',
   ];
-  game.midSceneTruth = truths[Math.floor(Math.random() * truths.length)];
+  // 2026-05-13 PM19 (Jane: "repeated bible truths. i am opening on
+  // incognito and seeing like this"). Map each truth body to a UNIQUE
+  // title + stable key by index, then dedupe-on-save via the library's
+  // key. Was: ALL truths saved as "Bible Truth — Palace" which read
+  // as duplicates in the Library. Hebrews 11:27 truth (index 4) is
+  // SKIPPED for the auto-save because it duplicates the auto-saved
+  // "Memory Verse — Hebrews 11:27" Library entry the kid earns via
+  // the verse-build-up word ribbon.
+  const _truthMeta = [
+    { key:'pharaoh_decree',    title:'God Plots Rescue',        ref:'Exodus 1:22 — 2:3' },
+    { key:'midwives_fearGod',  title:'Brave Midwives',          ref:'Exodus 1:17, 21' },
+    { key:'god_heard',         title:'God HEARD, SAW, KNEW',    ref:'Exodus 2:24-25' },
+    { key:'moses_chose',       title:'Moses’ Brave Choice',     ref:'Hebrews 11:25' },
+    { key:'heb_11_27_skip',    title:'',                        ref:'' },  // duplicate of Memory Verse — never save
+    { key:'river_to_palace',   title:'River to Palace',         ref:'Exodus 2:3-10' },
+    { key:'small_vs_big',      title:'Small Beats Strong',      ref:'Exodus 1-2' },
+  ];
+  const _pickIdx = Math.floor(Math.random() * truths.length);
+  game.midSceneTruth = truths[_pickIdx];
   $('midTruthText').textContent = game.midSceneTruth;
-  // 2026-05-09 PM15 v4 — persist the mid-scene truth card to the Truth
-  // Library. Use first 24 chars of the truth as a stable key so the same
-  // truth doesn't double-save on a replay (the truth picker is random,
-  // so each kid can collect different ones across multiple runs).
   try {
-    const _stableKey = 'mid_' + game.midSceneTruth.replace(/[^a-z0-9]/gi,'').slice(0, 24).toLowerCase();
-    _addTruthToLibrary({
-      key:   _stableKey,
-      title: 'Bible Truth — Palace',
-      body:  game.midSceneTruth,
-      ref:   'Exodus 1-2 / Hebrews 11',
-    });
+    const _meta = _truthMeta[_pickIdx];
+    if (_meta && _meta.title) {
+      _addTruthToLibrary({
+        key:   'mid_' + _meta.key,
+        title: _meta.title,
+        body:  game.midSceneTruth,
+        ref:   _meta.ref,
+      });
+    }
   } catch(e){}
   // 2026-05-09 PM15 v4 (Jane: "kids love to see how much they have earned.
   // so make it magical"). Big screen-level glitter burst on chest open.
@@ -9206,7 +9453,21 @@ $('hintBtn').addEventListener('click', () => {
 
   const msg = ctxHint || HINT_POOL[hintIndex % HINT_POOL.length];
   hintIndex++;
-  toast(msg);
+  // 2026-05-12 PM18 (Jane: "'Hint' button does not show any hints about
+  // where to go. looks like a regression"). The PM17 toast refactor
+  // dedupe was swallowing repeat hint taps and the banner-space queue
+  // delayed hints whenever the eventHud was showing. Bypass both for
+  // hint output: clear the dedupe state and call the underlying drain
+  // immediately so the kid ALWAYS sees their hint the instant they tap.
+  try {
+    _toastLastMsg = null;
+    _toastLastMsgAt = 0;
+    // Clear any in-flight toast so the hint takes the slot now.
+    const el = $('toast');
+    if (el) { el.classList.remove('show'); _toastShowing = false; }
+    clearTimeout(toastTimer);
+  } catch(e){}
+  toast(msg, { force: true });
 });
 $('menuBtn').addEventListener('click', () => { play('click'); togglePause(); });
 
@@ -10561,14 +10822,12 @@ function renderSpotDiff(gate, q, container){
         const cx = (r.minX + r.maxX) / 2;
         const cy = (r.minY + r.maxY) / 2;
         const radPx = Math.max(r.maxX - r.minX, r.maxY - r.minY) / 2;
-        // v3.x audit (Bug 140 — Jane: "green halos on spot the difference
-        // are not this large"). Was clamped to 8-22% which on a 540px
-        // image painted halos up to 240px wide — they overlapped each
-        // other + obscured the differences. New cap: 4-10% (≈22-54px on
-        // a 540px image), with a +3% pad for tap-tolerance instead of
-        // 1.6× scale. The HALO indicates "you found this" — it should
-        // outline the diff, not swallow it. The TAP region is separate.
-        const radPct = Math.max(4, Math.min(10, (radPx / W) * 100 + 3));
+        // 2026-05-12 PM18 (Jane: "can the halos around spot the object
+        // pictures be smaller? just around the differences alone").
+        // Tightened halo cap further: 3-6% (~16-32 px on a 540 px image),
+        // with NO +3% pad. The TAP region (tapR below) stays generous
+        // so kids' fingers still register — halo is purely visual.
+        const radPct = Math.max(3, Math.min(6, (radPx / W) * 100 + 1));
         return {
           x: (cx / W) * 100,
           y: (cy / H) * 100,
@@ -10909,8 +11168,17 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         // modal title reads "Out of Tries!" instead of falsely accusing
         // a guard. Image is still a guard portrait — they're the
         // authority figure who locked the gate — but the copy is honest.
-        openDanger("Moses ran out of tries at the Bible Gate. Remember the answer and try again!",
-                   IMG_SRC.scrollHebrews1127 || IMG_SRC.palaceGateClosed || IMG_SRC.guard,
+        // 2026-05-12 PM18 (Jane: "can we show better wording for out of
+        // tries? and the text is out of the scroll"). Shorter, kid-fun
+        // copy that fits inside the verse-scroll PNG without overflow.
+        // The scroll image has a baked text area sized for ~70 chars;
+        // anything longer wraps off the parchment.
+        // Use the closed-gate PNG instead of the verse scroll — the scroll
+        // image has BAKED Hebrews 11:27 text that visually overflows the
+        // 150 px modal-image box. The gate PNG has no baked text + reads
+        // as the perfect "you got locked out" visual.
+        openDanger("That Bible Gate ran out of tries! Take a breath and try the level again.",
+                   IMG_SRC.palaceGateClosed || IMG_SRC.guard,
                    'questions');
       }, 2800);
     } else if (opts && opts.keepOpen) {
@@ -11195,17 +11463,20 @@ function onReachExit(){
       if (remaining.length > 0) {
         _bounceBack();
         try { play('error'); } catch(e){}
-        try { toast('🔒 The east gate is sealed! Clear all ' + challengeGates.length + ' checkpoints first. (' + remaining.length + ' left)'); } catch(e){}
+        // 2026-05-12 PM18 (Jane: "when i reach the exit without finishing
+        // all the checkpoints, there is no warning message prompting me
+        // to finish all the gates. when did this break?"). The toast was
+        // being swallowed by the PM17 queue/dedupe — force-bypass so the
+        // warning ALWAYS shows the instant Moses tries the locked exit.
+        try { toast('🔒 The east gate is sealed! Clear all ' + challengeGates.length + ' Bible Gates first. (' + remaining.length + ' left)', { force: true }); } catch(e){}
         return;
       }
       // Wave 3c (2026-05-08): even after every gate clears, the EXIT
-      // door now also requires the GOLDEN KEY (puzzle reward). The kid
-      // must collect the 3 letter-scrolls, solve "GOD", and pick up the
-      // spawned key before the door opens.
+      // door now also requires the GOLDEN KEY (puzzle reward).
       if (!game.hasExitKey) {
         _bounceBack();
         try { play('error'); } catch(e){}
-        try { toast('🔒 All checkpoints cleared! But the EXIT door needs the GOLDEN KEY — find the 3 torn scrolls, arrange them to spell GOD.'); } catch(e){}
+        try { toast('🔒 All gates cleared! Now find the 3 torn scrolls, arrange them to spell GOD, and grab the Golden Key.', { force: true }); } catch(e){}
         return;
       }
     }
@@ -11328,7 +11599,10 @@ const UNLOCK_TIERS = [
     desc: 'All guards freeze in place for 5 seconds. Recharges every 35 s.' },
   { threshold:   4, resource: 'crowns',    key: 'royalVision',
     label: '👁️ Royal Vision',    cooldownMs: 30000,
-    desc: 'See every guard\'s sight cone for 8 seconds. Recharges every 30 s.' },
+    // 2026-05-12 PM18 (Jane: "how does royal vision help moses?"). Made
+    // the description concrete + actionable so kids understand the
+    // benefit: see the danger BEFORE you walk into it.
+    desc: 'Lights up every guard\'s sight cone in bright pink so you can plan a safe path around them. Lasts 8 seconds.' },
   { threshold: 350, resource: 'treasures', key: 'truthSeeker',
     label: '📖 Truth Seeker',    cooldownMs: 60000,
     desc: 'On the next Bible Gate: clue is free + 2 wrong options greyed out.' },
@@ -11769,31 +12043,78 @@ function showWin(){
     badges.forEach(b => { const s=document.createElement('span'); s.className='badge'; s.textContent=b; bs.appendChild(s); });
   }
 
-  // motivate based on what's missing
-  let motivate = 'Collect more Truth Cards in the next scene to unlock the Truth Finder badge!';
-  if (starRating < 3) motivate = 'Try Replay and aim for all 3 stars \u2014 can you become the Palace Champion?';
-  if (game.treasureCount < game.treasuresTotal) motivate = 'Next time find all ' + game.treasuresTotal + ' treasures AND look for the Hidden Crown!';
+  // 2026-05-12 PM18 (Jane: "i see the message 'next time find all the
+  // 33 treasures and the hidden crown', but the hidden crown was already
+  // discovered. so what's that message saying?"). Made the motivate
+  // text CONDITIONAL on what the kid actually missed \u2014 never name a
+  // collectible they already found. Priority order:
+  //   (a) starRating < 3        -> chase the 3-star
+  //   (b) treasures incomplete  -> name treasures (and crown only if not found)
+  //   (c) crown missing         -> point at the crown alone
+  //   (d) all of above achieved -> brand-new "go to next scene" line
+  let motivate;
+  if (starRating < 3) {
+    motivate = 'Tap Replay and aim for all 3 stars \u2014 can you become the Palace Champion?';
+  } else if (game.treasureCount < game.treasuresTotal && !game.crownFound) {
+    motivate = 'Next time find all ' + game.treasuresTotal + ' treasures AND look for the Hidden Crown!';
+  } else if (game.treasureCount < game.treasuresTotal) {
+    motivate = 'Next time collect all ' + game.treasuresTotal + ' treasure bags!';
+  } else if (!game.crownFound) {
+    motivate = 'Next time look for the Hidden Crown \u2014 it\u2019s tucked away off the main path.';
+  } else {
+    motivate = 'You found everything! Brave Moses \u2014 onward to the desert.';
+  }
   $('winMotivate').textContent = motivate;
 
   // play scene-complete banner first, then the win modal after 2s
-  try { audio.bgm.pause(); } catch(e){}
+  try { _killAllGameMusic(); } catch(e){}
   play('chime');
   const banner = $('sceneBanner');
+  // 2026-05-12 PM18 (Jane: "have golden sparkle or confetti burst on
+  // the winning modal. when the kids stay on this modal, play the
+  // cover music"). Three-layer victory celebration:
+  //   1. WIN sting (existing)
+  //   2. Confetti sparkle SFX (existing)
+  //   3. Big GOLD GLITTER BURST centered on the modal (NEW) — fires a
+  //      few rolling bursts so the celebration feels alive.
+  //   4. Cover music loops under the modal so the kid hears "we won!"
+  //      atmosphere while they read the score / badges.
+  const _fireWinCelebration = () => {
+    try {
+      const modal = document.querySelector('#winModal .modal-content');
+      if (modal) {
+        const r = modal.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top  + 60;
+        spawnGlitterBurst(cx, cy, 36);
+        setTimeout(() => spawnGlitterBurst(cx, cy + 40, 28), 280);
+        setTimeout(() => spawnGlitterBurst(cx - 60, cy + 90, 22), 560);
+        setTimeout(() => spawnGlitterBurst(cx + 60, cy + 90, 22), 760);
+      }
+    } catch(e){}
+    // Cover music loops under the modal as ambient "we did it" pad.
+    try {
+      if (audio.coverMusic) {
+        audio.coverMusic.currentTime = 0;
+        audio.coverMusic.volume = 0.40;
+        audio.coverMusic.play().catch(()=>{});
+      }
+    } catch(e){}
+  };
   if (banner) {
     banner.classList.add('active');
     setTimeout(() => {
       banner.classList.remove('active');
-      play('win');
-      // Cinematic confetti sparkle layered under the win sound.
+      play('successModal') || play('win');
       try { play('confetti'); } catch(e){}
       $('winModal').classList.add('active');
-      // v3.4: no chest animation here -- chest plays mid-scene only so the
-      // finish modal is compact and never cut off by small screens.
+      setTimeout(_fireWinCelebration, 120);
     }, 2000);
   } else {
-    play('win');
+    play('successModal') || play('win');
     try { play('confetti'); } catch(e){}
     $('winModal').classList.add('active');
+    setTimeout(_fireWinCelebration, 120);
   }
 }
 $('winNextBtn').addEventListener('click', () => {
@@ -11806,7 +12127,18 @@ if (_midChestBtn) _midChestBtn.addEventListener('click', () => {
   $('truthChestModal').classList.remove('active');
   game.state = 'playing';
   try { audio.bgm.play().catch(()=>{}); } catch(e){}
-  toast('Truth Card collected! Head to the exit.');
+  // 2026-05-12 PM18 (Jane: "treasure chest modal says continue to gate.
+  // this is wrong. guiding to exit should only be when moses does all
+  // the gates"). Toast is now context-aware:
+  //   - if gates remain  -> point at the NEXT unsolved gate
+  //   - if scrolls remain -> point at the golden-key puzzle
+  //   - if exit accessible -> point at exit
+  try {
+    const remaining = (challengeGates || []).filter(g => !g.solved).length;
+    if (remaining > 0) toast('Truth Card collected! ' + remaining + ' Bible Gates left.');
+    else if (!game.hasExitKey) toast('Truth Card collected! Find the 3 scrolls next.');
+    else toast('Truth Card collected! Run for the exit.');
+  } catch(e){}
 });
 $('winReplayBtn').addEventListener('click', () => {
   play('click');
@@ -11935,11 +12267,20 @@ function openDanger(msg, imgSrc, kind){
   // corridor, alerted, heartbeat, narration) — the time-up / caught modal
   // gets its own quiet bed.
   try { _killAllGameMusic(); } catch(e){}
+  // 2026-05-12 PM18 (Jane: "when moses is caught and game is over,
+  // there is another mp3 that plays along with the failure mp3. remove
+  // the other insignificant one"). Strict single-stinger per catch
+  // kind. The earlier `play('captured') || play('error')` chain could
+  // fire BOTH on some browsers (return-value short-circuit edge case).
+  // Now: each kind plays exactly ONE sound, with explicit `return` to
+  // prevent any fallthrough.
   try {
-    if (kind === 'guard' && audio.captured) { play('captured'); }
-    else if (kind === 'time' && audio.timeUp) { play('timeUp'); }
-    // 2026-05-08 (Jane: scene 2 plays captured.mp3 for catches — match it).
-    else { play('captured') || play('error'); }
+    if (kind === 'guard' && audio.captured)        { play('captured'); }
+    else if (kind === 'time' && audio.timeUp)      { play('timeUp'); }
+    else if (kind === 'captain' && audio.captured) { play('captured'); }
+    else if (kind === 'pharaoh' && audio.captured) { play('captured'); }
+    else if (audio.captured)                       { play('captured'); }
+    else                                           { play('error'); }
   } catch(e){}
   // After the stinger, play the calm challenge-modal bed so the modal
   // doesn't sit in silence. Same track the challenge dialog uses.
@@ -12314,14 +12655,23 @@ function togglePause(){
   if (game.state === 'playing') {
     game.state = 'paused';
     $('pauseModal').classList.add('active');
-    // v3.6: silence movement + tension loops during pause (Jane's bug: she
-    // was still hearing footsteps/tension while paused).
-    try { audio.bgm.pause(); } catch(e){}
-    try { audio.footstep.pause(); audio.footstep.currentTime = 0; } catch(e){}
-    try { if (audio.alerted) { audio.alerted.pause(); _alertMusicOn = false; } } catch(e){}
+    // 2026-05-12 PM18 (Jane: "when the game is paused, play the audio
+    // that you play while challenge modal is opened"). Silence all the
+    // in-game tension/footstep loops, then start the calmer challenge-
+    // modal bed under the pause modal.
+    try { _killAllGameMusic(); } catch(e){}
+    try {
+      if (audio.challengeModal) {
+        audio.challengeModal.currentTime = 0;
+        audio.challengeModal.volume = 0.50;
+        audio.challengeModal.play().catch(()=>{});
+      }
+    } catch(e){}
   } else if (game.state === 'paused') {
     game.state = 'playing';
     $('pauseModal').classList.remove('active');
+    // 2026-05-12 PM18 — stop the pause bed + resume in-game bgm.
+    try { if (audio.challengeModal) { audio.challengeModal.pause(); audio.challengeModal.currentTime = 0; } } catch(e){}
     try { audio.bgm.play().catch(()=>{}); } catch(e){}
   }
 }
@@ -16514,13 +16864,23 @@ let _toastLastMsgAt = 0;
 const _TOAST_DURATION_MS = 3600;
 const _TOAST_GAP_MS = 280;
 const _TOAST_DEDUPE_WINDOW_MS = 8000;
-function toast(msg){
+function toast(msg, opts){
   if (!msg) return;
-  // Drop a toast that exactly matches the last shown one within 8 s.
-  if (msg === _toastLastMsg && performance.now() - _toastLastMsgAt < _TOAST_DEDUPE_WINDOW_MS) return;
-  _toastQueue.push(String(msg));
+  const force = !!(opts && opts.force);
+  // Drop a toast that exactly matches the last shown one within 8 s — unless force.
+  if (!force && msg === _toastLastMsg && performance.now() - _toastLastMsgAt < _TOAST_DEDUPE_WINDOW_MS) return;
+  if (force) {
+    // Forced toasts cut to the front of the queue + bypass the banner-
+    // space wait (used by Hint button so the kid always sees their
+    // hint immediately, even when the eventHud is up).
+    _toastQueue.unshift(String(msg));
+    _toastForce = true;
+  } else {
+    _toastQueue.push(String(msg));
+  }
   _drainToastQueue();
 }
+let _toastForce = false;
 function _isBannerSpaceTaken(){
   try {
     const ev = document.getElementById('eventHud');
@@ -16544,10 +16904,11 @@ function _isBannerSpaceTaken(){
 function _drainToastQueue(){
   if (_toastShowing) return;
   if (_toastQueue.length === 0) return;
-  if (_isBannerSpaceTaken()) {
+  if (_isBannerSpaceTaken() && !_toastForce) {
     setTimeout(_drainToastQueue, 400);
     return;
   }
+  _toastForce = false;
   const msg = _toastQueue.shift();
   // Re-check dedupe at drain time (queue could have grown).
   if (msg === _toastLastMsg && performance.now() - _toastLastMsgAt < _TOAST_DEDUPE_WINDOW_MS) {
