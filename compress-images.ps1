@@ -1,24 +1,19 @@
 # compress-images.ps1
-# Bible Explorer Kids — image compression for Moses Deadly Escape Interactive
+# Bible Explorer Kids - image compression for Moses Deadly Escape Interactive
 #
 # Compresses every PNG under assets/images in-place using pngquant (lossy,
 # ~70% smaller, visually identical at 88-95% quality). Skips files smaller
-# than 60 KB — those are already lean.
+# than 60 KB - those are already lean.
 #
 # REQUIREMENTS
-#   pngquant must be on PATH. Install ONE of these in PowerShell (admin):
-#     winget install pngquant
-#         -- OR --
-#     choco install pngquant
+#   pngquant.exe must be (1) in this folder, (2) in tools\, or (3) on PATH.
+#   See SETUP_FIRST_TIME.md for install steps.
 #
 # USAGE (from this folder, in PowerShell):
 #     .\compress-images.ps1
 #
 # DRY-RUN (see what would change without writing):
 #     .\compress-images.ps1 -DryRun
-#
-# After it completes, eyeball a few sprites — if any look bad, restore from
-# the backup folder it creates (assets/images-original-backup/) before commit.
 
 param(
     [switch]$DryRun
@@ -27,31 +22,48 @@ param(
 $ErrorActionPreference = 'Stop'
 $ImageDir   = Join-Path $PSScriptRoot 'assets\images'
 $BackupDir  = Join-Path $PSScriptRoot 'assets\images-original-backup'
-$MinSizeKB  = 60      # skip files smaller than this (already lean)
-$Quality    = '80-92' # pngquant quality range; 80 lower bound, 92 upper
+$MinSizeKB  = 60
+$Quality    = '80-92'
 
 if (-not (Test-Path $ImageDir)) {
     Write-Host "ERROR: $ImageDir not found." -ForegroundColor Red
     exit 1
 }
 
-# Verify pngquant is installed
-try { $null = Get-Command pngquant -ErrorAction Stop }
-catch {
-    Write-Host "ERROR: pngquant not found on PATH." -ForegroundColor Red
-    Write-Host "Install it first:  winget install pngquant" -ForegroundColor Yellow
-    exit 1
+# Locate pngquant - check (1) local folder, (2) tools subfolder, (3) PATH.
+$pngquantExe = $null
+$localExe = Join-Path $PSScriptRoot 'pngquant.exe'
+$toolsExe = Join-Path $PSScriptRoot 'tools\pngquant.exe'
+if (Test-Path $localExe) {
+    $pngquantExe = $localExe
+} elseif (Test-Path $toolsExe) {
+    $pngquantExe = $toolsExe
+} else {
+    try {
+        $cmd = Get-Command pngquant -ErrorAction Stop
+        $pngquantExe = $cmd.Source
+    } catch {
+        Write-Host "ERROR: pngquant.exe not found." -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Install steps (no admin needed):" -ForegroundColor Yellow
+        Write-Host "  1. Open https://pngquant.org/" -ForegroundColor White
+        Write-Host "  2. Download the Windows zip" -ForegroundColor White
+        Write-Host "  3. Extract pngquant.exe into THIS folder:" -ForegroundColor White
+        Write-Host "       $PSScriptRoot" -ForegroundColor Cyan
+        Write-Host "  4. Re-run .\compress-images.ps1" -ForegroundColor White
+        exit 1
+    }
 }
+Write-Host "Using pngquant: $pngquantExe" -ForegroundColor Cyan
 
-# Make backup folder (one-time). If it already exists, skip — we never want
-# to overwrite the original backup with already-compressed files.
+# One-time backup
 if (-not (Test-Path $BackupDir)) {
     Write-Host "Creating backup at $BackupDir ..." -ForegroundColor Cyan
     New-Item -ItemType Directory -Path $BackupDir | Out-Null
     Copy-Item -Path "$ImageDir\*" -Destination $BackupDir -Recurse -Force
     Write-Host "Backup complete." -ForegroundColor Green
 } else {
-    Write-Host "Backup folder already exists — skipping backup step." -ForegroundColor Yellow
+    Write-Host "Backup folder already exists - skipping backup step." -ForegroundColor Yellow
 }
 
 $files = Get-ChildItem -Path $ImageDir -Filter '*.png' -File
@@ -69,21 +81,22 @@ foreach ($f in $files) {
         continue
     }
     if ($DryRun) {
-        Write-Host ("DRY-RUN  {0,8} KB  {1}" -f $sizeKB, $f.Name)
+        Write-Host ("DRY-RUN  " + $sizeKB + " KB  " + $f.Name)
         $totalAfter += $f.Length
         $compressed++
         continue
     }
-    # pngquant --force overwrites the original; --skip-if-larger keeps the
-    # original if compression would make it bigger (rare but happens on
-    # already-optimal PNGs).
-    & pngquant --force --skip-if-larger --quality=$Quality --strip --output $f.FullName -- $f.FullName 2>$null
+    & $pngquantExe --force --skip-if-larger --quality=$Quality --strip --output $f.FullName -- $f.FullName 2>$null
     if (Test-Path $f.FullName) {
         $newSize = (Get-Item $f.FullName).Length
         $totalAfter += $newSize
-        $savedKB    = [int](($f.Length - $newSize) / 1KB)
-        $pct        = if ($f.Length -gt 0) { [int](100 - ($newSize * 100 / $f.Length)) } else { 0 }
-        Write-Host ("  {0,8} KB -> {1,8} KB  (-{2,3}%)  {3}" -f $sizeKB, [int]($newSize/1KB), $pct, $f.Name)
+        $newKB   = [int]($newSize / 1KB)
+        $savedKB = $sizeKB - $newKB
+        $pct = 0
+        if ($f.Length -gt 0) {
+            $pct = [int](100 - ($newSize * 100 / $f.Length))
+        }
+        Write-Host ("  " + $sizeKB + " KB -> " + $newKB + " KB  (-" + $pct + "%)  " + $f.Name)
         $compressed++
     }
 }
@@ -91,24 +104,27 @@ foreach ($f in $files) {
 $beforeMB = [math]::Round($totalBefore / 1MB, 1)
 $afterMB  = [math]::Round($totalAfter  / 1MB, 1)
 $savedMB  = [math]::Round(($totalBefore - $totalAfter) / 1MB, 1)
-$pctTotal = if ($totalBefore -gt 0) { [int](100 - ($totalAfter * 100 / $totalBefore)) } else { 0 }
+$pctTotal = 0
+if ($totalBefore -gt 0) {
+    $pctTotal = [int](100 - ($totalAfter * 100 / $totalBefore))
+}
 
-Write-Host ''
-Write-Host '================================================================' -ForegroundColor Cyan
-Write-Host ("BEFORE   {0,8} MB total" -f $beforeMB) -ForegroundColor White
-Write-Host ("AFTER    {0,8} MB total" -f $afterMB)  -ForegroundColor White
-Write-Host ("SAVED    {0,8} MB  ({1}%)" -f $savedMB, $pctTotal) -ForegroundColor Green
-Write-Host ("Files    {0} compressed, {1} skipped (under {2} KB)" -f $compressed, $skipped, $MinSizeKB) -ForegroundColor White
-Write-Host '================================================================' -ForegroundColor Cyan
+Write-Host ""
+Write-Host "================================================================" -ForegroundColor Cyan
+Write-Host ("BEFORE   " + $beforeMB + " MB total") -ForegroundColor White
+Write-Host ("AFTER    " + $afterMB  + " MB total") -ForegroundColor White
+Write-Host ("SAVED    " + $savedMB  + " MB  (" + $pctTotal + " percent)") -ForegroundColor Green
+Write-Host ("Files    " + $compressed + " compressed, " + $skipped + " skipped (under " + $MinSizeKB + " KB)") -ForegroundColor White
+Write-Host "================================================================" -ForegroundColor Cyan
 
 if (-not $DryRun) {
-    Write-Host ''
-    Write-Host 'Backup of originals lives in:' -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Backup of originals lives in:" -ForegroundColor Yellow
     Write-Host "  $BackupDir" -ForegroundColor Yellow
-    Write-Host 'If any sprite looks bad, copy from there back to assets/images.' -ForegroundColor Yellow
-    Write-Host ''
-    Write-Host 'NEXT STEP — git add + commit + push:' -ForegroundColor Cyan
-    Write-Host '  git add assets/images' -ForegroundColor White
-    Write-Host '  git commit -m "compress images for faster mobile load"' -ForegroundColor White
-    Write-Host '  git push origin main' -ForegroundColor White
+    Write-Host "If any sprite looks bad, copy from there back to assets/images." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "NEXT STEP - git add + commit + push:" -ForegroundColor Cyan
+    Write-Host "  git add assets/images" -ForegroundColor White
+    Write-Host "  git commit -m 'compress images for faster mobile load'" -ForegroundColor White
+    Write-Host "  git push origin main" -ForegroundColor White
 }

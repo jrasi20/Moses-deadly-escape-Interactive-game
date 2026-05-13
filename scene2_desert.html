@@ -6669,6 +6669,20 @@ function getHintForQuestion(q){
       return 'Hebrews 11:24: "By faith Moses, when he had grown up, refused to be known as the son of Pharaoh\'s daughter."';
     if (hasWord('mistreated','disgrace','suffer') && hasWord('people','god'))
       return 'Hebrews 11:25: "He chose to be mistreated along with the people of God rather than enjoy the fleeting pleasures of sin."';
+    // v3.x audit (Bug 145 — Jane: "all the irrelevant clues you fixed for
+    // scene 2 — can you fix them for all scenes?"). Hebrews 11:27 stem
+    // "By faith he left Egypt, not ___ the king's anger" was routing to
+    // the generic Egypt-pyramids fallback because no rule above caught
+    // 'fear/anger/king' in this combination. Add a specific match.
+    if ((hasWord('king') && hasWord('anger')) ||
+        (hasWord('left') && hasWord('egypt') && hasWord('faith')) ||
+        (hasWord('fear','fearing') && hasWord('king','pharaoh')))
+      return 'Hebrews 11:27: "By faith he LEFT EGYPT, NOT FEARING the king\'s anger." Moses trusted God more than he feared Pharaoh.';
+    // v3.x audit (Bug 145): groan / covenant / cried-out — Exodus 2:23-25.
+    if (hasWord('groan','groans','groaned','groaning') ||
+        hasWord('covenant','remembered') ||
+        (hasWord('cry','cried') && hasWord('out','god')))
+      return 'God heard the Israelites\' suffering and remembered His covenant with Abraham, Isaac, and Jacob (Exodus 2:23-25).';
     if (hasWord('faith'))
       return 'Hebrews 11 teaches that Moses\' family hid him by faith (Hebrews 11:23-24).';
     if (hasWord('egypt'))

@@ -453,16 +453,18 @@
   }
   .cin-panel .cin-art {
     width:100%;
-    /* 2026-05-08 PM7 (Jane: "make the story panel grid size in such a
-       way that 16:9 image fits in correctly. right now i see a gap on
-       the sides because the story grid is wider"). The new prelude
-       PNGs ship at 16:9 (Midjourney landscape), so an aspect-ratio
-       mismatch was leaving black bars on the sides. Switched to 16:9
-       to match the source. */
+    /* 2026-05-12 PM17 (Jane: "on landscape mode, in narration panel,
+       the images are getting cut in the top and bottom. in both the
+       portrait and landscape, the image is very short but the text
+       portion is bigger"). Two changes:
+       1. object-fit cover -> contain so the WHOLE image is visible
+          (no crop, even if source aspect drifts off 16:9).
+       2. Bumped max-height 60vh -> 70vh so the image dominates the
+          panel instead of being squished by the text. */
     aspect-ratio: 16/9;
-    max-height: 60vh;
+    max-height: 70vh;
     border-radius:10px;
-    margin: 0 auto 14px;
+    margin: 0 auto 10px;
     background:
       radial-gradient(ellipse at 30% 30%, #d9a05a 0%, #824012 60%, #2b0c02 100%);
     display:flex; align-items:center; justify-content:center;
@@ -470,10 +472,7 @@
     overflow:hidden;
   }
   .cin-panel .cin-art .cin-scene-img {
-    width:100%; height:100%; object-fit:cover; display:block;
-    /* 2026-05-08 PM7: switched object-fit:contain → cover so the 16:9
-       PNG fills the 16:9 frame edge-to-edge — no side gaps even when
-       the source PNG aspect drifts a few pixels off true 16:9. */
+    width:100%; height:100%; object-fit:contain; display:block;
     filter: brightness(0.95);
     transition: opacity 0.55s ease-in-out, filter 0.55s ease-in-out;
   }
@@ -547,9 +546,12 @@
         so the cinematic feels truly Play-Store-quality without
         stretching past readable text-block widths. */
   @media (orientation: landscape) and (max-width: 899px) {
-    .cin-panel { width: min(720px, 92vw); padding: 14px 18px; }
-    .cin-panel .cin-art { max-height: 50vh; }
-    .cin-text { font-size: 16px; }
+    .cin-panel { width: min(720px, 92vw); padding: 10px 14px; max-height: 96vh; overflow-y: auto; }
+    /* 2026-05-12 PM17 — landscape phone: keep the image PRIMARY (image
+       takes ~58vh, text wraps below in remaining space). Was 50vh which
+       made the image short and crowded by the text. */
+    .cin-panel .cin-art { max-height: 58vh; margin: 0 auto 6px; }
+    .cin-text { font-size: 14.5px; line-height: 1.45; }
   }
   @media (min-width: 900px) {
     .cin-panel {
@@ -2075,6 +2077,7 @@
     width: min(540px, 94vw);
     max-height: 86vh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     background: linear-gradient(180deg,#fff4d2 0%,#f5e1b3 60%,#e8c878 100%);
     border: 3px solid #c79a3a;
     border-radius: 18px;
@@ -2087,7 +2090,11 @@
   .unlocks-card-inner {
     font-family: Georgia,serif;
     color: #3a1708;
-    padding: 18px 20px;
+    /* 2026-05-12 PM17 (Jane PM17 screenshot: Pharaoh's Mercy card cut off
+       at the bottom of the unlocks modal). Bumped bottom padding so the
+       last tier card never sits under the Close button, and the scroll
+       hint area is comfortable on phones. */
+    padding: 18px 20px 28px;
   }
   @keyframes unlocksGlow {
     0%, 100% { box-shadow: 0 0 0 6px rgba(255,217,118,0.18), 0 18px 60px rgba(0,0,0,0.7), inset 0 0 30px rgba(255,217,118,0.25); }
@@ -2583,14 +2590,20 @@
     .action-btn { height:36px; }
     .dpad-text { display:none; }
   }
-  /* Landscape phone: controls move to a side column so canvas fills the viewport */
-  @media (max-height: 500px) and (orientation: landscape) {
+  /* 2026-05-12 PM17 (Jane: "for landscape, the 3 buttons and dpad should
+     be on the right side pane. For portrait, these should be in the
+     bottom — the 3 buttons on the left side of the screen, and the dpad
+     on the right side of the screen"). Two explicit layouts, one per
+     orientation, following the Game 1 / River Maze pattern. */
+
+  /* ===== LANDSCAPE PHONE: side pane on the right ===== */
+  @media (orientation: landscape) and (max-height: 540px) {
     .game-page.active {
       display:grid !important;
       grid-template-rows:auto 1fr;
-      grid-template-columns:1fr auto;
+      grid-template-columns:1fr 130px;
     }
-    .hud { grid-column:1 / -1; padding:4px 10px; min-height:auto; flex-wrap:nowrap; gap:5px; }
+    .hud { grid-column:1 / -1; padding:4px 8px; min-height:auto; flex-wrap:nowrap; gap:5px; }
     .hud-chip { font-size:11px; padding:2px 6px; }
     .canvas-wrapper { grid-row:2; grid-column:1; min-height:0; }
     .controls {
@@ -2600,15 +2613,58 @@
       min-height:unset; height:100%; width:auto;
       padding:6px 4px;
       background:linear-gradient(90deg, rgba(42,14,3,0.92) 0%, rgba(58,21,8,0.85) 100%);
-      border-left:1px solid rgba(255,217,118,0.5);
+      border-left:2px solid rgba(255,217,118,0.55);
       border-top:none;
       gap:8px; flex-shrink:0; overflow-y:auto;
     }
-    .dpad { width:110px; gap:3px; flex:0 0 auto; }
-    .dpad-btn, .dpad-spacer { height:30px; border-radius:50%; font-size:15px; }
+    .action-panel {
+      flex-direction:column !important; align-items:stretch;
+      width:100%; max-width:120px; gap:5px; flex:0 0 auto;
+      order:1;
+    }
+    .action-btn { height:34px; font-size:12px; padding:0 6px; flex:unset; }
+    .dpad { width:110px; gap:3px; flex:0 0 auto; order:2; }
+    .dpad-btn, .dpad-spacer { height:32px; border-radius:50%; font-size:15px; }
     .dpad-text { display:none; }
-    .action-panel { flex-direction:column !important; align-items:center; gap:6px; max-width:unset; width:auto; flex:0 0 auto; }
-    .action-btn { height:34px; font-size:12px; padding:0 8px; flex:unset; }
+  }
+
+  /* ===== PORTRAIT PHONE: controls at bottom — action LEFT, dpad RIGHT ===== */
+  @media (orientation: portrait) and (max-width: 760px) {
+    .controls {
+      flex-direction:row !important;
+      align-items:center; justify-content:space-between;
+      padding:6px 10px;
+      min-height:auto;
+      gap:10px;
+    }
+    .action-panel {
+      flex-direction:column !important;
+      width:48%; max-width:48%;
+      gap:5px;
+      order:1;            /* LEFT side */
+    }
+    .action-btn { height:34px; font-size:12px; padding:0 8px; }
+    .dpad {
+      width:140px; max-width:48%;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:4px;
+      order:2;            /* RIGHT side */
+      flex:0 0 auto;
+    }
+    .dpad-btn, .dpad-spacer { height:36px; border-radius:8px; font-size:16px; }
+    .dpad-text { display:none; }
+    /* 2026-05-12 PM17 (Jane: "the top bar where timer is and everything
+       is not aligned correctly on mobile"). HUD wraps onto two rows on
+       very narrow screens; flex-wrap + min-width:0 keeps chips intact. */
+    .hud {
+      padding:6px 8px;
+      gap:4px;
+      flex-wrap:wrap;
+    }
+    .hud-group { font-size:12px; gap:5px; min-width:0; flex-wrap:wrap; }
+    .hud-chip { font-size:11.5px; padding:3px 8px; }
+    .hud-hearts { font-size:16px; letter-spacing:2px; }
+    .pause-btn { width:32px; height:32px; font-size:14px; }
   }
   .preload-overlay {
     display:none;
@@ -3210,14 +3266,17 @@
 <!-- =========== Wave 4b: HIDDEN LORE REVEAL MODAL =========== -->
 <!-- Fires when Moses steps on one of two hidden lore tiles. Shows the
      reveal image + a short scripture quote, then resumes play. -->
+<!-- 2026-05-12 PM16 v3 (Jane: "this lore tile wording is not kid friendly
+     and not interesting"). Re-themed the modal: kid-fun banner, larger
+     warmer body text, less Bible-textbook formatting. -->
 <div class="modal-overlay" id="loreRevealModal" style="z-index:43;">
-  <div class="modal-content" style="background:linear-gradient(155deg,#1c0a3a,#3a1078 55%,#552ba0);border:3px solid #ffd700;max-width:440px;text-align:center;">
-    <div style="color:#ffd976;font-size:12px;letter-spacing:1.5px;">~ A HIDDEN MEMORY OF MOSES ~</div>
-    <h2 id="loreRevealTitle" style="color:#ffd976;margin:6px 0 10px;">Lore Revealed</h2>
+  <div class="modal-content" style="background:linear-gradient(155deg,#1c0a3a,#3a1078 55%,#552ba0);border:3px solid #ffd700;max-width:460px;text-align:center;">
+    <div style="color:#ffd976;font-size:13px;letter-spacing:1.4px;font-weight:700;">✨ STORY UNLOCKED ✨</div>
+    <h2 id="loreRevealTitle" style="color:#ffd976;margin:8px 0 12px;font-size:22px;">Lore Revealed</h2>
     <img id="loreRevealImg" src="" alt="" style="max-width:100%;max-height:240px;border-radius:10px;border:2px solid #ffd976;box-shadow:0 4px 18px rgba(0,0,0,0.55);" onerror="this.style.display='none'">
-    <p id="loreRevealVerse" style="color:#fff5d8;font-style:italic;font-size:14px;margin:12px 6px 4px;line-height:1.45;"></p>
-    <p id="loreRevealRef" style="color:#c5a76e;font-size:12px;letter-spacing:1.2px;margin:0 0 14px;"></p>
-    <button class="btn" id="loreRevealCloseBtn">Continue ←</button>
+    <p id="loreRevealVerse" style="color:#fff5d8;font-size:15.5px;margin:14px 8px 6px;line-height:1.55;text-align:left;"></p>
+    <p id="loreRevealRef" style="color:#c5a76e;font-size:11.5px;letter-spacing:1.1px;margin:0 0 14px;text-align:right;font-style:italic;"></p>
+    <button class="btn" id="loreRevealCloseBtn">Got it! Keep Running →</button>
   </div>
 </div>
 
@@ -4385,6 +4444,38 @@ function _updatePreloadUi() {
   requestAnimationFrame(tick);
 })();
 let _pendingBeginTap = null;
+
+// 2026-05-12 PM16 v3 (Jane: "the first time when i load, everything is
+// jittery. second time is fine"). First-frame jitter on cold-load is
+// because the browser still has to UPLOAD each PNG to GPU memory the
+// first time it's drawn — even after _preRender pre-decoded it. Warm
+// the GPU by drawing every IMG once into an off-screen 1×1 canvas
+// before the kid taps Begin. This runs in a microtask burst after all
+// images are decoded, so it costs ~50 ms one-time instead of distributing
+// stalls across the first 5 seconds of play.
+function _warmGpuForAllSprites(){
+  try {
+    const warm = document.createElement('canvas');
+    warm.width = 1; warm.height = 1;
+    const w = warm.getContext('2d');
+    for (const k in IMG) {
+      const img = IMG[k];
+      if (!img) continue;
+      try { w.drawImage(img, 0, 0, 1, 1); } catch(e){}
+    }
+  } catch(e){}
+}
+// Fire once on load complete (just after imagesReady hits total).
+(function _scheduleWarm(){
+  const id = setInterval(() => {
+    if (imagesReady >= imagesTotal) {
+      clearInterval(id);
+      // Idle callback if available, falls through to a setTimeout otherwise.
+      const run = window.requestIdleCallback || ((cb) => setTimeout(cb, 80));
+      run(_warmGpuForAllSprites);
+    }
+  }, 250);
+})();
 
 /* ---------- PALACE MAP (40 x 25)  ----------
    Hand-authored tilemap for Scene 1. Moses starts near the throne room (top-left)
@@ -7042,6 +7133,13 @@ function _showTruthLibraryModal(){
     }
     scrim.innerHTML = '<div class="truthlib-card">' + html + '</div>';
     scrim.style.display = 'flex';
+    // 2026-05-12 PM17 (Jane: "add some sfx for the close buttons on
+    // truth library and power unlocks"). Wire a soft click on the
+    // freshly-rendered Close button.
+    try {
+      const cbBtn = document.getElementById('_truthLibCloseBtn');
+      if (cbBtn) cbBtn.addEventListener('click', () => { try { play('pageTurn') || play('click'); } catch(e){} });
+    } catch(e){}
     // Sparkle on open
     setTimeout(() => {
       try {
@@ -7132,7 +7230,11 @@ function _showUnlocksModal(){
     const close = () => { try { scrim.style.display = 'none'; } catch(e){} };
     scrim.addEventListener('click', (e) => { if (e.target === scrim) close(); });
     const cb = document.getElementById('_unlocksCloseBtn');
-    if (cb) cb.addEventListener('click', close);
+    if (cb) cb.addEventListener('click', () => {
+      // 2026-05-12 PM17 — soft close-button SFX.
+      try { play('pageTurn') || play('click'); } catch(e){}
+      close();
+    });
   } catch(e){}
 }
 
@@ -8231,11 +8333,22 @@ function _maybeFireJitTip(){
       }
     }
   }
-  // 2) Sentry on a gate — fire when any guard is sitting on an unsolved gate tile
+  // 2026-05-12 PM17 (Jane: "only show messages pertaining to the grid
+  // that moses is currently on. don't show messages about guard being
+  // on the gate which is far away from where moses is"). PROXIMITY GATE:
+  // each tip only fires when the event is happening within a small
+  // Manhattan radius of Moses. Otherwise the tip is suppressed for now
+  // (still respects the one-shot _jitTipFired flag — it'll fire later
+  // when the kid is closer).
+  const _NEAR_RADIUS = 7; // tiles
+  // 2) Sentry on a gate — fire when any guard is sitting on an unsolved gate tile NEAR Moses.
   if (!_jitTipFired.sentryOnGate && typeof guards !== 'undefined' && typeof challengeGates !== 'undefined') {
     for (const g of guards) {
       for (const ga of challengeGates) {
         if (!ga.solved && g.tx === ga.tx && g.ty === ga.ty) {
+          // Only fire if Moses is close enough to care.
+          const dist = Math.abs(g.tx - player.tx) + Math.abs(g.ty - player.ty);
+          if (dist > _NEAR_RADIUS) continue;
           _jitTipFired.sentryOnGate = true;
           try { toast('🛡️ A guard is standing on a Bible gate! Wait for them to step off, then run through.'); } catch(e){}
           break;
@@ -8244,10 +8357,12 @@ function _maybeFireJitTip(){
       if (_jitTipFired.sentryOnGate) break;
     }
   }
-  // 3) First-ever guard alert — fire when any guard transitions into alerted
+  // 3) First-ever guard alert — fire when a NEARBY guard transitions into alerted.
   if (!_jitTipFired.guardSpotted && typeof guards !== 'undefined') {
     for (const g of guards) {
       if (g.state === 'alerted') {
+        const dist = Math.abs(g.tx - player.tx) + Math.abs(g.ty - player.ty);
+        if (dist > _NEAR_RADIUS) continue;
         _jitTipFired.guardSpotted = true;
         try { toast('⚠️ A guard saw you! Hide behind a pillar or statue until they move on.'); } catch(e){}
         break;
@@ -8393,11 +8508,43 @@ function interact(){
       return;
     }
   }
-  // contextual fallback based on where Moses is
+  // 2026-05-12 PM17 (Jane: "when i click on interact, the message says
+  // look for servants, scrolls, and jugs to interact with. this is
+  // wrong. fix it"). Replaced the stale "servants/jugs" copy with a
+  // context-aware hint that names the ACTUAL interactable types the
+  // kid can encounter in Scene 1 (treasure chest, golden key, clue
+  // scrolls, lore tiles, secret doors). Also points the kid toward
+  // the nearest unsolved gate if no interactable is in range.
   const nearExit = (player.tx >= 35);
-  if (nearExit) toast('The east gate is just ahead - keep going!');
-  else if (player.crouched) toast('You are hiding well. Move when the coast is clear.');
-  else toast('Look for servants, scrolls, and jugs to interact with.');
+  if (nearExit) {
+    toast('The east gate is just ahead — keep going!');
+  } else if (player.crouched) {
+    toast('You are hiding well. Move when the coast is clear.');
+  } else {
+    // Find the closest interactable target so the hint is useful.
+    let nearest = null, nd = Infinity;
+    try {
+      for (const obj of (interactables || [])) {
+        if (obj.used) continue;
+        const d = Math.abs(obj.tx - player.tx) + Math.abs(obj.ty - player.ty);
+        if (d < nd) { nd = d; nearest = obj; }
+      }
+    } catch(e){}
+    if (nearest && nd <= 6) {
+      const nm = nearest.name || 'something interesting';
+      toast('There is ' + nm + ' nearby — step right next to it and tap Interact.');
+    } else {
+      // No interactable in range — point at the goal instead.
+      const remaining = (challengeGates || []).filter(g => !g.solved).length;
+      if (remaining > 0) {
+        toast('No one nearby to talk to. Head toward the next Bible Gate (' + remaining + ' left).');
+      } else if (!game.hasExitKey) {
+        toast('Collect the 3 torn scrolls to summon the Golden Key.');
+      } else {
+        toast('Run for the EXIT — you have the Golden Key!');
+      }
+    }
+  }
 }
 
 function triggerInteractable(obj){
@@ -8561,24 +8708,32 @@ $('scrollRevealCloseBtn') && $('scrollRevealCloseBtn').addEventListener('click',
    Two obscure tile coords reveal a short scripture animation + quote
    when Moses wanders onto them. Fires once per scene; tracked on
    game.loreSeen so a kid revisiting the tile doesn't re-trigger. */
-// 2026-05-09 PM15 v8 (Jane: "Moses is currently fleeing. how does this
-// scroll about moses being 40 year fit into game play?"). The Acts 7:23
-// lore felt disconnected — it's BACKSTORY (why Moses went to his people)
-// not relevant to the FLEEING moment kids are playing. Replaced with
-// Exodus 2:14 — the verse that triggered the flight ("Pharaoh tried to
-// kill Moses, but Moses fled"). Now the lore reveal echoes WHAT IS
-// HAPPENING in the level: Pharaoh wants Moses dead, escape!
+// 2026-05-12 PM17 (Jane: "is the lore tile text going to be the same
+// every time? can you rotate it so it is not too redundant. what will
+// excite kids? it should be simple and fun"). Each tile now has a POOL
+// of 3 kid-friendly variants; on reveal, one is picked at random so
+// kids who replay see fresh content. All three variants for a tile
+// share the same key/title/ref family but tell the same beat in a
+// different voice (drama / question / cliffhanger).
 const _LORE_TILES = [
   { tx: 1, ty: 1, key: 'exod214',
-    title: "Pharaoh's Death Warrant",
-    img:  'assets/images/lore-acts7-23.png',
-    verse: '"When Pharaoh heard of it, he tried to kill Moses, but Moses fled from Pharaoh and went to live in Midian."',
-    ref:  '— EXODUS 2:14-15' },
+    title: 'Uh-Oh — Moses Is in BIG Trouble!',
+    img:  '',
+    ref:  '— EXODUS 2:14-15',
+    variants: [
+      '🛡️ Moses saw a guard HURT a Hebrew worker — and Moses fought back to save him! Now Pharaoh is FURIOUS and wants Moses gone. Help him escape!',
+      '😱 Pharaoh just found out what Moses did. The whole palace is hunting him. If you don\'t move fast, the guards will catch him. Sneak past every shadow!',
+      '👀 The shouting echoes through the throne room. "Find that boy!" Pharaoh roared. Moses\'s heart is pounding — and only YOU can guide him out alive.',
+    ] },
   { tx: 38, ty: 9, key: 'heb1127',
-    title: 'The Faith That Saw God',
+    title: "Moses's Secret Super-Power",
     img:  'assets/images/scroll-hebrews-11-27.png',
-    verse: '"By faith he left Egypt, not fearing the king\'s anger; he persevered because he saw him who is invisible."',
-    ref:  '— HEBREWS 11:27' },
+    ref:  '— HEBREWS 11:27',
+    variants: [
+      '✨ What made Moses brave enough to leave Pharaoh\'s palace? Not a sword, not an army — it was FAITH. He trusted God even when no one was watching!',
+      '🦁 Imagine running from the most powerful king on earth. Scary, right? But Moses had a SECRET: he knew God was with him. That\'s the bravest power of all.',
+      '💫 Hebrews 11:27 says Moses "saw him who is invisible." That means Moses TRUSTED what he couldn\'t see — God\'s love. You can have that super-power too!',
+    ] },
 ];
 function _maybeFireLoreReveal(tx, ty){
   if (!_LORE_TILES || !_LORE_TILES.length) return;
@@ -8586,20 +8741,25 @@ function _maybeFireLoreReveal(tx, ty){
   for (const t of _LORE_TILES) {
     if (t.tx === tx && t.ty === ty && !game.loreSeen[t.key]) {
       game.loreSeen[t.key] = true;
-      // 2026-05-09 PM15 v3 — Hebrews 11:27 lore tile counts as a "scroll"
-      // for the lifetime scroll counter. Acts 7:23 lore tile too.
+      // 2026-05-09 PM15 v3 — lore tile counts as a "scroll" lifetime counter.
       try { _addLifetimeScrolls(1); } catch(e){}
-      // 2026-05-09 PM15 v4 — persist the lore verse to the Truth Library.
+      // 2026-05-12 PM17 — pick a random variant from the tile's pool
+      // so a kid playing the same lore tile across multiple runs sees
+      // different framings of the same Bible beat.
+      const pool = Array.isArray(t.variants) ? t.variants : [t.verse];
+      const verse = pool[Math.floor(Math.random() * pool.length)];
+      const tFull = Object.assign({}, t, { verse });
+      // 2026-05-09 PM15 v4 — persist to the Truth Library.
       try {
         _addTruthToLibrary({
           key:   'lore_' + t.key,
           title: t.title,
-          body:  t.verse,
+          body:  verse,
           ref:   t.ref,
           img:   t.img,
         });
       } catch(e){}
-      _openLoreReveal(t);
+      _openLoreReveal(tFull);
       return;
     }
   }
@@ -8657,7 +8817,13 @@ function _openLoreReveal(t){
   const verseEl = $('loreRevealVerse');
   const refEl   = $('loreRevealRef');
   if (titleEl) titleEl.textContent = t.title;
-  if (imgEl)   { imgEl.src = t.img; imgEl.style.display = ''; }
+  // 2026-05-12 PM16 v3 — hide the image entirely when `t.img` is empty
+  // (text-only lore card). Prevents the previous baked Acts-7:23 PNG
+  // from contradicting the Exodus verse text below.
+  if (imgEl) {
+    if (t.img) { imgEl.src = t.img; imgEl.style.display = ''; }
+    else        { imgEl.removeAttribute('src'); imgEl.style.display = 'none'; }
+  }
   if (verseEl) verseEl.textContent = t.verse;
   if (refEl)   refEl.textContent = t.ref;
   modal.classList.add('active');
@@ -16665,6 +16831,29 @@ function updateDog(dt){
             && !player.crouched && game.state === 'playing') {
           try { _cameraShake(4, 240); } catch(e){}
           try { _softCatch("A palace dog caught Moses! Hide behind cover so it loses your scent.", IMG_SRC.dogDown || IMG_SRC.dog, 'dog'); } catch(e){}
+          // 2026-05-12 PM17 (Jane: "the dog keeps chasing moses and in 1
+          // second all 3 hearts are being lost. once the dog catches
+          // once and 1 heart is lost, it should not keep chasing again
+          // and again causing more hearts to be lost"). After a soft
+          // catch, the existing invulnerability is only 1.5 s — long
+          // enough for one dog tick to expire AND re-catch. Three fixes
+          // stacked here:
+          //   1. Teleport the dog back to its first patrol waypoint
+          //      so it physically can't be on Moses next frame.
+          //   2. Force `d.state = 'patrol'` with a 4-second cool-down
+          //      timer so it can't re-enter chase mode immediately.
+          //   3. Bump the catch-invuln to 3 s for dog catches so even
+          //      if the dog magically re-engages, no heart drops.
+          try {
+            if (Array.isArray(d.patrolPath) && d.patrolPath.length) {
+              const wp = d.patrolPath[0];
+              d.tx = wp.x; d.ty = wp.y; d.pi = 0;
+            }
+            d.state = 'patrol';
+            d.timer = 4000;
+            d.lostSight = 0;
+          } catch(e){}
+          try { game.invulnerableUntil = performance.now() + 3000; } catch(e){}
           return;
         }
       }
