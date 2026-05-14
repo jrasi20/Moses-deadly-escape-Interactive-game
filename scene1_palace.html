@@ -2403,6 +2403,55 @@
   .treasure-chip .chip-emoji { font-size: 16px; }
   .treasure-chip .chip-num   { color: #3a1708; font-weight: 800; font-size: 14px; }
 
+  /* 2026-05-13 PM21 — STATS PANEL on cover page. Three grouped sections
+     (Personal Best / Collections / Progress) replace the flat 7-chip row.
+     Reads as a trophy-room sidebar instead of a status-bar pill stack. */
+  .stats-panel {
+    width: min(680px, 96vw);
+    margin: 8px auto;
+    padding: 10px 12px;
+    background: linear-gradient(180deg, rgba(40,18,4,0.78), rgba(58,22,7,0.62));
+    border: 2px solid rgba(255,215,118,0.55);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,217,118,0.18);
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    font-family: Georgia, serif;
+  }
+  .stats-section {
+    flex: 1 1 180px;
+    min-width: 0;
+    text-align: center;
+  }
+  .stats-section-label {
+    color: #ffd976;
+    font-size: 11px;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin-bottom: 6px;
+    opacity: 0.92;
+  }
+  .stats-section-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    min-height: 28px;
+  }
+  /* Phone: stack the three sections vertically for readability */
+  @media (max-width: 600px) {
+    .stats-panel { gap: 4px; padding: 8px 10px; }
+    .stats-section { flex: 1 1 100%; }
+    .stats-section-label { font-size: 10.5px; margin-bottom: 3px; }
+    .treasure-chip { padding: 3px 10px; }
+    .treasure-chip .chip-emoji { font-size: 14px; }
+    .treasure-chip .chip-num   { font-size: 13px; }
+  }
+
   /* Magical TRUTH LIBRARY card. Same family as the unlocks modal but with
      a parchment-scroll feel + per-truth flip-in. */
   .truthlib-card {
@@ -2840,17 +2889,35 @@
   <!-- Wave 7+8 (2026-05-09 PM14): personal best + achievements summary
        on the cover. Hidden until at least one play has finished;
        populated by _refreshCoverBestBadge() called on cover show. -->
-  <!-- 2026-05-09 PM15 v4 — gold treasure-chip styling. Each chip is wrapped
-       in a sparkle-emitter span so kids see a fresh sparkle burst when the
-       cover renders. -->
-  <div id="coverBestBadge" style="display:none;margin:8px auto;font-family:Georgia,serif;text-align:center;">
-    <span id="coverBestStars"     class="treasure-chip" style="display:none;"></span>
-    <span id="coverAchCount"      class="treasure-chip" style="display:none;"></span>
-    <span id="coverTreasureCount" class="treasure-chip" style="display:none;"></span>
-    <span id="coverCrownCount"    class="treasure-chip" style="display:none;"></span>
-    <span id="coverScrollCount"   class="treasure-chip" style="display:none;"></span>
-    <span id="coverUnlocksCount"  class="treasure-chip" style="display:none;"></span>
-    <span id="coverTruthsCount"   class="treasure-chip" style="display:none;"></span>
+  <!-- 2026-05-13 PM21 (Jane: "is this the best way to display stats?
+       can you think of a more professional way?"). Reorganized the
+       7-chip row into a clean trophy-style panel with 3 grouped
+       sections: PERSONAL BEST | COLLECTIONS | PROGRESS. Each section
+       has its own pill-bordered card with a section label above and
+       chips inside. Reads like a real-game stats panel. -->
+  <div id="coverBestBadge" class="stats-panel" style="display:none;">
+    <div class="stats-section" id="statsPersonal">
+      <div class="stats-section-label">★ Personal Best</div>
+      <div class="stats-section-row">
+        <span id="coverBestStars" class="treasure-chip" style="display:none;"></span>
+        <span id="coverAchCount"  class="treasure-chip" style="display:none;"></span>
+      </div>
+    </div>
+    <div class="stats-section" id="statsCollect">
+      <div class="stats-section-label">🏺 Collections</div>
+      <div class="stats-section-row">
+        <span id="coverTreasureCount" class="treasure-chip" style="display:none;"></span>
+        <span id="coverCrownCount"    class="treasure-chip" style="display:none;"></span>
+        <span id="coverScrollCount"   class="treasure-chip" style="display:none;"></span>
+      </div>
+    </div>
+    <div class="stats-section" id="statsProgress">
+      <div class="stats-section-label">🎯 Progress</div>
+      <div class="stats-section-row">
+        <span id="coverUnlocksCount" class="treasure-chip" style="display:none;"></span>
+        <span id="coverTruthsCount"  class="treasure-chip" style="display:none;"></span>
+      </div>
+    </div>
   </div>
 
   <!-- 2026-05-09 PM15 v3 (Jane: "buttons on the cover page are touching
@@ -2874,8 +2941,15 @@
     <div class="story-card">
       <h2>The Story So Far</h2>
       <p>
-        Moses sees his people suffering in Pharaoh's palace.
-        Now he must escape — past the guards, past the gates, into the desert beyond.
+        <!-- 2026-05-13 PM21 (Jane: "the story so far is not very
+             convincing... we also don't want to portray moses
+             negatively that he killed. we want it catchy and child
+             friendly"). New copy frames Moses' escape as a brave
+             ADVENTURE called by God — no killing, no suffering — just
+             a hero on the run with a divine mission. -->
+        Moses is a prince in Pharaoh's palace — but God has a special plan for him!
+        Help Moses sneak past the guards, solve clever Bible gates, and escape into
+        the wilderness for the adventure of a lifetime. <b>Can you guide him to freedom?</b>
       </p>
       <div class="verse-box">
         "By faith he forsook Egypt, not fearing the wrath of the king: for he endured, as seeing him who is invisible."
@@ -3247,13 +3321,20 @@
       <span><strong id="winTreasureNum">0/0</strong> Treasures</span>
       <span><strong id="winHeartsNum">3/3</strong> Hearts</span>
     </div>
-    <!-- v3.4: finish-modal is compact; the chest reveal plays mid-scene only. -->
-    <div class="win-truth-card" id="winTruthCard">
-      <span class="tc-label">&#9733; 1 Truth Card Collected &#9733;</span>
-      <div class="tc-body" id="winTruthText">God had a plan for Moses.</div>
+    <!-- v3.4: finish-modal is compact; the chest reveal plays mid-scene only.
+         2026-05-13 PM21 (Jane: "when you show 'scene 1 is complete', you are
+         mentioning something about truth card that you will get a truth
+         card. get rid of it. since truth card is independent of scene 1
+         completion"). The Truth Card collection happens at mid-scene
+         (separate chest reveal), so this win-modal no longer promises one
+         here. Replaced the card-shaped block with a short congratulation
+         line, and the motivate text now points kids to Scene 2. -->
+    <div class="win-truth-card" id="winTruthCard" style="display:none;">
+      <span class="tc-label">&#9733; Mission Complete &#9733;</span>
+      <div class="tc-body" id="winTruthText"></div>
     </div>
     <div class="win-badge-strip" id="winBadges"></div>
-    <p class="win-motivate" id="winMotivate">Collect more Truth Cards in the next scene to unlock the Truth Finder badge!</p>
+    <p class="win-motivate" id="winMotivate">Up next — Moses heads into the desert. Get ready for Scene 2!</p>
     <button class="btn" id="winNextBtn">Next: The Desert -></button>
     <button class="btn ghost" id="winReplayBtn">Replay Scene 1</button>
     <button class="btn ghost" id="winMenuBtn">Main Menu</button>
@@ -8516,14 +8597,23 @@ function _maybeFireOnboardingTip(){
   if (typeof game === 'undefined' || game.state !== 'playing') return;
   if (typeof game.startedAt !== 'number') return;
   const elapsed = (Date.now() - game.startedAt);
-  // 1) Goal tip — fires 1.5 s into the FIRST EVER run.
-  if (!_hasTutSeen('goal') && elapsed > 1500 && !window._tutFlags.goalShown) {
+  // 2026-05-13 PM21 (Jane: "overlapping messages. why is it still
+  // happening?"). Root cause: the goal tip was firing at 1.5 s — DURING
+  // the intro-pan "REACH THIS GATE" banner (which is on screen for ~5 s
+  // total). The toast queue suppresses while the intro-pan label is in
+  // DOM, but the goal tip's timer counts elapsed-since-startedAt and
+  // would queue + drain immediately after the pan, while the next event
+  // banner could spawn. Cleanest fix: delay the goal tip to AFTER the
+  // intro pan has fully cleared (PAN_OUT 1400 + HOLD 2400 + PAN_BACK
+  // 1200 + 380 ms fade = 5380 ms), and gate it on `_introPanActive`
+  // being false. Same for the gates tip (push to 12 s).
+  if (!_hasTutSeen('goal') && elapsed > 5500 && !_introPanActive && !window._tutFlags.goalShown) {
     window._tutFlags.goalShown = true;
     _markTutSeen('goal');
     try { toast('🗝️ Goal: find the Golden Key, then reach the EXIT.'); } catch(e){}
   }
-  // 2) Gates tip — fires 9 s in (lets the goal tip clear first), explains the unlock chain.
-  if (!_hasTutSeen('gates') && elapsed > 9000 && !window._tutFlags.gatesShown) {
+  // 2) Gates tip — fires 12 s in (after goal tip clears), explains the unlock chain.
+  if (!_hasTutSeen('gates') && elapsed > 12000 && !_introPanActive && !window._tutFlags.gatesShown) {
     window._tutFlags.gatesShown = true;
     _markTutSeen('gates');
     const total = (challengeGates && challengeGates.length) || 4;
@@ -9692,6 +9782,13 @@ function openChallenge(gate) {
     try { toast('🪶 SCRIBE\'S WISDOM grants this gate without a question!'); } catch(e){}
     try { spawnGlitterBurstAtPlayer(28); } catch(e){}
     try { _refreshUnlockButtons(); } catch(e){}
+    // 2026-05-13 PM21 (Jane: "when moses uses scribe's wisdom to unlock
+    // a gate and goes to main menu and then resumes the game, the gate
+    // unlocked with the scribe's wisdom is not accounted for"). The
+    // normal handleChallengeAnswer path calls _saveCheckpoint() after
+    // a gate solves; the Scribe's Wisdom auto-skip path was skipping
+    // it. Now it persists immediately so resume picks up the unlock.
+    try { _saveCheckpoint(); } catch(e){}
     return;
   }
   // FIX (port from scene2 v3.28 bug 1): clear the per-gate submission lock at
@@ -10910,15 +11007,24 @@ function renderSpotDiff(gate, q, container){
       found.add(hitIdx);
       const dd = detectedDiffs[hitIdx];
       try { play('chime'); } catch(ex){}
-      // Sync halo on BOTH A and B
+      // 2026-05-13 PM21 (Jane: "i am still seeing big halos on spot the
+      // difference. the coordinates are also not exact"). The bank's
+      // `r` value (typically 18) was used for BOTH tap-tolerance AND
+      // visible halo size — so halos rendered at 36% of image width,
+      // swallowing the actual difference. Now: visible halo is fixed at
+      // ~6.5% diameter (small ring around the difference itself), tap
+      // tolerance still uses `_tapR` for forgiving touch input. Halo
+      // also offset by halfHalo (not r) so it's centered on the
+      // intended coordinate, not the old large radius.
+      const HALO_PCT = 6.5;      // halo DIAMETER as % of image width
+      const halfHalo = HALO_PCT / 2;
       imgContainers.forEach(ic => {
         const circle = document.createElement('div');
         circle.className = 'ch-spotdiff-hit';
-        const r = dd.r;
-        circle.style.left   = (dd.x - r) + '%';
-        circle.style.top    = (dd.y - r) + '%';
-        circle.style.width  = (r * 2) + '%';
-        circle.style.height = (r * 2) + '%';
+        circle.style.left   = (dd.x - halfHalo) + '%';
+        circle.style.top    = (dd.y - halfHalo) + '%';
+        circle.style.width  = HALO_PCT + '%';
+        circle.style.height = HALO_PCT + '%';
         ic.appendChild(circle);
       });
       counter.textContent = 'Found: ' + found.size + ' / ' + totalDiffs;
