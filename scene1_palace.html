@@ -361,6 +361,29 @@
     .verse-box { font-size: 13px; padding: 8px 12px; margin-top: 8px; }
   }
 
+  /* 2026-05-14 PM22 (Jane: "on landscape mode, make the story so far,
+     difficulty grid on cover page center aligned"). On short-viewport
+     landscape phones, center every cover block — story text, verse,
+     difficulty buttons — so the cover reads tidy instead of left-ragged. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .cover-cards-row {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: stretch;
+      justify-content: center;
+      gap: 12px;
+      width: min(940px, 96%);
+      margin: 0 auto;
+    }
+    .cover-cards-row .story-card { width: min(420px, 46%); }
+    .story-card, .story-card h2, .story-card p { text-align: center; }
+    .verse-box { text-align: center; }
+    .verse-box .ref { text-align: center; }
+    .difficulty-selector { justify-content: center; }
+    #difficultyHint { text-align: center; }
+  }
+
   .difficulty-selector {
     /* 2026-05-08 PM7 (Jane: "there is a lot of empty space under this
        grid. center the text. you can make it larger- the difficulty
@@ -868,6 +891,40 @@
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
     position:relative;
+  }
+  /* 2026-05-14 PM22 (Jane: "look at the lore tile modal on landscape, it
+     is getting cut. check for all the modals that the modal size is
+     correct for both portrait and landscape. on landscape mode, the
+     image size for slider, guess the verse etc are too small. make it
+     larger but it shouldn't come outside the modal").
+     ONE universal landscape-phone modal rule that:
+       1. Caps EVERY modal at 96vh + forces scroll so nothing is cut.
+       2. Tightens vertical padding so more content fits.
+       3. Re-sizes the puzzle images by HEIGHT (vh) instead of fixed px —
+          bigger on landscape, but bounded so they never overflow.    */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .modal-overlay { padding:6px; align-items:flex-start; }
+    .modal-content,
+    .unlocks-card, .truthlib-card {
+      max-height:96vh !important;
+      max-height:96dvh !important;
+      overflow-y:auto !important;
+      -webkit-overflow-scrolling:touch;
+      padding-top:12px; padding-bottom:14px;
+    }
+    .modal-content h2 { font-size:18px; margin-bottom:6px; }
+    .modal-content p  { font-size:13px; margin-bottom:6px; line-height:1.35; }
+    /* lore reveal image — was a fixed 240px that pushed the modal past
+       the viewport. Height-based so it scales with the short viewport. */
+    #loreRevealImg { max-height:42vh !important; }
+    /* puzzle images — were too SMALL on landscape (fixed 120-190px).
+       Now sized by viewport height so they're big + readable, capped
+       so they stay inside the scrollable modal. */
+    .ch-pict-img       { width:auto !important; max-width:88%; max-height:48vh !important; }
+    .ch-count-scene-img{ width:auto !important; max-width:88%; max-height:46vh !important; }
+    .ch-slider-thumb   { max-width:none !important; max-height:30vh !important; }
+    .ch-slider-grid    { width:min(46vh,72vw) !important; height:min(46vh,72vw) !important; }
+    .ch-spotdiff-img   { max-height:44vh !important; }
   }
   .modal-content h2 { font-size:22px; margin-bottom:10px; letter-spacing:1px; }
   .modal-content p  { font-size:15px; line-height:1.5; margin-bottom:10px; }
@@ -2422,31 +2479,49 @@
     font-family: Georgia, serif;
   }
   .stats-section {
+    /* 2026-05-14 PM22 (Jane: "beautify 'personal best'. it is very
+       ordinary"). Each section is now its own carved card — inset
+       gradient, gold hairline border, soft inner glow — so it reads as
+       a trophy-cabinet shelf rather than plain centered text. */
     flex: 1 1 180px;
     min-width: 0;
     text-align: center;
+    background: linear-gradient(180deg, rgba(255,217,118,0.10), rgba(0,0,0,0.18));
+    border: 1.5px solid rgba(255,217,118,0.40);
+    border-radius: 11px;
+    padding: 8px 10px 10px;
+    box-shadow: inset 0 1px 0 rgba(255,217,118,0.22), 0 2px 8px rgba(0,0,0,0.30);
+  }
+  /* Personal Best gets a slightly richer treatment — it's the "headline"
+     stat a returning kid is proudest of. */
+  #statsPersonal {
+    background: linear-gradient(180deg, rgba(255,217,118,0.20), rgba(120,74,16,0.25));
+    border-color: rgba(255,217,118,0.65);
+    box-shadow: inset 0 1px 0 rgba(255,240,190,0.35), 0 3px 12px rgba(0,0,0,0.4),
+                0 0 14px rgba(255,217,118,0.20);
   }
   .stats-section-label {
-    color: #ffd976;
+    color: #ffe9b0;
     font-size: 11px;
-    letter-spacing: 1.3px;
+    letter-spacing: 1.4px;
     text-transform: uppercase;
     font-weight: 800;
-    margin-bottom: 6px;
-    opacity: 0.92;
+    margin-bottom: 7px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.55);
   }
+  #statsPersonal .stats-section-label { color: #fff3cf; font-size: 11.5px; }
   .stats-section-row {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 4px;
+    gap: 5px;
     min-height: 28px;
   }
   /* Phone: stack the three sections vertically for readability */
   @media (max-width: 600px) {
-    .stats-panel { gap: 4px; padding: 8px 10px; }
-    .stats-section { flex: 1 1 100%; }
-    .stats-section-label { font-size: 10.5px; margin-bottom: 3px; }
+    .stats-panel { gap: 6px; padding: 8px 10px; flex-direction: column; }
+    .stats-section { flex: 1 1 100%; padding: 7px 8px 8px; }
+    .stats-section-label { font-size: 10.5px; margin-bottom: 4px; }
     .treasure-chip { padding: 3px 10px; }
     .treasure-chip .chip-emoji { font-size: 14px; }
     .treasure-chip .chip-num   { font-size: 13px; }
@@ -2626,167 +2701,102 @@
   }
 
   /* ============ RESPONSIVE ============ */
-  /* 2026-05-08 (Jane: "i purposely wanted the dpad on the right corner of
-     the screen so the game grid gets the most space ... change it like
-     game 1 ... but except have dpad below the 3 buttons"). Moves the
-     entire controls block to the RIGHT edge as a vertical column —
-     game grid (.canvas-wrapper) gets all the horizontal space. Action
-     panel sits at the TOP of the column, D-pad below it (HTML order is
-     action-panel first, dpad second per the new HTML structure).
-     Matches Game 1's controls-panel layout (game/index.html line 1570). */
-  @media (max-width: 700px) {
-    .game-page.active {
-      display:grid !important;
-      grid-template-rows:auto 1fr;
-      grid-template-columns:1fr auto;
-    }
-    .hud { grid-column:1 / -1; padding:6px 8px; }
-    .canvas-wrapper { grid-row:2; grid-column:1; min-height:0; }
-    .controls {
-      grid-row:2; grid-column:2;
-      flex-direction:column;
-      align-items:center;
-      justify-content:flex-start;
-      gap:8px;
-      padding:8px 6px;
-      width:auto;
-      min-height:unset;
-      height:100%;
-      background:linear-gradient(180deg, rgba(42,14,3,0.92), rgba(58,21,8,0.88));
-      border-left:2px solid #ffd976;
-      border-top:none;
-      flex:0 0 auto;
-      overflow-y:auto;
-    }
-    .action-panel {
-      flex:0 0 auto;
-      flex-direction:column;
-      gap:5px;
-      width:120px;
-      max-width:120px;
-    }
-    .action-btn {
-      height:36px;
-      width:100%;
-      font-size:12px;
-      flex:0 0 auto;
-      padding:0 8px;
-    }
-    .dpad {
-      width:120px;
-      flex:0 0 auto;
-      gap:3px;
-    }
-    .dpad-btn, .dpad-spacer { height:36px; border-radius:6px; }
-    .dpad-text { display:none; }
-    .hud-chip { font-size:12px; padding:3px 8px; }
-  }
-  @media (max-height: 620px) and (orientation: landscape) {
-    .controls { min-height:unset; padding:4px 10px; }
-    .dpad-btn { height:38px; }
-    .action-btn { height:36px; }
-    .dpad-text { display:none; }
-  }
-  /* 2026-05-12 PM17 (Jane: "for landscape, the 3 buttons and dpad should
-     be on the right side pane. For portrait, these should be in the
-     bottom — the 3 buttons on the left side of the screen, and the dpad
-     on the right side of the screen"). Two explicit layouts, one per
-     orientation, following the Game 1 / River Maze pattern. */
+  /* 2026-05-14 PM22 — COMPLETE RESPONSIVE REWRITE (Jane: "portrait is
+     very much broken... hardly game grid is shown"). The previous three
+     overlapping media queries fought each other: an unqualified
+     @media(max-width:700px) grid rule applied to BOTH orientations and
+     collided with the orientation-specific rules, leaving the canvas
+     wrapper with zero usable height in portrait. Now: ONE rule per
+     orientation, no unqualified breakpoint, explicit !important resets
+     so neither rule leaks into the other.
 
-  /* ===== LANDSCAPE PHONE: side pane on the right ===== */
-  @media (orientation: landscape) and (max-height: 540px) {
-    .game-page.active {
-      display:grid !important;
-      grid-template-rows:auto 1fr;
-      grid-template-columns:1fr 130px;
-    }
-    .hud { grid-column:1 / -1; padding:4px 8px; min-height:auto; flex-wrap:nowrap; gap:5px; }
-    .hud-chip { font-size:11px; padding:2px 6px; }
-    .canvas-wrapper { grid-row:2; grid-column:1; min-height:0; }
-    .controls {
-      grid-row:2; grid-column:2;
-      flex-direction:column !important;
-      align-items:center; justify-content:center;
-      min-height:unset; height:100%; width:auto;
-      padding:6px 4px;
-      background:linear-gradient(90deg, rgba(42,14,3,0.92) 0%, rgba(58,21,8,0.85) 100%);
-      border-left:2px solid rgba(255,217,118,0.55);
-      border-top:none;
-      gap:8px; flex-shrink:0; overflow-y:auto;
-    }
-    .action-panel {
-      flex-direction:column !important; align-items:stretch;
-      width:100%; max-width:120px; gap:5px; flex:0 0 auto;
-      order:1;
-    }
-    .action-btn { height:34px; font-size:12px; padding:0 6px; flex:unset; }
-    .dpad { width:110px; gap:3px; flex:0 0 auto; order:2; }
-    .dpad-btn, .dpad-spacer { height:32px; border-radius:50%; font-size:15px; }
-    .dpad-text { display:none; }
-  }
+     LAYOUT MODEL (both orientations):
+       .game-page = flex column → [ HUD ] [ canvas (flex:1) ] [ controls ]
+     PORTRAIT controls bar = full-width row: 3 action buttons LEFT,
+       + d-pad RIGHT. Canvas gets the entire middle band — maximized.
+     LANDSCAPE controls bar = same full-width row but shorter, so the
+       canvas band stays as tall as possible. D-pad keeps its + cluster
+       with UP/DOWN/LEFT/RIGHT labels in both orientations. */
 
-  /* ===== PORTRAIT PHONE: controls at bottom — action LEFT, dpad RIGHT ===== */
-  /* 2026-05-13 PM20 (Jane: "look how bad portrait on phone is . i told
-     you n phone portrait, the controls and the 3 buttons have to be in
-     the bottom and not split screen. look at game 1 for reference").
-     EXPLICIT column layout. Canvas takes ALL remaining vertical space
-     between the HUD and the controls bar. Controls bar is FULL-WIDTH
-     at the bottom with action buttons LEFT and dpad RIGHT. No grid,
-     no side pane, no split-screen. */
-  @media (orientation: portrait) and (max-width: 900px) {
+  /* ----- shared phone tweaks (any small screen) ----- */
+  @media (max-width: 960px) {
     .game-page.active {
       display:flex !important;
       flex-direction:column !important;
     }
-    .canvas-wrapper {
-      flex:1 1 auto !important;
-      width:100% !important;
-      min-height:0 !important;
-    }
-    /* In case any prior media query injected grid placement, RESET it. */
     .game-page.active > .hud,
     .game-page.active > .canvas-wrapper,
     .game-page.active > .controls {
       grid-row:auto !important;
       grid-column:auto !important;
+      width:100% !important;
+    }
+    .canvas-wrapper {
+      flex:1 1 auto !important;
+      min-height:0 !important;
+      width:100% !important;
+      padding:3px !important;
     }
     .controls {
       flex-direction:row !important;
-      align-items:center; justify-content:space-between;
+      align-items:center;
+      justify-content:space-between;
       width:100% !important;
-      padding:8px 12px;
-      min-height:auto;
+      min-height:auto !important;
+      height:auto !important;
       gap:10px;
-      border-top:2px solid #ffd976;
-      border-left:none;
+      border-top:2px solid #ffd976 !important;
+      border-left:none !important;
+      background:linear-gradient(0deg, #2a0e03 0%, #3a1508 100%) !important;
     }
     .action-panel {
       flex-direction:column !important;
-      width:48%; max-width:48%;
       gap:6px;
-      order:1;            /* LEFT side */
+      order:1;             /* action buttons = LEFT */
+      flex:1 1 42%;
+      max-width:46%;
     }
-    .action-btn { height:38px; font-size:13px; padding:0 8px; width:100%; }
     .dpad {
-      width:44%; max-width:170px;
       display:grid !important;
       grid-template-columns: 1fr 1fr 1fr;
-      gap:4px;
-      order:2;            /* RIGHT side */
+      gap:5px;
+      order:2;             /* d-pad = RIGHT */
       flex:0 0 auto;
     }
-    .dpad-btn, .dpad-spacer { height:40px; border-radius:8px; font-size:18px; }
-    .dpad-text { display:none; }
-    /* HUD compact + wrap-safe */
-    .hud {
-      padding:6px 8px;
-      gap:4px;
-      flex-wrap:wrap;
-    }
-    .hud-group { font-size:12px; gap:5px; min-width:0; flex-wrap:wrap; }
+    /* 2026-05-14 PM22 (Jane: "the text UP DOWN LEFT RIGHT on the dpad is
+       gone on both orientations. fix all this"). Labels restored — was
+       display:none in the old media queries. */
+    .dpad-text { display:block !important; font-size:8px; }
+    .hud { flex-wrap:wrap; }
+    .hud-group { min-width:0; flex-wrap:wrap; }
+  }
+
+  /* ----- PORTRAIT phone: tall canvas, comfortable controls ----- */
+  @media (orientation: portrait) and (max-width: 960px) {
+    .controls { padding:10px 12px; }
+    .action-btn { height:42px; font-size:13px; padding:0 8px; width:100%; }
+    .dpad { width:46%; max-width:200px; gap:5px; }
+    .dpad-btn, .dpad-spacer { height:46px; border-radius:10px; font-size:20px; }
+    .dpad-text { font-size:9px; }
+    .hud { padding:6px 8px; gap:4px; }
+    .hud-group { font-size:12px; gap:5px; }
     .hud-chip { font-size:11.5px; padding:3px 8px; }
     .hud-hearts { font-size:16px; letter-spacing:2px; }
     .pause-btn { width:32px; height:32px; font-size:14px; }
+  }
+
+  /* ----- LANDSCAPE phone: short controls bar, max-height canvas ----- */
+  @media (orientation: landscape) and (max-width: 960px) {
+    .controls { padding:4px 12px; }
+    .action-btn { height:30px; font-size:11.5px; padding:0 6px; width:100%; }
+    .action-panel { flex:1 1 36%; max-width:40%; gap:4px; }
+    .dpad { width:38%; max-width:172px; gap:3px; }
+    .dpad-btn, .dpad-spacer { height:30px; border-radius:7px; font-size:15px; }
+    .dpad-text { font-size:7px; }
+    .hud { padding:3px 8px; gap:4px; flex-wrap:nowrap; }
+    .hud-chip { font-size:11px; padding:2px 6px; }
+    .hud-hearts { font-size:15px; letter-spacing:1.5px; }
+    .pause-btn { width:30px; height:30px; font-size:13px; }
   }
   .preload-overlay {
     display:none;
@@ -2952,8 +2962,10 @@
         the wilderness for the adventure of a lifetime. <b>Can you guide him to freedom?</b>
       </p>
       <div class="verse-box">
-        "By faith he forsook Egypt, not fearing the wrath of the king: for he endured, as seeing him who is invisible."
-        <span class="ref">- Hebrews 11:27 (KJV)</span>
+        <!-- 2026-05-14 PM22 (Jane: "show bible verses in NIV on cover
+             page"). Switched KJV → NIV to match the in-game verse text. -->
+        "By faith he left Egypt, not fearing the king's anger; he persevered because he saw him who is invisible."
+        <span class="ref">- Hebrews 11:27 (NIV)</span>
       </div>
       <!-- 2026-05-08 PM7 (Jane: "now the cover has 2 sections with the same
            title. can you refine this so everything falls into place"). The
@@ -3618,6 +3630,17 @@ try {
     window.visualViewport.addEventListener('resize', () => { resizeCanvas(); });
   }
 } catch(e){}
+// 2026-05-14 PM22 (Jane: "hardly game grid is shown on portrait"). Root
+// cause: after an orientation flip OR a restart, the canvas kept its
+// stale size because resizeCanvas only fired on `resize`. Some mobile
+// browsers fire `orientationchange` WITHOUT a `resize`, and the layout
+// reflow isn't settled on the first frame. Listen for orientationchange
+// + double-fire resizeCanvas (immediate + 350 ms later once the
+// browser chrome / viewport has settled).
+window.addEventListener('orientationchange', () => {
+  resizeCanvas();
+  setTimeout(resizeCanvas, 350);
+});
 
 /* ---------- TILE TYPES ----------
    0 = floor (walkable)
@@ -8026,6 +8049,24 @@ $('cinNextBtn').addEventListener('click', (e) => {
 
 /* ---------- START SCENE ---------- */
 function startScene1() {
+  // 2026-05-14 PM22 (Jane: "when moses gets caught and the user goes to
+  // main menu and plays the same difficulty, we are no longer
+  // restarting the game ... we are just seeing the same caught modal").
+  // Root cause: startScene1 never defensively closed leftover modals
+  // (restartScene does, but the cover-page → Begin Adventure path runs
+  // startScene1 directly). If the danger modal's .active class lingered
+  // for any reason, the kid saw it on top of the fresh scene. Clear
+  // EVERY modal + reset capture FX at the top of every scene start.
+  try {
+    ['winModal','dangerModal','challengeModal','dialogModal','pauseModal',
+     'tutorialModal','sceneBanner','truthChestModal','mapPeekOverlay',
+     'loreRevealModal','cluePuzzleModal']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active'); });
+    const _wr = document.querySelector('.canvas-wrapper');
+    if (_wr) _wr.classList.remove('capture-freeze','capture-shake');
+    document.querySelectorAll('.screen-flash-red, .glitter-burst, #_introPanLabel')
+      .forEach(el => { try { el.remove(); } catch(e){} });
+  } catch(e){}
   game.state = 'playing';
   // 2026-05-09 PM15 v3 — reset per-scene power-up state. Pharaoh's Mercy
   // is the only one that keeps a per-scene "used" flag (it auto-fires);
@@ -8462,6 +8503,12 @@ function restartScene() {
   // first cameo only fires after the cooldown elapses on a fresh play.
   try { _resetPharaohHunt(); } catch(e){}
   _currentZone = null;
+  // 2026-05-14 PM22 — re-measure the canvas on restart. Without this a
+  // restart kept the canvas at whatever size it was last sized to —
+  // which could be stale/zero if the orientation changed while a modal
+  // was open. resizeCanvas() reads the live wrapper rect + re-derives
+  // TILE / VIEW_COLS / VIEW_ROWS.
+  try { resizeCanvas(); } catch(e){}
   updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try{updateHudGates();}catch(e){}
   updateCamera();
   // v3.x audit (parity with Scene 2 v3.12): play the cinematic intro pan
@@ -11715,8 +11762,13 @@ const UNLOCK_TIERS = [
   { threshold:  10, resource: 'scrolls',   key: 'scribesWisdom',
     label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000,
     desc: 'Skip the next Bible Gate (counts as solved). Recharges every 90 s.' },
+  // 2026-05-14 PM22 (Jane: "instead of 'pharaoh's mercy', say something
+  // else since God is the one who has mercy, not pharaoh"). Renamed to
+  // "God's Grace". The localStorage `key` stays 'pharaohsMercy' so kids
+  // who already earned the unlock keep it — only the player-facing label
+  // + toasts change.
   { threshold: 600, resource: 'treasures', key: 'pharaohsMercy',
-    label: '🙏 Pharaoh\'s Mercy', cooldownMs: 0,
+    label: '🙏 God\'s Grace', cooldownMs: 0,
     desc: 'One free heart restore per scene (used automatically at 1 heart).' },
 ];
 function _loadLifetimeTreasures(){
@@ -11858,7 +11910,7 @@ function _activatePowerup(key){
     try { toast('🪶 SCRIBE\'S WISDOM armed — next Bible Gate skipped.'); } catch(e){}
   } else if (key === 'pharaohsMercy') {
     // This one auto-fires on low hearts — manual tap just toasts a hint.
-    try { toast('🙏 Pharaoh\'s Mercy stays armed; auto-saves you at 1 heart.'); } catch(e){}
+    try { toast('🙏 God\'s Grace stays armed; auto-saves you at 1 heart.'); } catch(e){}
     return;
   }
   if (tier.cooldownMs && tier.cooldownMs > 0) {
@@ -12286,15 +12338,15 @@ function _softCatch(msg, imgSrc, kind){
   // at the end of the previous softCatch — bail early if we're still
   // within it. Same window also gates onHazardHit.
   if (performance.now() < (game.invulnerableUntil || 0)) return;
-  // 2026-05-09 PM15 v3 — Pharaoh's Mercy auto-restore. If Moses is at 1
-  // heart AND the kid has earned the Pharaoh's Mercy unlock AND it hasn't
+  // 2026-05-09 PM15 v3 — God's Grace auto-restore. If Moses is at 1
+  // heart AND the kid has earned the God's Grace unlock AND it hasn't
   // fired yet this scene, eat the catch and grant invulnerability instead
   // of losing the last heart. One use per scene.
   if (game.hearts <= 1 && _hasUnlock('pharaohsMercy')
       && !window._powerupUsedThisScene.pharaohsMercy) {
     window._powerupUsedThisScene.pharaohsMercy = true;
     game.invulnerableUntil = performance.now() + 2500;
-    try { toast('🙏 Pharaoh\'s Mercy! Moses is spared this time.'); } catch(e){}
+    try { toast('🙏 God\'s Grace! Moses is spared this time.'); } catch(e){}
     try { play('chime') || play('success'); } catch(e){}
     try { spawnGlitterBurstAtPlayer(28); } catch(e){}
     try { _refreshUnlockButtons(); } catch(e){}
@@ -12413,6 +12465,11 @@ function openDanger(msg, imgSrc, kind){
 
   // after 1.5s slow-mo freeze, show the danger modal
   setTimeout(() => {
+    // 2026-05-14 PM22 — guard: if the game already left the capturing
+    // state (e.g. a restart or Main-Menu jump fired during the freeze),
+    // do NOT pop the stale danger modal. Prevents the "same caught modal
+    // re-appears after Begin Adventure" regression.
+    if (game.state !== 'capturing') return;
     wrapper.classList.remove('capture-freeze', 'capture-shake');
     // 2026-05-09 PM13: defensively clear any leftover stage overlays
     // that might be capturing clicks on the modal (red flash, glitter
