@@ -605,6 +605,41 @@
     .cin-panel .cin-art { max-height: 58vh; margin: 0 auto 6px; }
     .cin-text { font-size: 14.5px; line-height: 1.45; }
   }
+  /* 2026-05-17 PM36 (Jane: "on portrait, in the narration panels, the
+     image is tiny and below the narration text, there is a lot of
+     space. can you make the image little more bigger? i want the
+     image and text to fill the space"). On portrait the 16:9 aspect
+     constrained the image to width × 9/16 — on a 96vw-wide panel that
+     was ~210 px tall, half the viewport empty below the text. Now:
+     drop aspect-ratio entirely on portrait + cap height at 55vh +
+     ensure image fills width. With object-fit:contain the actual
+     painted area still respects the source aspect, but the BOX takes
+     the full available space so kid sees a much bigger picture. */
+  @media (orientation: portrait) and (max-width: 899px) {
+    .cin-panel {
+      width: min(640px, 96vw);
+      padding: 14px 16px;
+      max-height: 96vh;
+      max-height: 96dvh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .cin-panel .cin-art {
+      aspect-ratio: auto;        /* drop 16:9 so the box can grow taller */
+      width: 100%;
+      height: 55vh;
+      max-height: 55vh;
+      margin: 0 auto 12px;
+      flex: 0 0 auto;
+    }
+    .cin-panel .cin-art .cin-scene-img {
+      width: 100%; height: 100%;
+      object-fit: cover;         /* fill the box; trims a sliver if needed */
+    }
+    .cin-text { font-size: 15px; line-height: 1.5; padding: 0 4px; }
+    .cin-controls { margin-top: 12px; }
+  }
   @media (min-width: 900px) {
     .cin-panel {
       width: min(920px, 90vw);
@@ -1101,12 +1136,44 @@
     border: 3px solid #ffd976;
     border-radius: 14px;
     padding: 18px 22px;
+    /* 2026-05-17 PM36 (Jane: "the newly added tutorial modals are
+       getting cut" on landscape). Cap both width AND height against
+       the viewport so the card always fits, plus add an overflow-y
+       scroll guard so long bodies stay reachable on small screens. */
     max-width: min(440px, 90vw);
+    max-height: 80vh;
+    max-height: 80dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     color: #fff8e7;
     box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 24px rgba(255,217,118,0.35);
     text-align: center;
     font-family: Georgia,serif;
     animation: tipPopIn 0.32s cubic-bezier(.2,1.4,.4,1.0);
+  }
+  /* PM36: tighter landscape sizing — the bottom-padding 18% on the
+     overlay is ~60 px on a 390-px-tall landscape, which leaves only
+     ~140 px for the card on the top half. Use a slimmer card +
+     reduced padding-bottom on landscape so the card always fits in
+     the visible area + the GOT IT button stays tappable. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .tip-popup-overlay {
+      padding-bottom: 4%;
+      align-items: center;
+    }
+    .tip-popup-overlay.top-anchored {
+      padding-top: 4%;
+    }
+    .tip-popup-card {
+      padding: 12px 18px;
+      max-width: min(520px, 88vw);
+      max-height: 88vh;
+      max-height: 88dvh;
+    }
+    .tip-popup-icon { font-size: 24px; margin-bottom: 4px; }
+    .tip-popup-title { font-size: 15px; margin-bottom: 4px; }
+    .tip-popup-body  { font-size: 13.5px; line-height: 1.4; margin-bottom: 10px; }
+    .tip-popup-btn   { font-size: 14px; padding: 9px 22px; min-height: 38px; }
   }
   @keyframes tipPopIn {
     0%   { transform: translateY(40px) scale(0.85); opacity: 0; }
@@ -2249,7 +2316,20 @@
     .modal-overlay.challenge-modal .modal-content {
       max-height: 92vh;
       max-height: 92dvh;
-      padding: 10px 12px 12px 12px;
+      /* 2026-05-17 PM36 (Jane: "on landscape, the bible gate Q in
+         challenge modal is almost touching the border"). Bump
+         horizontal padding 12 → 22 px + give the header its own
+         breathing room so "BIBLE GATE · Q 3 of 3" doesn't crash into
+         the papyrus rim on short viewports. */
+      padding: 10px 22px 12px 22px;
+    }
+    .challenge-modal #chHeader {
+      padding: 0 14px;          /* extra inner buffer for the chip-like heading */
+      font-size: 13px;          /* slightly smaller so it sits clear on tight modals */
+    }
+    .challenge-modal h2 {
+      font-size: 19px;          /* match the tighter chrome */
+      margin-top: 4px;
     }
   }
   .challenge-modal .ch-scroll {
@@ -3052,11 +3132,25 @@
     .dpad { width:46%; max-width:200px; gap:5px; }
     .dpad-btn, .dpad-spacer { height:46px; border-radius:10px; font-size:20px; }
     .dpad-text { font-size:9px; }
-    .hud { padding:6px 8px; gap:4px; }
+    /* 2026-05-17 PM36 (Jane: "on portrait, look at where the checkpoint
+       info tile on the top is getting cut"). Adding scroll-snap +
+       padding-right so the last HUD chip (gates / timer) is fully
+       visible before the safe-area inset. Plus a soft right-edge
+       fade so kids see there's MORE if they swipe. */
+    .hud {
+      padding:6px max(14px, env(safe-area-inset-right)) 6px max(8px, env(safe-area-inset-left)) !important;
+      gap:4px;
+      scroll-padding-right: 14px;
+    }
     .hud-group { font-size:12px; gap:5px; }
     .hud-chip { font-size:11.5px; padding:3px 8px; }
     .hud-hearts { font-size:16px; letter-spacing:2px; }
     .pause-btn { width:32px; height:32px; font-size:14px; }
+    /* Soft fade on the right edge of HUD so the cut-off chip reads as
+       "scroll me" instead of "broken". Pseudo on the parent .game-page
+       can't easily target the .hud's overflow region; we just give the
+       last hud-group a tiny inline trailing margin. */
+    .hud .hud-group:last-child { padding-right: 4px; }
   }
 
   /* ----- LANDSCAPE phone: short controls bar, max-height canvas ----- */
@@ -3066,39 +3160,59 @@
      space. Net controls-bar height stays ~ same; canvas keeps its
      max-height. */
   @media (orientation: landscape) and (max-width: 960px) {
-    /* 2026-05-15 PM26 (audit #5): landscape controls were 140-180 px tall
-       (action-panel stacked 3 buttons × 44 px + gaps), squeezing the
-       canvas. Flip action-panel back to a single row in landscape and
-       cap controls height at ~96 px so the canvas claims every extra
-       pixel. Touch targets stay at 44 px tall (WCAG #17). */
+    /* 2026-05-15 PM26 / 2026-05-17 PM36 (Jane: "landscape game grid is
+       too tiny" + "the dpad is again getting cut"). Aggressive
+       compression: HUD + controls together must leave ≥60% of the
+       viewport for the canvas. HUD bar slimmed; controls bar capped
+       at 80 px (was 96); dpad rows reduced to 38 px on truly short
+       viewports so the bottom row never gets clipped under the
+       browser chrome / home-indicator. */
+    .hud {
+      padding:2px 8px !important;
+      gap:4px;
+      flex-wrap:nowrap;
+      min-height: 36px;
+    }
+    .hud-chip { font-size:11px; padding:2px 6px; flex-shrink:0; }
+    .hud-hearts { font-size:15px; letter-spacing:1.5px; }
+    .pause-btn { width:36px; height:36px; font-size:13px; }
     .controls {
-      padding:4px 12px;
-      max-height: 96px;
+      padding:3px 10px !important;
+      padding-bottom: max(3px, env(safe-area-inset-bottom)) !important;
+      max-height: 80px;
       overflow: hidden;
     }
     .action-panel {
       flex-direction:row !important;
-      flex:1 1 42%;
-      max-width:44%;
+      flex:1 1 40%;
+      max-width:42%;
       gap:4px;
       flex-wrap:nowrap;
     }
     .action-btn {
-      height:44px;
-      font-size:11.5px;
+      height:38px;
+      font-size:11px;
       padding:0 6px;
       width:auto;
       flex:1 1 0;
       min-width:0;
       white-space:nowrap;
     }
-    .dpad { width:38%; max-width:172px; gap:3px; }
-    .dpad-btn, .dpad-spacer { height:44px; border-radius:8px; font-size:17px; min-width:44px; }
-    .dpad-text { font-size:8px; }
-    .hud { padding:3px 8px; gap:4px; flex-wrap:nowrap; }
-    .hud-chip { font-size:11px; padding:2px 6px; }
-    .hud-hearts { font-size:15px; letter-spacing:1.5px; }
-    .pause-btn { width:44px; height:44px; font-size:14px; }
+    .dpad { width:40%; max-width:180px; gap:3px; }
+    .dpad-btn, .dpad-spacer { height:38px; border-radius:8px; font-size:15px; min-width:38px; }
+    .dpad-text { font-size:7px; }
+  }
+  /* PM36: extra-short landscapes (e.g. iPhone SE / Pixel 4a landscape =
+     375 × 667 → rotated 667 × 375 minus chrome leaves ~330 px). On
+     these the HUD + controls eat too much of the canvas; trim further. */
+  @media (orientation: landscape) and (max-height: 400px) {
+    .hud { padding:1px 6px !important; min-height: 30px; }
+    .hud-chip { font-size:10px; padding:1px 5px; }
+    .hud-hearts { font-size:13px; }
+    .pause-btn { width:32px; height:32px; font-size:12px; }
+    .controls { max-height: 68px; padding:2px 8px !important; }
+    .action-btn { height:34px; font-size:10.5px; }
+    .dpad-btn, .dpad-spacer { height:34px; min-width:34px; font-size:14px; }
   }
   .preload-overlay {
     display:none;
@@ -4398,6 +4512,44 @@ function _maybeSwapZoneMusicThrottled(){
   if (now - _lastZoneCheckAt < 600) return;
   _lastZoneCheckAt = now;
   _maybeSwapZoneMusic();
+}
+
+// 2026-05-17 PM36 (Jane: "i hear 2 background musics. palace throne.mp3
+// or palace tension.mp3. play either one. but not both together").
+// The setMusic helper has a clean single-track invariant, but ~13
+// direct `audio.bgm.play()` calls across the code bypass it (pause-
+// release, dialog-close, scene-restart, etc.) — so during a zone
+// transition both palace throne (bgmThrone) and palace tension (bgm)
+// can be playing simultaneously. This janitor runs every 800 ms and
+// picks the FIRST loop track that's actively playing as the canonical
+// one, then pauses every other loop track to enforce single-track.
+// Cheap (just a few .paused checks). Runs from the main game loop.
+let _lastBgmJanitorAt = 0;
+function _bgmJanitor(){
+  const now = performance.now();
+  if (now - _lastBgmJanitorAt < 800) return;
+  _lastBgmJanitorAt = now;
+  if (!_soundOn) return;
+  try {
+    const playing = [];
+    for (const k of _LOOP_TRACKS) {
+      const a = audio[k];
+      if (a && !a.paused) playing.push(k);
+    }
+    if (playing.length <= 1) return;  // single-track invariant holds
+    // More than one loop is playing — keep the FIRST (which is the
+    // one most likely to be the kid's intended track based on the
+    // _LOOP_TRACKS declaration order: bgm, bgmThrone, bgmCorridor,
+    // bgmExit, narration, alerted). Pause the rest.
+    // Special case: if 'alerted' is among them, KEEP alerted because
+    // it's the active threat cue — pause everything else.
+    let keep = playing[0];
+    if (playing.indexOf('alerted') !== -1) keep = 'alerted';
+    for (const k of playing) {
+      if (k === keep) continue;
+      try { audio[k].pause(); audio[k].currentTime = 0; } catch(e){}
+    }
+  } catch(e){}
 }
 
 // v3.6: sounds that only make sense during active play.
@@ -6357,24 +6509,32 @@ const CHALLENGE_BANK = {
     // --- Spot the Difference (TAP-ON-IMAGE) — coords from Jane's
     //     2026-05-02 write-up. (% from top-left of image; r = tap-tolerance %.)
     { id:'eSdiff1', type:'spotdiff',
-      q:'Tap on the 5 differences in this palace courtyard scene!',
+      q:'Tap on the 4 differences in this palace courtyard scene!',
       imgA:'assets/images/spot-courtyard-1a.png',
       imgB:'assets/images/spot-courtyard-1b.png',
-      answer:5,
-      // 2026-05-16 PM35 — Jane re-drew the differences on the live PNG.
+      answer:4,
+      // 2026-05-17 PM38 (Jane: "halos for spot the differences are
+      // still not what i sent you"). All 5 spots Jane circled on the
+      // original drawing are now in `diffs[]`, but `answer: 4` keeps
+      // the goal at 4. `_onDetectionDone` resolves
+      // `totalDiffs = min(answer, diffs.length) = 4`, so the kid
+      // only needs to find 4 — but tapping ANY of the 5 spots Jane
+      // marked registers as a hit. Forgiving for ambiguous diffs.
+      // Tap radius bumped from 18 → 22% so a kid's finger anywhere
+      // near the marked area lands the hit.
       //  1. foliage/plant in the upper center above the fountain  (~38%, 28%)
-      //  2. plant / object at left pillar base, mid-left  (~28%, 38%)
+      //  2. plant / object at the left pillar base, mid-left  (~28%, 38%)
       //  3. blue bird perched at the lower-left pillar  (~28%, 57%)
       //  4. gold coins / items piled on the bottom-left table corner  (~28%, 70%)
       //  5. plant / foliage by the right-side pillar  (~88%, 32%)
       diffs:[
-        { x:38, y:28, r:5, tapR:18 },
-        { x:28, y:38, r:5, tapR:18 },
-        { x:28, y:57, r:5, tapR:18 },
-        { x:28, y:70, r:5, tapR:18 },
-        { x:88, y:32, r:5, tapR:18 },
+        { x:38, y:28, r:5, tapR:22 },
+        { x:28, y:38, r:5, tapR:22 },
+        { x:28, y:57, r:5, tapR:22 },
+        { x:28, y:70, r:5, tapR:22 },
+        { x:88, y:32, r:5, tapR:22 },
       ],
-      clue:'Look at the foliage above the fountain, the left pillar (two spots — mid + a bird at the base), the gold items on the table corner, and the plant by the right pillar.',
+      clue:'Look at the foliage above the fountain, the left pillar (2 spots), the gold items on the table corner, and the plant by the right pillar. Find any 4 to clear the gate.',
       verse:'Exodus 2:10 NIV' },
     // 2026-05-12 PM18 v2 (Jane: "i still see repeated questions. i want
     // more interactive questions"). Easy-bank pool was too small for the
@@ -6719,10 +6879,10 @@ const CHALLENGE_BANK = {
       //  3. bowls / pottery on the table right side  (~78%, 72%)
       //  4. large amphora / pot far-right  (~94%, 62%)
       diffs:[
-        { x:10, y:24, r:5, tapR:18 },
-        { x:12, y:78, r:5, tapR:18 },
-        { x:78, y:72, r:5, tapR:18 },
-        { x:94, y:62, r:5, tapR:18 },
+        { x:10, y:24, r:5, tapR:22 },
+        { x:12, y:78, r:5, tapR:22 },
+        { x:78, y:72, r:5, tapR:22 },
+        { x:94, y:62, r:5, tapR:22 },
       ],
       clue:'Look at the wall niche (top-left), the sandals + cloth rolls (bottom-left), the bowls on the right-side table, and the large amphora (far right).',
       verse:"Moses' parents were not afraid. (Hebrews 11:23 NIV)" },
@@ -6921,10 +7081,10 @@ const CHALLENGE_BANK = {
       //  3. basket weave detail mid-bottom  (~50%, 76%)
       //  4. rock + lily pad bottom-right  (~88%, 92%)
       diffs:[
-        { x:12, y:55, r:5, tapR:18 },
-        { x:38, y:50, r:5, tapR:18 },
-        { x:50, y:76, r:5, tapR:18 },
-        { x:88, y:92, r:5, tapR:18 },
+        { x:12, y:55, r:5, tapR:22 },
+        { x:38, y:50, r:5, tapR:22 },
+        { x:50, y:76, r:5, tapR:22 },
+        { x:88, y:92, r:5, tapR:22 },
       ],
       clue:'Look at the hut (bottom-left), the rock in the water (mid-left), the basket weave, and the rock (bottom-right).',
       verse:'Exodus 2:3-4 NIV' },
@@ -6939,10 +7099,10 @@ const CHALLENGE_BANK = {
       //  3. red bird (left-center over water)  (~25%, 52%)
       //  4. baby Moses in the basket (lower-mid)  (~38%, 70%)
       diffs:[
-        { x:75, y:20, r:5, tapR:18 },
-        { x:65, y:42, r:5, tapR:18 },
-        { x:25, y:52, r:5, tapR:18 },
-        { x:38, y:70, r:5, tapR:18 },
+        { x:75, y:20, r:5, tapR:22 },
+        { x:65, y:42, r:5, tapR:22 },
+        { x:25, y:52, r:5, tapR:22 },
+        { x:38, y:70, r:5, tapR:22 },
       ],
       clue:"Look at the princess's crown (top-right), the two handmaidens, the bird over the water, and baby Moses in the basket.",
       verse:'Exodus 2:5-6 NIV' },
@@ -6957,10 +7117,10 @@ const CHALLENGE_BANK = {
       //  3. waterskin pouch on Moses's belt  (~42%, 62%)
       //  4. camel rear / saddle (right)  (~85%, 62%)
       diffs:[
-        { x:20, y:25, r:5, tapR:18 },
-        { x:22, y:38, r:5, tapR:18 },
-        { x:42, y:62, r:5, tapR:18 },
-        { x:85, y:62, r:5, tapR:18 },
+        { x:20, y:25, r:5, tapR:22 },
+        { x:22, y:38, r:5, tapR:22 },
+        { x:42, y:62, r:5, tapR:22 },
+        { x:85, y:62, r:5, tapR:22 },
       ],
       clue:"Look at the sun, the dune below it, Moses's waterskin on his belt, and the camel's saddle.",
       verse:'Exodus 2:15 NIV' },
@@ -6975,10 +7135,10 @@ const CHALLENGE_BANK = {
       //  3. sand patch at the base of the well  (~28%, 80%)
       //  4. sand patch by the right-side palm tree  (~95%, 35%)
       diffs:[
-        { x:38, y:21, r:5, tapR:18 },
-        { x:36, y:40, r:5, tapR:18 },
-        { x:28, y:80, r:5, tapR:18 },
-        { x:95, y:35, r:5, tapR:18 },
+        { x:38, y:21, r:5, tapR:22 },
+        { x:36, y:40, r:5, tapR:22 },
+        { x:28, y:80, r:5, tapR:22 },
+        { x:95, y:35, r:5, tapR:22 },
       ],
       clue:'Look at the background sand dune, the rope on the well frame, the sand at the base of the well, and the sand by the right palm.',
       verse:'Exodus 2:16-17 NIV' },
@@ -9757,6 +9917,7 @@ const _firstEventSeen = {
   scroll: false, guard: false, captain: false, powerup: false,
   servant: false, exitLocked: false,
   dog: false,           // 2026-05-16 PM30
+  marble: false,        // 2026-05-17 PM36
 };
 function _resetFirstEventSeen(){
   for (const k in _firstEventSeen) _firstEventSeen[k] = false;
@@ -9903,6 +10064,17 @@ function _hideTipPopup(){
     _tipMovesSinceLast = 0;
     window._tipMovesSinceLast = 0;
   }
+  // 2026-05-17 PM37: fire any one-shot callback that wanted to run
+  // ONLY after the kid dismissed the tutorial (e.g. trigger the
+  // actual palace dim after the dim-tutorial explainer). Cleared
+  // immediately so it never fires twice.
+  try {
+    if (typeof window._afterTipClose === 'function') {
+      const cb = window._afterTipClose;
+      window._afterTipClose = null;
+      setTimeout(cb, 250);  // small gap so the kid sees the modal close before the event
+    }
+  } catch(e){}
 }
 function _tipPointAt(elId){
   // Clear any prior ring/hand + cancel tile-tracker rAF.
@@ -10194,6 +10366,23 @@ function _maybeFireFirstEventTip(){
     if (_introPanActive) return;
     if (document.getElementById('_introPanLabel')) return;
   } catch(e){}
+  // 2026-05-17 PM37 (Jane: "when i used the guard freeze power up, in
+  // the middle of it, the guard tutorial came and i lost the power
+  // because of the modal. show the tutorial little before and not
+  // when moses is using the power unlock"). Suppress every first-
+  // event tip while ANY power-up is active — the kid is mid-effect
+  // and any modal eats their 5-second window. The tutorial will fire
+  // on the next safe approach.
+  try {
+    const _nowFT = performance.now();
+    if (_nowFT < (window._guardFreezeUntil || 0)) return;
+    if (_nowFT < (window._speedBurstUntil  || 0)) return;
+    if (_nowFT < (window._royalVisionUntil || 0)) return;
+    const _puActive = window._puActiveUntil || {};
+    for (const k in _puActive) {
+      if (_nowFT < (_puActive[k] || 0)) return;
+    }
+  } catch(e){}
   // Throttle 1: 2-second cooldown after the last popup closed.
   if (performance.now() - _lastTipAt < 2000) return;
   // Throttle 2: require at least one step since last popup. Init = 99
@@ -10234,7 +10423,9 @@ function _maybeFireFirstEventTip(){
       showTipPopup('treasure', {
         icon: '💎',
         title: 'A Treasure Bag',
-        body: 'Walk over a coloured bag to collect it — no button needed. Pick up EVERY bag of the same colour (blue, green, OR red) and Moses earns +1 heart!',
+        // 2026-05-17 PM36 (Jane: "in treasure bag tutorial, remove
+        // 'No button needed'"). Dropped the parenthetical.
+        body: 'Walk over a coloured bag to collect it. Pick up EVERY bag of the same colour (blue, green, OR red) and Moses earns +1 heart!',
         pointAtTile: bag,
       });
       return;
@@ -10250,39 +10441,66 @@ function _maybeFireFirstEventTip(){
           title: 'A Hidden Scroll',
           // 2026-05-16 PM30 (Jane: "moses doesn't have to hit interact
           // to pick up scroll"). Updated copy to reflect auto-pickup —
-          // kid just walks next to the scroll. Removed the hand-sign
-          // on the Interact button since it's no longer the gesture.
+          // kid just walks next to the scroll.
+          // 2026-05-17 PM37 (Jane: "the halo that is near the lore
+          // tile is supposed to be on the lore tile... or remove the
+          // halo. let lore tile glow and pulse. no need halo").
+          // Dropped pointAtTile — the lore-tile canvas glow + scroll
+          // glyph (PM30 boost) is the visual anchor; a separate halo
+          // was redundant and could drift while the camera/Moses moved.
           body: 'Walk RIGHT NEXT to a scroll and it picks itself up. Bible-truth scrolls heal Moses by +1 heart. Clue scrolls hide a letter — collect all 3 to spell GOD!',
-          pointAtTile: { tx: o.tx, ty: o.ty },
         });
         return;
       }
     }
   }
   // 4) First guard within 5 tiles → dodge + cover + gate-camping warning
+  // 2026-05-17 PM36 (Jane: "when moses is in the middle of a chase by
+  // guards, the guard tutorial is appearing. this shouldn't be.
+  // guard tutorial should be before pursuit so there is no
+  // obstruction during the pursuit"). Skip the guard popup entirely
+  // when ANY guard is in alerted/suspicious state — the kid is
+  // already mid-chase and needs eyes on the screen, not a modal.
+  // The tutorial will fire on the next safe approach instead.
   if (!_firstEventSeen.guard && Array.isArray(guards)) {
+    let anyChasing = false;
     for (const g of guards) {
-      if (_near(g.tx, g.ty)) {
-        showTipPopup('guard', {
-          icon: '🛡️',
-          title: 'Egyptian Guards',
-          body: 'Guards walk in patterns and have a vision cone in front of them. Hide behind pillars, statues, curtains, or alcoves so they cannot see you. Sometimes a guard will stand on a Bible Gate — wait for them to step off.',
-        });
-        return;
+      if (g.state === 'alerted' || g.state === 'suspicious') { anyChasing = true; break; }
+    }
+    if (!anyChasing) {
+      for (const g of guards) {
+        if (_near(g.tx, g.ty)) {
+          showTipPopup('guard', {
+            icon: '🛡️',
+            title: 'Egyptian Guards',
+            body: 'Guards walk in patterns and have a vision cone in front of them. Hide behind pillars, statues, curtains, or alcoves so they cannot see you. Sometimes a guard will stand on a Bible Gate — wait for them to step off.',
+          });
+          return;
+        }
       }
     }
   }
   // 5) First Royal Captain spawn within 5 tiles → faster + longer sight
+  // 2026-05-17 PM36 (Jane PM36): same chase-suppression as the guard
+  // tutorial — never pop while the kid is mid-pursuit.
   try {
     if (!_firstEventSeen.captain && typeof _royalCaptain !== 'undefined'
         && _royalCaptain.spawned && _royalCaptain.tx != null
         && _near(_royalCaptain.tx, _royalCaptain.ty)) {
-      showTipPopup('captain', {
-        icon: '⚔️',
-        title: 'The Royal Captain',
-        body: 'The Royal Captain is FASTER than a guard and his sight reaches further. If he spots you, RUN to the nearest cover and hide until he moves on.',
-      });
-      return;
+      let anyChasingC = false;
+      if (Array.isArray(guards)) {
+        for (const g of guards) {
+          if (g.state === 'alerted' || g.state === 'suspicious') { anyChasingC = true; break; }
+        }
+      }
+      if (!anyChasingC) {
+        showTipPopup('captain', {
+          icon: '⚔️',
+          title: 'The Royal Captain',
+          body: 'The Royal Captain is FASTER than a guard and his sight reaches further. If he spots you, RUN to the nearest cover and hide until he moves on.',
+        });
+        return;
+      }
     }
   } catch(e){}
   // 6) First servant adjacency → hand on Interact + servant function
@@ -10368,17 +10586,35 @@ function _maybeFireJitTip(){
   // First-time-player onboarding chain (separate from the corner-case JIT tips below).
   try { _maybeFireOnboardingTip(); } catch(e){}
   // 1) Slippery marble — fire when Moses is within 2 tiles of any tile-9
+  // 2026-05-17 PM36 (Jane: "when moses goes near slippery marble, give
+  // tutorial about it. no need overhead slippery marble message").
+  // Promoted from a one-shot toast to a tutorial popup so the kid
+  // pauses + reads the mechanic. Falls back to a toast only when
+  // tutorial mode is off (handled inside showTipPopup).
   if (!_jitTipFired.marble && typeof MAP !== 'undefined' && Array.isArray(MAP)) {
     const px = player.tx, py = player.ty;
-    for (let dy = -2; dy <= 2 && !_jitTipFired.marble; dy++) {
-      for (let dx = -2; dx <= 2 && !_jitTipFired.marble; dx++) {
+    let marbleTile = null;
+    for (let dy = -2; dy <= 2 && !marbleTile; dy++) {
+      for (let dx = -2; dx <= 2 && !marbleTile; dx++) {
         const ny = py + dy, nx = px + dx;
         if (ny < 0 || ny >= MAP_H || nx < 0 || nx >= MAP_W) continue;
-        if (MAP[ny][nx] === 9) {
-          _jitTipFired.marble = true;
-          try { toast('🌀 Slippery marble nearby! If you step on it, you slide one extra tile — make sure that next tile is safe.'); } catch(e){}
-        }
+        if (MAP[ny][nx] === 9) marbleTile = { tx: nx, ty: ny };
       }
+    }
+    if (marbleTile) {
+      _jitTipFired.marble = true;
+      try {
+        showTipPopup('marble', {
+          icon: '🌀',
+          title: 'Slippery Marble',
+          // 2026-05-17 PM37 (Jane: "look at the halo for slippery
+          // marble"). Halo positioning was misaligned because the
+          // marble tile is small + the popup card overlapped it.
+          // Removed the tile pointer — the spiral icon + body text
+          // are clear enough.
+          body: 'Watch out! Some palace floor tiles are slippery. If Moses steps on one, he slides ONE extra tile forward — so make sure the tile beyond is safe (not a wall, not a guard, not a torch).',
+        });
+      } catch(e){}
     }
   }
   // 2026-05-12 PM17 (Jane: "only show messages pertaining to the grid
@@ -15001,6 +15237,25 @@ function updateGuards(dt){
     } catch(e){}
     return false;
   };
+  // 2026-05-17 PM37 (Jane: "a palace guard or a dog shouldn't stand
+  // on the gate tile. they can stand near the gate. i came across a
+  // situation where a palace guard blocked the gate"). Reject any
+  // patrol step that would land a guard ON an unsolved Bible gate
+  // tile. Adjacent is fine (kid can still wait for guard to step
+  // away), but ON the gate is a hard block — Moses can never enter
+  // the gate while a guard sits on it. Mirrors the dog
+  // _gateBufferBlocked check, but for guards we ONLY reject the
+  // exact gate tile (not the 3×3 neighbourhood) so guards can still
+  // do legitimate cross-room patrols through the gate gap.
+  const _gateTileBlockedForGuard = (nx, ny) => {
+    try {
+      for (const cg of challengeGates) {
+        if (cg.solved) continue;
+        if (cg.tx === nx && cg.ty === ny) return true;
+      }
+    } catch(e){}
+    return false;
+  };
   for (const g of guards) {
     g.timer -= dt;
     if (g.swordOut) g.swordAnim = Math.min(g.swordAnim + dt*0.003, 1);
@@ -15024,9 +15279,13 @@ function updateGuards(dt){
           // crouched, the guard freezes a beat (re-tries next tick).
           // 2026-05-09 PM15 v2: also rejects chokepoint tiles + secret-door
           // tiles so the guard never parks where Moses can't get through.
+          // 2026-05-17 PM37: also reject the exact gate tile of any
+          // unsolved Bible gate so guards never park on a gate the
+          // kid needs to enter.
           const _stepOk = (nx, ny) => {
             if (!isWalkable(nx, ny)) return false;
             if (_secretDoorBufferForGuard(nx, ny)) return false;
+            if (_gateTileBlockedForGuard(nx, ny)) return false;
             if (player.tx === nx && player.ty === ny) {
               if (!player.crouched && game.state === 'playing') {
                 g.state = 'alerted';
@@ -15245,6 +15504,31 @@ function _maybeFirePalaceEvent(){
   _firePalaceEvent(pick);
 }
 function _firePalaceEvent(name){
+  // 2026-05-17 PM37 (Jane: "don't dim the palace before you could
+  // present a tutorial about it dimming every now and then. dimming
+  // it early makes it hard for beginners who are learning from
+  // tutorials"). If this is the kid's FIRST torch-outage AND the
+  // tutorial popup hasn't fired yet, DEFER the visual+gameplay dim
+  // until the tutorial is dismissed. Show the modal first (which
+  // sets state='tutorial' freezing guards), then on Got It re-call
+  // _firePalaceEvent which will skip this branch the second time
+  // (since _firstEventSeen.dim will be true).
+  if (name === 'torch-outage' && _tutModeOn() && !_firstEventSeen.dim) {
+    try {
+      showTipPopup('dim', {
+        icon: '🪔',
+        title: 'The Palace Dims',
+        body: 'Every so often the palace torches dim and the guards can\'t see as far. THIS is the perfect moment to sneak past gates and through tight corridors! Watch — the next dim starts right after you tap Got It.',
+      });
+    } catch(e){}
+    // Defer the actual dim event until popup closes. Stash a one-shot
+    // callback the _hideTipPopup hook will fire.
+    window._afterTipClose = () => {
+      window._afterTipClose = null;
+      try { _firePalaceEvent('torch-outage'); } catch(e){}
+    };
+    return;  // bail BEFORE applying the visual + gameplay dim
+  }
   _palaceEvents.active = name;
   _palaceEvents.fired[name] = true;
   if (name === 'torch-outage') {
@@ -15252,24 +15536,6 @@ function _firePalaceEvent(name){
     _palaceEvents.guardSeeBackup = guards.map(g => g.seeRadius);
     guards.forEach(g => { g.seeRadius = Math.max(1, g.seeRadius - 2); });
     _palaceEvents.endsAt = performance.now() + 5000;
-    // 2026-05-16 PM29 (Jane: "when the palace dims down for the very
-    // first time alone, show palace lights will dim down every now and
-    // then and that is the perfect time for moses to sneak"). First
-    // dim cycle = full tutorial popup; subsequent dims = silent (the
-    // visible dimming + eventHud banner already signal the moment).
-    // 2026-05-16 PM31 (Jane: "no need to show every time that palace
-    // is dimming since we are mentioning once that every now and
-    // then the palace dims"). Removed the fall-back toast — kid
-    // sees the eventHud + visual dim shader, that's enough.
-    if (!_firstEventSeen.dim) {
-      try {
-        showTipPopup('dim', {
-          icon: '🪔',
-          title: 'The Palace Dims',
-          body: 'Every so often the palace torches dim and the guards can\'t see as far. THIS is the perfect moment to sneak past gates and through tight corridors!',
-        });
-      } catch(e){}
-    }
     try { play('chime'); } catch(e){}
   } else if (name === 'falling-torch') {
     // pick an existing torch tile (value 2). Carve a 1-tile hazard patch on
@@ -15333,7 +15599,9 @@ function _firePalaceEvent(name){
     _palaceEvents.guardSeeBackup = guards.map(g => g.seeRadius);
     guards.forEach(g => { g.seeRadius = (g.seeRadius || 4) + 1; });
     _palaceEvents.endsAt = performance.now() + 3500;
-    try { toast('👤 Pharaoh\'s shadow falls across the hall — stay hidden!'); } catch(e){}
+    // 2026-05-17 PM37 (Jane: "Remove the 'pharaoh's shadow falls across
+    // the hallway' overhead message"). Toast removed — the +1 sight
+    // radius is enough mechanical pressure without verbal noise.
     try { play('chime'); } catch(e){}
   }
 }
@@ -19573,13 +19841,17 @@ function updateDog(dt){
           d.friendly = true;     // also stop it alerting guards
           try { _cameraShake(4, 240); } catch(e){}
           try { _softCatch("A palace dog caught Moses! Hide behind cover so it loses your scent.", IMG_SRC.dogDown || IMG_SRC.dog, 'dog'); } catch(e){}
-          // Belt-and-suspenders: teleport the dog home + force patrol +
-          // 3 s invuln so the very next frame is clean too.
+          // 2026-05-17 PM36 (Jane: "after dog touches/catches moses,
+          // its location changes to a farther tile. how is that
+          // possible?"). The earlier "teleport home" was belt-and-
+          // suspenders insurance against re-catch, but `_spentCatch`
+          // already gates the catch check above — the dog can never
+          // cost another heart no matter where it is. The teleport
+          // was a magical visual jump kids found confusing. Now the
+          // dog STAYS where it caught Moses, just downgrades to a
+          // friendly patrol behind 3 s invuln. Visual continuity
+          // preserved; safety preserved by _spentCatch.
           try {
-            if (Array.isArray(d.patrolPath) && d.patrolPath.length) {
-              const wp = d.patrolPath[0];
-              d.tx = wp.x; d.ty = wp.y; d.pi = 0;
-            }
             d.state = 'patrol';
             d.timer = 4000;
             d.lostSight = 0;
@@ -19627,6 +19899,10 @@ function loop(now){
     // Both are cheap per-frame checks gated by game state.
     try { _updateHeartbeat(); } catch(e){}
     try { _maybeSwapZoneMusicThrottled(); } catch(e){}
+    // 2026-05-17 PM36: enforce single-track invariant on bgm loops
+    // every 800 ms so direct .play() calls can't leave two tracks
+    // overlapping (e.g. palace tension + palace throne).
+    try { _bgmJanitor(); } catch(e){}
   }
   // 2026-05-05 retune: lerp camera EVERY frame regardless of game state.
   // updateCamera() respects camera.locked (used by intro pan + cinematics)
@@ -19714,7 +19990,17 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // halo clamping + overflow:hidden, power spell + frozen SFX.
     // 2026-05-16 PM35: bumped v8 → v9 for the eSdiff1 courtyard
     // coords (5 hand-drawn diffs, answer bumped 4 → 5).
-    const SW_VERSION = 'bek-moses1-v9';
+    // 2026-05-17 PM36: bumped v9 → v10 for tutorial polish (treasure,
+    // marble, guard, dog, audio-janitor), landscape sizing,
+    // portrait HUD + narration image fix.
+    // 2026-05-17 PM37: bumped v10 → v11 for dim-tutorial-before-dim,
+    // halo removal (scroll + marble), power-up tutorial suppression,
+    // pharaoh-shadow toast removal, guards-off-gate rule, eSdiff1
+    // back to 4 diffs.
+    // 2026-05-17 PM38: bumped v11 → v12 for eSdiff1 5-coords-4-goal
+    // forgiveness mode, all tapR 18→22, force SW update on every
+    // load so stuck-on-old-cache kids get fresh HTML.
+    const SW_VERSION = 'bek-moses1-v12';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
@@ -19761,8 +20047,20 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // Defer to after first paint so SW registration never blocks the
     // cover render. swUrl is short-lived but registration completes
     // within a tick — we don't need to revoke for the SW to install.
+    // 2026-05-17 PM38 (Jane: "it is looking for 5 differences now. i
+    // am not able to proceed"). Returning kids could be stuck on a
+    // stale-cached HTML because the previous SW served the cached v9
+    // shell. Force an update on every page load: register, then on
+    // resolve immediately call `.update()` so the new SW source
+    // (with the bumped SW_VERSION) is fetched + installed + activates
+    // (its `activate` event already clears old caches). Belt-and-
+    // suspenders: also unregister any other SWs whose script URL
+    // doesn't match this one so dead registrations don't keep
+    // serving old caches.
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register(swUrl).catch(() => {});
+      navigator.serviceWorker.register(swUrl).then(reg => {
+        try { reg.update().catch(()=>{}); } catch(e){}
+      }).catch(() => {});
     });
   } catch(e){}
 })();
