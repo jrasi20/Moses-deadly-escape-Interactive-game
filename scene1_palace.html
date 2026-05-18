@@ -447,6 +447,11 @@
     transition: transform 0.15s ease;
   }
   .cover-gear-btn:hover { transform: rotate(30deg); }
+  /* 2026-05-18 (Jane audit): Truth Library + Unlocks share the round
+     gear-btn footprint but shouldn't *rotate* on hover (only the gear
+     does — they're not settings). Lift instead. */
+  .cover-quick-iconbtn:hover { transform: translateY(-2px); }
+  .cover-quick-iconbtn { font-size: 17px; }
   /* Settings popover (#coverSettingsScrim) is a JS-created overlay */
   #coverSettingsScrim {
     position: fixed; inset: 0;
@@ -485,6 +490,15 @@
   @media (min-width: 720px) {
     .cover-quickstart { width: min(640px, 80%); }
     .cover-quickstart-btn { font-size: 17px !important; }
+  }
+  /* 2026-05-18 (Jane audit): iPhone SE (≤380 px) — Continue + 3 diff
+     pills + Begin + 3 icon buttons get cramped. Tighten every part. */
+  @media (max-width: 380px) {
+    .cover-quickstart { gap: 6px; padding: 8px 8px; }
+    .cover-quickdiff { gap: 4px; }
+    .cover-quickdiff-btn { padding: 6px 10px; font-size: 13px; min-width: 52px; }
+    .cover-quickstart-btn { padding: 10px 14px !important; font-size: 14px !important; }
+    .cover-gear-btn { width: 34px; height: 34px; font-size: 15px; }
   }
 
   /* 2026-05-18 PM44 (Jane audit #8): lowered breakpoint 820 → 720 so iPad
@@ -580,6 +594,14 @@
   @media (max-width: 420px) {
     .difficulty-selector { gap: 8px; }
     .difficulty-btn { padding: 12px 6px; font-size: 16px; }
+  }
+  /* 2026-05-18 (Jane audit): on landscape phones the cards split into two
+     columns (~420 px each) so the difficulty pills' default 14px×28px
+     padding + 18px font pushed "Medium" past the right edge. Compress
+     padding + font when the column is narrow, regardless of viewport. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .difficulty-selector { gap: 8px; margin: 10px auto 8px; }
+    .difficulty-btn { padding: 10px 10px; font-size: 14px; min-width: 0; }
   }
   .difficulty-btn:hover { background:rgba(255,215,118,0.28); transform:translateY(-2px); }
   .difficulty-btn.selected {
@@ -1325,18 +1347,26 @@
      reduced padding-bottom on landscape so the card always fits in
      the visible area + the GOT IT button stays tappable. */
   @media (orientation: landscape) and (max-height: 500px) {
+    /* 2026-05-18 (Jane audit): the prior `align-items: center` overrode
+       the .top-anchored rule, so in landscape the tip card was always
+       vertically centered — covering the very halo/finger it was meant
+       to point at. Restore bottom-anchored default + explicit
+       flex-start on .top-anchored so the modal stays clear of the
+       highlighted tile/button. Pad tightens so the card still fits. */
     .tip-popup-overlay {
-      padding-bottom: 4%;
-      align-items: center;
+      padding-bottom: 6%;
+      align-items: flex-end;
     }
     .tip-popup-overlay.top-anchored {
-      padding-top: 4%;
+      padding-top: 6%;
+      padding-bottom: 0;
+      align-items: flex-start;
     }
     .tip-popup-card {
-      padding: 12px 18px;
-      max-width: min(520px, 88vw);
-      max-height: 88vh;
-      max-height: 88dvh;
+      padding: 10px 16px;
+      max-width: min(460px, 78vw);
+      max-height: 70vh;
+      max-height: 70dvh;
     }
     .tip-popup-icon { font-size: 24px; margin-bottom: 4px; }
     .tip-popup-title { font-size: 15px; margin-bottom: 4px; }
@@ -3607,7 +3637,14 @@
       <button class="cover-quickdiff-btn" data-quickdiff="hard">Hard</button>
     </div>
     <button class="start-btn cover-quickstart-btn" id="quickStartBtn" type="button" aria-label="Begin Adventure">Begin Adventure</button>
-    <button class="cover-gear-btn" id="coverGearBtn" type="button" aria-label="Settings, daily challenge, unlocks, truth library, sound" title="Settings"><span aria-hidden="true">⚙</span></button>
+    <!-- 2026-05-18 (Jane audit): Truth Library + Power Unlocks are CONTENT
+         (libraries the kid earns into) — they don't belong under a
+         ⚙ Settings gear next to "Sound on/off". Promoted to their own
+         direct icon buttons next to the gear. Gear popover now only
+         hosts true settings: Daily Challenge toggle + Sound toggle. -->
+    <button class="cover-gear-btn cover-quick-iconbtn" id="coverTruthLibQuickBtn" type="button" aria-label="Open Truth Library" title="Truth Library"><span aria-hidden="true">📖</span></button>
+    <button class="cover-gear-btn cover-quick-iconbtn" id="coverUnlocksQuickBtn" type="button" aria-label="View Power-Up Unlocks" title="Power Unlocks"><span aria-hidden="true">🔓</span></button>
+    <button class="cover-gear-btn" id="coverGearBtn" type="button" aria-label="Settings — daily challenge and sound" title="Settings"><span aria-hidden="true">⚙</span></button>
   </div>
 
   <!-- Moses portrait in gold-framed circle -->
@@ -3845,7 +3882,12 @@
     </div>
     <div class="hud-group">
       <!-- v3.x audit D1: live rAF map (no usage limit, see canonical §5). -->
-      <button class="pause-btn" id="peekMapBtn" aria-label="Open palace map" title="Tap anywhere on the overlay to close the map." style="background:linear-gradient(145deg,#2a4a8a,#3a5ea8);border-color:#ffd976;color:#ffd976;margin-right:6px;">MAP</button>
+      <!-- 2026-05-18 (Jane audit): MAP text was wider than the 44 px circle,
+           making the blue oval "jet out" beyond the round shape and bleed
+           below the HUD gold border in landscape. Switched to a fixed pill
+           (auto width, smaller font, controlled padding) so the button
+           always contains its text + stays inside the HUD chrome. -->
+      <button class="pause-btn" id="peekMapBtn" aria-label="Open palace map" title="Tap anywhere on the overlay to close the map." style="background:linear-gradient(145deg,#2a4a8a,#3a5ea8);border-color:#ffd976;color:#ffd976;margin-right:6px;width:auto;min-width:44px;padding:0 12px;border-radius:22px;font-size:13px;letter-spacing:0.5px;">MAP</button>
       <!-- 2026-05-09 PM15 v3: sound toggle — kid mutes/unmutes from the HUD. -->
       <button class="pause-btn" id="hudSoundBtn" aria-label="Toggle music and sound" title="Music and sound on/off" style="margin-right:6px;"><span aria-hidden="true">🔊</span></button>
       <button class="pause-btn" id="pauseBtn" aria-label="Pause">| |</button>
@@ -8581,9 +8623,11 @@ $('startBtn').addEventListener('click', () => {
       if (sb) sb.click();
     }
   });
-  // Settings gear → popover with the 4 toggle buttons (Daily, Unlocks,
-  // Truth Library, Sound). On portrait they're hidden via CSS; the popover
-  // is how the kid still reaches them.
+  // Settings gear → popover with only TRUE settings (Daily, Sound).
+  // 2026-05-18 (Jane audit): Truth Library + Power Unlocks moved out
+  // to their own direct icon buttons next to the gear (📖, 🔓). The
+  // gear is now strictly preferences. On portrait the inline row is
+  // hidden by CSS; the popover is how the kid reaches the toggles.
   const gear = document.getElementById('coverGearBtn');
   if (gear) gear.addEventListener('click', () => {
     try { play('click'); } catch(e){}
@@ -8593,10 +8637,12 @@ $('startBtn').addEventListener('click', () => {
       scrim.id = 'coverSettingsScrim';
       scrim.innerHTML = '<div class="settings-card"><h3>Settings</h3><div class="btn-row" id="coverSettingsRow"></div><button id="coverSettingsCloseBtn" class="btn-golden" style="margin-top:14px;">Close</button></div>';
       document.body.appendChild(scrim);
-      // Move the actual 4 toggle buttons into the popover so click handlers
-      // stay wired AND state stays in sync with the page elsewhere.
+      // Move ONLY Daily + Sound into the popover; keep their click
+      // handlers wired by re-parenting the actual elements rather than
+      // cloning. Truth Library + Unlocks are reachable via their own
+      // direct icon buttons on the cover (no need to duplicate).
       const row = document.getElementById('coverSettingsRow');
-      ['coverDailyBtn','coverUnlocksBtn','coverTruthLibBtn','coverSoundBtn'].forEach(id => {
+      ['coverDailyBtn','coverSoundBtn'].forEach(id => {
         const b = document.getElementById(id);
         if (b && row) row.appendChild(b);
       });
@@ -8605,6 +8651,21 @@ $('startBtn').addEventListener('click', () => {
       if (close) close.addEventListener('click', () => { try { play('click'); } catch(e){} scrim.classList.remove('active'); });
     }
     scrim.classList.add('active');
+  });
+  // Direct-icon shortcuts next to the gear — proxy to the existing
+  // hidden row buttons so all the wiring/state stays in one place.
+  const _truthQuick = document.getElementById('coverTruthLibQuickBtn');
+  if (_truthQuick) _truthQuick.addEventListener('click', () => {
+    try { play('click'); } catch(e){}
+    if (window._showTruthLibraryModal) { window._showTruthLibraryModal(); return; }
+    const btn = document.getElementById('coverTruthLibBtn');
+    if (btn) btn.click();
+  });
+  const _unlocksQuick = document.getElementById('coverUnlocksQuickBtn');
+  if (_unlocksQuick) _unlocksQuick.addEventListener('click', () => {
+    try { play('click'); } catch(e){}
+    const btn = document.getElementById('coverUnlocksBtn');
+    if (btn) btn.click();
   });
   // Refresh the Continue chip whenever the cover is shown (also on page load).
   _refreshContinueChip();
@@ -18340,11 +18401,24 @@ function drawTile(t, dx, dy, tx, ty){
       // exit tile to col 33 so the sprite has 5 floor tiles east of
       // it (cols 34-38) before the col 39 wall — plenty of natural
       // room for a 1.5-aspect city-gate sprite (~3.3 × TILE wide).
+      // 2026-05-18 (Jane audit): "exit sprite is being cut on the right
+      // side — i think because of the floor tile there." Two changes:
+      //   1. shrink _eH 2.2 → 1.9 TILE so a wide-aspect (>1.5) sprite
+      //      no longer extends past the canvas right edge before clamp
+      //      can save it.
+      //   2. add an explicit right-edge margin (4 px) inside the clamp
+      //      so even after clamping, the sprite never butts flush
+      //      against the wall/floor decoration column.
       const _eAr = (_exitSprite.naturalWidth || 1) / (_exitSprite.naturalHeight || 1);
-      const _eH  = TILE * 2.2;
+      const _eH  = TILE * 1.9;
       const _eW  = _eH * _eAr;
       let   _eOX = dx + (TILE - _eW) / 2;  // centered anchor
-      try { _eOX = _clampSpriteX(_eOX, _eW); } catch(e){}
+      try {
+        _eOX = _clampSpriteX(_eOX, _eW);
+        // 4 px right-edge breathing room beyond canvas clamp
+        if (_eOX + _eW > CANVAS_W - 4) _eOX = CANVAS_W - 4 - _eW;
+        if (_eOX < 0) _eOX = 0;
+      } catch(e){}
       const _eOY = dy + TILE - _eH + 2;
       ctx.save();
       ctx.imageSmoothingEnabled = true;
