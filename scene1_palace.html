@@ -608,13 +608,15 @@
   /* 2026-05-17 PM36 (Jane: "on portrait, in the narration panels, the
      image is tiny and below the narration text, there is a lot of
      space. can you make the image little more bigger? i want the
-     image and text to fill the space"). On portrait the 16:9 aspect
-     constrained the image to width × 9/16 — on a 96vw-wide panel that
-     was ~210 px tall, half the viewport empty below the text. Now:
-     drop aspect-ratio entirely on portrait + cap height at 55vh +
-     ensure image fills width. With object-fit:contain the actual
-     painted area still respects the source aspect, but the BOX takes
-     the full available space so kid sees a much bigger picture. */
+     image and text to fill the space").
+     2026-05-17 PM39 (Jane: "on portrait, the narration panels images
+     are cut on the left and right"). The PM36 fix used object-fit
+     cover to fill the box — but cover crops the sides of any source
+     wider than 1:1. Most narration images are 16:9 landscape, so
+     portrait cover trimmed the left + right thirds of every panel.
+     Now: revert to object-fit contain (no crop, ever) + give the
+     image box the source aspect ratio. The whole image is visible
+     even if it letterboxes a bit on extra-tall phones. */
   @media (orientation: portrait) and (max-width: 899px) {
     .cin-panel {
       width: min(640px, 96vw);
@@ -626,16 +628,18 @@
       flex-direction: column;
     }
     .cin-panel .cin-art {
-      aspect-ratio: auto;        /* drop 16:9 so the box can grow taller */
+      /* PM39: use 4:3 aspect on portrait — most narration images are
+         landscape or square; 4:3 fits both gracefully + still gives
+         the image room to be tall without dominating the panel. */
+      aspect-ratio: 4 / 3;
       width: 100%;
-      height: 55vh;
       max-height: 55vh;
       margin: 0 auto 12px;
       flex: 0 0 auto;
     }
     .cin-panel .cin-art .cin-scene-img {
       width: 100%; height: 100%;
-      object-fit: cover;         /* fill the box; trims a sliver if needed */
+      object-fit: contain;       /* PM39: no crop, full image visible */
     }
     .cin-text { font-size: 15px; line-height: 1.5; padding: 0 4px; }
     .cin-controls { margin-top: 12px; }
@@ -680,6 +684,14 @@
     border-bottom:2px solid #ffd976;
     flex-wrap:wrap; gap:6px;
     z-index:5;
+    /* 2026-05-17 PM39 (Jane: "on portrait, the checkpoint number
+       counter on the top is getting cut"). Force a min-height that
+       gives every chip its full padding + breathing room above and
+       below. `overflow: visible` keeps the pill border from being
+       sliced if a chip's box-shadow extends past the HUD top edge. */
+    min-height: 52px;
+    overflow: visible;
+    box-sizing: content-box;
   }
   /* 2026-05-15 PM25 (audit #1) — controls bottom-padding accounts for
      iOS home-indicator (~34 px). Without this the bottom dpad row
@@ -1200,11 +1212,17 @@
 
   /* Hand-sign / pointer-ring that pulses around a UI button the kid
      should tap. Pure CSS — no canvas. Element is appended to body and
-     absolutely-positioned over the target via JS (_tipPointAt). */
+     absolutely-positioned over the target via JS (_tipPointAt).
+     2026-05-17 PM39 (Jane: "the halos and hand icon on the tutorial
+     are still misplaced"). Was border-radius: 50% which makes a
+     circle that's much larger than the button. For a 200×42 button
+     the old size formula painted a 222 px ring covering Menu + Hint
+     too. Now: 18 px rounded-rect that traces the button outline; JS
+     sets left/top/width/height to the button's rect + 8 px padding. */
   .tip-pointer-ring {
     position: fixed; z-index: 57;
     border: 4px solid #ffd976;
-    border-radius: 50%;
+    border-radius: 18px;
     pointer-events: none;
     box-shadow: 0 0 18px rgba(255,217,118,0.85), inset 0 0 12px rgba(255,217,118,0.45);
     animation: tipRingPulse 1.1s ease-in-out infinite;
@@ -3160,59 +3178,86 @@
      space. Net controls-bar height stays ~ same; canvas keeps its
      max-height. */
   @media (orientation: landscape) and (max-width: 960px) {
-    /* 2026-05-15 PM26 / 2026-05-17 PM36 (Jane: "landscape game grid is
-       too tiny" + "the dpad is again getting cut"). Aggressive
-       compression: HUD + controls together must leave ≥60% of the
-       viewport for the canvas. HUD bar slimmed; controls bar capped
-       at 80 px (was 96); dpad rows reduced to 38 px on truly short
-       viewports so the bottom row never gets clipped under the
-       browser chrome / home-indicator. */
+    /* 2026-05-17 PM39 (Jane: "the landscape dpad issue is still not
+       fixed"). Root cause: previous .controls max-height: 80px was
+       smaller than the 3×3 dpad grid (~120 px tall) — the bottom DOWN
+       row got clipped. New approach: ditch the 3×3 stack on landscape
+       and use a SINGLE-ROW dpad (← ↑ ↓ →) so the entire pad fits in
+       one row of controls height. Restores WCAG-friendly 44 px touch
+       targets and the bottom row can never be clipped because there
+       IS no bottom row.
+    */
     .hud {
       padding:2px 8px !important;
       gap:4px;
       flex-wrap:nowrap;
-      min-height: 36px;
+      min-height: 40px;
     }
     .hud-chip { font-size:11px; padding:2px 6px; flex-shrink:0; }
     .hud-hearts { font-size:15px; letter-spacing:1.5px; }
     .pause-btn { width:36px; height:36px; font-size:13px; }
     .controls {
-      padding:3px 10px !important;
-      padding-bottom: max(3px, env(safe-area-inset-bottom)) !important;
-      max-height: 80px;
-      overflow: hidden;
+      padding:6px 10px !important;
+      padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
+      max-height: none;
+      min-height: 56px;
+      overflow: visible;
     }
     .action-panel {
       flex-direction:row !important;
       flex:1 1 40%;
-      max-width:42%;
+      max-width:44%;
       gap:4px;
       flex-wrap:nowrap;
     }
     .action-btn {
-      height:38px;
-      font-size:11px;
+      height:44px;
+      font-size:12px;
       padding:0 6px;
       width:auto;
       flex:1 1 0;
       min-width:0;
       white-space:nowrap;
     }
-    .dpad { width:40%; max-width:180px; gap:3px; }
-    .dpad-btn, .dpad-spacer { height:38px; border-radius:8px; font-size:15px; min-width:38px; }
-    .dpad-text { font-size:7px; }
+    /* SINGLE-ROW dpad: flex row of 4 cells, no spacers, ← ↑ ↓ → */
+    .dpad {
+      display: flex !important;
+      flex-direction: row;
+      grid-template-columns: none !important;
+      gap: 4px;
+      width: auto;
+      max-width: none;
+      flex: 0 0 auto;
+    }
+    .dpad-spacer { display: none !important; }
+    .dpad-btn {
+      height: 44px;
+      width: 44px;
+      min-width: 44px;
+      border-radius: 8px;
+      font-size: 18px;
+      padding: 0;
+    }
+    .dpad-text { display: none !important; }   /* labels would crowd 1-row dpad */
+    /* Reorder so the single-row dpad reads LEFT ↑ ↓ RIGHT (HTML
+       declares them in UP, LEFT, RIGHT, DOWN order). */
+    .dpad-btn[data-dir="left"]  { order: 1; }
+    .dpad-btn[data-dir="up"]    { order: 2; }
+    .dpad-btn[data-dir="down"]  { order: 3; }
+    .dpad-btn[data-dir="right"] { order: 4; }
   }
   /* PM36: extra-short landscapes (e.g. iPhone SE / Pixel 4a landscape =
      375 × 667 → rotated 667 × 375 minus chrome leaves ~330 px). On
-     these the HUD + controls eat too much of the canvas; trim further. */
+     these the HUD + controls eat too much of the canvas; trim slightly
+     but keep the single-row dpad layout from above. */
   @media (orientation: landscape) and (max-height: 400px) {
-    .hud { padding:1px 6px !important; min-height: 30px; }
+    .hud { padding:1px 6px !important; min-height: 32px; }
     .hud-chip { font-size:10px; padding:1px 5px; }
     .hud-hearts { font-size:13px; }
     .pause-btn { width:32px; height:32px; font-size:12px; }
-    .controls { max-height: 68px; padding:2px 8px !important; }
-    .action-btn { height:34px; font-size:10.5px; }
-    .dpad-btn, .dpad-spacer { height:34px; min-width:34px; font-size:14px; }
+    .controls { min-height: 48px; padding:4px 8px !important; }
+    .action-btn { height:38px; font-size:11px; }
+    .dpad-btn { height:38px; width:38px; min-width:38px; font-size:15px; }
   }
   .preload-overlay {
     display:none;
@@ -6572,13 +6617,17 @@ const CHALLENGE_BANK = {
       clue:'Tap a card to flip it, then tap a second card to find its twin. Two of a kind stay face-up — match all the pairs to pass the gate!',
       verse:'Hebrews 11:23 NIV' },
     // --- More count ---
+    // 2026-05-17 PM39 (Jane: "it says how many treasure bags, this
+    // image is for counting the number of water pots"). Question text
+    // was mismatched with the `count the waterpots_5.png` art. Fixed
+    // both the question + alt + verse to be water-pot themed.
     { id:'eC2', type:'count',
-      q:'How many treasure bags can you count?',
+      q:'How many water pots can you count by the well?',
       sceneImg:'assets/images/count%20the%20waterpots_5.png',
-      sceneAlt:'Palace treasure bags',
+      sceneAlt:'Water pots at the well',
       answer:5,
-      clue:'Count carefully — some are tucked behind columns.',
-      verse:'God multiplies what we offer Him.' },
+      clue:'Look at the well in Midian — count every pot the daughters of Reuel carry or have set down nearby.',
+      verse:'"Moses got up and helped them, and watered their flock." (Exodus 2:17 NIV)' },
     // --- More sequence ---
     { id:'eS2', type:'sequence',
       q:'Put Moses’ escape from Egypt in order:',
@@ -10090,21 +10139,22 @@ function _tipPointAt(elId){
   if (!el) return;
   const r = el.getBoundingClientRect();
   if (r.width === 0 || r.height === 0) return;
-  const size = Math.max(r.width, r.height) + 22;
-  const cx = r.left + r.width / 2;
-  const cy = r.top  + r.height / 2;
+  // 2026-05-17 PM39: trace the button's actual bounding rect with 8 px
+  // padding so the ring is a tight rounded rect around the target
+  // button — not a huge circle that swallows neighbouring controls.
+  const PAD = 8;
   const ring = document.createElement('div');
   ring.className = 'tip-pointer-ring';
-  ring.style.left   = (cx - size/2) + 'px';
-  ring.style.top    = (cy - size/2) + 'px';
-  ring.style.width  = size + 'px';
-  ring.style.height = size + 'px';
+  ring.style.left   = (r.left - PAD) + 'px';
+  ring.style.top    = (r.top  - PAD) + 'px';
+  ring.style.width  = (r.width  + PAD * 2) + 'px';
+  ring.style.height = (r.height + PAD * 2) + 'px';
   document.body.appendChild(ring);
   _tipPopupActiveRing = ring;
   const hand = document.createElement('div');
   hand.className = 'tip-pointer-hand';
   hand.textContent = '👇';
-  hand.style.left = cx + 'px';
+  hand.style.left = (r.left + r.width / 2) + 'px';
   hand.style.top  = (r.top - 44) + 'px';
   document.body.appendChild(hand);
   _tipPopupActiveHand = hand;
@@ -13112,26 +13162,21 @@ function renderSpotDiff(gate, q, container){
       found.add(hitIdx);
       const dd = detectedDiffs[hitIdx];
       try { play('chime'); } catch(ex){}
-      // 2026-05-13 PM21 (Jane: "i am still seeing big halos on spot the
-      // difference. the coordinates are also not exact"). The bank's
-      // `r` value (typically 18) was used for BOTH tap-tolerance AND
-      // visible halo size — so halos rendered at 36% of image width,
-      // swallowing the actual difference. Now: visible halo is fixed at
-      // ~6.5% diameter (small ring around the difference itself), tap
-      // tolerance still uses `_tapR` for forgiving touch input. Halo
-      // also offset by halfHalo (not r) so it's centered on the
-      // intended coordinate, not the old large radius.
+      // 2026-05-17 PM39 (Jane: "spot the difference detection is
+      // recognized. but the halos that appear are off from the actual
+      // objects"). When the bank coord and the actual artwork spot
+      // disagreed, the halo would land at the BANK coord (often a
+      // few % off from where the kid actually saw + tapped the
+      // difference). Now: place the halo AT THE KID'S TAP POSITION
+      // (clamped inside the image) so the green ring always lands
+      // exactly where they meant it. Detection still uses the bank
+      // coord + tapR for forgiveness, but the visual feedback now
+      // anchors to the kid's input.
       const HALO_PCT = 6.5;      // halo DIAMETER as % of image width
       const halfHalo = HALO_PCT / 2;
-      // 2026-05-16 PM34: clamp the halo TOP-LEFT corner so the FULL
-      // halo stays inside the image bounds [0, 100-HALO_PCT]. With
-      // overflow:hidden on the container, anything outside would be
-      // clipped, but clamping also keeps the halo properly anchored
-      // around the diff (so the kid sees the full ring around the
-      // exact spot they tapped).
       const _clampPct = (v, min, max) => Math.max(min, Math.min(max, v));
-      const haloLeftPct = _clampPct(dd.x - halfHalo, 0, 100 - HALO_PCT);
-      const haloTopPct  = _clampPct(dd.y - halfHalo, 0, 100 - HALO_PCT);
+      const haloLeftPct = _clampPct(tapX - halfHalo, 0, 100 - HALO_PCT);
+      const haloTopPct  = _clampPct(tapY - halfHalo, 0, 100 - HALO_PCT);
       imgContainers.forEach(ic => {
         const circle = document.createElement('div');
         circle.className = 'ch-spotdiff-hit';
@@ -17803,17 +17848,27 @@ function drawTile(t, dx, dy, tx, ty){
       // 2026-05-16 PM31 (Jane: "make the exit larger"). Bumped sprite
       // height 1.65 → 2.4 TILE so the city gate reads as a true
       // destination from across the canvas.
-      // 2026-05-16 PM33 (Jane: "look at the right side pillar of exit.
-      // it is cut. fix it"). 2.4 TILE was too wide for the 4-tile
-      // headroom east of the exit tile — the baked-in right sphinx
-      // pillar got clipped. Dialed back to 2.05 TILE: still markedly
-      // bigger than the original 1.65 + still reads as a big
-      // destination, but the right pillar fits inside the available
-      // floor without _clampSpriteX having to shove the sprite
-      // sideways and break its alignment with the gate tile.
+      // 2026-05-17 PM39 (Jane: "the exit image is still getting cut
+      // on the right. the pillar on the right is cut"). Even 2.05×
+      // TILE was overflowing on portrait viewports where the visible
+      // canvas region is narrower (CSS scales the canvas down). The
+      // earlier "4 tiles of right headroom" assumption broke when
+      // the kid is on a phone with the canvas downscaled — the
+      // sprite's rendered width relative to viewport is bigger than
+      // it looks on desktop. Capping the sprite width relative to
+      // sprite aspect ratio so it NEVER exceeds 3 × TILE in width
+      // regardless of how tall we make it. Pictures a smaller-but-
+      // complete door rather than a tall-but-clipped one.
       const _eAr = (_exitSprite.naturalWidth || 1) / (_exitSprite.naturalHeight || 1);
-      const _eH  = TILE * 2.05;
-      const _eW  = _eH * _eAr;
+      const _eMaxWTiles = 3.0;           // hard width budget in tiles
+      const _eHByH = TILE * 1.95;        // preferred height
+      let _eW = _eHByH * _eAr;
+      let _eH = _eHByH;
+      if (_eW > TILE * _eMaxWTiles) {
+        // sprite is too wide — back off so width fits, height follows
+        _eW = TILE * _eMaxWTiles;
+        _eH = _eW / _eAr;
+      }
       let   _eOX = dx + (TILE - _eW) / 2;  // centered anchor
       try { _eOX = _clampSpriteX(_eOX, _eW); } catch(e){}
       const _eOY = dy + TILE - _eH + 2;
@@ -20000,7 +20055,10 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // 2026-05-17 PM38: bumped v11 → v12 for eSdiff1 5-coords-4-goal
     // forgiveness mode, all tapR 18→22, force SW update on every
     // load so stuck-on-old-cache kids get fresh HTML.
-    const SW_VERSION = 'bek-moses1-v12';
+    // 2026-05-17 PM39: bumped v12 → v13 for count-puzzle copy fix,
+    // halo-at-tap, exit width budget, portrait narration contain,
+    // HUD min-height, tip-ring rounded-rect, landscape 1-row dpad.
+    const SW_VERSION = 'bek-moses1-v13';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
