@@ -360,7 +360,137 @@
           desktop only — phones keep generous touch padding).
        2. ON DESKTOP / large tablets, lay the two cards SIDE-BY-SIDE so
           the cover fits in one viewport. Hero row stays centered above. */
-  @media (min-width: 820px) {
+  /* 2026-05-18 PM44 (Jane audit #5/#6/#13): above-the-fold quick-start
+     panel — Continue chip + 3 difficulty pills + Begin button + ⚙ gear
+     all in one compact row sitting right under the title. Solves the
+     "Begin Adventure is 700 px below the fold" UX problem. */
+  .cover-quickstart {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 10px auto 14px;
+    padding: 10px 12px;
+    width: min(560px, 96%);
+    background: linear-gradient(180deg, rgba(40,14,3,0.55), rgba(58,22,7,0.42));
+    border: 2px solid rgba(255,217,118,0.42);
+    border-radius: 18px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,217,118,0.18);
+  }
+  .cover-quickdiff { display:flex; gap:6px; flex:1 1 auto; justify-content:center; }
+  .cover-quickdiff-btn {
+    background: rgba(255,215,118,0.15);
+    color:#ffeaa3;
+    border:2px solid #ffd976;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-weight:700;
+    border-radius: 20px;
+    flex: 0 1 auto;
+    min-width: 64px;
+    cursor:pointer;
+    transition: all 0.15s ease;
+  }
+  .cover-quickdiff-btn:hover { background: rgba(255,215,118,0.28); }
+  .cover-quickdiff-btn.selected {
+    background:#ffd976; color:#5a1d06;
+    box-shadow:0 0 14px rgba(255,215,118,0.7);
+  }
+  .cover-quickstart-btn {
+    padding: 12px 22px !important;
+    font-size: 16px !important;
+    margin-top: 0 !important;
+    flex: 0 0 auto;
+  }
+  .cover-continue-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 100%;
+    justify-content: center;
+    background: linear-gradient(145deg, #5fdf8f, #2fa45a);
+    color: #08220e;
+    border: 2px solid #b9ffc7;
+    border-radius: 26px;
+    padding: 10px 22px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(30,140,60,0.45), inset 0 -2px 0 rgba(0,0,0,0.18);
+    animation: cover-continue-pulse 2.4s ease-in-out infinite;
+  }
+  .cover-continue-sub {
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.85;
+    margin-left: 6px;
+  }
+  @keyframes cover-continue-pulse {
+    0%, 100% { box-shadow: 0 4px 14px rgba(30,140,60,0.45), inset 0 -2px 0 rgba(0,0,0,0.18); }
+    50%      { box-shadow: 0 6px 22px rgba(80,255,140,0.7), inset 0 -2px 0 rgba(0,0,0,0.18); }
+  }
+  .cover-gear-btn {
+    background: rgba(0,0,0,0.4);
+    color: #ffd976;
+    border: 2px solid rgba(255,217,118,0.6);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    cursor: pointer;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease;
+  }
+  .cover-gear-btn:hover { transform: rotate(30deg); }
+  /* Settings popover (#coverSettingsScrim) is a JS-created overlay */
+  #coverSettingsScrim {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 99998;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+  }
+  #coverSettingsScrim.active { display: flex; }
+  #coverSettingsScrim .settings-card {
+    background: linear-gradient(180deg,#2a1004,#3a1708);
+    border: 2px solid #ffd976;
+    border-radius: 16px;
+    padding: 22px 18px;
+    width: min(360px, 96%);
+    color: #ffeaa3;
+    text-align: center;
+    box-shadow: 0 14px 42px rgba(0,0,0,0.7);
+  }
+  #coverSettingsScrim .settings-card h3 { margin: 0 0 12px; color:#ffd976; }
+  #coverSettingsScrim .settings-card .btn-row {
+    display:flex; flex-direction:column; gap:8px; margin-top:8px;
+  }
+  /* On portrait, hide the bottom 4-toggle row entirely (collapsed into ⚙).
+     On desktop/landscape it stays so power users can see all toggles at a glance. */
+  @media (max-width: 719px) {
+    #coverDailyToggleWrap { display: none !important; }
+    .cover-hero-row { margin-top: 4px; }
+    .cover-subtitle { font-size: 14px; margin-top: 0; }
+    .cover-tagline { font-size: 13px; margin-top: 4px; padding: 0 14px; }
+  }
+  /* On wider screens, the quickstart panel still shows (it's a fast path),
+     but the gear+continue widen gracefully. */
+  @media (min-width: 720px) {
+    .cover-quickstart { width: min(640px, 80%); }
+    .cover-quickstart-btn { font-size: 17px !important; }
+  }
+
+  /* 2026-05-18 PM44 (Jane audit #8): lowered breakpoint 820 → 720 so iPad
+     portrait (768 wide) and similar tablets get the side-by-side card
+     layout instead of the cramped phone stack. */
+  @media (min-width: 720px) {
     /* 2026-05-08 PM10 (Jane: "what did you do to the cover page? the
        title, logo all disappeared"). My earlier `justify-content:center`
        was clipping the top of the cover page on tall content because
@@ -440,6 +570,16 @@
     font-weight:700;
     font-size:18px;
     transition: all 0.18s ease;
+    /* 2026-05-18 PM43 (Jane audit): on 375 px portrait the Easy+Medium+Hard
+       row total width exceeded the card and Hard wrapped to row 2. Force
+       equal-width flexing + slimmer padding on narrow phones so all 3 stay
+       in one row. flex-basis:0 + min-width keeps tap-target ≥ 80 px. */
+    flex: 1 1 0;
+    min-width: 80px;
+  }
+  @media (max-width: 420px) {
+    .difficulty-selector { gap: 8px; }
+    .difficulty-btn { padding: 12px 6px; font-size: 16px; }
   }
   .difficulty-btn:hover { background:rgba(255,215,118,0.28); transform:translateY(-2px); }
   .difficulty-btn.selected {
@@ -700,7 +840,14 @@
        sliced if a chip's box-shadow extends past the HUD top edge. */
     min-height: 52px;
     overflow: visible;
-    box-sizing: content-box;
+    /* 2026-05-18 PM43 (Jane audit): switch to border-box + width:100% so the
+       HUD's left+right padding stays INSIDE the viewport instead of being
+       added to the 100% width — which was making the HUD 22 px wider than
+       the viewport on portrait and 12 px wider on landscape, clipping the
+       rightmost chip (timer / pause button). */
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100vw;
   }
   /* 2026-05-15 PM25 (audit #1) — controls bottom-padding accounts for
      iOS home-indicator (~34 px). Without this the bottom dpad row
@@ -3257,82 +3404,81 @@
        (▲ ▼) anchors to BOTTOM-RIGHT for right-thumb. The `.dpad`
        wrapper is transparent + pointer-events:none; only the
        individual buttons capture taps. */
+    /* 2026-05-18 PM43 (Jane audit #9): dpad lives INSIDE the brown controls
+       bar — not floating over the canvas. Simpler, more discoverable, no
+       finger-blocks-game-view problem. Single horizontal row keeps the
+       controls bar compact (canvas-height-friendly on short landscapes).
+       Order in HTML is up/left/right/down with spacers between; we use
+       flex `order` to render them as [LEFT][UP][DOWN][RIGHT] left→right. */
     .dpad {
       position: static !important;
-      display: contents !important;     /* treat the wrapper as nothing */
+      display: flex !important;
+      flex-direction: row !important;
+      gap: 6px;
+      width: auto;
+      flex: 0 0 auto;
+      align-items: center;
+      grid-template-columns: none;
     }
     .dpad-spacer { display: none !important; }
     .dpad-btn {
-      position: fixed !important;
-      z-index: 6;
-      width: 58px;
-      height: 58px;
-      border-radius: 14px;
-      font-size: 24px;
+      position: static !important;
+      z-index: auto;
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      font-size: 20px;
       padding: 2px 0 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       line-height: 1.0;
-      background: rgba(255, 215, 118, 0.22);
-      border: 2px solid #ffd976;
-      backdrop-filter: blur(3px);
-      -webkit-backdrop-filter: blur(3px);
-      box-shadow: 0 3px 12px rgba(0,0,0,0.55);
-      color: #fff5d8;
+      background: linear-gradient(145deg, #ffd976, #c38b28);
+      border: 0;
+      box-shadow: 0 3px 0 #7a4809, 0 3px 8px rgba(0,0,0,0.4);
+      color: #5a1d06;
+      flex: 0 0 auto;
     }
     .dpad-text {
       display: block !important;
       font-size: 8px;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.3px;
       font-weight: 700;
-      opacity: 0.95;
-      margin-top: 2px;
+      opacity: 0.85;
+      margin-top: 1px;
     }
-    /* LEFT side: ◀ + ▶ side-by-side at the BOTTOM-LEFT corner */
-    .dpad-btn[data-dir="left"] {
-      left: max(14px, env(safe-area-inset-left));
-      bottom: max(72px, env(safe-area-inset-bottom) + 72px);
-    }
-    .dpad-btn[data-dir="right"] {
-      left: calc(max(14px, env(safe-area-inset-left)) + 66px);
-      bottom: max(72px, env(safe-area-inset-bottom) + 72px);
-    }
-    /* RIGHT side: ▲ + ▼ side-by-side at the BOTTOM-RIGHT corner */
-    .dpad-btn[data-dir="up"] {
-      right: calc(max(14px, env(safe-area-inset-right)) + 66px);
-      bottom: max(72px, env(safe-area-inset-bottom) + 72px);
-    }
-    .dpad-btn[data-dir="down"] {
-      right: max(14px, env(safe-area-inset-right));
-      bottom: max(72px, env(safe-area-inset-bottom) + 72px);
-    }
-    /* Action panel: stays inside .controls at the bottom-center (no
-       dpad competing for space). */
+    /* LEFT thumb side: ◀ ▲ , RIGHT thumb side: ▼ ▶ */
+    .dpad-btn[data-dir="left"]  { order: 1; }
+    .dpad-btn[data-dir="up"]    { order: 2; margin-right: 18px; }
+    .dpad-btn[data-dir="down"]  { order: 3; }
+    .dpad-btn[data-dir="right"] { order: 4; }
+    /* Controls bar: action-panel on left, dpad on right, both inside the
+       brown ribbon. No more position:fixed floats over the canvas. */
     .controls {
       padding: 6px 10px !important;
       padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
       max-height: none;
-      min-height: 56px;
+      min-height: 62px;
       overflow: visible;
-      justify-content: center !important;
+      justify-content: space-between !important;
+      gap: 12px;
     }
     .action-panel {
       flex-direction: row !important;
       flex: 0 1 auto;
-      max-width: 100%;
-      gap: 8px;
+      max-width: 60%;
+      gap: 6px;
       flex-wrap: nowrap;
-      justify-content: center;
+      justify-content: flex-start;
     }
     .action-btn {
       height: 44px;
       font-size: 12px;
-      padding: 0 14px;
+      padding: 0 12px;
       width: auto;
       flex: 0 0 auto;
-      min-width: 80px;
+      min-width: 72px;
       white-space: nowrap;
     }
     /* 2026-05-17 PM40 (Jane: "pause button is getting cut on both
@@ -3344,18 +3490,18 @@
     /* Power-up dock — PM41 it lives between HUD and canvas as its
        own horizontal strip. No need to override here. */
   }
-  /* PM41: extra-short landscapes — keep the split-screen dpad but
-     shrink each button a bit so they don't crowd the canvas. */
+  /* 2026-05-18 PM43: extra-short landscapes — shrink dpad + actions so
+     the inline controls bar still fits without eating canvas height. */
   @media (orientation: landscape) and (max-height: 400px) {
     .hud { padding:1px 6px !important; min-height: 32px; }
     .hud-chip { font-size:10px; padding:1px 5px; }
     .hud-hearts { font-size:13px; }
     .pause-btn { width:32px; height:32px; font-size:12px; }
-    .controls { min-height: 48px; padding:4px 8px !important; }
-    .action-btn { height:38px; font-size:11px; }
-    .dpad-btn { width:48px; height:48px; font-size:20px; }
-    .dpad-btn[data-dir="right"] { left: calc(max(14px, env(safe-area-inset-left)) + 56px); }
-    .dpad-btn[data-dir="up"]    { right: calc(max(14px, env(safe-area-inset-right)) + 56px); }
+    .controls { min-height: 54px; padding:4px 8px !important; }
+    .action-btn { height:38px; font-size:11px; min-width:60px; padding:0 8px; }
+    .dpad-btn { width:42px; height:42px; font-size:18px; border-radius:8px; }
+    .dpad-btn[data-dir="up"] { margin-right: 12px; }
+    .dpad-text { font-size:7px; }
   }
   .preload-overlay {
     display:none;
@@ -3438,6 +3584,31 @@
   <div class="cover-subtitle">Interactive Bible Adventure</div>
   <!-- 3-second hook: tells the kid what they're about to do BEFORE the story card. -->
   <div class="cover-tagline">Sneak past Pharaoh's guards. Solve Bible gates. Reach freedom.</div>
+
+  <!-- 2026-05-18 PM44 (Jane audit #5, #6, #13): above-the-fold quick-start
+       panel. Solves three UX problems at once:
+         #5 - the bottom Begin button sits at y~1500 on portrait → kid has
+              to scroll 700+px to find the start. This panel surfaces a
+              Begin CTA in the first 600px.
+         #6 - returning kids couldn't see they had a saved game. The
+              Continue chip appears here when a checkpoint exists.
+         #13 - 4 toggle buttons (Daily / Unlocks / Truth Library / Sound)
+              ate 200+px below; collapsed into a single ⚙ Settings chip
+              that opens a popover. Hero row + cards still below for kids
+              who want to read the story / pick a difficulty deliberately. -->
+  <div class="cover-quickstart" id="coverQuickstart" aria-label="Quick start panel">
+    <button class="cover-continue-chip" id="coverContinueChip" type="button" style="display:none;">
+      <span aria-hidden="true">▶</span> Continue Adventure
+      <span class="cover-continue-sub" id="coverContinueSub"></span>
+    </button>
+    <div class="cover-quickdiff" role="group" aria-label="Pick difficulty">
+      <button class="cover-quickdiff-btn" data-quickdiff="easy">Easy</button>
+      <button class="cover-quickdiff-btn" data-quickdiff="medium">Medium</button>
+      <button class="cover-quickdiff-btn" data-quickdiff="hard">Hard</button>
+    </div>
+    <button class="start-btn cover-quickstart-btn" id="quickStartBtn" type="button" aria-label="Begin Adventure">Begin Adventure</button>
+    <button class="cover-gear-btn" id="coverGearBtn" type="button" aria-label="Settings, daily challenge, unlocks, truth library, sound" title="Settings"><span aria-hidden="true">⚙</span></button>
+  </div>
 
   <!-- Moses portrait in gold-framed circle -->
   <div class="cover-portrait" aria-label="Moses">
@@ -6460,7 +6631,7 @@ const CHALLENGE_BANK = {
       verse:'"Pharaoh\'s daughter said, Take this baby and nurse him for me." (Exodus 2:8-9 NIV)' },
     { id:'e10', type:'fill', q:'Baby Moses was hidden for _______ months before being placed in the basket.',
       options:['Two','Three','Five','Seven'], correct:1,
-      clue:'A small, holy number. Same number of days Jonah spent in the fish (Exodus 2:2).',
+      clue:'A small, holy number — like the number of times Peter denied Jesus (Exodus 2:2).',
       verse:'"She hid him for three months." (Exodus 2:2 NIV)' },
     { id:'e11', type:'trivia', q:'What river was baby Moses placed on in a basket?',
       options:['Jordan','Nile','Euphrates','Red Sea'], correct:1,
@@ -7081,7 +7252,7 @@ const CHALLENGE_BANK = {
       verse:'"The midwives, however, feared God and did not do what the king of Egypt had told them..." (Exodus 1:17 NIV)' },
     { id:'h6', type:'fill', q:'"By faith Moses\' parents hid him for _______ months."',
       options:['Two','Three','Four','Six'], correct:1,
-      clue:'A small, holy number. Same number of days Jonah spent in the fish (Exodus 2:2).',
+      clue:'A small, holy number — like the number of times Peter denied Jesus (Exodus 2:2).',
       verse:'Hebrews 11:23 NIV / Exodus 2:2 NIV' },
     { id:'h7', type:'trivia', q:'Why was Pharaoh afraid of the Israelites?',
       options:['They were loud','They became very numerous','They had weapons','They refused to work'], correct:1,
@@ -8345,6 +8516,104 @@ $('startBtn').addEventListener('click', () => {
   }
 });
 
+// 2026-05-18 PM44 (Jane audit #5/#6/#13): wire the above-the-fold
+// quick-start panel — Continue chip + 3 difficulty pills + Begin button +
+// ⚙ Settings gear. Mirrors the existing flow (just at the top of the
+// cover instead of the bottom), so kids don't have to scroll to start.
+(function _wireCoverQuickstart(){
+  function _syncSelectedPills(diff){
+    document.querySelectorAll('.cover-quickdiff-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.quickdiff === diff);
+    });
+    document.querySelectorAll('.difficulty-btn').forEach(b => {
+      b.classList.toggle('selected', b.dataset.diff === diff);
+    });
+  }
+  // Sync clicks both ways so the bottom-card and top-panel always agree.
+  document.querySelectorAll('.cover-quickdiff-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      const diff = b.dataset.quickdiff;
+      try { game.difficulty = diff; applyDifficultyConfig(diff); } catch(e){}
+      _syncSelectedPills(diff);
+      try { play('click'); } catch(e){}
+    });
+  });
+  document.querySelectorAll('.difficulty-btn').forEach(b => {
+    b.addEventListener('click', () => { _syncSelectedPills(b.dataset.diff); });
+  });
+  // The top Begin button just clicks the canonical bottom Begin button —
+  // single code path, zero divergence risk.
+  const qb = document.getElementById('quickStartBtn');
+  if (qb) qb.addEventListener('click', () => {
+    const sb = document.getElementById('startBtn');
+    if (sb) sb.click();
+  });
+  // Continue Adventure chip — shows whenever a valid checkpoint exists.
+  // Same _validResume predicate as the bottom-Begin handler, just surfaced.
+  function _refreshContinueChip(){
+    const chip = document.getElementById('coverContinueChip');
+    const sub  = document.getElementById('coverContinueSub');
+    if (!chip) return;
+    let saved = null;
+    try { saved = _loadCheckpoint(); } catch(e){}
+    const valid = saved && (saved.hearts || 0) > 0 && (saved.gatesCleared || 0) > 0;
+    if (valid) {
+      chip.style.display = 'inline-flex';
+      if (sub) {
+        const diff = saved.difficulty ? (saved.difficulty[0].toUpperCase() + saved.difficulty.slice(1)) : '';
+        sub.textContent = `· ${saved.gatesCleared}/${saved.totalGates || '?'} gates · ${diff}`;
+      }
+    } else {
+      chip.style.display = 'none';
+    }
+  }
+  const chip = document.getElementById('coverContinueChip');
+  if (chip) chip.addEventListener('click', () => {
+    try { unlockAudio(); play('click'); } catch(e){}
+    let saved = null;
+    try { saved = _loadCheckpoint(); } catch(e){}
+    if (!saved) return;
+    try { _stopCoverMusic(); } catch(e){}
+    document.getElementById('coverPage').style.display = 'none';
+    try { showResumePrompt(saved); } catch(e){
+      // Fallback: if showResumePrompt errors, just trigger normal Begin flow.
+      const sb = document.getElementById('startBtn');
+      if (sb) sb.click();
+    }
+  });
+  // Settings gear → popover with the 4 toggle buttons (Daily, Unlocks,
+  // Truth Library, Sound). On portrait they're hidden via CSS; the popover
+  // is how the kid still reaches them.
+  const gear = document.getElementById('coverGearBtn');
+  if (gear) gear.addEventListener('click', () => {
+    try { play('click'); } catch(e){}
+    let scrim = document.getElementById('coverSettingsScrim');
+    if (!scrim) {
+      scrim = document.createElement('div');
+      scrim.id = 'coverSettingsScrim';
+      scrim.innerHTML = '<div class="settings-card"><h3>Settings</h3><div class="btn-row" id="coverSettingsRow"></div><button id="coverSettingsCloseBtn" class="btn-golden" style="margin-top:14px;">Close</button></div>';
+      document.body.appendChild(scrim);
+      // Move the actual 4 toggle buttons into the popover so click handlers
+      // stay wired AND state stays in sync with the page elsewhere.
+      const row = document.getElementById('coverSettingsRow');
+      ['coverDailyBtn','coverUnlocksBtn','coverTruthLibBtn','coverSoundBtn'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b && row) row.appendChild(b);
+      });
+      scrim.addEventListener('click', e => { if (e.target === scrim) scrim.classList.remove('active'); });
+      const close = document.getElementById('coverSettingsCloseBtn');
+      if (close) close.addEventListener('click', () => { try { play('click'); } catch(e){} scrim.classList.remove('active'); });
+    }
+    scrim.classList.add('active');
+  });
+  // Refresh the Continue chip whenever the cover is shown (also on page load).
+  _refreshContinueChip();
+  // Also refresh after the access gate is dismissed (so the chip appears on
+  // first paint of the cover for a returning kid with a save).
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) _refreshContinueChip(); });
+  window._refreshCoverContinueChip = _refreshContinueChip;
+})();
+
 // 2026-05-08 PM5: "Story So Far" replay button. Same flow as the prelude
 // chain in launchCinematic but skips the difficulty-required check and
 // the cinematic chain — opens ONLY the prelude, then dumps the kid back
@@ -9583,6 +9852,12 @@ function startScene1() {
               }
             }
           }
+          // 2026-05-18 PM42: after mapGrid restore the MAP is the saved layout,
+          // but game.treasuresTotal was set by the seedTreasures() call above
+          // (~line 9417) against the FRESH shuffle — which may have a different
+          // bag count. Re-count from the restored MAP so HUD "X / N" matches
+          // win-modal "X / N" and the kid's max-collectable goal is reachable.
+          try { seedTreasures(); } catch(e){}
         } catch(e){}
       }
       if (_resume.crownFound === true) {
@@ -9885,6 +10160,11 @@ function restartScene() {
     .forEach(id => { const el = $(id); if (el) el.classList.remove('active'); });
   // Wave 1b: clear JIT-tip flags so the kid can re-learn corner cases on retry
   try { _resetJitTips(); } catch(e){}
+  // 2026-05-18 PM42: also reset first-event tutorials (chariot, dog, gate,
+  // scroll, treasure, marble, captain). Without this, a kid who restarts
+  // gets a "no tutorial popups" experience even though restartScene is the
+  // canonical "do over" path. Fresh-from-cover gets them; restart should too.
+  try { _resetFirstEventSeen(); } catch(e){}
   // 2026-05-12 PM18 (Jane: "scribe's wisdom should reset when the game
   // is restarted. it is still following the timer from the previous
   // run"). Force-reset ALL power-up cooldown + active timers + per-
@@ -11145,6 +11425,8 @@ function triggerInteractable(obj){
     spawnGlitterBurstAtPlayer(32);
     setTimeout(() => spawnGlitterBurstAtPlayer(22), 160);
     setTimeout(() => spawnGlitterBurstAtPlayer(18), 340);
+    // 2026-05-18 PM42: persist crown so resume after quit keeps the find.
+    try { _saveCheckpoint(); } catch(e){}
   } else if (obj.reward === 'stars25') {
     // 2026-05-03 turn 2: water-skin pickup. Mid-tier reward — bigger
     // than a basic treasure (stars3) but smaller than the hidden crown.
@@ -11186,6 +11468,8 @@ function triggerInteractable(obj){
         setTimeout(() => { try { openCluePuzzle(); } catch(e){} }, 200);
       }
     });
+    // 2026-05-18 PM42: persist collected clue-letter so resume keeps it.
+    try { _saveCheckpoint(); } catch(e){}
     return;
   } else if (obj.reward === 'goldenKeyPickup') {
     // Wave 3c: golden-key auto-pickup. Sets the EXIT-unlock flag.
@@ -11209,6 +11493,8 @@ function triggerInteractable(obj){
               + ' to unlock the exit.', { force: true });
       }
     } catch(e){}
+    // 2026-05-18 PM42: persist Golden Key so resume after quit keeps it.
+    try { _saveCheckpoint(); } catch(e){}
     return;
   }
   openDialog(obj.name, obj.body);
@@ -11301,6 +11587,8 @@ function _maybeFireLoreReveal(tx, ty){
       game.loreSeen[t.key] = true;
       // 2026-05-09 PM15 v3 — lore tile counts as a "scroll" lifetime counter.
       try { _addLifetimeScrolls(1); } catch(e){}
+      // 2026-05-18 PM42: persist the lore-seen flag so resume keeps it.
+      try { _saveCheckpoint(); } catch(e){}
       // 2026-05-12 PM17 — pick a random variant from the tile's pool
       // so a kid playing the same lore tile across multiple runs sees
       // different framings of the same Bible beat.
@@ -13872,6 +14160,10 @@ function onTreasure(tx, ty){
       }
     }
   } catch(e){}
+  // 2026-05-18 PM42: persist pickup so a kid who collects 8 bags + quits
+  // (without solving a gate) keeps their progress on resume. Save fires
+  // through the dedupe guard at line ~9830 so a fast pickup spree is cheap.
+  try { _saveCheckpoint(); } catch(e){}
 }
 
 /* ---------- v3.4 GLITTER SPARKLES ----------
@@ -14844,6 +15136,9 @@ function _softCatch(msg, imgSrc, kind){
     // No hearts left — fall through to the full danger modal as before.
     return openDanger(msg, imgSrc, kind);
   }
+  // 2026-05-18 PM42: persist the heart loss so a kid who quits after a
+  // soft-catch doesn't get a "free" 3 hearts on resume.
+  try { _saveCheckpoint(); } catch(e){}
   // 2026-05-08 PM11 (Jane: "when i lose a heart because a dog caught me,
   // i am put in a totally different location. this shouldn't be. i
   // should lose the heart and still remain in the same location").
@@ -20256,7 +20551,7 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // chariot tutorial separate event key, easier unscramble clues,
     // conditional golden-key toast, power-up dock OUT of canvas,
     // split-screen landscape dpad, portrait HUD declutter.
-    const SW_VERSION = 'bek-moses1-v15';
+    const SW_VERSION = 'bek-moses1-v16';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
