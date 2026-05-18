@@ -3123,27 +3123,35 @@
   }
   .pu-first-tap-pulse { animation: puFirstTapPulse 1.4s ease-out infinite; }
   .pu-tap-arrow {
+    /* 2026-05-18 PM45 (Jane: "TAP button is behind the power
+       unlocks"). Was `left:58px; top:50%` — positioned to the right
+       of the power-up button, which placed it directly under the
+       NEXT power-up button when the dock had multiple unlocks (the
+       PM41 horizontal flow). Now: arrow sits ABOVE the button so it
+       can never overlap a sibling power-up. */
     position: absolute;
-    left: 58px;
-    top: 50%;
-    transform: translateY(-50%);
+    left: 50%;
+    top: -22px;
+    transform: translateX(-50%);
     background: linear-gradient(180deg,#fff5cd,#ffd976);
     color: #3a1708;
     border: 2px solid #c79a3a;
     border-radius: 14px;
-    padding: 3px 9px;
+    padding: 2px 8px;
     font-family: Georgia, serif;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.6px;
     white-space: nowrap;
     box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     pointer-events: none;
+    z-index: 6;
     animation: puArrowBob 1.2s ease-in-out infinite;
   }
   @keyframes puArrowBob {
-    0%, 100% { transform: translateY(-50%) translateX(0); }
-    50%      { transform: translateY(-50%) translateX(4px); }
+    /* PM45: arrow now above button — bob is vertical (small dip-up). */
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-4px); }
   }
   /* 2026-05-09 PM15 v5 — Truth Library empty-state HERO. Big visible
      scroll emoji + clear how-to, so the kid understands where Truth
@@ -3434,21 +3442,34 @@
        (▲ ▼) anchors to BOTTOM-RIGHT for right-thumb. The `.dpad`
        wrapper is transparent + pointer-events:none; only the
        individual buttons capture taps. */
-    /* 2026-05-18 PM43 (Jane audit #9): dpad lives INSIDE the brown controls
-       bar — not floating over the canvas. Simpler, more discoverable, no
-       finger-blocks-game-view problem. Single horizontal row keeps the
-       controls bar compact (canvas-height-friendly on short landscapes).
-       Order in HTML is up/left/right/down with spacers between; we use
-       flex `order` to render them as [LEFT][UP][DOWN][RIGHT] left→right. */
-    .dpad {
-      position: static !important;
+    /* 2026-05-18 PM46 (Jane: "on landscape, the game area is very
+       narrow. move the power unlock icons also to the bottom brown
+       pane next to the dpad ... put left+up arrows on left,
+       interact/hint/menu next to up, power icons next to those,
+       then down+right arrows on right ... the brown pane on top
+       where power unlocks were can be cleared so the game grid can
+       become larger").
+       SINGLE-ROW CONTROLS — everything left→right inside the brown
+       bar: LEFT UP [Interact Hint Menu] [⚡ 👁 🪶] DOWN RIGHT.
+       `.dpad { display: contents }` makes the 4 dpad buttons direct
+       flex children of `.controls`; CSS `order` arranges them.
+       JS `_relocatePowerupsForOrientation` moves `#hudPowerups`
+       INTO `.controls` on landscape. The standalone top
+       hudPowerups strip is hidden so the canvas claims that space. */
+    .controls {
       display: flex !important;
       flex-direction: row !important;
-      gap: 6px;
-      width: auto;
-      flex: 0 0 auto;
       align-items: center;
-      grid-template-columns: none;
+      justify-content: space-between !important;
+      gap: 6px;
+      padding: 6px max(10px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right)) !important;
+      max-height: none;
+      min-height: 60px;
+      overflow: visible;
+      flex-wrap: nowrap;
+    }
+    .dpad {
+      display: contents !important;
     }
     .dpad-spacer { display: none !important; }
     .dpad-btn {
@@ -3456,6 +3477,7 @@
       z-index: auto;
       width: 48px;
       height: 48px;
+      min-width: 48px;
       border-radius: 10px;
       font-size: 20px;
       padding: 2px 0 0;
@@ -3478,60 +3500,72 @@
       opacity: 0.85;
       margin-top: 1px;
     }
-    /* LEFT thumb side: ◀ ▲ , RIGHT thumb side: ▼ ▶ */
+    /* Order across .controls: LEFT(1) UP(2) action(3) hudPowerups(4) DOWN(5) RIGHT(6) */
     .dpad-btn[data-dir="left"]  { order: 1; }
-    .dpad-btn[data-dir="up"]    { order: 2; margin-right: 18px; }
-    .dpad-btn[data-dir="down"]  { order: 3; }
-    .dpad-btn[data-dir="right"] { order: 4; }
-    /* Controls bar: action-panel on left, dpad on right, both inside the
-       brown ribbon. No more position:fixed floats over the canvas. */
-    .controls {
-      padding: 6px 10px !important;
-      padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
-      max-height: none;
-      min-height: 62px;
-      overflow: visible;
-      justify-content: space-between !important;
-      gap: 12px;
-    }
+    .dpad-btn[data-dir="up"]    { order: 2; }
     .action-panel {
+      order: 3;
       flex-direction: row !important;
-      flex: 0 1 auto;
-      max-width: 60%;
+      flex: 1 1 auto;
+      max-width: 40%;
       gap: 6px;
       flex-wrap: nowrap;
-      justify-content: flex-start;
+      justify-content: center;
     }
     .action-btn {
-      height: 44px;
-      font-size: 12px;
-      padding: 0 12px;
+      height: 40px;
+      font-size: 11px;
+      padding: 0 8px;
       width: auto;
-      flex: 0 0 auto;
-      min-width: 72px;
+      flex: 1 1 0;
+      min-width: 0;
       white-space: nowrap;
     }
-    /* 2026-05-17 PM40 (Jane: "pause button is getting cut on both
-       orientations"). Don't shrink the pause-btn into the HUD
-       boundary on landscape — keep it 36×36 with a tiny margin so
-       the right edge clears the safe-area inset. */
+    .controls #hudPowerups {
+      order: 4;
+      flex: 0 1 auto;
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      gap: 4px !important;
+      padding: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      overflow-x: auto;
+      overflow-y: hidden;
+      max-width: 28vw;
+      scrollbar-width: none;
+      align-items: center;
+    }
+    .controls #hudPowerups::-webkit-scrollbar { display: none; }
+    .controls #hudPowerups .hud-pu-btn {
+      width: 44px !important;
+      height: 44px !important;
+      font-size: 18px !important;
+    }
+    .dpad-btn[data-dir="down"]  { order: 5; }
+    .dpad-btn[data-dir="right"] { order: 6; }
     .pause-btn { width:36px; height:36px; font-size:13px; margin-right:0; }
     .hud-group { flex-shrink: 0; gap: 4px; }
-    /* Power-up dock — PM41 it lives between HUD and canvas as its
-       own horizontal strip. No need to override here. */
+    /* Hide the standalone top hudPowerups strip on landscape — the
+       JS relocates it INTO .controls. Scope by parent so the moved
+       dock inside .controls isn't accidentally hidden. */
+    .game-page > #hudPowerups {
+      display: none !important;
+    }
   }
-  /* 2026-05-18 PM43: extra-short landscapes — shrink dpad + actions so
-     the inline controls bar still fits without eating canvas height. */
+  /* 2026-05-18 PM46: extra-short landscapes — shrink every control
+     in the inline row so the canvas still gets the lion's share. */
   @media (orientation: landscape) and (max-height: 400px) {
     .hud { padding:1px 6px !important; min-height: 32px; }
     .hud-chip { font-size:10px; padding:1px 5px; }
     .hud-hearts { font-size:13px; }
     .pause-btn { width:32px; height:32px; font-size:12px; }
-    .controls { min-height: 54px; padding:4px 8px !important; }
-    .action-btn { height:38px; font-size:11px; min-width:60px; padding:0 8px; }
-    .dpad-btn { width:42px; height:42px; font-size:18px; border-radius:8px; }
-    .dpad-btn[data-dir="up"] { margin-right: 12px; }
+    .controls { min-height: 52px; padding:4px 8px !important; }
+    .action-btn { height:36px; font-size:10.5px; min-width:0; padding:0 6px; }
+    .dpad-btn { width:40px; height:40px; min-width:40px; font-size:17px; border-radius:8px; }
     .dpad-text { font-size:7px; }
+    .controls #hudPowerups .hud-pu-btn { width:38px !important; height:38px !important; font-size:16px !important; }
   }
   .preload-overlay {
     display:none;
@@ -3753,25 +3787,18 @@
       </button>
     </div>
 
-    <div class="story-card">
-      <h2>Choose Your Difficulty</h2>
-      <div id="difficultyHint">Please choose a difficulty level first!</div>
-      <div class="difficulty-selector">
-        <button class="difficulty-btn" data-diff="easy">Easy</button>
-        <button class="difficulty-btn" data-diff="medium">Medium</button>
-        <button class="difficulty-btn" data-diff="hard">Hard</button>
+    <!-- 2026-05-18 PM45 (Jane: "there are 2 difficulty selections" on
+         the cover page). The top quickstart panel already exposes
+         Easy/Medium/Hard pills + Begin button (PM44). Dropped the
+         duplicate bottom "Choose Your Difficulty" card, kept the
+         short legend + tutorial toggle as a slim info row. -->
+    <div class="story-card" style="text-align:center;">
+      <div style="font-size:12px;color:#ffd976;opacity:0.85;line-height:1.55;">
+        Difficulty (set above) — Easy: 4 min · Medium: 3 min · Hard: 3 min (faster guards · 5 gates)
       </div>
-      <div style="font-size:12px;color:#ffd976;text-align:center;opacity:0.85;margin-top:6px;">
-        <!-- 2026-05-16 PM33 (Jane: "the cover page still says hard
-             level has 6 gates. change that. hard has 5 gates"). -->
-        Easy: 4 min · Medium: 3 min · Hard: 3 min (faster guards · 5 gates)
-      </div>
-      <!-- 2026-05-16 PM29 (Jane: "there should be a button to turn off
-           tutorials. if that happens, the tutorial based messages
-           should no longer appear"). Tutorial-mode toggle. Default ON
-           for first play; persists in localStorage `bek.bundle1.tutMode`
-           so a kid who turned it off stays off across visits. -->
-      <div style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:10px;color:#ffd976;font-size:13px;">
+      <!-- 2026-05-16 PM29 — Tutorial-mode toggle. Default ON for first
+           play; persists in localStorage `bek.bundle1.tutMode`. -->
+      <div style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:10px;color:#ffd976;font-size:13px;">
         <label for="tutModeToggle" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-weight:700;">
           <input type="checkbox" id="tutModeToggle" checked style="width:18px;height:18px;cursor:pointer;accent-color:#ffd976;">
           <span>Show tutorials (for new players)</span>
@@ -4528,7 +4555,42 @@ try {
 window.addEventListener('orientationchange', () => {
   resizeCanvas();
   setTimeout(resizeCanvas, 350);
+  try { _relocatePowerupsForOrientation(); } catch(e){}
 });
+window.addEventListener('resize', () => {
+  try { _relocatePowerupsForOrientation(); } catch(e){}
+});
+// 2026-05-18 PM46 (Jane: "move the power unlock icons also to the
+// bottom brown pane next to the dpad ... the brown pane on the top
+// where the power unlocks were originally present, can be cleared
+// and so the game grid can become larger"). On LANDSCAPE we move
+// #hudPowerups INTO .controls so it sits in the bottom row alongside
+// the dpad + action buttons (freeing the entire top strip for the
+// canvas). On PORTRAIT we move it back above the canvas. The dock
+// is a single DOM element — relocation is just appendChild calls.
+function _relocatePowerupsForOrientation() {
+  try {
+    const dock = document.getElementById('hudPowerups');
+    if (!dock) return;
+    const isLandscape = window.matchMedia('(orientation: landscape) and (max-width: 960px)').matches;
+    const controls = document.querySelector('.controls');
+    const gamePage = document.getElementById('gamePage');
+    if (!gamePage) return;
+    if (isLandscape && controls) {
+      if (dock.parentNode !== controls) controls.appendChild(dock);
+    } else {
+      // Portrait — restore above the canvas-wrapper. The hudPowerups
+      // div was originally inserted as a sibling AFTER .hud and BEFORE
+      // .canvas-wrapper. Look up the canvas-wrapper and insert before it.
+      const wrapper = gamePage.querySelector('.canvas-wrapper');
+      if (wrapper && dock.parentNode !== gamePage) {
+        gamePage.insertBefore(dock, wrapper);
+      }
+    }
+  } catch(e){}
+}
+// Call once at boot so the initial position matches orientation.
+setTimeout(_relocatePowerupsForOrientation, 0);
 // 2026-05-15 PM25 (audit #33: tab-hidden auto-pause). When the kid
 // switches apps / locks the screen, browser keeps draining the timer
 // because our wall-clock math doesn't know the page was hidden. Auto-
@@ -6323,34 +6385,24 @@ function _updatePharaohHunt(dt){
         // (the actual visible secret door) ALWAYS, since that's
         // where the chariot will emerge from. Fall back to
         // _pharaohHunt.waypoints[0] if doorIn isn't ready yet.
-        // 2026-05-17 PM41 (Jane: "tutorial for chariot is no longer
-        // showing halo and hand sign"). Was sharing the 'secretDoor'
-        // event key with the proximity-secret-door tip, so whichever
-        // fired first locked out the other. Use dedicated 'chariot'
-        // key so the kid gets BOTH tutorials (door = static warning,
-        // chariot = "trumpet means hide NOW").
+        // 2026-05-18 PM45 (Jane: "why for pharaoh's chariot the hand
+        // is pointing somewhere else?"). The pointAtTile was using
+        // doorIn.tx/ty (the secret door the chariot ENTERS through).
+        // But by the time the popup is on screen, the chariot has
+        // already crossed the threshold and is mid-route — kid was
+        // looking for a chariot at the door but the chariot was
+        // already in the middle of the map. Fix: stash the chariot's
+        // CURRENT-tick tile coords and update them every rAF tick so
+        // the halo tracks the chariot's actual on-screen position
+        // (via a new `pointAtChariot: true` flag).
         if (!_firstEventSeen.chariot) {
           try {
-            let chariotTile = null;
-            if (_pharaohHunt && _pharaohHunt.doorIn
-                && typeof _pharaohHunt.doorIn.tx === 'number'
-                && typeof _pharaohHunt.doorIn.ty === 'number') {
-              chariotTile = { tx: _pharaohHunt.doorIn.tx, ty: _pharaohHunt.doorIn.ty };
-            } else if (_pharaohHunt && Array.isArray(_pharaohHunt.waypoints) && _pharaohHunt.waypoints.length) {
-              chariotTile = { tx: _pharaohHunt.waypoints[0].tx, ty: _pharaohHunt.waypoints[0].ty };
-            }
-            const popupOpts = {
+            showTipPopup('chariot', {
               icon: '🎺',
               title: 'Pharaoh\'s Chariot!',
               body: 'Pharaoh charges through a secret door when you least expect it. Stay AWAY from secret doors and hide behind a pillar the moment you hear the trumpet!',
-            };
-            // Only attach the tile pointer if we have a valid chariot
-            // tile AND it's a sane non-zero coordinate (guards against
-            // the (0,0) HUD-overlap bug Jane reported).
-            if (chariotTile && (chariotTile.tx > 0 || chariotTile.ty > 0)) {
-              popupOpts.pointAtTile = chariotTile;
-            }
-            showTipPopup('chariot', popupOpts);
+              pointAtChariot: true,
+            });
           } catch(e){}
         } else {
           // 2026-05-16 PM31 (Jane: "no need to show pharaoh is appearing
@@ -7930,11 +7982,20 @@ function seedTreasures(){
   const spots = [];
   for (let y=0;y<MAP_H;y++) for (let x=0;x<MAP_W;x++) if (MAP[y][x]===5) spots.push({x,y});
   // 2026-05-03 (port from scene2 v3.6): use the ACTUAL count of treasure
-  // tiles found on the map, NOT a hard-cap at 5. The previous cap meant
-  // a kid who collected all 7 treasures would see "7 / 5" on the win
-  // modal (Jane: "palace treasures lying here and there" — they're
-  // scattered now, so the count needs to reflect reality).
-  game.treasuresTotal = Math.max(1, spots.length);
+  // tiles found on the map, NOT a hard-cap at 5.
+  // 2026-05-18 PM45 (Jane: "33 treasure bags shown as 29 in the win
+  // modal. every time the denominator is varying. why?"). The count
+  // recomputed on every seedTreasures call — but the kid PICKS UP
+  // treasures during play (MAP cells go 5 → 0), so a re-seed after
+  // some pickups would drop the total. Lock the value at FIRST seed
+  // only; subsequent re-seeds (re-shuffle / restart) recompute.
+  // game.treasuresTotalLocked flag prevents accidental drift inside
+  // a single play session.
+  const newTotal = Math.max(1, spots.length);
+  if (!game.treasuresTotalLocked || newTotal > game.treasuresTotal) {
+    game.treasuresTotal = newTotal;
+    game.treasuresTotalLocked = true;
+  }
 }
 seedTreasures();
 updateHudTreasure();
@@ -9651,6 +9712,7 @@ function startScene1() {
   applyDifficultyConfig(game.difficulty || 'easy');
   game.timeLeft = game.timeLimit;
   game.hearts = 3; game.stars = 0; game.treasureCount = 0;
+  game.treasuresTotalLocked = false;   // PM45: re-lock on next seedTreasures
   // Wave 3c (2026-05-08): clear clue-puzzle state so the kid restarts
   // from zero scrolls collected. Also drop any spawned golden key
   // interactable from the previous run (added to interactables[] dynamically).
@@ -9807,13 +9869,27 @@ function startScene1() {
             cleared++;
           }
         }
-      } else {
-        cleared = Math.min(challengeGates.length, _resume.gatesCleared || 0);
-        for (let i = 0; i < cleared; i++) {
-          const g = challengeGates[i];
-          g.solved = true;
-          g.bundleIndex = (g.questions || []).length;
-          g.bundleCorrect = (g.questions || []).length;
+      }
+      // 2026-05-18 PM45 (Jane: "i finished gate 2 and i hit main menu
+      // accidentally. to resume, i was shown 'you have 2/4 completed
+      // gates'. but when i resumed it, HUD showed 1/4 gates instead").
+      // Root cause: the position-matching restore above only marks a
+      // gate solved if its (tx,ty) appears in the saved list. But
+      // CHALLENGE_POSITIONS is reshuffled every load, so most or all
+      // saved gate positions no longer correspond to current gates —
+      // `cleared` lands lower than the kid actually earned. Fall back
+      // to the legacy "first N gates" scheme whenever `cleared` is
+      // less than the saved count.
+      const targetCleared = Math.min(challengeGates.length, _resume.gatesCleared || 0);
+      if (cleared < targetCleared) {
+        for (const g of challengeGates) {
+          if (cleared >= targetCleared) break;
+          if (!g.solved) {
+            g.solved = true;
+            g.bundleIndex = (g.questions || []).length;
+            g.bundleCorrect = (g.questions || []).length;
+            cleared++;
+          }
         }
       }
       if (typeof _resume.hearts === 'number') game.hearts = Math.max(1, Math.min(3, _resume.hearts));
@@ -10274,6 +10350,7 @@ function restartScene() {
   seedTreasures();
   // reset game stats
   game.hearts = 3; game.stars = 0; game.treasureCount = 0;
+  game.treasuresTotalLocked = false;   // PM45: re-lock on next seedTreasures
   // Wave 3c (2026-05-08): clear clue-puzzle state so the kid restarts
   // from zero scrolls collected. Also drop any spawned golden key
   // interactable from the previous run (added to interactables[] dynamically).
@@ -10532,9 +10609,18 @@ function showTipPopup(eventKey, opts){
       }
     }
   } catch(e){}
-  if (opts.pointAtTile && typeof opts.pointAtTile === 'object') {
+  if (opts.pointAtChariot) {
+    // 2026-05-18 PM45: live-track the chariot's current tile every frame.
+    _tipPointAtTile(0, 0);  // initialise the rAF
+    // Override the tile target each tick with the chariot's CURRENT
+    // tile so the halo follows the moving chariot.
+    if (typeof window._tipChariotTrack === 'undefined') window._tipChariotTrack = false;
+    window._tipChariotTrack = true;
+  } else if (opts.pointAtTile && typeof opts.pointAtTile === 'object') {
+    window._tipChariotTrack = false;
     _tipPointAtTile(opts.pointAtTile.tx, opts.pointAtTile.ty);
   } else {
+    window._tipChariotTrack = false;
     _tipPointAt(opts.pointAtEl || null);
   }
 }
@@ -10577,6 +10663,14 @@ function _tipPointAtTile(tx, ty){
   const _tick = () => {
     if (!_tipPointerTile || !_tipPopupActiveRing) { _tipPointerRAF = 0; return; }
     try {
+      // 2026-05-18 PM45: chariot-tracking mode — refresh the target
+      // tile from the chariot's live pixel position every frame.
+      if (window._tipChariotTrack && typeof _pharaohHunt !== 'undefined'
+          && _pharaohHunt && _pharaohHunt.chariot && _pharaohHunt.chariot.active) {
+        const c = _pharaohHunt.chariot;
+        _tipPointerTile.tx = Math.floor(c.px / TILE);
+        _tipPointerTile.ty = Math.floor(c.py / TILE);
+      }
       const cnv2 = document.getElementById('gameCanvas');
       if (!cnv2) { _tipPointerRAF = requestAnimationFrame(_tick); return; }
       const r = cnv2.getBoundingClientRect();
@@ -11401,6 +11495,13 @@ function triggerInteractable(obj){
     return;
   }
   if (!_isReplayableNPC) obj.used = true;
+  // 2026-05-18 PM45 (Jane: "every time i interact with servant i am
+  // getting +5 score. is that supposed to happen?"). No — the
+  // reward should fire ONCE per servant. Track via `obj._rewardGiven`.
+  // Servant stays visually present + dialog repeatable, but the
+  // star/heart reward path below short-circuits on subsequent taps.
+  const _rewardAlreadyGiven = !!obj._rewardGiven;
+  obj._rewardGiven = true;
   play('chime');
   // 2026-05-16 PM33 (Jane: "if moses had not cleared the gates or
   // found the key, this kind gatekeeper near the exit can say the
@@ -11456,6 +11557,13 @@ function triggerInteractable(obj){
     }
   }
   // award reward
+  // 2026-05-18 PM45: skip ALL reward branches if servant has been
+  // rewarded before. Dialog still opens at the bottom; only the
+  // star/heart payouts are gated.
+  if (_isReplayableNPC && _rewardAlreadyGiven) {
+    openDialog(obj.name, obj.body);
+    return;
+  }
   if (obj.reward === 'heal') {
     if (game.hearts < 3) { game.hearts++; updateHudHearts(); }
   } else if (obj.reward === 'stars2') {
@@ -11719,15 +11827,19 @@ function _drawLoreTileProximityHints(){
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(cx, cy, TILE * 0.55, 0, Math.PI*2); ctx.stroke();
     // Big floating scroll glyph above the tile so the kid SEES "scroll
-    // here". Bobs gently. Clamped inside canvas like the PHARAOH'S WAY pill.
-    const bob = Math.sin(_now / 240) * 3;
+    // here". Clamped inside canvas like the PHARAOH'S WAY pill.
+    // 2026-05-18 PM45 (Jane: "lore tile is moving as moses moves").
+    // Removed the sin-wave bob — the glyph now stays fixed relative
+    // to its tile. The visual "movement" Jane saw was the bob
+    // amplitude added to camera scroll, which read as the WHOLE
+    // glyph drifting. Without the bob it stays put.
     ctx.font = 'bold 28px Georgia';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(255, 245, 180, ' + (0.95 * _pulse).toFixed(2) + ')';
     ctx.shadowColor = 'rgba(255, 220, 120, 0.95)';
     ctx.shadowBlur = 14;
-    let glyphY = dy - 14 + bob;
+    let glyphY = dy - 14;
     glyphY = Math.max(16, Math.min(CANVAS_H - 16, glyphY));
     ctx.fillText('📜', cx, glyphY);
     ctx.restore();
@@ -14530,26 +14642,33 @@ function _addLifetimeResource(which, n){
     // explain what that does"). First-ever unlock = full tutorial
     // popup with a hand-sign on the power-up dock. Subsequent unlocks
     // = toast only (kid already knows the mechanic).
-    if (!_firstEventSeen.powerup) {
-      const g0 = granted[0];
-      try {
-        showTipPopup('powerup', {
-          icon: '✨',
-          title: 'Power-Up Unlocked: ' + g0.label,
-          body: g0.desc.split('.')[0] + '. Tap the glowing button on the left of the play area to use it. Each power-up has a cooldown — you can earn more by collecting bags and scrolls.',
-          pointAtEl: 'hudPowerups',
-        });
-      } catch(e){}
-      // Still toast any other simultaneous unlocks so the kid sees
-      // their full reward list, just without a separate modal each.
-      for (let i = 1; i < granted.length; i++) {
-        try { toast('🏆 NEW UNLOCK: ' + granted[i].label + ' — ' + granted[i].desc.split('.')[0] + '.'); } catch(e){}
-      }
-    } else {
-      for (const g of granted) {
-        try { toast('🏆 NEW UNLOCK: ' + g.label + ' — ' + g.desc.split('.')[0] + '.'); } catch(e){}
-      }
-    }
+    // 2026-05-18 PM45 (Jane: "when a new power up becomes available,
+    // don't display the overhead message about what it is. instead
+    // show a halo and hand sign and show the new power unlock that
+    // is available with a tutorial modal"). EVERY unlock now goes
+    // through the tutorial popup (not just the first). Multiple
+    // simultaneous unlocks fire one popup at a time — each subsequent
+    // popup queues until the prior is dismissed (uses the existing
+    // _lastTipAt throttle in showTipPopup).
+    const _queueUnlockPopup = (g, delay) => {
+      setTimeout(() => {
+        try {
+          showTipPopup('powerup_' + g.key, {
+            icon: '✨',
+            title: 'Power-Up Unlocked: ' + g.label,
+            body: g.desc.split('.')[0] + '. Tap the glowing button above the play area to use it. Each power-up has a cooldown — you can earn more by collecting bags and scrolls.',
+            pointAtEl: 'hudPowerups',
+          });
+        } catch(e){}
+      }, delay);
+    };
+    // Mark every event key as seen so the proximity tip system doesn't
+    // double-fire later, and so the per-unlock key is recognized.
+    _firstEventSeen.powerup = true;
+    granted.forEach((g, i) => {
+      _firstEventSeen['powerup_' + g.key] = false;
+      _queueUnlockPopup(g, i * 3500);
+    });
   }
   return next;
 }
@@ -14767,16 +14886,16 @@ function _refreshUnlockButtons(){
         _activatePowerup(k);
       });
     }
-    // First-time tutorial toast: if the kid has earned >=1 power-up they
-    // haven't tapped yet, fire ONE toast per scene explaining what to do.
+    // 2026-05-18 PM45 (Jane: "since we are showing tutorial for power
+    // unlocks, remove the overhead message that says 'tap the
+    // glowing...'"). The power-up unlock tutorial popup already
+    // explains the mechanic. This toast was a duplicate.
     try {
       if (!window._powerupTutorialShownThisScene) {
         const hasUntapped = earned.some(k => !tapped.has(k));
         if (hasUntapped) {
           window._powerupTutorialShownThisScene = true;
-          setTimeout(() => {
-            try { toast('💡 Tap the glowing power buttons (left side) any time to use them!'); } catch(e){}
-          }, 1800);
+          // Toast removed — popup tutorial covers it.
         }
       }
     } catch(e){}
@@ -15793,6 +15912,30 @@ function triggerGuardAlert(originX, originY){
   }
 }
 function updateGuards(dt){
+  // 2026-05-18 PM45 (Jane: "i am still seeing guards at the gate. how
+  // can moses go without being caught?"). Run-time enforcement —
+  // every frame, if any guard somehow landed on an unsolved gate
+  // tile, evict them by 1 step in a walkable direction. Belt-and-
+  // suspenders for the cases the static seed-time eviction missed
+  // (e.g. guard's patrolPath had a waypoint that resolved to a gate
+  // after a re-shuffle).
+  try {
+    if (typeof challengeGates !== 'undefined' && Array.isArray(challengeGates)) {
+      for (const g of guards) {
+        const onGate = challengeGates.find(cg => cg.tx === g.tx && cg.ty === g.ty && !cg.solved);
+        if (!onGate) continue;
+        const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
+        for (const [dx, dy] of dirs) {
+          const nx = g.tx + dx, ny = g.ty + dy;
+          if (!isWalkable(nx, ny)) continue;
+          if (challengeGates.some(cg => cg.tx === nx && cg.ty === ny && !cg.solved)) continue;
+          if (player.tx === nx && player.ty === ny) continue;
+          g.tx = nx; g.ty = ny;
+          break;
+        }
+      }
+    }
+  } catch(e){}
   // 2026-05-09 PM15 — guardFreeze power-up: skip ALL guard logic for 5 s
   // (no patrols, no chasing, no LOS scans). Sword-anim still advances so
   // any drawn frame finishes cleanly. _frozenUntil is per-frame perf time.
@@ -16557,13 +16700,30 @@ function _renderInner(){
   const ex = Math.min(MAP_W, sx + VIEW_COLS + 1);
   const ey = Math.min(MAP_H, sy + VIEW_ROWS + 1);
 
+  // 2026-05-18 PM45 (Jane: "exit sprite is still being cut. i think
+  // its the floor tile is blocking the right pillar"). The exit
+  // sprite at col 33 extends visually east into cols 34-36 (the
+  // right sphinx pillar). The per-tile loop was drawing cols 34+
+  // AFTER the exit, so their floor art painted over the pillar.
+  // Fix: defer exit tile drawing to a 2nd pass after every other
+  // floor tile is laid down.
+  const _deferredExitTiles = [];
   for (let ty = sy; ty < ey; ty++) {
     for (let tx = sx; tx < ex; tx++) {
       const t = MAP[ty][tx];
       const dx = tx*TILE - camera.px;
       const dy = ty*TILE - camera.py;
-      drawTile(t, dx, dy, tx, ty);
+      if (t === 7) {
+        _deferredExitTiles.push({ t, dx, dy, tx, ty });
+      } else {
+        drawTile(t, dx, dy, tx, ty);
+      }
     }
+  }
+  // Now paint the exit on top of the completed floor — no neighbouring
+  // floor tile can overwrite the sphinx pillars.
+  for (const e of _deferredExitTiles) {
+    drawTile(e.t, e.dx, e.dy, e.tx, e.ty);
   }
 
   // PALACE ESSENCE: warm radial glow centered on the throne. A gentle 4 s
@@ -20625,7 +20785,16 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // chariot tutorial separate event key, easier unscramble clues,
     // conditional golden-key toast, power-up dock OUT of canvas,
     // split-screen landscape dpad, portrait HUD declutter.
-    const SW_VERSION = 'bek-moses1-v16';
+    // 2026-05-18 PM45: bumped to v17 for cover-page duplicate
+    // difficulty removal, exit render-order (defer to after floor),
+    // runtime guard-evict in updateGuards, chariot live-tracker
+    // pointer, resume gate fallback, treasure total lock, lore bob
+    // removed, power-up tutorial-popup per unlock, 'tap glowing'
+    // toast removed, servant single-reward, TAP arrow above button.
+    // 2026-05-18 PM46: bumped to v18 for landscape unified bottom
+    // row: LEFT UP [Interact Hint Menu] [⚡👁🪶] DOWN RIGHT;
+    // top hudPowerups strip hidden on landscape (canvas grows).
+    const SW_VERSION = 'bek-moses1-v18';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
