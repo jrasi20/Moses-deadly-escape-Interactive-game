@@ -3130,14 +3130,15 @@
        gone on both orientations. fix all this"). Labels restored — was
        display:none in the old media queries. */
     .dpad-text { display:block !important; font-size:8px; }
-    /* 2026-05-15 PM26 (audit #16) — was single-row scroll.
-       2026-05-17 PM40 (Jane: "on portrait, the HUD on the top is
-       scroll enabled which means i have to move to the right to see
-       the remaining things. but will kids find out that it is
-       scrollable?"). Kids won't discover horizontal scroll. Now: let
-       chips WRAP to a 2nd row on narrow viewports. Wrap eats a few
-       pixels of canvas height but makes every chip immediately
-       visible, no swipe required. */
+    /* 2026-05-17 PM41 (Jane: "on portrait, the HUD on the top is a
+       clutter. 4 rows. can we arrange it neatly?"). The 2-row wrap
+       was still spilling to 3+ rows on narrow phones because every
+       chip was full-size. Now: compress chip font-size + padding
+       aggressively on narrow viewports so all 6 chips fit on ONE
+       row + the right group (MAP / sound / pause) sits below. Plus:
+       HIDE the per-color bag chip on portrait (the kid still gets
+       it landscape + the +1 heart bonus toast fires when each color
+       is completed — chip is the least-critical of the lot). */
     .hud {
       flex-wrap: wrap !important;
       overflow-x: visible;
@@ -3149,7 +3150,17 @@
       flex-wrap: wrap;
       flex-shrink: 1;
     }
-    .hud-chip { flex-shrink: 0; }
+    .hud-chip {
+      flex-shrink: 0;
+      font-size: 10.5px;
+      padding: 2px 6px;
+    }
+    .hud-chip img { width:14px; height:14px; }
+    .hud-hearts { font-size: 14px; letter-spacing: 2px; }
+    .pause-btn { width:30px; height:30px; font-size:12px; }
+    /* Hide per-color treasure bag chip on portrait — least useful
+       on a phone where every chip pixel counts. */
+    #hudColorBags { display: none !important; }
   }
 
   /* ----- PORTRAIT phone: tall canvas, comfortable controls ----- */
@@ -3238,66 +3249,103 @@
       max-width: none;
       flex: 0 0 auto;
     }
+    /* 2026-05-17 PM41 (Jane: "have the dpad controls like other games
+       you suggested... arrows on the left and right side of the
+       screen"). LANDSCAPE SPLIT-SCREEN DPAD: each direction button
+       is position:fixed to a corner of the viewport. LEFT pair
+       (◀ ▶) anchors to BOTTOM-LEFT for left-thumb; RIGHT pair
+       (▲ ▼) anchors to BOTTOM-RIGHT for right-thumb. The `.dpad`
+       wrapper is transparent + pointer-events:none; only the
+       individual buttons capture taps. */
+    .dpad {
+      position: static !important;
+      display: contents !important;     /* treat the wrapper as nothing */
+    }
     .dpad-spacer { display: none !important; }
     .dpad-btn {
-      height: 52px;            /* tall enough for glyph + label */
-      width: 52px;
-      min-width: 52px;
-      border-radius: 8px;
-      font-size: 16px;
+      position: fixed !important;
+      z-index: 6;
+      width: 58px;
+      height: 58px;
+      border-radius: 14px;
+      font-size: 24px;
       padding: 2px 0 0;
-      /* Stack glyph above label */
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      line-height: 1.05;
+      line-height: 1.0;
+      background: rgba(255, 215, 118, 0.22);
+      border: 2px solid #ffd976;
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      box-shadow: 0 3px 12px rgba(0,0,0,0.55);
+      color: #fff5d8;
     }
-    /* 2026-05-17 PM40 (Jane: "no text on arrow buttons"). Restore the
-       UP / DOWN / LEFT / RIGHT labels. Was display:none in PM39's
-       single-row dpad rewrite. */
     .dpad-text {
       display: block !important;
       font-size: 8px;
       letter-spacing: 0.4px;
       font-weight: 700;
       opacity: 0.95;
-      margin-top: 1px;
+      margin-top: 2px;
     }
-    /* Reorder so the single-row dpad reads LEFT ↑ ↓ RIGHT (HTML
-       declares them in UP, LEFT, RIGHT, DOWN order). */
-    .dpad-btn[data-dir="left"]  { order: 1; }
-    .dpad-btn[data-dir="up"]    { order: 2; }
-    .dpad-btn[data-dir="down"]  { order: 3; }
-    .dpad-btn[data-dir="right"] { order: 4; }
+    /* LEFT side: ◀ + ▶ side-by-side at the BOTTOM-LEFT corner */
+    .dpad-btn[data-dir="left"] {
+      left: max(14px, env(safe-area-inset-left));
+      bottom: max(72px, env(safe-area-inset-bottom) + 72px);
+    }
+    .dpad-btn[data-dir="right"] {
+      left: calc(max(14px, env(safe-area-inset-left)) + 66px);
+      bottom: max(72px, env(safe-area-inset-bottom) + 72px);
+    }
+    /* RIGHT side: ▲ + ▼ side-by-side at the BOTTOM-RIGHT corner */
+    .dpad-btn[data-dir="up"] {
+      right: calc(max(14px, env(safe-area-inset-right)) + 66px);
+      bottom: max(72px, env(safe-area-inset-bottom) + 72px);
+    }
+    .dpad-btn[data-dir="down"] {
+      right: max(14px, env(safe-area-inset-right));
+      bottom: max(72px, env(safe-area-inset-bottom) + 72px);
+    }
+    /* Action panel: stays inside .controls at the bottom-center (no
+       dpad competing for space). */
+    .controls {
+      padding: 6px 10px !important;
+      padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
+      max-height: none;
+      min-height: 56px;
+      overflow: visible;
+      justify-content: center !important;
+    }
+    .action-panel {
+      flex-direction: row !important;
+      flex: 0 1 auto;
+      max-width: 100%;
+      gap: 8px;
+      flex-wrap: nowrap;
+      justify-content: center;
+    }
+    .action-btn {
+      height: 44px;
+      font-size: 12px;
+      padding: 0 14px;
+      width: auto;
+      flex: 0 0 auto;
+      min-width: 80px;
+      white-space: nowrap;
+    }
     /* 2026-05-17 PM40 (Jane: "pause button is getting cut on both
        orientations"). Don't shrink the pause-btn into the HUD
        boundary on landscape — keep it 36×36 with a tiny margin so
        the right edge clears the safe-area inset. */
     .pause-btn { width:36px; height:36px; font-size:13px; margin-right:0; }
     .hud-group { flex-shrink: 0; gap: 4px; }
-    /* 2026-05-17 PM40 (Jane: "only few power unlock buttons are
-       shown. remaining are missing"). The power-up dock at top:78px
-       was getting clipped against the canvas-wrapper's right edge
-       when buttons stacked vertically. Make the dock flow HORIZONTAL
-       on landscape with overflow-x:auto so all unlocked power-ups
-       are scrollable into view. */
-    #hudPowerups {
-      flex-direction: row !important;
-      flex-wrap: nowrap !important;
-      max-width: calc(100vw - 90px);
-      overflow-x: auto !important;
-      overflow-y: hidden !important;
-      pointer-events: auto !important;
-      gap: 4px !important;
-      scrollbar-width: none;
-    }
-    #hudPowerups::-webkit-scrollbar { display: none; }
+    /* Power-up dock — PM41 it lives between HUD and canvas as its
+       own horizontal strip. No need to override here. */
   }
-  /* PM36: extra-short landscapes (e.g. iPhone SE / Pixel 4a landscape =
-     375 × 667 → rotated 667 × 375 minus chrome leaves ~330 px). On
-     these the HUD + controls eat too much of the canvas; trim slightly
-     but keep the single-row dpad layout from above. */
+  /* PM41: extra-short landscapes — keep the split-screen dpad but
+     shrink each button a bit so they don't crowd the canvas. */
   @media (orientation: landscape) and (max-height: 400px) {
     .hud { padding:1px 6px !important; min-height: 32px; }
     .hud-chip { font-size:10px; padding:1px 5px; }
@@ -3305,7 +3353,9 @@
     .pause-btn { width:32px; height:32px; font-size:12px; }
     .controls { min-height: 48px; padding:4px 8px !important; }
     .action-btn { height:38px; font-size:11px; }
-    .dpad-btn { height:38px; width:38px; min-width:38px; font-size:15px; }
+    .dpad-btn { width:48px; height:48px; font-size:20px; }
+    .dpad-btn[data-dir="right"] { left: calc(max(14px, env(safe-area-inset-left)) + 56px); }
+    .dpad-btn[data-dir="up"]    { right: calc(max(14px, env(safe-area-inset-right)) + 56px); }
   }
   .preload-overlay {
     display:none;
@@ -3647,7 +3697,15 @@
        canvas-wrapper, directly under the 60-px compass at top:8px with
        a 10 px gap. Now compass + powerups stack cleanly on every
        viewport size. -->
-  <!-- (Powerup dock moved into .canvas-wrapper below — see id="hudPowerups".) -->
+  <!-- 2026-05-17 PM41 (Jane: "look the power unlock buttons, they are
+       on the game grid. this is not how you wanted to place the
+       dpad buttons"). Moved BACK out of canvas-wrapper so it doesn't
+       overlap the game grid. Now a flex strip BETWEEN the HUD and
+       the canvas — horizontal row of pill buttons that wraps on
+       narrow screens. Only renders when at least one power-up is
+       unlocked (CSS :empty-display:none keeps the row collapsed). -->
+  <div id="hudPowerups" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;padding:4px max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left));justify-content:center;background:linear-gradient(180deg, rgba(40,14,3,0.85), rgba(58,22,7,0.75));border-bottom:1px solid rgba(255,215,118,0.35);z-index:5;"></div>
+  <style>#hudPowerups:empty { display:none !important; }</style>
   <!-- 2026-05-09 PM15 v5 (Jane: "put a lightening meter over moses to
        show till when his power is present"). Floating ⚡ meter that
        follows Moses while Speed Burst is active. Hidden otherwise. -->
@@ -3698,12 +3756,10 @@
     <div class="compass-box" aria-label="Compass">
       <canvas id="compass" width="52" height="52"></canvas>
     </div>
-    <!-- 2026-05-16 PM28 (audit Bug E): powerup dock lives INSIDE
-         .canvas-wrapper so its top:78px is measured from the wrapper
-         (which has the compass at top:8px / 60px tall), not from
-         .game-page. This guarantees the dock starts 10 px below the
-         compass on every viewport. -->
-    <div id="hudPowerups" style="position:absolute;left:8px;top:78px;display:flex;flex-direction:column;gap:6px;z-index:7;pointer-events:none;"></div>
+    <!-- 2026-05-17 PM41: powerup dock moved BACK above the canvas-wrapper
+         as its own horizontal strip. See the #hudPowerups div above
+         the .canvas-wrapper opening. -->
+
     <div class="minimap-box" aria-label="Map">
       <div class="mm-label">THE PALACE</div>
       <canvas id="minimap" width="120" height="75"></canvas>
@@ -5895,8 +5951,12 @@ const SECRET_DOORS = [
   { id: 2, tx: 0,  ty: 14, side: 'west',  open: false, openMs: 0 },
   // East wall — row 14 (col 39)
   { id: 3, tx: 39, ty: 14, side: 'east',  open: false, openMs: 0 },
-  // South wall — row 24 (col 32, well clear of exit at col 37)
-  { id: 4, tx: 32, ty: 24, side: 'south', open: false, openMs: 0 },
+  // 2026-05-17 PM41 (Jane: "the secret door and exit are overlapping").
+  // Exit moved to col 33 (PM40), making the south secret door at
+  // col 32 sit directly adjacent — the two sprites visually overlap.
+  // Moved south door to col 16 (mid-south, far from the exit AND
+  // from the north-wall doors at cols 8 + 32 — diverse entries).
+  { id: 4, tx: 16, ty: 24, side: 'south', open: false, openMs: 0 },
 ];
 const _pharaohHunt = {
   enabled: true,
@@ -6050,7 +6110,13 @@ function _updatePharaohHunt(dt){
         // (the actual visible secret door) ALWAYS, since that's
         // where the chariot will emerge from. Fall back to
         // _pharaohHunt.waypoints[0] if doorIn isn't ready yet.
-        if (!_firstEventSeen.secretDoor) {
+        // 2026-05-17 PM41 (Jane: "tutorial for chariot is no longer
+        // showing halo and hand sign"). Was sharing the 'secretDoor'
+        // event key with the proximity-secret-door tip, so whichever
+        // fired first locked out the other. Use dedicated 'chariot'
+        // key so the kid gets BOTH tutorials (door = static warning,
+        // chariot = "trumpet means hide NOW").
+        if (!_firstEventSeen.chariot) {
           try {
             let chariotTile = null;
             if (_pharaohHunt && _pharaohHunt.doorIn
@@ -6071,7 +6137,7 @@ function _updatePharaohHunt(dt){
             if (chariotTile && (chariotTile.tx > 0 || chariotTile.ty > 0)) {
               popupOpts.pointAtTile = chariotTile;
             }
-            showTipPopup('secretDoor', popupOpts);
+            showTipPopup('chariot', popupOpts);
           } catch(e){}
         } else {
           // 2026-05-16 PM31 (Jane: "no need to show pharaoh is appearing
@@ -6826,7 +6892,12 @@ const CHALLENGE_BANK = {
     { id:'mU2', type:'unscramble',
       q:'Unscramble the name of Moses\' wife from Midian:',
       answer:'ZIPPORAH',
-      clue:'One of Jethro\'s seven daughters. Her name starts with Z (Exodus 2:21).',
+      // 2026-05-17 PM41 (Jane: "for the unscramble clue, provide more
+      // easier clues for children to be able to spell the name.
+      // especially to spell shiphrah, zipporah may be harder").
+      // Easier kid-friendly clue: full letter pattern + syllable hint
+      // so the kid can sound it out: ZIP-POR-AH. 8 letters.
+      clue:'Hint: 8 letters — sound it out: ZIP - POR - AH. Starts with Z, ends with H. (Exodus 2:21)',
       verse:'"Moses agreed... and he gave his daughter Zipporah to Moses." (Exodus 2:21 NIV)' },
     // --- Match ---
     { id:'mM1', type:'match',
@@ -7077,10 +7148,12 @@ const CHALLENGE_BANK = {
     { id:'hU2', type:'unscramble',
       q:'Unscramble the name of the brave midwife (first of two):',
       answer:'SHIPHRAH',
-      // 2026-05-08 PM12: dropped "Starts with S" — kid has the letters
-      // already in unscramble; spelling out the first letter pre-spoils
-      // the puzzle. New clue gives biblical context instead.
-      clue:'One of the two Hebrew midwives who feared God more than Pharaoh and saved baby boys (Exodus 1:15-17).',
+      // 2026-05-17 PM41 (Jane: "for the unscramble clue, provide more
+      // easier clues for children to be able to spell the name.
+      // especially to spell shiphrah"). Sound-it-out + letter
+      // pattern hints. 8 letters, syllables SHIP-RAH, with a silent
+      // H in the middle: SH-I-PH-R-A-H.
+      clue:'Hint: 8 letters — sound it out: SHIP - RAH. Starts with S-H, ends with R-A-H. (Exodus 1:15)',
       verse:'"The Hebrew midwives, one of whom was named Shiphrah..." (Exodus 1:15 NIV)' },
     // --- Match ---
     // 2026-05-08 PM12: rephrased "deed of faith" → just "action" so the
@@ -10050,6 +10123,7 @@ const _firstEventSeen = {
   servant: false, exitLocked: false,
   dog: false,           // 2026-05-16 PM30
   marble: false,        // 2026-05-17 PM36
+  chariot: false,       // 2026-05-17 PM41 — was sharing secretDoor key
 };
 function _resetFirstEventSeen(){
   for (const k in _firstEventSeen) _firstEventSeen[k] = false;
@@ -11119,7 +11193,22 @@ function triggerInteractable(obj){
     spawnGlitterBurstAtPlayer(28);
     setTimeout(() => spawnGlitterBurstAtPlayer(20), 180);
     try { play('chime') || play('success'); } catch(e){}
-    try { toast('🗝️ Golden Key picked up — the EXIT will now open!'); } catch(e){}
+    // 2026-05-17 PM41 (Jane: "as soon as golden key is picked up, we
+    // are displaying a overhead message saying the gate will be open
+    // now. this is incorrect since moses still needs to clear more
+    // gates. fix this"). Branch the pickup toast on whether gates
+    // are all cleared. If yes → "exit will open"; if no → "now clear
+    // the remaining gates".
+    try {
+      const remaining = (challengeGates || []).filter(g => !g.solved).length;
+      if (remaining === 0) {
+        toast('🗝️ Golden Key picked up — the EXIT will now open!', { force: true });
+      } else {
+        toast('🗝️ Golden Key picked up! Now clear ' + remaining
+              + ' more Bible Gate' + (remaining === 1 ? '' : 's')
+              + ' to unlock the exit.', { force: true });
+      }
+    } catch(e){}
     return;
   }
   openDialog(obj.name, obj.body);
@@ -15475,16 +15564,23 @@ function updateGuards(dt){
       // and the lostSight timer races toward 1500ms (return to patrol).
       if (g.state === 'alerted' && g.timer <= 0 && canGuardSeePlayer(g)) {
         const dx = player.tx - g.tx, dy = player.ty - g.ty;
+        // 2026-05-17 PM41 (Jane: "guard standing at the gate"). The
+        // patrol path was already blocked from gates (PM37) but the
+        // CHASE path was using plain isWalkable — guards in active
+        // pursuit could stop on a gate. Wrap with gate-block too so
+        // a chasing guard never parks ON a Bible gate tile (they
+        // detour around it instead).
+        const _chaseOk = (nx, ny) => isWalkable(nx, ny) && !_gateTileBlockedForGuard(nx, ny);
         if (Math.abs(dx) > Math.abs(dy)) {
-          if (dx > 0 && isWalkable(g.tx+1,g.ty)) { g.tx++; g.dir='right'; }
-          else if (dx < 0 && isWalkable(g.tx-1,g.ty)) { g.tx--; g.dir='left'; }
-          else if (dy > 0 && isWalkable(g.tx,g.ty+1)) { g.ty++; g.dir='down'; }
-          else if (dy < 0 && isWalkable(g.tx,g.ty-1)) { g.ty--; g.dir='up'; }
+          if (dx > 0 && _chaseOk(g.tx+1,g.ty)) { g.tx++; g.dir='right'; }
+          else if (dx < 0 && _chaseOk(g.tx-1,g.ty)) { g.tx--; g.dir='left'; }
+          else if (dy > 0 && _chaseOk(g.tx,g.ty+1)) { g.ty++; g.dir='down'; }
+          else if (dy < 0 && _chaseOk(g.tx,g.ty-1)) { g.ty--; g.dir='up'; }
         } else {
-          if (dy > 0 && isWalkable(g.tx,g.ty+1)) { g.ty++; g.dir='down'; }
-          else if (dy < 0 && isWalkable(g.tx,g.ty-1)) { g.ty--; g.dir='up'; }
-          else if (dx > 0 && isWalkable(g.tx+1,g.ty)) { g.tx++; g.dir='right'; }
-          else if (dx < 0 && isWalkable(g.tx-1,g.ty)) { g.tx--; g.dir='left'; }
+          if (dy > 0 && _chaseOk(g.tx,g.ty+1)) { g.ty++; g.dir='down'; }
+          else if (dy < 0 && _chaseOk(g.tx,g.ty-1)) { g.ty--; g.dir='up'; }
+          else if (dx > 0 && _chaseOk(g.tx+1,g.ty)) { g.tx++; g.dir='right'; }
+          else if (dx < 0 && _chaseOk(g.tx-1,g.ty)) { g.tx--; g.dir='left'; }
         }
         g.timer = 550;
         // catch only if Moses is actually visible, adjacent, NOT hidden, and not in a modal
@@ -17941,23 +18037,17 @@ function drawTile(t, dx, dy, tx, ty){
       // 2026-05-16 PM31 (Jane: "make the exit larger"). Bumped sprite
       // height 1.65 → 2.4 TILE so the city gate reads as a true
       // destination from across the canvas.
-      // 2026-05-17 PM40 (Jane: "the exit image is still getting cut").
-      // PM40 moved the exit one column WEST in MAP_STR (col 35 → 33)
-      // so the sprite now has 5 floor tiles east of it (cols 34-38)
-      // before the col 39 wall. Width budget bumped back to 5 × TILE
-      // so the city-gate sprite can render at near-full visual size
-      // (height 2.4 × TILE → width up to ~3.6 × TILE for a 1.5
-      // aspect sprite, fully inside the 5-tile east headroom).
+      // 2026-05-17 PM41 (Jane: "remove all the compression you have for
+      // exit and rework on this"). No more width-budget compression.
+      // Sprite renders at natural aspect × 2.2 TILE height; the
+      // existing `_clampSpriteX` shoves it leftward if it would
+      // otherwise overflow the canvas right edge. PM40 moved the
+      // exit tile to col 33 so the sprite has 5 floor tiles east of
+      // it (cols 34-38) before the col 39 wall — plenty of natural
+      // room for a 1.5-aspect city-gate sprite (~3.3 × TILE wide).
       const _eAr = (_exitSprite.naturalWidth || 1) / (_exitSprite.naturalHeight || 1);
-      const _eMaxWTiles = 5.0;           // hard width budget in tiles (PM40)
-      const _eHByH = TILE * 2.4;         // preferred height
-      let _eW = _eHByH * _eAr;
-      let _eH = _eHByH;
-      if (_eW > TILE * _eMaxWTiles) {
-        // sprite is too wide — back off so width fits, height follows
-        _eW = TILE * _eMaxWTiles;
-        _eH = _eW / _eAr;
-      }
+      const _eH  = TILE * 2.2;
+      const _eW  = _eH * _eAr;
       let   _eOX = dx + (TILE - _eW) / 2;  // centered anchor
       try { _eOX = _clampSpriteX(_eOX, _eW); } catch(e){}
       const _eOY = dy + TILE - _eH + 2;
@@ -20161,7 +20251,12 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // tutorial top-anchor on low pointAtEl, landscape dpad labels +
     // power-up dock scroll, HUD wrap (no scroll), cover lock,
     // exit moved col 35 → 33 + width budget 5×TILE.
-    const SW_VERSION = 'bek-moses1-v14';
+    // 2026-05-17 PM41: bumped v14 → v15 for secret-door move (col
+    // 32 → 16), exit compression removed, chase-state gate block,
+    // chariot tutorial separate event key, easier unscramble clues,
+    // conditional golden-key toast, power-up dock OUT of canvas,
+    // split-screen landscape dpad, portrait HUD declutter.
+    const SW_VERSION = 'bek-moses1-v15';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
