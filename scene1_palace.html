@@ -76,9 +76,18 @@
     background:
       radial-gradient(ellipse at top, #c77d3a 0%, #7a3a13 55%, #1f0a02 100%);
     overflow-y:auto;
+    /* 2026-05-17 PM40 (Jane: "on the cover page, when i move to the
+       right and left, the grids are shifting and are chaotic"). Lock
+       horizontal scroll so left/right swipes do nothing — only the
+       vertical wheel/swipe is allowed. Stops the card grid from
+       sliding around mid-tap. Also wrap any inline-overflow content
+       to keep cards inside the viewport box. */
+    overflow-x:hidden;
     -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x: contain;
     display:flex; flex-direction:column; align-items:center;
     padding:22px 16px 40px;
+    box-sizing: border-box;
     /* 2026-05-15 PM26 (audit #15: 100vh → 100dvh). On Chrome Android,
        100vh ignores URL-bar collapse, so the layout jumps every scroll.
        100dvh tracks the *dynamic* viewport. 100vh stays as the older
@@ -3121,24 +3130,24 @@
        gone on both orientations. fix all this"). Labels restored — was
        display:none in the old media queries. */
     .dpad-text { display:block !important; font-size:8px; }
-    /* 2026-05-15 PM26 (audit #16): on narrow phones the HUD wrapped to
-       2-3 rows, eating canvas vertical space + pushing the dpad off
-       small screens. Switch to a single-row horizontally-scrollable
-       strip so all chips stay reachable via a swipe, and the HUD never
-       grows past one line. Hide the native scrollbar (it's an internal
-       affordance — swipe is the gesture). */
+    /* 2026-05-15 PM26 (audit #16) — was single-row scroll.
+       2026-05-17 PM40 (Jane: "on portrait, the HUD on the top is
+       scroll enabled which means i have to move to the right to see
+       the remaining things. but will kids find out that it is
+       scrollable?"). Kids won't discover horizontal scroll. Now: let
+       chips WRAP to a 2nd row on narrow viewports. Wrap eats a few
+       pixels of canvas height but makes every chip immediately
+       visible, no swipe required. */
     .hud {
-      flex-wrap: nowrap !important;
-      overflow-x: auto;
-      overflow-y: hidden;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;        /* Firefox */
+      flex-wrap: wrap !important;
+      overflow-x: visible;
+      overflow-y: visible;
+      row-gap: 4px;
     }
-    .hud::-webkit-scrollbar { display: none; }  /* WebKit / Blink */
     .hud-group {
       min-width: 0;
-      flex-wrap: nowrap;
-      flex-shrink: 0;               /* let group push past viewport — scroll catches it */
+      flex-wrap: wrap;
+      flex-shrink: 1;
     }
     .hud-chip { flex-shrink: 0; }
   }
@@ -3231,20 +3240,59 @@
     }
     .dpad-spacer { display: none !important; }
     .dpad-btn {
-      height: 44px;
-      width: 44px;
-      min-width: 44px;
+      height: 52px;            /* tall enough for glyph + label */
+      width: 52px;
+      min-width: 52px;
       border-radius: 8px;
-      font-size: 18px;
-      padding: 0;
+      font-size: 16px;
+      padding: 2px 0 0;
+      /* Stack glyph above label */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.05;
     }
-    .dpad-text { display: none !important; }   /* labels would crowd 1-row dpad */
+    /* 2026-05-17 PM40 (Jane: "no text on arrow buttons"). Restore the
+       UP / DOWN / LEFT / RIGHT labels. Was display:none in PM39's
+       single-row dpad rewrite. */
+    .dpad-text {
+      display: block !important;
+      font-size: 8px;
+      letter-spacing: 0.4px;
+      font-weight: 700;
+      opacity: 0.95;
+      margin-top: 1px;
+    }
     /* Reorder so the single-row dpad reads LEFT ↑ ↓ RIGHT (HTML
        declares them in UP, LEFT, RIGHT, DOWN order). */
     .dpad-btn[data-dir="left"]  { order: 1; }
     .dpad-btn[data-dir="up"]    { order: 2; }
     .dpad-btn[data-dir="down"]  { order: 3; }
     .dpad-btn[data-dir="right"] { order: 4; }
+    /* 2026-05-17 PM40 (Jane: "pause button is getting cut on both
+       orientations"). Don't shrink the pause-btn into the HUD
+       boundary on landscape — keep it 36×36 with a tiny margin so
+       the right edge clears the safe-area inset. */
+    .pause-btn { width:36px; height:36px; font-size:13px; margin-right:0; }
+    .hud-group { flex-shrink: 0; gap: 4px; }
+    /* 2026-05-17 PM40 (Jane: "only few power unlock buttons are
+       shown. remaining are missing"). The power-up dock at top:78px
+       was getting clipped against the canvas-wrapper's right edge
+       when buttons stacked vertically. Make the dock flow HORIZONTAL
+       on landscape with overflow-x:auto so all unlocked power-ups
+       are scrollable into view. */
+    #hudPowerups {
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      max-width: calc(100vw - 90px);
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      pointer-events: auto !important;
+      gap: 4px !important;
+      scrollbar-width: none;
+    }
+    #hudPowerups::-webkit-scrollbar { display: none; }
   }
   /* PM36: extra-short landscapes (e.g. iPhone SE / Pixel 4a landscape =
      375 × 667 → rotated 667 × 375 minus chrome leaves ~330 px). On
@@ -5339,7 +5387,7 @@ const MAP_STR = [
   "1002000030000002000003000000200000300201", // 20
   "1000005000000000000000050000000005000001", // 21  (2026-05-08: rebalanced to 3 spread — cols 6, 22, 35 — keeping off rug)
   "1000300000040000000400000000030000000001", // 22
-  "1000000000000000000000000000000000070001", // 23  (2026-05-08: exit moved col 37 → col 35; cols 36-38 opened to floor so the 2.1× twin-sphinx city-gate sprite has 3 tiles of unobstructed right-side headroom — Jane: "either get rid of wall near the exit door or move the exit door to the left")
+  "1000000000000000000000000000000007000001", // 23  (2026-05-17 PM40: exit moved col 35 → col 33 per Jane "move the exit image somewhere else if needed to prevent image getting cut". Cols 34-38 now all floor, giving the city-gate sprite 5 tiles of east-side headroom + sprite width cap re-bumped to 5×TILE — the right sphinx pillar can never be cut again.)
   "1111111111111111111111111111111111111111", // 24
 ];
 // parse into 2d number array
@@ -9296,6 +9344,41 @@ function startScene1() {
   seedTreasures();
   // seed 6 mandatory challenge gates (each a 3-question bundle)
   seedChallenges(game.difficulty || 'easy');
+  // 2026-05-17 PM40 (Jane: "i saw a guard at the gate so moses gets
+  // caught. things like this will spoil the mood for kids"). PM37
+  // added a step-time check so guards never PATROL onto a gate, but
+  // a guard's INITIAL static position (from the const guards[] array)
+  // could already coincide with a freshly-shuffled gate. Evict any
+  // guard standing on a gate to the nearest walkable non-gate tile.
+  try {
+    if (Array.isArray(guards) && Array.isArray(challengeGates)) {
+      for (const g of guards) {
+        const onGate = challengeGates.find(cg => cg.tx === g.tx && cg.ty === g.ty && !cg.solved);
+        if (!onGate) continue;
+        // Try 4 adjacent tiles, then a 2-tile spiral.
+        const _open = (nx, ny) => {
+          if (!isWalkable(nx, ny)) return false;
+          if (challengeGates.some(cg => cg.tx === nx && cg.ty === ny && !cg.solved)) return false;
+          if (player.tx === nx && player.ty === ny) return false;
+          return true;
+        };
+        let placed = false;
+        outer:
+        for (let r = 1; r <= 3 && !placed; r++) {
+          for (let dy = -r; dy <= r && !placed; dy++) {
+            for (let dx = -r; dx <= r && !placed; dx++) {
+              if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+              if (_open(g.tx + dx, g.ty + dy)) {
+                g.tx += dx; g.ty += dy;
+                placed = true;
+                break outer;
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch(e){}
   // v3.x audit (Bug 148 — Jane: "checkpoints still show 0/5 and I am
   // starting from scratch" on resume). Apply the saved checkpoint AFTER
   // seedChallenges has built fresh gate objects. We mark the FIRST N
@@ -10011,17 +10094,26 @@ function showTipPopup(eventKey, opts){
   // popup card to the OPPOSITE half of the viewport so the halo
   // never sits underneath the card. Default is bottom-anchored; if
   // the tile is in the bottom half of the canvas, flip to top.
+  // 2026-05-17 PM40 (Jane: "for servant tutorial, where you show the
+  // halo and hand sign over interact, the tutorial modal is hiding
+  // the interact button"). Same rule for `pointAtEl`: if the target
+  // button is in the lower half of the viewport, top-anchor the
+  // popup so the kid can SEE the button + the halo while reading.
   try {
     overlay.classList.remove('top-anchored');
     if (opts.pointAtTile && typeof opts.pointAtTile === 'object'
         && typeof MAP_H === 'number' && opts.pointAtTile.ty != null) {
-      // Compute the on-screen vertical position of the tile relative
-      // to the canvas. If it's below the canvas midpoint, top-anchor
-      // the popup. We use the live camera so this is correct even
-      // mid-pan.
       const screenTileY = (opts.pointAtTile.ty * TILE) - camera.py + TILE/2;
       if (screenTileY > CANVAS_H * 0.5) {
         overlay.classList.add('top-anchored');
+      }
+    } else if (opts.pointAtEl) {
+      const el = document.getElementById(opts.pointAtEl);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        if (r.top > window.innerHeight * 0.5) {
+          overlay.classList.add('top-anchored');
+        }
       }
     }
   } catch(e){}
@@ -10489,16 +10581,15 @@ function _maybeFireFirstEventTip(){
         showTipPopup('scroll', {
           icon: '📜',
           title: 'A Hidden Scroll',
-          // 2026-05-16 PM30 (Jane: "moses doesn't have to hit interact
-          // to pick up scroll"). Updated copy to reflect auto-pickup —
-          // kid just walks next to the scroll.
-          // 2026-05-17 PM37 (Jane: "the halo that is near the lore
-          // tile is supposed to be on the lore tile... or remove the
-          // halo. let lore tile glow and pulse. no need halo").
-          // Dropped pointAtTile — the lore-tile canvas glow + scroll
-          // glyph (PM30 boost) is the visual anchor; a separate halo
-          // was redundant and could drift while the camera/Moses moved.
+          // 2026-05-17 PM40 (Jane: "you have removed the hand icon and
+          // halo from the scroll tutorial" — wanted the hand+halo back
+          // on the scroll popup, not the on-canvas lore-tile glow).
+          // Re-enabled pointAtTile. The rAF tracker (PM33) updates
+          // the ring position every frame against the live camera so
+          // the halo stays glued to the scroll's tile even as Moses
+          // or camera moves.
           body: 'Walk RIGHT NEXT to a scroll and it picks itself up. Bible-truth scrolls heal Moses by +1 heart. Clue scrolls hide a letter — collect all 3 to spell GOD!',
+          pointAtTile: { tx: o.tx, ty: o.ty },
         });
         return;
       }
@@ -15635,7 +15726,9 @@ function _firePalaceEvent(name){
     // tagging the guard so renderer (if it checks) can draw a halo ring.
     g._glance = true;
     _palaceEvents.endsAt = performance.now() + 2200;
-    try { toast('👁️ A guard glances around — hide!'); } catch(e){}
+    // 2026-05-17 PM40 (Jane: "Remove 'a guard glances around'"). The
+    // +seeRadius mechanical pressure already lands when a far guard
+    // suddenly spots Moses; the toast added overhead noise.
     try { play('chime'); } catch(e){}
   } else if (name === 'pharaoh-shadow') {
     // v3.x audit (Bug 126): a slow ominous shadow drifts overhead — every
@@ -17170,8 +17263,8 @@ function drawFootstepDust(){
 const _CARTOUCHE_TILES = new Set([
   // Exit threshold ONLY — marks the sacred destination. Everything else
   // is plain cream marble for clean readability.
-  // 2026-05-08: exit moved col 37 → col 35.
-  '35,23',
+  // 2026-05-17 PM40: exit moved col 35 → col 33.
+  '33,23',
 ]);
 function _pickZoneFloor(tx, ty){
   // Cartouche feature tile FIRST so it overrides the base.
@@ -17848,20 +17941,16 @@ function drawTile(t, dx, dy, tx, ty){
       // 2026-05-16 PM31 (Jane: "make the exit larger"). Bumped sprite
       // height 1.65 → 2.4 TILE so the city gate reads as a true
       // destination from across the canvas.
-      // 2026-05-17 PM39 (Jane: "the exit image is still getting cut
-      // on the right. the pillar on the right is cut"). Even 2.05×
-      // TILE was overflowing on portrait viewports where the visible
-      // canvas region is narrower (CSS scales the canvas down). The
-      // earlier "4 tiles of right headroom" assumption broke when
-      // the kid is on a phone with the canvas downscaled — the
-      // sprite's rendered width relative to viewport is bigger than
-      // it looks on desktop. Capping the sprite width relative to
-      // sprite aspect ratio so it NEVER exceeds 3 × TILE in width
-      // regardless of how tall we make it. Pictures a smaller-but-
-      // complete door rather than a tall-but-clipped one.
+      // 2026-05-17 PM40 (Jane: "the exit image is still getting cut").
+      // PM40 moved the exit one column WEST in MAP_STR (col 35 → 33)
+      // so the sprite now has 5 floor tiles east of it (cols 34-38)
+      // before the col 39 wall. Width budget bumped back to 5 × TILE
+      // so the city-gate sprite can render at near-full visual size
+      // (height 2.4 × TILE → width up to ~3.6 × TILE for a 1.5
+      // aspect sprite, fully inside the 5-tile east headroom).
       const _eAr = (_exitSprite.naturalWidth || 1) / (_exitSprite.naturalHeight || 1);
-      const _eMaxWTiles = 3.0;           // hard width budget in tiles
-      const _eHByH = TILE * 1.95;        // preferred height
+      const _eMaxWTiles = 5.0;           // hard width budget in tiles (PM40)
+      const _eHByH = TILE * 2.4;         // preferred height
       let _eW = _eHByH * _eAr;
       let _eH = _eHByH;
       if (_eW > TILE * _eMaxWTiles) {
@@ -19670,8 +19759,15 @@ function updateServantNPC(dt){
     servantNPC.tick = 0;
     const nextTx = servantNPC.tx + servantNPC.dir;
     // Bounce at patrol bounds OR at a wall (keeps servant inside the corridor)
+    // 2026-05-17 PM40 (Jane: "There is a servant who moves left and
+    // right and he passes over moses as he moves. fix it"). Treat
+    // Moses as a wall so the servant bounces off him instead of
+    // walking through. Without this, the servant happily strolled
+    // onto Moses's tile (and the alert check below would fire after
+    // the visual overlap, which read as the servant "passing through").
     if (nextTx > servantNPC.maxTx || nextTx < servantNPC.minTx ||
-        !isWalkable(nextTx, servantNPC.ty)) {
+        !isWalkable(nextTx, servantNPC.ty) ||
+        (player.tx === nextTx && player.ty === servantNPC.ty)) {
       servantNPC.dir *= -1;
       servantNPC.facing = servantNPC.dir === 1 ? 'right' : 'left';
     } else {
@@ -19686,7 +19782,9 @@ function updateServantNPC(dt){
     servantNPC.alertCooldownMs = 4000;
     // 2026-05-08: servant alarm is a non-catch alert beat → dangerAlert.
     try { play('dangerAlert') || play('error'); } catch(e){}
-    toast('The servant gasps! Guards heard!');
+    // 2026-05-17 PM40 (Jane: "remove 'the servant gasps...the guard
+    // heard'"). The dangerAlert SFX + the alerted guards reacting is
+    // signal enough. Toast removed.
     try { triggerGuardAlert(servantNPC.tx, servantNPC.ty); } catch(e){}
   }
 }
@@ -20058,7 +20156,12 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // 2026-05-17 PM39: bumped v12 → v13 for count-puzzle copy fix,
     // halo-at-tap, exit width budget, portrait narration contain,
     // HUD min-height, tip-ring rounded-rect, landscape 1-row dpad.
-    const SW_VERSION = 'bek-moses1-v13';
+    // 2026-05-17 PM40: bumped v13 → v14 for scroll-tutorial halo
+    // restore, toast cleanup, servant collision, guard gate-evict,
+    // tutorial top-anchor on low pointAtEl, landscape dpad labels +
+    // power-up dock scroll, HUD wrap (no scroll), cover lock,
+    // exit moved col 35 → 33 + width budget 5×TILE.
+    const SW_VERSION = 'bek-moses1-v14';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",

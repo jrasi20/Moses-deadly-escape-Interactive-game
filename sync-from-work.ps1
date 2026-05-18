@@ -59,6 +59,29 @@ if ($ImagesToo) {
     Write-Host "Synced $count new images." -ForegroundColor Green
 }
 
+# 3) AUDIO assets — same "new only" rule as images so Jane doesn't lose
+#    any local audio she's hand-edited. 2026-05-17 PM40 (Jane: "i think
+#    the newly added audio files are not synced on deploy folder. i saw
+#    only new images being synced. but not the newly added audio").
+#    Sync script was image-only; new mp3s (exit shut, power spell,
+#    frozen, eat, etc.) never reached the deploy repo.
+$workAud   = Join-Path $WorkFolder   'assets\audio'
+$deployAud = Join-Path $DeployFolder 'assets\audio'
+if (-not (Test-Path $deployAud)) {
+    New-Item -ItemType Directory -Path $deployAud -Force | Out-Null
+}
+Write-Host "Copying only NEW audio (won't touch existing files)..." -ForegroundColor Cyan
+$audCount = 0
+Get-ChildItem -Path $workAud -Include '*.mp3','*.ogg','*.wav','*.m4a' -File -Recurse | ForEach-Object {
+    $dst = Join-Path $deployAud $_.Name
+    if (-not (Test-Path $dst)) {
+        Copy-Item -Path $_.FullName -Destination $dst -Force
+        Write-Host "  + $($_.Name)" -ForegroundColor White
+        $audCount++
+    }
+}
+Write-Host "Synced $audCount new audio files." -ForegroundColor Green
+
 Write-Host ''
 Write-Host 'NEXT STEPS:' -ForegroundColor Cyan
 Write-Host '  1. (Optional) .\compress-images.ps1     # compress images for faster load' -ForegroundColor White
