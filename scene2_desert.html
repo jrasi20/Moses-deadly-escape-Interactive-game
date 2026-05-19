@@ -5538,6 +5538,62 @@ function unlockGame() {
 try {
   if (localStorage.getItem('bek.moses2.unlocked') === '1') unlockGame();
 } catch(e){}
+// 2026-05-19 PM50 (Jane: "combination of 1 and 3. we need the
+// transition narration panel and then take us right into scene 2.
+// world map screen to give the feel of palace is over. now desert
+// ambience"). When the kid arrives here from Scene 1's win → transition
+// cinematic → world-map → Continue path, the URL has `?from=scene1`.
+// In that case, skip Scene 2's cover entirely and launch the opening
+// cinematic immediately so the journey feels continuous (Mario-style,
+// no second cover page between worlds).
+// Also auto-unlock the access gate — kids who bought the bundle and
+// played through Scene 1 already proved they own it; making them retype
+// the code between scenes would be hostile.
+try {
+  const _urlFrom = new URLSearchParams(window.location.search).get('from');
+  if (_urlFrom === 'scene1') {
+    // Treat as unlocked.
+    try { localStorage.setItem('bek.moses2.unlocked', '1'); } catch(e){}
+    unlockGame();
+    // Default-difficulty pick (medium) since the kid didn't tap a
+    // difficulty pill on a cover they never saw. Independent per-scene
+    // score per Jane's PM50 design call (no carry-over from Scene 1).
+    // Run after the rest of the module parses so applyDifficultyConfig
+    // and openCinematic are defined.
+    setTimeout(() => {
+      try {
+        // Hide cover + any open access-gate that might still be visible.
+        const cov = document.getElementById('coverPage');
+        if (cov) cov.style.display = 'none';
+        const gate = document.getElementById('accessGate');
+        if (gate) gate.classList.add('hidden');
+        // Set difficulty + start. If a Scene 2 checkpoint exists from
+        // a previous play, resume it — kid was probably mid-scene
+        // before they triggered the transition somehow.
+        try {
+          if (typeof game !== 'undefined' && typeof applyDifficultyConfig === 'function') {
+            game.difficulty = 'medium';
+            applyDifficultyConfig('medium');
+          }
+        } catch(e){}
+        try {
+          // Unlock audio so the cinematic narration + bgm aren't blocked
+          // by browser autoplay rules (the kid HAS interacted on the
+          // Scene 1 page, but Scene 2 is a fresh document load).
+          if (typeof unlockAudio === 'function') unlockAudio();
+        } catch(e){}
+        try {
+          const _savedGame = (typeof _loadCheckpoint === 'function') ? _loadCheckpoint() : null;
+          if (_savedGame && typeof showResumePrompt === 'function') {
+            showResumePrompt(_savedGame);
+          } else if (typeof openCinematic === 'function') {
+            openCinematic();
+          }
+        } catch(e){}
+      } catch(e){}
+    }, 80);
+  }
+} catch(e){}
 const accessInput = $('accessInput');
 const accessErr   = $('accessError');
 const accessSub   = $('accessSubmit');

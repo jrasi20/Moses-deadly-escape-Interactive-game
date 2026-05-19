@@ -2464,6 +2464,118 @@
       font-size: 11px !important;
     }
   }
+  /* ==== WORLD-MAP TRANSITION SCREEN (PM50) ====
+     Shown between Scene 1 win + transition cinematic and Scene 2 entry.
+     Parchment-themed full-screen overlay with three pins and a moving
+     Moses figurine. */
+  .world-map-overlay {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at top, #c77d3a 0%, #7a3a13 55%, #1a0a00 100%);
+    z-index: 60;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    animation: wm-fade 0.5s ease-out;
+  }
+  .world-map-overlay.active { display: flex; }
+  @keyframes wm-fade { from { opacity: 0; } to { opacity: 1; } }
+  .world-map-box {
+    background: linear-gradient(180deg, #f5e4b7 0%, #e9cf8a 48%, #d6b369 100%);
+    border: 4px solid #8a5a22;
+    border-radius: 18px;
+    padding: 24px 22px;
+    width: min(720px, 96%);
+    max-height: 92svh;
+    overflow-y: auto;
+    box-shadow:
+      0 0 36px rgba(80,40,10,0.6),
+      inset 0 0 0 2px #c59754,
+      inset 0 0 24px rgba(120,70,20,0.25);
+    color: #3a1a00;
+    text-align: center;
+  }
+  .world-map-title {
+    font-family: Georgia, serif;
+    font-size: clamp(22px, 5.2vw, 30px);
+    color: #5a2a05;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+  .world-map-sub {
+    font-size: 14px;
+    color: #6a3a18;
+    margin-bottom: 16px;
+    font-style: italic;
+  }
+  .world-map-canvas {
+    background: rgba(255,255,255,0.18);
+    border: 2px dashed rgba(138,90,34,0.45);
+    border-radius: 12px;
+    padding: 18px 12px 10px;
+    margin-bottom: 16px;
+  }
+  .world-map-svg {
+    width: 100%;
+    height: auto;
+    max-height: 240px;
+    display: block;
+  }
+  .wm-pin-active circle {
+    animation: wm-pin-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes wm-pin-pulse {
+    0%, 100% { transform: scale(1.0); }
+    50%      { transform: scale(1.18); }
+  }
+  /* Moses figurine — JS animates the transform along the path during
+     the screen's reveal. Starts at the Palace pin. */
+  .wm-moses {
+    transform: translate(80px, 130px);
+    transition: transform 2.2s cubic-bezier(0.4, 0.0, 0.2, 1.0);
+  }
+  .wm-moses.arrived {
+    transform: translate(300px, 130px);
+  }
+  .world-map-caption {
+    font-size: 15px;
+    color: #3a1a00;
+    font-weight: 700;
+    margin-bottom: 18px;
+    min-height: 22px;
+  }
+  .world-map-btn {
+    background: linear-gradient(180deg, #ffd976 0%, #e0a544 100%);
+    color: #3a1505;
+    border: 3px solid #8a5a22;
+    border-radius: 30px;
+    padding: 14px 28px;
+    font-family: Georgia, serif;
+    font-size: clamp(15px, 3.6vw, 18px);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(80,40,10,0.5), inset 0 -3px 0 rgba(0,0,0,0.18);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .world-map-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(80,40,10,0.6), inset 0 -3px 0 rgba(0,0,0,0.18);
+  }
+  .world-map-btn:active { transform: translateY(0); }
+  /* Landscape phones — tighter so the box fits in short viewports. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .world-map-box { padding: 14px 16px; max-height: 96svh; }
+    .world-map-title { font-size: 20px; margin-bottom: 4px; }
+    .world-map-sub { font-size: 12px; margin-bottom: 10px; }
+    .world-map-canvas { padding: 10px 8px 6px; margin-bottom: 10px; }
+    .world-map-svg { max-height: 40svh; }
+    .world-map-caption { font-size: 13px; margin-bottom: 10px; }
+    .world-map-btn { padding: 10px 22px; font-size: 14px; }
+  }
+
   /* ==== HIDDEN CROWN + MAP PEEK ==== */
   .crown-hint-toast {
     position:fixed; top:90px; left:50%; transform:translateX(-50%);
@@ -4115,6 +4227,55 @@
       <button class="cin-btn" id="cinNextBtn">Next</button>
     </div>
     <div class="cin-progress" id="cinProgress">1 of 4</div>
+  </div>
+</div>
+
+<!-- ================ WORLD-MAP TRANSITION SCREEN ================
+     2026-05-19 PM50 (Jane: "world map screen to give the feel of palace
+     is over. now desert ambience"). Shown AFTER the SECTION_4 transition
+     cinematic plays and BEFORE the kid lands in Scene 2. Three "pin"
+     markers (Palace ✓ → Desert ▸ → Midian ·); a Moses figurine animates
+     from the Palace pin to the Desert pin while the kid watches; the
+     "Continue to the Desert" button below redirects to scene2_desert.html.
+-->
+<div class="world-map-overlay" id="worldMapOverlay" role="dialog" aria-modal="true" aria-labelledby="worldMapTitle">
+  <div class="world-map-box">
+    <h2 class="world-map-title" id="worldMapTitle">Moses' Journey</h2>
+    <p class="world-map-sub">From Pharaoh's palace to the wilderness of Midian.</p>
+    <div class="world-map-canvas" aria-hidden="true">
+      <!-- Parchment-style map. Three pins + dashed path + Moses traveling marker. -->
+      <svg class="world-map-svg" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <!-- Dashed path Egypt → Desert → Midian -->
+        <path d="M 80 130 Q 200 60, 300 130 Q 400 200, 520 110"
+              fill="none" stroke="#8a5a22" stroke-width="3"
+              stroke-dasharray="8 6" opacity="0.7"/>
+        <!-- Palace pin (left, COMPLETED) -->
+        <g class="wm-pin wm-pin-done" transform="translate(80, 130)">
+          <circle r="22" fill="#3a8a5e" stroke="#1a4830" stroke-width="3"/>
+          <text x="0" y="6" text-anchor="middle" font-size="22" fill="#fff">✓</text>
+          <text x="0" y="-32" text-anchor="middle" font-size="13" fill="#3a1505" font-weight="700">Palace</text>
+        </g>
+        <!-- Desert pin (middle, ACTIVE) -->
+        <g class="wm-pin wm-pin-active" transform="translate(300, 130)">
+          <circle r="24" fill="#e8a83a" stroke="#7a4509" stroke-width="3"/>
+          <text x="0" y="7" text-anchor="middle" font-size="22" fill="#3a1505">▸</text>
+          <text x="0" y="-34" text-anchor="middle" font-size="13" fill="#3a1505" font-weight="700">Desert</text>
+        </g>
+        <!-- Midian pin (right, LOCKED) -->
+        <g class="wm-pin wm-pin-lock" transform="translate(520, 110)">
+          <circle r="20" fill="#aaa" stroke="#666" stroke-width="3"/>
+          <text x="0" y="6" text-anchor="middle" font-size="16" fill="#fff">🔒</text>
+          <text x="0" y="-30" text-anchor="middle" font-size="13" fill="#3a1505" font-weight="700" opacity="0.6">Midian</text>
+        </g>
+        <!-- Moses figurine — animated via JS to slide along the path -->
+        <g id="wmMoses" class="wm-moses">
+          <circle r="14" fill="#5a2510" stroke="#ffd976" stroke-width="2"/>
+          <text x="0" y="5" text-anchor="middle" font-size="16">🚶</text>
+        </g>
+      </svg>
+    </div>
+    <div class="world-map-caption" id="worldMapCaption">Palace cleared. Heading into the desert…</div>
+    <button class="world-map-btn" id="worldMapContinueBtn" type="button">Continue to the Desert →</button>
   </div>
 </div>
 
@@ -15540,6 +15701,16 @@ $('winNextBtn').addEventListener('click', () => {
 // cover page with a clear "Scene 2 coming soon" toast (until Scene 2
 // ships, this is the graceful endpoint). When scene2_desert.html is
 // live, replace the endpoint with location.href = 'scene2_desert.html'.
+// 2026-05-19 PM50 (Jane: "combination of 1 and 3. we need the
+// transition narration panel and then take us right into scene 2.
+// world map screen to give the feel of palace is over. now desert
+// ambience"). Endpoint rewired: after the 5 transition panels, we now
+// SHOW the world-map screen (parchment map with three pins, Moses
+// figurine animating from Palace → Desert), and the Continue button
+// on that screen redirects to scene2_desert.html?from=scene1. The
+// scene 2 page reads the URL param and skips its cover, going
+// straight to its opening cinematic + gameplay (per Jane's "land
+// right into scene 2" request).
 function _playTransitionToScene2(){
   try {
     $('winModal').classList.remove('active');
@@ -15550,24 +15721,96 @@ function _playTransitionToScene2(){
     game.cinStep = 0;
     showCinPanel();
     $('openingCinematic').classList.add('active');
-    // Override the Next button completion to land on the cover (or
-    // scene2 when it ships) instead of restarting Scene 1.
+    // After the 5 panels: restore the original cinematic deck (so a
+    // future Replay-Scene-1 still works), close the cinematic overlay,
+    // and reveal the world-map screen which holds the Continue button.
     window._cinPostPlay = () => {
       try {
-        // Restore the original deck so a future Replay still works.
         CIN_PANELS.length = 0;
         (window._cinDeckBackup || []).forEach(p => CIN_PANELS.push(p));
         window._cinDeckBackup = null;
       } catch(e){}
       $('openingCinematic').classList.remove('active');
       $('gamePage').classList.remove('active');
-      $('coverPage').style.display = '';
-      game.state = 'cover';
-      try { _killAllGameMusic(); _maybeStartCoverMusic(); } catch(e){}
-      try { toast('Scene 2: The Desert — coming in the next build!'); } catch(e){}
+      game.state = 'cinematic';
+      try { _showWorldMap(); } catch(e){
+        // Defensive fallback: if the world-map fails to render for
+        // any reason, jump straight to Scene 2 so kids aren't stuck.
+        try { location.href = 'scene2_desert.html?from=scene1'; } catch(err){}
+      }
     };
   } catch(e){}
 }
+// 2026-05-19 PM50 — world-map screen. Reveal the overlay, kick off the
+// Moses-figurine animation 200 ms later (so the kid sees him START at
+// the Palace pin, then walk to the Desert pin), and wire the Continue
+// button to redirect to Scene 2 with `?from=scene1` so Scene 2 knows
+// to skip its cover.
+function _showWorldMap(){
+  const overlay = document.getElementById('worldMapOverlay');
+  if (!overlay) {
+    // Hard fallback: world-map HTML missing — go straight to Scene 2.
+    try { location.href = 'scene2_desert.html?from=scene1'; } catch(e){}
+    return;
+  }
+  // Reset state in case kid replays the section.
+  const moses = document.getElementById('wmMoses');
+  if (moses) moses.classList.remove('arrived');
+  const caption = document.getElementById('worldMapCaption');
+  if (caption) caption.textContent = 'Palace cleared. Heading into the desert…';
+  overlay.classList.add('active');
+  // Kick off the Moses-figurine travel animation. The CSS transition
+  // (transform 2.2 s cubic-bezier) does the visual; we just toggle the
+  // .arrived class to set the destination transform.
+  setTimeout(() => {
+    if (moses) moses.classList.add('arrived');
+  }, 350);
+  // Mid-animation, update the caption so the kid reads progress.
+  setTimeout(() => {
+    if (caption) caption.textContent = 'Crossing the wilderness sand…';
+  }, 1400);
+  setTimeout(() => {
+    if (caption) caption.textContent = 'Arrived at the Desert. Ready to begin?';
+  }, 2600);
+  // Soft cover-music bed under the map screen — same "we did it" pad
+  // as the win modal so the audio continuity holds across screens.
+  try {
+    if (audio.coverMusic) {
+      audio.coverMusic.currentTime = 0;
+      audio.coverMusic.volume = 0.45;
+      audio.coverMusic.play().catch(()=>{});
+    }
+  } catch(e){}
+}
+// Wire the Continue button — redirects to Scene 2 with the from-scene1
+// flag so Scene 2 skips its cover page.
+(function _wireWorldMapContinue(){
+  const _wire = () => {
+    const btn = document.getElementById('worldMapContinueBtn');
+    if (!btn || btn._wired) return;
+    btn._wired = true;
+    btn.addEventListener('click', () => {
+      try { play('click'); } catch(e){}
+      // Fade the overlay (CSS animation will reverse-ish) then hop.
+      try {
+        const overlay = document.getElementById('worldMapOverlay');
+        if (overlay) overlay.style.opacity = '0';
+      } catch(e){}
+      setTimeout(() => {
+        try { location.href = 'scene2_desert.html?from=scene1'; }
+        catch(e) {
+          // Absolute last resort — open in same window via assign.
+          try { window.location.assign('scene2_desert.html?from=scene1'); } catch(err){}
+        }
+      }, 280);
+    });
+  };
+  // Dual wire — DOMContentLoaded + immediate setTimeout (some single-
+  // file hosts have already fired DOMContentLoaded by the time this
+  // script parses).
+  document.addEventListener('DOMContentLoaded', _wire);
+  setTimeout(_wire, 0);
+})();
 const _midChestBtn = $('midChestContinueBtn');
 if (_midChestBtn) _midChestBtn.addEventListener('click', () => {
   play('click');
@@ -21198,7 +21441,17 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // 92vw → 84vw so it fits in modal padding; spot-diff +
     // count-soldiers enlarged on landscape; tip-popup card narrowed
     // to 56vw so halos stop overlapping it.
-    const SW_VERSION = 'bek-moses1-v21';
+    // 2026-05-19 PM50: bumped to v22 — Scene 1 → Scene 2 continuity
+    // wired end-to-end. Win modal Next → SECTION_4 cinematic (already
+    // existed) → NEW world-map overlay with parchment art, three pins
+    // (Palace ✓ / Desert ▸ / Midian 🔒), Moses figurine animates from
+    // Palace pin to Desert pin → Continue button redirects to
+    // scene2_desert.html?from=scene1. Scene 2 detects the URL param
+    // and skips its cover entirely, auto-unlocks the access gate
+    // (kid already proved purchase on Scene 1), picks medium
+    // difficulty by default, and launches the opening cinematic.
+    // Mario-flow: no second cover page between worlds.
+    const SW_VERSION = 'bek-moses1-v22';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
