@@ -22111,7 +22111,16 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // * Scene 2 EXIT sprite REVERTED PM54 bump+clamp (matched
     //   HANDOFF_scene2_v3.28 Bug 35/46/48 — clamp causes "jumping"
     //   during camera pan; 1.85× TILE is the known-good scale)
-    const SW_VERSION = 'bek-moses1-v28';
+    // 2026-05-19 PM57: bumped to v29 — Scene 2 tutorial popup port:
+    // tip-popup overlay HTML + CSS + JS (showTipPopup,
+    // _firstEventSeen, _hideTipPopup) ported from Scene 1's PM29+
+    // first-event system. Wired 5 first-encounter triggers in Scene
+    // 2: treasure pickup, checkpoint approach, scout proximity,
+    // oasis step, mirage step. Backdrop-tap dismiss is swallowed
+    // (matches Scene 1 PM48 — arrow-button-tap regression). No
+    // halo/hand pointer ported yet — deferred to PM58 alongside
+    // Scene 2's power-up dock landscape relocation.
+    const SW_VERSION = 'bek-moses1-v29';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",

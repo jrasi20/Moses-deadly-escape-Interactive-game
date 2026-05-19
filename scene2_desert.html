@@ -287,6 +287,86 @@
     height: 100dvh;         /* dynamic — shrinks with URL bar */
   }
   .game-page.active { display:flex; }
+  /* 2026-05-19 PM57 (Jane: "deep dive into scene 2 fixes ... yes to all
+     6"). Ported Scene 1's first-event tip-popup overlay system. Tracks
+     `_firstEventSeen[eventKey]` so each Scene-2 first-encounter (first
+     treasure, first checkpoint, first scout, first oasis, first mirage)
+     fires its own tutorial modal ONCE per scene/session. Kid taps
+     "Got it!" to dismiss — backdrop taps are swallowed (no accidental
+     dismiss on arrow-button taps, matching Scene 1 PM48 fix). */
+  .tip-popup-overlay {
+    position: fixed; inset: 0; z-index: 56;
+    background: rgba(8,4,2,0.55);
+    display: none; align-items: flex-end; justify-content: center;
+    padding-bottom: 18%;
+    padding-left:   max(14px, env(safe-area-inset-left));
+    padding-right:  max(14px, env(safe-area-inset-right));
+  }
+  .tip-popup-overlay.active { display: flex; }
+  .tip-popup-overlay.top-anchored {
+    align-items: flex-start;
+    padding-bottom: 0;
+    padding-top: max(60px, 12vh);
+  }
+  .tip-popup-card {
+    background: linear-gradient(160deg,#3a1508,#5a2510);
+    border: 3px solid #ffd976;
+    border-radius: 14px;
+    padding: 18px 22px;
+    max-width: min(440px, 90vw);
+    max-height: 80vh;
+    max-height: 80dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    color: #fff8e7;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 24px rgba(255,217,118,0.35);
+    text-align: center;
+    font-family: Georgia,serif;
+    animation: tipPopIn 0.32s cubic-bezier(.2,1.4,.4,1.0);
+  }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .tip-popup-overlay {
+      padding-bottom: 6%;
+      align-items: flex-end;
+    }
+    .tip-popup-overlay.top-anchored {
+      padding-top: 6%;
+      padding-bottom: 0;
+      align-items: flex-start;
+    }
+    .tip-popup-card {
+      padding: 10px 16px;
+      max-width: min(380px, 48vw);
+      max-height: 70vh;
+      max-height: 70dvh;
+    }
+    .tip-popup-icon { font-size: 24px; margin-bottom: 4px; }
+    .tip-popup-title { font-size: 15px; margin-bottom: 4px; }
+    .tip-popup-body  { font-size: 13.5px; line-height: 1.4; margin-bottom: 10px; }
+    .tip-popup-btn   { font-size: 14px; padding: 9px 22px; min-height: 38px; }
+  }
+  @keyframes tipPopIn {
+    0%   { transform: translateY(40px) scale(0.85); opacity: 0; }
+    100% { transform: translateY(0)    scale(1.00); opacity: 1; }
+  }
+  .tip-popup-icon { font-size: 30px; line-height: 1; margin-bottom: 6px; }
+  .tip-popup-title {
+    font-size: 17px; font-weight: 800; color: #ffd976;
+    margin-bottom: 6px; letter-spacing: 0.3px;
+  }
+  .tip-popup-body {
+    font-size: 14.5px; line-height: 1.45; color: #fff5d8;
+    margin-bottom: 14px;
+  }
+  .tip-popup-btn {
+    background: #ffd976; color: #5a1d06;
+    border: none; border-radius: 10px;
+    font-family: Georgia,serif; font-weight: 800;
+    font-size: 15px; padding: 10px 24px; cursor: pointer;
+    min-width: 110px; min-height: 44px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+  }
+  .tip-popup-btn:active { transform: scale(0.96); }
   .hud {
     display:flex; align-items:center; justify-content:space-between;
     padding:8px 12px;
@@ -2419,6 +2499,19 @@
 </div>
 
 <!-- ================ TUTORIAL MODAL ================ -->
+<!-- 2026-05-19 PM57: Scene 2 first-event tip-popup overlay (port of
+     Scene 1's PM29+ tutorial popup). Body text + icon + title are
+     filled by showTipPopup(). Got-it button is the only dismiss path
+     — backdrop taps are swallowed (matches Scene 1 PM48). -->
+<div class="tip-popup-overlay" id="tipPopupOverlay" role="dialog" aria-modal="true" aria-labelledby="tipPopupTitle">
+  <div class="tip-popup-card">
+    <div class="tip-popup-icon" id="tipPopupIcon" aria-hidden="true">👋</div>
+    <div class="tip-popup-title" id="tipPopupTitle">Tip</div>
+    <div class="tip-popup-body" id="tipPopupBody">…</div>
+    <button class="tip-popup-btn" id="tipPopupBtn">Got it!</button>
+  </div>
+</div>
+
 <div class="modal-overlay tutorial-modal" id="tutorialModal">
   <div class="modal-content">
     <div class="tut-icon" id="tutIcon">[?]</div>
@@ -6154,6 +6247,85 @@ function shouldShowTutorial(){
   } catch(e) { return true; }
 }
 
+/* ============================================================
+   FIRST-EVENT TIP POPUP (ported from Scene 1 PM29+)
+   ============================================================
+   2026-05-19 PM57 (Jane: "deep dive into scene 2 fixes ... yes to
+   all 6"). Lightweight tutorial popup that fires the FIRST time the
+   kid encounters a Scene 2 mechanic. Tracks per-scene 'seen' state
+   so each event fires once. Backdrop taps are swallowed (only the
+   Got-it button dismisses — matches Scene 1 PM48). */
+const _firstEventSeen = {
+  treasure: false,
+  checkpoint: false,
+  scout: false,
+  oasis: false,
+  mirage: false,
+  quicksand: false,
+  cave: false,
+  caravan: false,
+};
+function _resetFirstEventSeen(){
+  for (const k in _firstEventSeen) _firstEventSeen[k] = false;
+}
+let _tipPopupPrevState = null;
+function showTipPopup(eventKey, opts){
+  if (!opts || !opts.title || !opts.body) return;
+  if (eventKey && _firstEventSeen[eventKey]) return;
+  if (eventKey) _firstEventSeen[eventKey] = true;
+  // Honour the tutorial toggle if one exists; default ON.
+  let tutOn = true;
+  try {
+    if (typeof _tutModeOn === 'function') tutOn = !!_tutModeOn();
+  } catch(e){}
+  if (!tutOn) {
+    try { toast((opts.icon || '👋') + ' ' + opts.body); } catch(e){}
+    return;
+  }
+  const overlay = document.getElementById('tipPopupOverlay');
+  if (!overlay) return;
+  document.getElementById('tipPopupIcon').textContent = opts.icon || '👋';
+  document.getElementById('tipPopupTitle').textContent = opts.title;
+  document.getElementById('tipPopupBody').textContent  = opts.body;
+  overlay.classList.add('active');
+  // Pause-while-tutorial (matches Scene 1 behaviour). Guards/scouts
+  // freeze while the modal is up; state restores on dismiss.
+  if (typeof game !== 'undefined' && game.state !== 'tutorial' && game.state !== 'cinematic') {
+    _tipPopupPrevState = game.state;
+    game.state = 'tutorial';
+  }
+}
+function _hideTipPopup(){
+  const overlay = document.getElementById('tipPopupOverlay');
+  if (overlay) overlay.classList.remove('active');
+  if (typeof game !== 'undefined' && game.state === 'tutorial') {
+    game.state = _tipPopupPrevState || 'playing';
+    _tipPopupPrevState = null;
+  }
+}
+// Wire dismiss buttons (DOMContentLoaded + setTimeout(0) belt-and-
+// suspenders, same pattern as Scene 1).
+(function _wireTipPopup(){
+  const _wire = () => {
+    const btn = document.getElementById('tipPopupBtn');
+    if (btn && !btn._wired) {
+      btn._wired = true;
+      btn.addEventListener('click', () => { try { play('click'); } catch(e){} _hideTipPopup(); });
+    }
+    const overlay = document.getElementById('tipPopupOverlay');
+    if (overlay && !overlay._wired) {
+      overlay._wired = true;
+      // Backdrop taps are SWALLOWED, NOT dismissed (matches Scene 1
+      // PM48 — arrow-button taps were closing modals via backdrop).
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) { e.preventDefault(); e.stopPropagation(); }
+      });
+    }
+  };
+  document.addEventListener('DOMContentLoaded', _wire);
+  setTimeout(_wire, 0);
+})();
+
 function showTutorial(step){
   if (step === 0) TUT_STEPS = _composeTutorialSteps();
   if (TUT_STEPS.length === 0) return; // both flags set — nothing to show
@@ -6874,6 +7046,19 @@ function openChallenge(gate) {
     game.state = 'playing';
     try { toast('Checkpoint auto-cleared - press on!'); } catch(e){}
     return;
+  }
+  // 2026-05-19 PM57: first-checkpoint tutorial popup. Fires the FIRST
+  // time the kid steps on a desert ? tile, before the challenge modal.
+  // showTipPopup pauses the game state so the challenge modal queues
+  // naturally after the kid taps Got it.
+  if (!_firstEventSeen.checkpoint) {
+    try {
+      showTipPopup('checkpoint', {
+        icon: '🛡️',
+        title: 'A Desert Checkpoint',
+        body: 'Step on a glowing ? tile to start a Bible challenge. Answer all 3 questions correctly to clear it and continue east toward Midian!',
+      });
+    } catch(e){}
   }
   if (typeof gate.bundleIndex !== 'number' || gate.bundleIndex < 0) gate.bundleIndex = 0;
   if (gate.bundleIndex >= gate.questions.length) {
@@ -8266,6 +8451,14 @@ function onTreasure(tx, ty){
   // can earn power-up unlocks by collecting bags in EITHER scene.
   try { _addLifetimeTreasures(1); } catch(e){}
   try { _refreshUnlockButtons(); } catch(e){}
+  // 2026-05-19 PM57: first-treasure tutorial popup.
+  try {
+    showTipPopup('treasure', {
+      icon: '💎',
+      title: 'A Desert Treasure',
+      body: 'Treasures hidden in the sand give you +2 stars. Look out for more as you cross the dunes!',
+    });
+  } catch(e){}
 }
 
 /* ============================================================
@@ -8562,6 +8755,15 @@ function onOasisStep(tx, ty){
     toast('A refreshing oasis - hearts are already full!');
     game.stars += 1; updateHudStars();
   }
+  // 2026-05-19 PM57: first-oasis tutorial popup. Fires AFTER the heart
+  // refill so the kid sees what happened, then reads the explainer.
+  try {
+    showTipPopup('oasis', {
+      icon: '💧',
+      title: 'An Oasis!',
+      body: 'Oases in the desert restore Moses\'s heart. Step on the palm-and-pool tiles when your hearts are low. Each oasis can only be used once!',
+    });
+  } catch(e){}
 }
 
 /* ---------- EXIT ---------- */
@@ -9618,6 +9820,16 @@ function updatePursuitScouts(dt){
     // 2026-05-19 PM53 (ported from Scene 1 PM52 'guard saw you' toast
     // removal): the scout-closes-in toast is redundant with the alert
     // vignette flash + scout sprite visible on screen. Suppressed.
+    // 2026-05-19 PM57: first-scout-proximity tutorial popup. Fires
+    // the first time a scout closes to within 3 tiles — kid learns
+    // what scouts do + how to hide.
+    try {
+      showTipPopup('scout', {
+        icon: '🏹',
+        title: 'Pharaoh\'s Scout!',
+        body: 'Pharaoh\'s scouts hunt Moses across the desert. Get behind a boulder or into a cave to break their line of sight. They lose interest if you stay hidden long enough.',
+      });
+    } catch(e){}
   }
 }
 function drawPursuitScouts(ctx){
@@ -9760,6 +9972,14 @@ function onMirageStep(nx, ny){
       try { setTimeout(() => { try { play('dangerAlert'); } catch(e){} }, 180); } catch(e){}
       try { game.hearts = Math.max(0, game.hearts - 1); updateHudHearts(); } catch(e){}
       try { toast('A mirage! Moses stumbles backward.'); } catch(e){}
+      // 2026-05-19 PM57: first-mirage tutorial popup.
+      try {
+        showTipPopup('mirage', {
+          icon: '🌫️',
+          title: 'Beware Mirages!',
+          body: 'The desert sun tricks Moses into seeing water that isn\'t there. Each mirage steals 1 heart and bounces him backward. Watch for the shimmer and walk around them!',
+        });
+      } catch(e){}
       // v2.3.4 Jane: "Stepping on mirage should move Moses one tile back."
       // Warp exactly 1 tile west (clamp + walkability check). If the tile
       // one-back is solid, try the tile Moses came from (player.prevTx),
