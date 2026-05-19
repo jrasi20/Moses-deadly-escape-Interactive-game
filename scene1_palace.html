@@ -1366,8 +1366,26 @@
        axis (vw) since landscape phones have height ≪ width. Thumb
        goes to min(36vh, 28vw) and the grid claims min(60vh, 50vw)
        — roughly 240-320px on common landscape phones. */
-    .ch-slider-thumb   { max-width:none !important; max-height:min(38vh, 30vw) !important; }
-    .ch-slider-grid    { width:min(60vh, 48vw) !important; height:min(60vh, 48vw) !important; }
+    /* 2026-05-19 PM52 (Jane: "slider images are still small on image A
+       and image B on landscape"). PM48 used `min(38vh, 30vw)` for the
+       thumb and `min(60vh, 48vw)` for the grid — but `min()` picks the
+       SMALLER of the two values, so on landscape phones where vw is
+       large and vh is small the cap snapped to whichever was smaller.
+       Switched to `max(...)` so the puzzle CLAIMS the LARGER of the
+       two so it actually fills available space. Thumb now max(50vh,
+       42vw), grid max(75vh, 60vw). On a 800×400 landscape phone the
+       grid lands at ~300 px (60vw) — almost 2× the previous size. */
+    /* Thumb image sizing — max() returns the larger of the two axes
+       so on landscape phones where vw >> vh, it claims width space. */
+    .ch-slider-thumb   { max-width:none !important; max-height:max(50vh, 42vw) !important; }
+    /* Grid sizing — keep SQUARE. Pick the larger of (75vh, 60vw) but
+       cap so it never exceeds 85vh AND 90vw (whichever is smaller).
+       Nested min(max(...)) keeps a single value for both axes so the
+       grid stays a square. */
+    .ch-slider-grid    {
+      width:min(90vw, 85vh, max(75vh, 60vw)) !important;
+      height:min(90vw, 85vh, max(75vh, 60vw)) !important;
+    }
     /* 2026-05-15 PM24 (Jane: "spot the difference on landscape has halos
        outside the image"). Root cause: container was `width: min(540px,
        92vw)` while the image scaled to a smaller HEIGHT-bounded size —
@@ -1513,9 +1531,24 @@
        above so the narrower box still reads clearly. */
     .tip-popup-card {
       padding: 10px 16px;
-      max-width: min(380px, 56vw);
+      max-width: min(380px, 48vw);
       max-height: 70vh;
       max-height: 70dvh;
+    }
+    /* 2026-05-19 PM52 (Jane: "i am still seeing halo in wrong places
+       on tutorial modal landscape"). Horizontal anchor — modal goes
+       to the OPPOSITE half of the viewport from where the halo tile
+       lands. Default centering would put a 48vw card across the
+       middle, overlapping a halo in either half. With left/right
+       anchoring the card sits flush to ONE edge, freeing the other
+       half for the halo + finger pointer. */
+    .tip-popup-overlay.left-anchored {
+      justify-content: flex-start;
+      padding-left: max(14px, env(safe-area-inset-left));
+    }
+    .tip-popup-overlay.right-anchored {
+      justify-content: flex-end;
+      padding-right: max(14px, env(safe-area-inset-right));
     }
     .tip-popup-icon { font-size: 24px; margin-bottom: 4px; }
     .tip-popup-title { font-size: 15px; margin-bottom: 4px; }
@@ -4238,15 +4271,22 @@
          card's padding/min-height can be tuned independently — Jane:
          "the bottom grid that says set difficulty above has a lot of
          blank space on top and bottom". -->
+    <!-- 2026-05-19 PM52 (Jane: "how many gates/guards info should not be
+         mentioned on the cover since it varies from scene to scene.
+         scene 3 does not have guards. only shepherds are there as
+         antagonists"). Dropped Gates + Guards columns — they were
+         Scene-1-specific. Kept Time + a short scene-agnostic vibe
+         hint so the legend still differentiates the three tiers
+         without lying about what's in Scenes 2 / 3. -->
     <div class="story-card cover-info-card" style="text-align:center;">
       <table class="diff-legend" aria-label="Difficulty details">
         <thead>
-          <tr><th>Level</th><th>Time</th><th>Gates</th><th>Guards</th></tr>
+          <tr><th>Level</th><th>Time</th><th>What to expect</th></tr>
         </thead>
         <tbody>
-          <tr><td>Easy</td>   <td>4 min</td><td>4</td><td>2 (slow)</td></tr>
-          <tr><td>Medium</td> <td>3 min</td><td>5</td><td>3</td></tr>
-          <tr><td>Hard</td>   <td>3 min</td><td>6</td><td>5 (fast, sharp eyes)</td></tr>
+          <tr><td>Easy</td>   <td>4 min</td><td>Gentle pace · forgiving</td></tr>
+          <tr><td>Medium</td> <td>3 min</td><td>Sharper challenges</td></tr>
+          <tr><td>Hard</td>   <td>4 min</td><td>Faster foes · tightest run</td></tr>
         </tbody>
       </table>
       <div style="font-size:11px;color:#ffeecf;opacity:0.7;margin-top:6px;">
@@ -6265,7 +6305,7 @@ const MAP_STR = [
   "1000300001000030000000100030000000003001", //  4
   "1080000001100000000001100000000000400001", //  5  (row with start)
   "1000000001100000004001100006000000000001", //  6
-  "1111101111111111101111111111101111111111", //  7  (single-tile gates at 5, 16, 27)
+  "1111101111111111101111111111101111111111", //  7  (single-tile gates at 5, 17, 29 — earlier comment said 16/27 in error; verified char-by-char 2026-05-19 PM52)
   "1000005000000010005000000010000005000001", //  8  (2026-05-08: col 20 → col 18 to keep treasures off the new central red rug)
   "1000040000000010000000000010040000000401", //  9
   "1003000000003010000200000010003000000001", // 10
@@ -11140,13 +11180,13 @@ function restartScene() {
         game.state = 'playing';
         try { audio.bgm.play().catch(()=>{}); } catch(e){}
         startTimers();
-        toast('Scene restarted - try again!');
+        /* 2026-05-19 PM52 (Jane: "remove unnecessary overhead messages like ... scene restarted"). The toast was redundant — the cinematic intro-pan already telegraphs the restart visually, and the timer/HUD reset is obvious. */
       });
     } else {
       game.state = 'playing';
       try { audio.bgm.play().catch(()=>{}); } catch(e){}
       startTimers();
-      toast('Scene restarted - try again!');
+      /* 2026-05-19 PM52 (Jane: "remove unnecessary overhead messages like ... scene restarted"). The toast was redundant — the cinematic intro-pan already telegraphs the restart visually, and the timer/HUD reset is obvious. */
     }
   } catch(e) {
     game.state = 'playing';
@@ -11243,13 +11283,33 @@ function showTipPopup(eventKey, opts){
   // the interact button"). Same rule for `pointAtEl`: if the target
   // button is in the lower half of the viewport, top-anchor the
   // popup so the kid can SEE the button + the halo while reading.
+  // 2026-05-19 PM52 (Jane: "i am still seeing halo in wrong places on
+  // tutorial modal landscape. when moses is in one corner itself,
+  // these modals should show up so that the halo placement and hand
+  // icon will be correct"). On landscape phones the canvas is wide +
+  // short, so the bottom-anchored card overlaps a halo in the lower
+  // half AND a centered card overlaps a halo in either right OR left
+  // half. Top/bottom flip already worked; now add LEFT/RIGHT flip
+  // too — modal anchors to the OPPOSITE horizontal half from where
+  // the halo tile lands so the kid sees both at once.
   try {
     overlay.classList.remove('top-anchored');
+    overlay.classList.remove('left-anchored');
+    overlay.classList.remove('right-anchored');
     if (opts.pointAtTile && typeof opts.pointAtTile === 'object'
         && typeof MAP_H === 'number' && opts.pointAtTile.ty != null) {
       const screenTileY = (opts.pointAtTile.ty * TILE) - camera.py + TILE/2;
+      const screenTileX = (opts.pointAtTile.tx * TILE) - camera.px + TILE/2;
       if (screenTileY > CANVAS_H * 0.5) {
         overlay.classList.add('top-anchored');
+      }
+      // Horizontal anchor — only meaningful on landscape (CSS scopes
+      // .left-anchored / .right-anchored to the landscape media query
+      // so it's a no-op on portrait).
+      if (screenTileX > CANVAS_W * 0.5) {
+        overlay.classList.add('left-anchored');   // halo on the RIGHT → card on LEFT
+      } else {
+        overlay.classList.add('right-anchored');  // halo on the LEFT → card on RIGHT
       }
     } else if (opts.pointAtEl) {
       const el = document.getElementById(opts.pointAtEl);
@@ -11257,6 +11317,11 @@ function showTipPopup(eventKey, opts){
         const r = el.getBoundingClientRect();
         if (r.top > window.innerHeight * 0.5) {
           overlay.classList.add('top-anchored');
+        }
+        if (r.left + r.width / 2 > window.innerWidth * 0.5) {
+          overlay.classList.add('left-anchored');
+        } else {
+          overlay.classList.add('right-anchored');
         }
       }
     }
@@ -12021,7 +12086,11 @@ function _maybeFireJitTip(){
         const dist = Math.abs(g.tx - player.tx) + Math.abs(g.ty - player.ty);
         if (dist > _NEAR_RADIUS) continue;
         _jitTipFired.guardSpotted = true;
-        try { toast('⚠️ A guard saw you! Hide behind a pillar or statue until they move on.'); } catch(e){}
+        // 2026-05-19 PM52 (Jane: "remove overhead message that says 'a
+        // guard saw you..hide...' we are showing this info in the
+        // tutorial modal"). The first-event GUARD tip popup already
+        // covers the hide-from-vision lesson — duplicating it here as
+        // a toast at the same moment was noisy.
         break;
       }
     }
@@ -12191,10 +12260,16 @@ function interact(){
       const nm = nearest.name || 'something interesting';
       toast('There is ' + nm + ' nearby — step right next to it and tap Interact.');
     } else {
-      // No interactable in range — point at the goal instead.
+      // 2026-05-19 PM52 (Jane: "remove overhead message that says 'noone
+      // nearby...'"). When there's no interactable in range AND there's
+      // still a Bible gate to clear, the toast was just noise — the
+      // map peek button + glowing gate halo already steer the kid.
+      // We DO still surface the late-game progression hints (scrolls
+      // remaining, exit ready) because those depend on hidden state
+      // the kid can't see on the map alone.
       const remaining = (challengeGates || []).filter(g => !g.solved).length;
       if (remaining > 0) {
-        toast('No one nearby to talk to. Head toward the next Bible Gate (' + remaining + ' left).');
+        // No toast — gate halo + Hint button handle this.
       } else if (!game.hasExitKey) {
         toast('Collect the 3 torn scrolls to summon the Golden Key.');
       } else {
@@ -12997,12 +13072,13 @@ function checkDogInteraction(){
           d.met = true;
           if (d.friendly) {
             try { play('chime'); } catch(e){}
-            try { toast('A friendly palace dog! +1 star.'); } catch(e){}
+            // 2026-05-19 PM52 (Jane: "remove unnecessary overhead
+            // messages like 'palace dog barks'"). Dog interactions
+            // now communicate via SFX + HUD pulse only — no toasts.
             game.stars = (game.stars || 0) + 1;
             try { updateHudStars(); } catch(e){}
           } else {
             try { play('dog'); } catch(e){}
-            try { toast('🐕 The dog barks! The guards are alerted!'); } catch(e){}
             try { triggerGuardAlert(d.tx, d.ty); } catch(e){}
           }
         }
@@ -13354,10 +13430,20 @@ function openChallenge(gate) {
     });
     // 2026-05-09 PM15 v3 — TRUTH SEEKER power-up. When armed AND this is
     // an MCQ-style question, grey out 2 random WRONG options + auto-open
-    // the clue box. q.answer here is the index of the correct option.
+    // the clue box. 2026-05-19 PM52 (Jane: "truth seeker power unlock —
+    // what is it supposed to do? i am not seeing 2 wrong answers
+    // crossed out"). Root cause: this code read `q.answer`, but MCQ
+    // questions actually store the correct option index on `q.correct`
+    // (see handleChallengeAnswer's `correct = (index === q.correct)`).
+    // `Number(undefined) = NaN`, so the wrong-index set unintentionally
+    // included the CORRECT answer too — Truth Seeker was sometimes
+    // greying out the right answer and locking the kid out. Fixed to
+    // read `q.correct`. Falls back to `q.answer` for any legacy entry.
     if (window._truthSeekerArmed) {
       try {
-        const correctIdx = Number(q.answer);
+        const correctIdx = Number(
+          (typeof q.correct === 'number') ? q.correct : q.answer
+        );
         const buttons = opts.querySelectorAll('.ch-option');
         const wrongIndexes = [];
         for (let i = 0; i < buttons.length; i++) {
@@ -21369,7 +21455,9 @@ function updateDog(dt){
         dog.barking = true;
         dog.barkingUntil = performance.now() + 1400;
         try { if (audio.bgm) play('dog'); } catch(e){}
-        toast('The palace dog barks! The guards have heard...');
+        // 2026-05-19 PM52 (Jane: "remove unnecessary overhead messages
+        // like 'palace dog barks'"). The bark SFX + visual alert
+        // vignette communicate the threat without a text toast.
         try { triggerGuardAlert(dog.tx, dog.ty); } catch(e){}
       } else {
         dog.barking = true;
@@ -21494,7 +21582,9 @@ function updateDog(dt){
         d.state = 'alerted';
         d.timer = 0;
         try { play('dog'); } catch(e){}
-        try { toast('🐕 The palace dog spotted Moses!'); } catch(e){}
+        // 2026-05-19 PM52 (Jane: "remove unnecessary overhead messages
+        // like 'palace dog barks'"). Dog-spotted SFX + alerted-state
+        // glow ring already telegraph the threat — no toast needed.
       } else if (d.timer <= 0) {
         const wp = d.patrolPath[d.pi];
         if (wp && wp.x === d.tx && wp.y === d.ty) {
@@ -21787,7 +21877,23 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // generic). Scene 2: cover page killed entirely (always auto-
     // launches into cinematic + gameplay), _clampSpriteX upgraded
     // with 4-px right-edge margin (matches Scene 1 PM45).
-    const SW_VERSION = 'bek-moses1-v23';
+    // 2026-05-19 PM52: bumped to v24 — overhead toasts removed
+    // (palace dog barks ×3, scene restarted, guard-saw-you, nobody-
+    // nearby — all already covered by SFX / vignette / tutorial /
+    // gate halo). Cover difficulty legend simplified — gates +
+    // guards columns dropped (varied per scene; Scene 3 has
+    // shepherds not guards), replaced with "What to expect" vibe
+    // note. Truth Seeker fixed (was reading q.answer not q.correct,
+    // so the wrong-index set sometimes greyed out the right
+    // answer). Slider puzzle landscape sizing uses max() not min()
+    // so it claims real estate on landscape phones (thumb max(50vh,
+    // 42vw); grid min(90vw, 85vh, max(75vh, 60vw)) so it stays
+    // square but ~2× bigger). Tutorial modal landscape: added
+    // left-anchored / right-anchored classes — modal flips to the
+    // opposite horizontal half from the halo tile so they never
+    // overlap. Fixed misleading MAP_STR row-7 comment (gaps at
+    // 5/17/29, not 5/16/27 as previous comment claimed).
+    const SW_VERSION = 'bek-moses1-v24';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
