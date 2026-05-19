@@ -340,6 +340,17 @@
       max-height: 70vh;
       max-height: 70dvh;
     }
+    /* 2026-05-19 PM59 (parity with Scene 1 PM52): horizontal anchor —
+       modal flips to OPPOSITE half from the halo tile so halo+modal
+       don't overlap. JS sets the class in showTipPopup. */
+    .tip-popup-overlay.left-anchored {
+      justify-content: flex-start;
+      padding-left: max(14px, env(safe-area-inset-left));
+    }
+    .tip-popup-overlay.right-anchored {
+      justify-content: flex-end;
+      padding-right: max(14px, env(safe-area-inset-right));
+    }
     .tip-popup-icon { font-size: 24px; margin-bottom: 4px; }
     .tip-popup-title { font-size: 15px; margin-bottom: 4px; }
     .tip-popup-body  { font-size: 13.5px; line-height: 1.4; margin-bottom: 10px; }
@@ -1010,6 +1021,54 @@
     0%,100% { transform: scale(1); opacity: 0.7; }
     50%     { transform: scale(1.08); opacity: 1; }
   }
+  /* 2026-05-19 PM59 (parity with Scene 1 PM51): personalized "proud
+     of you" win-modal block. Kid name + finish-quality tag + verse. */
+  .win-hero-shoutout {
+    margin: 10px auto 8px;
+    padding: 14px 18px;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255,215,118,0.22), transparent 70%),
+      linear-gradient(180deg, rgba(255,247,210,0.16) 0%, rgba(255,200,80,0.10) 100%);
+    border: 2px solid rgba(255,215,118,0.55);
+    border-radius: 14px;
+    max-width: 92%;
+    box-shadow: 0 0 18px rgba(255,200,80,0.30), inset 0 0 14px rgba(255,247,210,0.18);
+    text-align: center;
+  }
+  .win-hero-name {
+    font-family: Georgia, serif;
+    font-size: clamp(22px, 5.8vw, 32px);
+    color: #fff6cc;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 0 #5a1d06, 0 4px 18px rgba(255,200,80,0.6);
+    margin-bottom: 4px;
+  }
+  .win-hero-tag {
+    font-size: clamp(14px, 3.6vw, 17px);
+    color: #ffe8b8;
+    font-style: italic;
+    margin-bottom: 10px;
+  }
+  .win-hero-verse {
+    font-size: clamp(13px, 3.2vw, 15px);
+    color: #ffeecf;
+    line-height: 1.5;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.22);
+    border-left: 3px solid #ffd976;
+    border-radius: 6px;
+    font-style: italic;
+  }
+  .win-hero-verse-ref {
+    display: block;
+    text-align: right;
+    margin-top: 4px;
+    color: #ffb86a;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 700;
+  }
   .win-stars {
     display:flex; gap:10px; justify-content:center; font-size:54px; margin:12px 0 8px;
     line-height:1;
@@ -1363,9 +1422,16 @@
     transform: scale(1.0);
   }
   /* -- SLIDER PUZZLE: 3x3 image swap -- */
+  /* 2026-05-19 PM59 (parity with Scene 1 PM55): portrait thumb was
+     pinned to 120 px — too small to read the target picture. Bumped
+     to min(220px, 60vw, 30vh). Landscape rule below uses max() so
+     the image claims the wider axis. */
   .ch-slider-thumb {
-    display:block; max-width:120px; max-height:120px; object-fit:contain;
-    margin:4px auto 6px; border:3px solid #ffd976; border-radius:10px;
+    display:block;
+    max-width: min(220px, 60vw);
+    max-height: min(220px, 30vh);
+    object-fit:contain;
+    margin:4px auto 8px; border:3px solid #ffd976; border-radius:10px;
     background:rgba(255,255,255,0.15);
   }
   .ch-slider-hint {
@@ -1393,8 +1459,15 @@
     margin:6px auto 4px; max-height:52vh; overflow-y:auto;
     -webkit-overflow-scrolling:touch;
   }
+  /* 2026-05-19 PM59 (parity with Scene 1 PM52): portrait container was
+     overflowing modal padding on narrow phones. min(540px, 84vw)
+     keeps it inside the challenge-modal padding on every phone width. */
   .ch-spotdiff-container {
-    position:relative; display:inline-block; width:min(300px,80vw);
+    position:relative; display:inline-block;
+    width: min(540px, 84vw);
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 8px;
   }
   .ch-spotdiff-img {
     width:100%; height:auto; display:block; object-fit:contain;
@@ -1433,6 +1506,55 @@
   .ch-count-scene-img {
     display:block; width:min(260px, 70vw); height:auto; object-fit:contain;
     margin:0 auto 8px; border:3px solid #ffd976; border-radius:10px;
+  }
+  /* 2026-05-19 PM59 — Scene 2 PUZZLE LANDSCAPE SIZING (parity with
+     Scene 1 PM48 / PM52 / PM55 / PM56). Without these rules the
+     puzzle images stayed at their portrait defaults on landscape
+     phones and felt cramped. Tuned to use max() / nested min(max)
+     so each image claims the larger of vw/vh while staying inside
+     the modal padding. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    /* Slider thumb (target image) — larger of vh/vw axis. */
+    .ch-slider-thumb {
+      max-width: none !important;
+      max-height: max(50vh, 42vw) !important;
+    }
+    /* Slider grid — square, larger axis, capped to fit modal. */
+    .ch-slider-grid {
+      width: min(90vw, 85vh, max(75vh, 60vw)) !important;
+      height: min(90vw, 85vh, max(75vh, 60vw)) !important;
+    }
+    /* Spot-the-difference — image height claims real estate from
+       both axes; container max-width 46vw so two fit side-by-side. */
+    .ch-spotdiff-img {
+      width: auto !important;
+      max-width: 100%;
+      max-height: max(72vh, 36vw) !important;
+      height: max(72vh, 36vw) !important;
+      object-fit: contain !important;
+    }
+    .ch-spotdiff-container { width: auto !important; max-width: 46vw !important; }
+    .ch-spotdiff-wrapper   { flex-direction: row !important; gap: 6px; flex-wrap: nowrap; }
+    /* Count-scene image — fixed 65vh + width auto fills the modal
+       vertical area while preserving aspect. */
+    .ch-count-scene-img {
+      width: auto !important;
+      max-width: 80vw !important;
+      height: 65vh !important;
+      max-height: 65vh !important;
+      object-fit: contain !important;
+    }
+    /* Pictionary image — same approach as count-scene. */
+    .ch-pict-img {
+      width: auto !important;
+      max-width: 88%;
+      max-height: 48vh !important;
+    }
+    /* Bump challenge-modal max-height so the bigger images fit. */
+    .modal-overlay.challenge-modal .modal-content {
+      max-height: 96vh !important;
+      max-height: 96dvh !important;
+    }
   }
   /* -- PICTIONARY: full-width scene image above verse MCQ buttons -- */
   .ch-pict-img {
@@ -1622,6 +1744,25 @@
     30%  { opacity:1; transform: translate(var(--gx,0), var(--gy,0)) scale(1.1) rotate(120deg); }
     100% { opacity:0; transform: translate(calc(var(--gx,0) * 1.3), calc(var(--gy,0) * 1.3 + 20px)) scale(0.4) rotate(360deg); }
   }
+  /* 2026-05-19 PM59 (parity with Scene 1 PM49 — Jane: "the overhead
+     'reach the gate' green message bar shown during camera pan is
+     hiding the EXIT image and the text EXIT"). On landscape phones
+     the inline-styled #_introPanLabel at top:12% lands right where
+     the EXIT sprite sits in the panned-to view. Bump to top:46px
+     and shrink padding/font so canvas content stays visible. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    #_introPanLabel {
+      top: max(46px, env(safe-area-inset-top) + 46px) !important;
+      padding: 5px 14px !important;
+      font-size: 13px !important;
+      border-width: 2px !important;
+      max-width: 88vw !important;
+      line-height: 1.2 !important;
+    }
+    #_introPanLabel span {
+      font-size: 11px !important;
+    }
+  }
   /* ==== HIDDEN CROWN + MAP PEEK ==== */
   .crown-hint-toast {
     position:fixed; top:90px; left:50%; transform:translateX(-50%);
@@ -1670,6 +1811,29 @@
     aspect-ratio: 640 / 400;
   }
   .map-peek-box p { color:#ffd976; text-align:center; margin:6px 0 0; font-size:12px; }
+  /* 2026-05-19 PM59 (parity with Scene 1 PM49 — Jane: "on landscape,
+     the map is very small. can you make it larger?"). On landscape
+     phones the legend + hint rows ate into the canvas height. Bump
+     the box width cap, tighten paddings + legend font, give the
+     canvas more vertical room (96svh - 64px vs - 100px). */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .map-peek-box {
+      width: min(98svw, 960px) !important;
+      max-width: 98svw !important;
+      max-height: 96svh !important;
+      padding: 8px 10px !important;
+    }
+    .map-peek-box canvas {
+      max-height: calc(96svh - 64px) !important;
+    }
+    .map-peek-legend {
+      gap: 4px 8px !important;
+      margin: 4px 2px 0 !important;
+      font-size: 10px !important;
+    }
+    .map-peek-legend .lg { padding: 1px 5px !important; }
+    .map-peek-box p { font-size: 10.5px !important; margin: 4px 0 0 !important; }
+  }
   /* v3.23 Jane 2026-04-25: legend strip — small color swatches with labels
      so kids understand what each dot means on the map. Compact wrap-flex. */
   .map-peek-legend {
@@ -2673,6 +2837,21 @@
            onerror="this.style.display='none'">
     </div>
     <h2 class="win-title" id="winTitle">Moses reached safety!</h2>
+    <!-- 2026-05-19 PM59 (parity with Scene 1 PM51 — Jane: "no 'I'm
+         proud of you' moment. Win modal is a stats summary. Kids
+         respond to a hero shot + custom kid name + a verse said over
+         them"). Reads bek.kidName from localStorage (set by Scene 1's
+         first-win prompt). Verses are MOSES-centric only per Jane's
+         PM57 clarification — no Abraham. -->
+    <div class="win-hero-shoutout" id="winHeroShoutout" style="display:none;">
+      <div class="win-hero-name" id="winHeroName">Well done!</div>
+      <div class="win-hero-tag"  id="winHeroTag">You guided Moses through the desert.</div>
+      <div class="win-hero-verse" id="winHeroVerse">
+        "By faith he left Egypt, not fearing the king's anger;<br>
+        he persevered because he saw him who is invisible."
+        <span class="win-hero-verse-ref">— Hebrews 11:27</span>
+      </div>
+    </div>
     <div class="win-stars" id="winStars">
       <span>&#9733;</span><span>&#9733;</span><span>&#9733;</span>
     </div>
@@ -6387,16 +6566,25 @@ function showTipPopup(eventKey, opts){
     _tipPopupPrevState = game.state;
     game.state = 'tutorial';
   }
-  // 2026-05-19 PM58: anchor decision. If pointAtTile, top-anchor when
-  // the tile is in the bottom half of the canvas so card doesn't sit
-  // on the halo. Default = bottom-anchored.
+  // 2026-05-19 PM58: top-anchor when halo tile is in bottom half of
+  // canvas. PM59 (parity with Scene 1 PM52): also flip horizontally
+  // — modal goes to opposite half from halo tile so they don't
+  // overlap on landscape.
   try {
     overlay.classList.remove('top-anchored');
+    overlay.classList.remove('left-anchored');
+    overlay.classList.remove('right-anchored');
     if (opts.pointAtTile && typeof opts.pointAtTile === 'object'
         && typeof opts.pointAtTile.ty === 'number') {
       const screenTileY = (opts.pointAtTile.ty * TILE) - camera.py + TILE/2;
+      const screenTileX = (opts.pointAtTile.tx * TILE) - camera.px + TILE/2;
       if (screenTileY > CANVAS_H * 0.5) {
         overlay.classList.add('top-anchored');
+      }
+      if (screenTileX > CANVAS_W * 0.5) {
+        overlay.classList.add('left-anchored');  // halo right → card left
+      } else {
+        overlay.classList.add('right-anchored'); // halo left → card right
       }
     }
   } catch(e){}
@@ -9064,6 +9252,7 @@ function showWin(){
       play('win');
       try { play('levelUp'); } catch(e){}  // v2.2.7 victory-modal fanfare
       $('winModal').classList.add('active');
+      try { _personalizeWinModal(); } catch(e){}
       // v3.4: no chest animation here -- chest plays mid-scene only so the
       // finish modal is compact and never cut off by small screens.
     }, 2000);
@@ -9071,7 +9260,49 @@ function showWin(){
     play('win');
     try { play('levelUp'); } catch(e){}  // v2.2.7 victory-modal fanfare
     $('winModal').classList.add('active');
+    try { _personalizeWinModal(); } catch(e){}
   }
+}
+// 2026-05-19 PM59 (parity with Scene 1 PM51): personalized win-modal
+// block. Reads bek.kidName from localStorage (set by Scene 1's first-
+// win prompt — Scene 2 just reads, doesn't prompt again). All verses
+// MOSES-centric per Jane's PM57 clarification.
+function _getKidName(){
+  try { return (localStorage.getItem('bek.kidName') || '').trim(); } catch(e){ return ''; }
+}
+function _personalizeWinModal(){
+  const name = _getKidName();
+  const block = document.getElementById('winHeroShoutout');
+  if (!block) return;
+  const nameEl = document.getElementById('winHeroName');
+  const tagEl  = document.getElementById('winHeroTag');
+  const verseEl= document.getElementById('winHeroVerse');
+  const hearts = (game && game.hearts) || 0;
+  const treasureRatio = (game && game.treasuresTotal)
+    ? (game.treasureCount / game.treasuresTotal) : 0;
+  let tag, verseBody, verseRef;
+  if (hearts === 3 && treasureRatio >= 0.9) {
+    tag = 'A perfect desert flight — Moses (and YOU) made it through with everything!';
+    verseBody = '"By faith he left Egypt, not fearing the king\'s anger; he persevered because he saw him who is invisible."';
+    verseRef = '— Hebrews 11:27';
+  } else if (hearts === 3) {
+    tag = 'You guided Moses across the desert without losing a single heart. Incredible courage!';
+    verseBody = '"By faith he left Egypt, not fearing the king\'s anger; he persevered because he saw him who is invisible."';
+    verseRef = '— Hebrews 11:27';
+  } else if (hearts === 1) {
+    tag = 'You never gave up — even when the sand burned and water ran low. That\'s how Moses did it.';
+    verseBody = '"Moses fled from Pharaoh and went to live in Midian."';
+    verseRef = '— Exodus 2:15';
+  } else {
+    tag = 'You helped Moses escape the desert! God smiles on every brave step you took.';
+    verseBody = '"By faith he left Egypt, not fearing the king\'s anger; he persevered because he saw him who is invisible."';
+    verseRef = '— Hebrews 11:27';
+  }
+  const greeting = name ? `Well done, ${name}!` : 'Well done, brave explorer!';
+  if (nameEl) nameEl.textContent = greeting;
+  if (tagEl)  tagEl.textContent  = tag;
+  if (verseEl) verseEl.innerHTML = `${verseBody}<span class="win-hero-verse-ref">${verseRef}</span>`;
+  block.style.display = 'block';
 }
 /* ---------- TRANSITION CINEMATIC 2→3 ---------- */
 const TRANS_2TO3_PANELS = [

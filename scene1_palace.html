@@ -22129,7 +22129,29 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // tracker; pointAtTile wired on treasure / checkpoint / oasis /
     // mirage first-event triggers; scout intentionally NOT wired
     // because scouts move every frame).
-    const SW_VERSION = 'bek-moses1-v30';
+    // 2026-05-19 PM59: bumped to v31 — comprehensive Scene 1→Scene 2
+    // parity port. Per Jane: "every fix you did for scene 1 needs to
+    // be checked and fixed for scene 2 if relevant." Ported to Scene 2:
+    // * Slider puzzle portrait thumb min(220px, 60vw, 30vh) + landscape
+    //   max(50vh, 42vw) thumb / min(90vw, 85vh, max(75vh, 60vw)) grid
+    // * Spot-diff portrait container min(540px, 84vw) (was overflowing)
+    // * Spot-diff landscape: image max(72vh, 36vw), side-by-side row
+    // * Count-scene image landscape: height 65vh, max-width 80vw
+    // * Pictionary image landscape sizing
+    // * Challenge modal max-height 96vh on landscape so bigger images fit
+    // * Map peek landscape: width min(98svw, 960px), legend tightened,
+    //   canvas max-height (96svh - 64px)
+    // * Intro-pan REACH-THIS-EXIT banner: top 46px on landscape (was
+    //   12%), padding 5/14, font 13/11 — no longer overlaps exit
+    // * Tip-popup landscape left-anchored / right-anchored CSS classes
+    // * showTipPopup JS sets left/right anchor based on halo tile x
+    // * Win-modal personalization (kid-name + Moses-centric verse —
+    //   Hebrews 11:27 + Exodus 2:15 only, NO Abraham per Jane PM57)
+    // Compass scale already adequate in Scene 2 (PM scaling 0.50 on
+    // landscape covers it). Scout-arm loop N/A (Scene 2 scouts don't
+    // have alerted state machine, they move every tick). Caught-toast
+    // N/A (Scene 2 uses danger modal not toast).
+    const SW_VERSION = 'bek-moses1-v31';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
