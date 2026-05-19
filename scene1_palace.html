@@ -9332,11 +9332,23 @@ document.querySelectorAll('.dpad-btn').forEach(btn => {
 document.addEventListener('click', unlockAudio, { once:true });
 
 /* ---------- COVER PAGE / DIFFICULTY ---------- */
+// 2026-05-19 PM63 (Jane: "so at the initial cover if kids pick easy level,
+// does it get carried throughout for all scenes?"). Scene 2 already reads
+// `bek.lastDifficulty` from localStorage (scene2_desert.html line ~6328),
+// but Scene 1 was NEVER writing it — so the cross-scene handoff was a
+// no-op and Scene 2 always defaulted to 'medium'. _saveDifficulty()
+// writes the chosen difficulty whenever Scene 1's user picks one, and
+// re-writes on scene transition so the last value sticks.
+function _saveDifficulty(d){
+  if (d !== 'easy' && d !== 'medium' && d !== 'hard') return;
+  try { localStorage.setItem('bek.lastDifficulty', d); } catch(e){}
+}
 document.querySelectorAll('.difficulty-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     game.difficulty = btn.dataset.diff;
+    _saveDifficulty(game.difficulty);
     // v3.5: apply full difficulty config (guards, hazards, time, gate count)
     applyDifficultyConfig(game.difficulty);
     play('click');
@@ -9436,6 +9448,7 @@ window._beginAdventure = _beginAdventure;
     b.addEventListener('click', () => {
       const diff = b.dataset.quickdiff;
       try { game.difficulty = diff; applyDifficultyConfig(diff); } catch(e){}
+      _saveDifficulty(diff); // PM63 carry-across-scenes
       _syncSelectedPills(diff);
       try { play('click'); } catch(e){}
     });
@@ -16314,6 +16327,10 @@ $('winNextBtn').addEventListener('click', () => {
   //   * if anything throws inside the transition fn, hard-jump to
   //     Scene 2 as a last-resort fallback
   try { window._inPrelude = false; if (typeof _inPrelude !== 'undefined') _inPrelude = false; } catch(e){}
+  // 2026-05-19 PM63: belt-and-suspenders re-save the current difficulty
+  // on scene transition so Scene 2 always picks it up even if the user
+  // re-changed it after the initial cover-page selection.
+  try { _saveDifficulty(game.difficulty); } catch(e){}
   try {
     ['winModal','dangerModal','pauseModal','dialogModal','tutorialModal','sceneBanner','truthChestModal','mapPeekOverlay','tipPopupOverlay']
       .forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active'); });
@@ -21556,6 +21573,17 @@ const _TOAST_MAX_QUEUE = 2;
 function toast(msg, opts){
   if (!msg) return;
   const force = !!(opts && opts.force);
+  // 2026-05-19 PM63 (Jane: "i see tutorial modals. and then parallelly
+  // overhead messages are running from right to left"). Suppress
+  // toasts while a tutorial popup is on screen (unless force) so the
+  // overhead banner doesn't compete with the modal the kid is reading.
+  if (!force) {
+    try {
+      const tipOpen = document.getElementById('tipPopupOverlay');
+      if (tipOpen && tipOpen.classList.contains('active')) return;
+      if (typeof game !== 'undefined' && game.state === 'tutorial') return;
+    } catch(e){}
+  }
   // Drop a toast that exactly matches the last shown one within 8 s — unless force.
   if (!force && msg === _toastLastMsg && performance.now() - _toastLastMsgAt < _TOAST_DEDUPE_WINDOW_MS) return;
   if (force) {
@@ -22319,7 +22347,7 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     //   Midian), compass-rose corner, dramatic kid-friendly copy.
     // * World-map audio leak: tear down every other loop track
     //   BEFORE egyptianCover plays so it doesn't layer.
-    const SW_VERSION = 'bek-moses1-v34';
+    const SW_VERSION = 'bek-moses1-v35';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
