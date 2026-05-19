@@ -1347,7 +1347,17 @@
        Now sized by viewport height so they're big + readable, capped
        so they stay inside the scrollable modal. */
     .ch-pict-img       { width:auto !important; max-width:88%; max-height:48vh !important; }
-    .ch-count-scene-img{ width:auto !important; max-width:88%; max-height:46vh !important; }
+    /* 2026-05-19 PM49 (Jane: "for count the soldiers also on landscape,
+       make the image larger as it is impossible to see the details of
+       the image"). Was 46vh — on a 360-tall landscape phone that's
+       ~165 px tall. Bumped to the taller of 70vh OR 56vw so the scene
+       claims real estate from BOTH axes. Caps at 90% width so it
+       still respects the modal's horizontal padding. */
+    .ch-count-scene-img{
+      width:auto !important;
+      max-width:90% !important;
+      max-height:max(70vh, 56vw) !important;
+    }
     /* 2026-05-18 PM48 (Jane: "on landscape slider puzzle, both the
        images are extremely small making it hard to see the image.
        make the images larger"). Previous caps (thumb 30vh, grid
@@ -1366,7 +1376,22 @@
        outside the actual image bounds. Fix: shrink BOTH the image AND
        its container to hug the image's natural rendered width. The
        halos' % coords now resolve against the real image bounds. */
-    .ch-spotdiff-img   { width:auto !important; max-width:100%; max-height:42vh !important; height:42vh !important; object-fit:contain !important; }
+    /* 2026-05-19 PM49 (Jane: "for spot the difference images, make
+       the images larger on landscape. but let them not break on
+       different devices"). Was max-height:42vh — ~170px tall on
+       400-tall phones — too small to see the differences. Bumped to
+       max(72vh, 36vw) for height (claims real estate from both axes
+       so wider phones grow toward width, taller phones grow toward
+       height). Container max-width 46vw → 46vw still (two images
+       side-by-side must fit in 100vw with gap + padding). The image
+       stays object-fit:contain so it never breaks aspect ratio. */
+    .ch-spotdiff-img   {
+      width:auto !important;
+      max-width:100%;
+      max-height:max(72vh, 36vw) !important;
+      height:max(72vh, 36vw) !important;
+      object-fit:contain !important;
+    }
     .ch-spotdiff-container { width:auto !important; max-width:46vw !important; }
     .ch-spotdiff-wrapper   { flex-direction:row !important; gap:6px; flex-wrap:nowrap; }
   }
@@ -1476,9 +1501,19 @@
       padding-bottom: 0;
       align-items: flex-start;
     }
+    /* 2026-05-19 PM49 (Jane: "on landscape, the tutorial for hidden
+       scroll has halo showing on the modal. for spot the difference
+       ... correct the halos for the tutorial modals on landscape").
+       Card was 78vw wide — when a popup pointed at a tile on the
+       right half of the canvas, the rAF tracker positioned the halo
+       under the card's right edge. Shrunk to 56vw cap so the card
+       claims at most ~half the viewport, leaving the other half free
+       for the halo+hand regardless of which tile is highlighted.
+       Card font sizes already tuned in the PM37 + PM45 + PM48 rules
+       above so the narrower box still reads clearly. */
     .tip-popup-card {
       padding: 10px 16px;
-      max-width: min(460px, 78vw);
+      max-width: min(380px, 56vw);
       max-height: 70vh;
       max-height: 70dvh;
     }
@@ -2183,7 +2218,13 @@
   }
   .ch-spotdiff-container {
     position:relative; display:inline-block;
-    width: min(540px, 92vw);
+    /* 2026-05-19 PM49 (Jane: "ON PORTRAIT, spot the differences images
+       are getting cut on the right side"). Container was 92vw but the
+       parent challenge-modal-content has ~14px padding on each side,
+       so the inner area was only ~94vw - 28px (~88vw). The container
+       at 92vw overflowed by ~4vw on the right. Shrunk to 84vw with a
+       560 px cap so it always fits inside the modal padding. */
+    width: min(540px, 84vw);
     max-width: 100%;
     /* 2026-05-16 PM34 (Jane: "halos should remain within modal
        dimensions on portrait and landscape"). Clip any halo / miss
@@ -6142,12 +6183,20 @@ const guards = [
     pi:0, dir:'right',
     state:'patrol', timer:0, swordOut:false, swordAnim:0, seeRadius:3, patrolMs:780 },
   // === TIER 2 — Upper Corridor (rows 8-11) ===
-  // Royal Gate Sentry — patrol detours UP through gate (17,7) → kid waits
-  // for sentry to step clear before dashing through. Combined with the
-  // gate-blocked check in attemptMove, this gives the storyboard "wait
-  // for the guard, then dash through" beat.
+  // 2026-05-19 PM49 (Jane: "i am still seeing guards at the gate and not
+  // moving. why are you not fixing this?"). Root cause finally found:
+  // the OLD patrol path here was `[(14,8),(22,8),(17,8),(17,6),(17,8)]`
+  // — going from (17,8) up to (17,6) requires stepping through (17,7),
+  // which IS a Bible-gate tile. PM37 added `_gateTileBlockedForGuard`
+  // that rejects any patrol step landing on an unsolved gate, so the
+  // guard would reach (17,8), try (17,7), get rejected, freeze.
+  // Visually he sat permanently right next to the gate "not moving"
+  // and Moses couldn't squeeze past him into the gate.
+  // Fix: drop the (17,6) detour. Patrol now stays on rows 8 + 10, so
+  // it never tries to traverse a gate tile. Lose the "wait then dash"
+  // micro-beat, but gain a guard that ACTUALLY moves.
   { tx:14, ty:8,
-    patrolPath:[{x:14,y:8},{x:22,y:8},{x:17,y:8},{x:17,y:6},{x:17,y:8}],
+    patrolPath:[{x:14,y:8},{x:22,y:8},{x:22,y:10},{x:14,y:10}],
     pi:0, dir:'right',
     state:'patrol', timer:0, swordOut:false, swordAnim:0, seeRadius:4, patrolMs:700 },
   // === TIER 3 — Mid Corridor (rows 13-17) ===
@@ -6184,8 +6233,24 @@ const DIFFICULTY_CONFIG = {
   // doable without power-ups. Guards still faster + sharper than Medium,
   // and gate count stays at 6 — so Hard is meaningfully harder, just not
   // impossible. Power-ups now SHORTEN a Hard run rather than enable one.
-  hard:   { timeLimit: 180, guardCount: 5, guardSeeRadius: 5, guardPatrolMs: 460,
-            censerActive: true,  censerSpeed: 1.95, servantActive: true,
+  // 2026-05-19 PM49 (Jane: "hard level is extremely hard. do something
+  // to make it easier for kids"). Eased on every axis except gate
+  // count (so Hard is still distinctively the "longest" run):
+  //   guardCount    5    → 4    (drop the row-3 hard-mode extra)
+  //   guardSeeRadius 5   → 4    (same cone as Medium — Hard's pressure
+  //                              now comes from speed + count, not from
+  //                              guards spotting Moses from across the
+  //                              entire map)
+  //   guardPatrolMs 460  → 560  (still faster than Medium 620, but no
+  //                              longer relentless)
+  //   timeLimit     180  → 240  (Easy's budget — 6 gates in 3 min was
+  //                              too tight even for adults; 4 min gives
+  //                              breathing room for the kid to scout
+  //                              between gates)
+  //   censerSpeed   1.95 → 1.6  (smoke hazard cycles slower, easier to
+  //                              time crossings)
+  hard:   { timeLimit: 240, guardCount: 4, guardSeeRadius: 4, guardPatrolMs: 560,
+            censerActive: true,  censerSpeed: 1.6, servantActive: true,
             gateCount: 6 },
 };
 function applyDifficultyConfig(diff){
@@ -7720,14 +7785,21 @@ const CHALLENGE_BANK = {
       imgB:'assets/images/spot%20the%20difference%20princess%20rescue%20B.png',
       answer:4,
       // 2026-05-16 PM34 — Jane re-drew the differences on the live PNG.
+      // 2026-05-19 PM49 (Jane: "for spot the difference image where the
+      // princess and the servants find baby moses, the difference on
+      // the red bird is not recognized. the halo shows detection
+      // further down"). The bird's coord was y:52 (mid-image over the
+      // water surface). Jane's tap on the actual bird at y:~35 was
+      // outside the 22% tapR around y:52. Moved coord up to (25, 35)
+      // and bumped tapR 22 → 30 so kids have a wider hit window.
       //  1. princess's crown (top-right)  (~75%, 20%)
       //  2. two handmaidens (right-mid)  (~65%, 42%)
-      //  3. red bird (left-center over water)  (~25%, 52%)
+      //  3. red bird (left-center in the sky)  (~25%, 35%)  [PM49]
       //  4. baby Moses in the basket (lower-mid)  (~38%, 70%)
       diffs:[
         { x:75, y:20, r:5, tapR:22 },
         { x:65, y:42, r:5, tapR:22 },
-        { x:25, y:52, r:5, tapR:22 },
+        { x:25, y:35, r:5, tapR:30 },
         { x:38, y:70, r:5, tapR:22 },
       ],
       clue:"Look at the princess's crown (top-right), the two handmaidens, the bird over the water, and baby Moses in the basket.",
@@ -10843,16 +10915,23 @@ function showTipPopup(eventKey, opts){
     // drop the .active gate in the tracker (line ~10806) so any
     // valid chariot.px/py is used regardless of state. Fallback to
     // the secret-door tile if no chariot object yet.
+    // 2026-05-19 PM49 (Jane: "pharaoh's chariot tutorial still shows
+    // hand sign pointing at the compass"). PM48 seeded from
+    // chariot.px/py whenever those were numbers — but at popup-spawn
+    // time the chariot has px:0, py:0 (initial state, hasn't moved
+    // yet). floor(0/TILE) = 0 → halo seeded at tile (0,0) =
+    // top-left = compass area. Fix: seed from doorIn ALWAYS (the
+    // secret door is where the chariot will emerge — pointing at it
+    // matches the popup copy "Stay AWAY from secret doors"). The rAF
+    // tracker (below) will switch to chariot's live tile ONLY when
+    // chariot has actually moved (px>0 || py>0).
     let seedTx = 0, seedTy = 0;
     try {
       if (typeof _pharaohHunt !== 'undefined' && _pharaohHunt) {
-        const c = _pharaohHunt.chariot;
-        if (c && typeof c.px === 'number' && typeof c.py === 'number') {
-          seedTx = Math.floor(c.px / TILE);
-          seedTy = Math.floor(c.py / TILE);
-        } else if (_pharaohHunt.doorIn) {
-          seedTx = _pharaohHunt.doorIn.tx;
-          seedTy = _pharaohHunt.doorIn.ty;
+        const di = _pharaohHunt.doorIn;
+        if (di && typeof di.tx === 'number' && typeof di.ty === 'number') {
+          seedTx = di.tx;
+          seedTy = di.ty;
         }
       }
     } catch(e){}
@@ -10910,14 +10989,15 @@ function _tipPointAtTile(tx, ty){
     try {
       // 2026-05-18 PM45: chariot-tracking mode — refresh the target
       // tile from the chariot's live pixel position every frame.
-      // 2026-05-18 PM48: dropped the .active gate — if the chariot
-      // object has px/py, track it. Fixes the case where the popup
-      // spawned slightly before chariot.active flipped on, leaving
-      // the halo frozen at (0,0) / MAP button on portrait.
+      // 2026-05-19 PM49: only switch to the chariot if it has actually
+      // MOVED (px>0 || py>0). Stay on the doorIn seed tile until then.
+      // Pre-move, c.px === 0 and c.py === 0 — floor(0/TILE) = 0 —
+      // which would snap the halo back to tile (0,0) every frame.
       if (window._tipChariotTrack && typeof _pharaohHunt !== 'undefined'
           && _pharaohHunt && _pharaohHunt.chariot
           && typeof _pharaohHunt.chariot.px === 'number'
-          && typeof _pharaohHunt.chariot.py === 'number') {
+          && typeof _pharaohHunt.chariot.py === 'number'
+          && (_pharaohHunt.chariot.px > 0 || _pharaohHunt.chariot.py > 0)) {
         const c = _pharaohHunt.chariot;
         _tipPointerTile.tx = Math.floor(c.px / TILE);
         _tipPointerTile.ty = Math.floor(c.py / TILE);
@@ -16690,6 +16770,32 @@ function _updateTorchlight(){
   // again. Feels like the room cycles into shadow — and the longer dim
   // window (2026-05-08) gives the kid time to actually plan a move.
   const shouldBeDim = (phase >= _torchlight.tCycleMs - _torchlight.dimMs);
+  // 2026-05-19 PM49 (Jane: "i said don't dim until that tutorial for
+  // palace lights dimming appears"). PM37 only gated the random
+  // `_firePalaceEvent('torch-outage')` flow on the dim tutorial —
+  // but THIS function (the deterministic 30-second cycle) ALSO dims
+  // the palace, and it wasn't gated. So the first dim a kid saw was
+  // this one, with no tutorial having fired. Gate it too: if the
+  // tutorial event hasn't been shown and tutorials are ON, defer the
+  // dim — show the popup first; the popup's Got-It hook (_afterTipClose
+  // re-entrant pattern from PM37) re-anchors startedAt so the dim
+  // cycle resumes cleanly after the modal closes.
+  if (shouldBeDim && !_torchlight.isDim && !_firstEventSeen.dim && _tutModeOn()) {
+    try {
+      showTipPopup('dim', {
+        icon: '🪔',
+        title: 'The Palace Dims',
+        body: 'Every so often the palace torches dim and the guards can\'t see as far. THIS is the perfect moment to sneak past gates and through tight corridors! Watch — the next dim starts right after you tap Got It.',
+      });
+    } catch(e){}
+    // Re-anchor the cycle so the dim phase starts fresh after the
+    // kid dismisses the popup, not while the modal is up.
+    window._afterTipClose = () => {
+      window._afterTipClose = null;
+      _torchlight.startedAt = performance.now() - (_torchlight.tCycleMs - _torchlight.dimMs - 200);
+    };
+    return;
+  }
   if (shouldBeDim && !_torchlight.isDim) {
     _torchlight.isDim = true;
     _torchlight.guardSeeBackup = guards.map(g => g.seeRadius);
@@ -21082,7 +21188,17 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // longer covers EXIT, chariot tutorial halo seeds from live
     // chariot position (was frozen at tile 0,0 / MAP button), lore
     // tile halo gradients removed (kept glyph + thin ring only).
-    const SW_VERSION = 'bek-moses1-v20';
+    // 2026-05-19 PM49: bumped to v21 — chariot halo really fixed
+    // (seeds from doorIn ALWAYS, only switches to chariot when it
+    // has moved); guard #2 patrol no longer requires gate crossing
+    // (was stuck at row 8 trying to step onto unsolved gate);
+    // _updateTorchlight gated on dim tutorial; Hard difficulty
+    // eased (4 guards, sight 4, 240s, censer 1.6); spot-diff red
+    // bird coord moved 52→35 + tapR 30; spot-diff portrait width
+    // 92vw → 84vw so it fits in modal padding; spot-diff +
+    // count-soldiers enlarged on landscape; tip-popup card narrowed
+    // to 56vw so halos stop overlapping it.
+    const SW_VERSION = 'bek-moses1-v21';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
