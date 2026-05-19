@@ -6341,22 +6341,27 @@ if (accessInput) accessInput.addEventListener('keydown', e => { if (e.key === 'E
 /* ---------- CINEMATIC OPENING ----------
   4-panel softened-language narration for kids.
 */
+// 2026-05-19 PM62 (Jane: "when i click on 'Begin desert' from the
+// tracker page, some acts panel starts playing that is not in the
+// narration document"). The previous 4-panel ACT II text was
+// off-script. NARRATION_SCRIPTS_AND_PROMPTS_bundle1.md SECTION 5
+// defines ONE Scene-2 narration over the intro image, using the
+// scene-2-narration.mp3 voice file. Replaced the 4 panels with the
+// canonical single-panel script — split into 3 beats so the kid
+// reads + hears it as the cinematic plays through.
 const CIN_PANELS = [
   {
-    text: "Moses escaped the palace with his life. Outside the great city, the vast desert stretches east toward Midian - a land far from Pharaoh's reach.",
-    cap:  "ACT II - PANEL 1"
+    text: "The desert is wide. The desert is hot. Scorpions hide in the cracks. Vultures circle high above.",
+    cap:  "",
+    audio: 'assets/audio/scene-2-narration.mp3',
   },
   {
-    text: "But Pharaoh's anger burns hot. His scouts have fanned out into the wilderness to track Moses down. Moses must move quickly and quietly.",
-    cap:  "ACT II - PANEL 2"
+    text: "Moses has no water, no friends, no map. But somewhere east — past the dunes, past the mesas, past the cliffs — there's a well in a land called Midian.",
+    cap:  "",
   },
   {
-    text: "The sun is fierce. Water is scarce. Sand shifts beneath his feet, hiding deadly quicksand. Only small oases offer rest between the dunes.",
-    cap:  "ACT II - PANEL 3"
-  },
-  {
-    text: "But God goes with Moses into the wilderness. By faith, Moses trusts the Lord to bring him safely to Midian - where his next chapter begins. (Hebrews 11:27)",
-    cap:  "ACT II - PANEL 4"
+    text: "Help Moses cross the desert. God is watching every step.",
+    cap:  "",
   },
 ];
 function openCinematic() {

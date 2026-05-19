@@ -1347,26 +1347,27 @@
        Now sized by viewport height so they're big + readable, capped
        so they stay inside the scrollable modal. */
     .ch-pict-img       { width:auto !important; max-width:88%; max-height:48vh !important; }
-    /* 2026-05-19 PM49 + PM56 (Jane: "count challenge image is small on
-       landscape. make it larger"). The PM49 max-height caps were being
-       overridden by the modal content's max-height (~368px on 400-tall
-       landscape) → image was effectively pinned to ~250 px tall.
-       Switched to FIXED height of 65vh + width:auto so the image fills
-       most of the vertical real estate inside the challenge modal,
-       letting its aspect ratio drive the width. max-width 80vw guards
-       against an extremely wide aspect blowing past the modal padding. */
+    /* 2026-05-19 PM49 + PM56 + PM62 (Jane keeps reporting count
+       image is still small on landscape). PM56 set height: 65vh
+       but that's only ~260 px on 400-tall phones — barely larger
+       than before. Bumped to 78vh + max-width 90vw + min-width 60vw
+       so the image claims most of the modal's horizontal space too.
+       Modal max-height also bumped to 98vh below so the bigger image
+       has room. */
     .ch-count-scene-img{
       width:auto !important;
-      max-width:80vw !important;
-      height:65vh !important;
-      max-height:65vh !important;
-      object-fit:contain !important;
+      min-width: 60vw !important;
+      max-width: 90vw !important;
+      height: 78vh !important;
+      max-height: 78vh !important;
+      object-fit: contain !important;
     }
-    /* Also bump challenge-modal max-height a touch on landscape so
-       the bigger image has room without pushing the Exit button off. */
+    /* Also bump challenge-modal max-height so the bigger image has
+       room without pushing the Exit button off. PM62 bumped 96 → 98vh
+       to accommodate the 78vh count-scene image. */
     .modal-overlay.challenge-modal .modal-content {
-      max-height: 96vh !important;
-      max-height: 96dvh !important;
+      max-height: 98vh !important;
+      max-height: 98dvh !important;
     }
     /* 2026-05-18 PM48 (Jane: "on landscape slider puzzle, both the
        images are extremely small making it hard to see the image.
@@ -2684,34 +2685,77 @@
     margin-bottom: 16px;
     font-style: italic;
   }
+  /* 2026-05-19 PM62 (Jane: "the moses's journey tracker is very tiny.
+     it looks very ordinary. moses figurine is so tiny, there is no
+     map like background"). Overhauled: full painted-map background
+     (Egypt = warm orange-red, Desert = golden tan, Midian = deep
+     teal/blue distant land), bigger SVG (300 px tall vs 240), pins
+     scaled 1.5x, Moses figurine 1.8x with a glow-ring underneath. */
   .world-map-canvas {
-    background: rgba(255,255,255,0.18);
-    border: 2px dashed rgba(138,90,34,0.45);
-    border-radius: 12px;
-    padding: 18px 12px 10px;
+    background:
+      radial-gradient(ellipse at 12% 65%, rgba(180,40,20,0.25) 0%, transparent 30%),
+      radial-gradient(ellipse at 50% 65%, rgba(220,170,80,0.30) 0%, transparent 35%),
+      radial-gradient(ellipse at 85% 55%, rgba(40,120,170,0.25) 0%, transparent 30%),
+      linear-gradient(180deg, #e8c878 0%, #d4a868 60%, #b88a4a 100%);
+    border: 3px solid rgba(138,90,34,0.7);
+    border-radius: 14px;
+    padding: 18px 14px 16px;
     margin-bottom: 16px;
+    box-shadow: inset 0 0 36px rgba(120,70,20,0.35), 0 4px 14px rgba(80,40,10,0.45);
+    position: relative;
+    overflow: hidden;
+  }
+  /* Decorative compass rose top-right corner */
+  .world-map-canvas::before {
+    content: '✦';
+    position: absolute;
+    top: 10px; right: 14px;
+    font-size: 22px;
+    color: rgba(255,217,118,0.55);
+    text-shadow: 0 0 8px rgba(255,217,118,0.4);
+    pointer-events: none;
+  }
+  /* Decorative tiny pyramid silhouettes at Egypt side, palm-cluster at Midian */
+  .world-map-canvas::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle 14px at 14% 78%, rgba(80,40,10,0.45), transparent 60%),
+      radial-gradient(circle 10px at 18% 80%, rgba(80,40,10,0.40), transparent 60%),
+      radial-gradient(circle 12px at 22% 79%, rgba(80,40,10,0.42), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
   }
   .world-map-svg {
     width: 100%;
     height: auto;
-    max-height: 240px;
+    max-height: 320px;
     display: block;
+    position: relative;
+    z-index: 1;
   }
   .wm-pin-active circle {
-    animation: wm-pin-pulse 1.6s ease-in-out infinite;
+    animation: wm-pin-pulse 1.4s ease-in-out infinite;
   }
   @keyframes wm-pin-pulse {
     0%, 100% { transform: scale(1.0); }
-    50%      { transform: scale(1.18); }
+    50%      { transform: scale(1.22); }
   }
-  /* Moses figurine — JS animates the transform along the path during
-     the screen's reveal. Starts at the Palace pin. */
+  /* Moses figurine + glow ring underneath */
   .wm-moses {
-    transform: translate(80px, 130px);
-    transition: transform 2.2s cubic-bezier(0.4, 0.0, 0.2, 1.0);
+    transform: translate(140px, 240px);
+    transition: transform 2.6s cubic-bezier(0.4, 0.0, 0.2, 1.0);
   }
   .wm-moses.arrived {
-    transform: translate(300px, 130px);
+    transform: translate(540px, 240px);
+  }
+  .wm-moses-glow {
+    animation: wm-moses-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes wm-moses-pulse {
+    0%, 100% { opacity: 0.5; r: 26; }
+    50%      { opacity: 0.9; r: 32; }
   }
   .world-map-caption {
     font-size: 15px;
@@ -4377,7 +4421,7 @@
 (function(){
   const tips = [
     "Tip: hide behind a pillar to break a guard's line of sight.",
-    "Tip: collect 3 torn scrolls and arrange them to spell GOD — the Golden Key will appear!",
+    "Tip: the Golden Key waits in the south corridor — grab it to unlock the EXIT!",
     "Tip: the palace dims for 10 seconds every cycle — that's your safe sneak window.",
     "Tip: walk over treasure bags to collect them — every color set gives +1 heart.",
     "Tip: pharaoh's chariot patrols too. Hide when you hear the trumpet.",
@@ -4427,42 +4471,49 @@
 -->
 <div class="world-map-overlay" id="worldMapOverlay" role="dialog" aria-modal="true" aria-labelledby="worldMapTitle">
   <div class="world-map-box">
-    <h2 class="world-map-title" id="worldMapTitle">Moses' Journey</h2>
-    <p class="world-map-sub">From Pharaoh's palace to the wilderness of Midian.</p>
+    <h2 class="world-map-title" id="worldMapTitle">Moses's Journey</h2>
+    <p class="world-map-sub">From Egypt to Midian — one step at a time.</p>
     <div class="world-map-canvas" aria-hidden="true">
-      <!-- Parchment-style map. Three pins + dashed path + Moses traveling marker. -->
-      <svg class="world-map-svg" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-        <!-- Dashed path Egypt → Desert → Midian -->
-        <path d="M 80 130 Q 200 60, 300 130 Q 400 200, 520 110"
-              fill="none" stroke="#8a5a22" stroke-width="3"
-              stroke-dasharray="8 6" opacity="0.7"/>
+      <!-- 2026-05-19 PM62: bigger viewBox (700×380 vs 600×220), bigger
+           pins (32 radius vs 22), bigger Moses (8x area), curved
+           dashed route, region labels (EGYPT / DESERT / MIDIAN). -->
+      <svg class="world-map-svg" viewBox="0 0 700 380" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <!-- Region labels behind pins -->
+        <text x="100" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(140,40,20,0.65)" letter-spacing="3">EGYPT</text>
+        <text x="380" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(180,100,30,0.7)" letter-spacing="3">DESERT</text>
+        <text x="610" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(30,80,140,0.65)" letter-spacing="3">MIDIAN</text>
+        <!-- Dashed path Egypt → Desert → Midian (wider curve, thicker stroke) -->
+        <path d="M 140 240 Q 260 110, 380 240 Q 500 370, 610 200"
+              fill="none" stroke="#5a2d05" stroke-width="5"
+              stroke-dasharray="14 10" opacity="0.75" stroke-linecap="round"/>
         <!-- Palace pin (left, COMPLETED) -->
-        <g class="wm-pin wm-pin-done" transform="translate(80, 130)">
-          <circle r="22" fill="#3a8a5e" stroke="#1a4830" stroke-width="3"/>
-          <text x="0" y="6" text-anchor="middle" font-size="22" fill="#fff">✓</text>
-          <text x="0" y="-32" text-anchor="middle" font-size="13" fill="#3a1505" font-weight="700">Palace</text>
+        <g class="wm-pin wm-pin-done" transform="translate(140, 240)">
+          <circle r="36" fill="#3a8a5e" stroke="#1a4830" stroke-width="4"/>
+          <text x="0" y="10" text-anchor="middle" font-size="34" fill="#fff" font-weight="900">✓</text>
+          <text x="0" y="-50" text-anchor="middle" font-size="18" fill="#3a1505" font-weight="800">Palace</text>
         </g>
         <!-- Desert pin (middle, ACTIVE) -->
-        <g class="wm-pin wm-pin-active" transform="translate(300, 130)">
-          <circle r="24" fill="#e8a83a" stroke="#7a4509" stroke-width="3"/>
-          <text x="0" y="7" text-anchor="middle" font-size="22" fill="#3a1505">▸</text>
-          <text x="0" y="-34" text-anchor="middle" font-size="13" fill="#3a1505" font-weight="700">Desert</text>
+        <g class="wm-pin wm-pin-active" transform="translate(380, 240)">
+          <circle r="40" fill="#e8a83a" stroke="#7a4509" stroke-width="4"/>
+          <text x="0" y="13" text-anchor="middle" font-size="36" fill="#3a1505" font-weight="900">▸</text>
+          <text x="0" y="-54" text-anchor="middle" font-size="18" fill="#3a1505" font-weight="800">Desert</text>
         </g>
         <!-- Midian pin (right, LOCKED) -->
-        <g class="wm-pin wm-pin-lock" transform="translate(520, 110)">
-          <circle r="20" fill="#aaa" stroke="#666" stroke-width="3"/>
-          <text x="0" y="6" text-anchor="middle" font-size="16" fill="#fff">🔒</text>
-          <text x="0" y="-30" text-anchor="middle" font-size="13" fill="#3a1505" font-weight="700" opacity="0.6">Midian</text>
+        <g class="wm-pin wm-pin-lock" transform="translate(610, 200)">
+          <circle r="34" fill="#bbb" stroke="#555" stroke-width="4"/>
+          <text x="0" y="9" text-anchor="middle" font-size="28" fill="#fff">🔒</text>
+          <text x="0" y="-48" text-anchor="middle" font-size="18" fill="#3a1505" font-weight="800" opacity="0.65">Midian</text>
         </g>
-        <!-- Moses figurine — animated via JS to slide along the path -->
+        <!-- Moses figurine — bigger, with a soft amber glow underneath -->
         <g id="wmMoses" class="wm-moses">
-          <circle r="14" fill="#5a2510" stroke="#ffd976" stroke-width="2"/>
-          <text x="0" y="5" text-anchor="middle" font-size="16">🚶</text>
+          <circle class="wm-moses-glow" r="28" fill="rgba(255,217,118,0.6)"/>
+          <circle r="22" fill="#5a2510" stroke="#ffd976" stroke-width="3"/>
+          <text x="0" y="9" text-anchor="middle" font-size="28">🚶</text>
         </g>
       </svg>
     </div>
-    <div class="world-map-caption" id="worldMapCaption">Palace cleared. Heading into the desert…</div>
-    <button class="world-map-btn" id="worldMapContinueBtn" type="button">Continue to the Desert →</button>
+    <div class="world-map-caption" id="worldMapCaption">The desert calls. Press on, Moses.</div>
+    <button class="world-map-btn" id="worldMapContinueBtn" type="button">Begin the Desert →</button>
   </div>
 </div>
 
@@ -9977,31 +10028,43 @@ const CIN_PANELS = [
 // → run all night → city on horizon → foreigner among shepherds →
 // "keep going, Moses." Wired into the Win modal's "Next: The Desert"
 // button so it bridges the two scenes cleanly.
+// 2026-05-19 PM62 (Jane: "sections 4 and 5 from
+// NARRATION_SCRIPTS_AND_PROMPTS_bundle1 text and audio are not
+// wired"). Replaced the old hand-written text + missing audio with
+// the exact narration script from the canonical doc + the matching
+// trans-1to2-*.mp3 voice files. Also removed the chronologically-
+// wrong "well + shepherd girls" panel — that belongs in Scene 3,
+// not in the Scene-1→Scene-2 transition.
 const SECTION_4_PANELS = [
   {
-    text: "Moses slips through the palace gate. The night air is cool on his face. Behind him, torchlight flickers between the columns — but no one calls his name yet.",
-    cap:  "ACT IV - PANEL 1 - SLIP THROUGH THE GATE",
+    text: "Moses slipped through the palace gate. Behind him, torches flared and guards shouted his name.",
+    cap:  "",
     image: 'assets/images/trans-1to2-1-slip-through-gate.png',
+    audio: 'assets/audio/trans-1to2-1-slip-through-gate.mp3',
   },
   {
-    text: "He runs. All night, he runs. Sand under his sandals, stars over his head, his heart pounding the prayer his mother taught him as a baby.",
-    cap:  "ACT IV - PANEL 2 - RAN ALL NIGHT",
+    text: "He ran all night, past the pyramids, past the river, past everything he'd ever known.",
+    cap:  "",
     image: 'assets/images/trans-1to2-2-ran-all-night.png',
+    audio: 'assets/audio/trans-1to2-2-ran-all-night.mp3',
   },
   {
-    text: "Dawn rises. A faint city shape glints on the horizon — Midian. A land Moses has only heard about. A land far from Pharaoh.",
-    cap:  "ACT IV - PANEL 3 - CITY ON THE HORIZON",
+    text: "When morning came, the city was just a dot on the horizon. Ahead — only sand, sun, and silence.",
+    cap:  "",
     image: 'assets/images/trans-1to2-3-city-on-horizon.png',
+    audio: 'assets/audio/trans-1to2-3-city-on-horizon.mp3',
   },
   {
-    text: "He reaches a well. Shepherd girls are drawing water. He is a stranger — a foreigner — but his arms are strong, and his heart is kind. He helps them fill their jars.",
-    cap:  "ACT IV - PANEL 4 - A FOREIGNER AT THE WELL",
+    text: "“I’ve become a foreigner in a foreign land,” he whispered to himself. His voice cracked.",
+    cap:  "",
     image: 'assets/images/trans-1to2-4-foreigner.png',
+    audio: 'assets/audio/trans-1to2-4-foreigner.mp3',
   },
   {
-    text: "And so the prince of Egypt becomes a shepherd of Midian. The desert sun warms his face. God is not done with Moses yet. Keep going, friend — Scene 2 begins now.",
-    cap:  "ACT IV - PANEL 5 - KEEP GOING",
+    text: "But his feet kept walking east. Something inside him said: “Keep going. God is with you.”",
+    cap:  "",
     image: 'assets/images/trans-1to2-5-keep-going.png',
+    audio: 'assets/audio/trans-1to2-5-keep-going.mp3',
   },
 ];
 function openCinematic() {
@@ -10155,7 +10218,14 @@ function showCinPanel() {
     $('cinCaption').textContent = '';
     $('cinCaption').style.display = 'none';
     $('cinProgress').textContent = (game.cinStep+1) + ' of ' + CIN_PANELS.length;
-    $('cinNextBtn').textContent = (game.cinStep === CIN_PANELS.length-1) ? 'Begin Scene 1' : 'Next';
+    // 2026-05-19 PM62 (Jane: "the last panel shows link for 'Begin
+    // scene 1'. fix this"). The transition deck (SECTION_4_PANELS)
+    // is hijacked into the same cinematic shell via _cinDeckBackup,
+    // so the last-panel button text needs to switch: opening
+    // cinematic → "Begin Scene 1"; SECTION_4 transition → "Continue".
+    const _isTransition = !!window._cinDeckBackup;
+    const _lastLabel = _isTransition ? 'Continue →' : 'Begin Scene 1';
+    $('cinNextBtn').textContent = (game.cinStep === CIN_PANELS.length-1) ? _lastLabel : 'Next';
     // Per-panel narration kicks in as the new content fades in, so the
     // voice arrives the same beat the kid sees the new image.
     _playPanelNarration(p);
@@ -12354,7 +12424,13 @@ function interact(){
       if (remaining > 0) {
         // No toast — gate halo + Hint button handle this.
       } else if (!game.hasExitKey) {
-        toast('Collect the 3 torn scrolls to summon the Golden Key.');
+        // 2026-05-19 PM62 (Jane: "when i click on interact, it seems
+        // collect the 3 torn scrolls to collect the golden key.
+        // remove this as this is incorrect"). PM29 made the golden
+        // key a CONSTANT fixture at (22,19) — it no longer requires
+        // the GOD-scroll puzzle. The toast was leftover from the
+        // old mechanic. Point at the key location instead.
+        toast('🗝 The Golden Key is in the south corridor (col 22, row 19). Go grab it!');
       } else {
         toast('Run for the EXIT — you have the Golden Key!');
       }
@@ -16310,29 +16386,49 @@ function _showWorldMap(){
   const moses = document.getElementById('wmMoses');
   if (moses) moses.classList.remove('arrived');
   const caption = document.getElementById('worldMapCaption');
-  if (caption) caption.textContent = 'Palace cleared. Heading into the desert…';
+  // 2026-05-19 PM62 (Jane: "'arrived at the desert' wordings don't
+  // work for me"). Rewrote captions with more dramatic kid-friendly
+  // copy that matches the Moses-keeps-going beat.
+  if (caption) caption.textContent = 'Egypt is behind you, Moses.';
   overlay.classList.add('active');
+  // 2026-05-19 PM62 (Jane: "scene 1's cover audio starts playing after
+  // playing the track for the journey tracker"). Defensively stop
+  // every previously-playing music loop BEFORE we start the
+  // egyptianCover track. Without this, the cover-music or any leftover
+  // bgm continues underneath. Same teardown shape as _killAllGameMusic
+  // but inlined to avoid the post-cinematic restart it does for bgm.
+  try {
+    if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; }
+    if (audio.bgm) { audio.bgm.pause(); audio.bgm.currentTime = 0; }
+    if (audio.bgmThrone) { audio.bgmThrone.pause(); audio.bgmThrone.currentTime = 0; }
+    if (audio.bgmCorridor) { audio.bgmCorridor.pause(); audio.bgmCorridor.currentTime = 0; }
+    if (audio.bgmExit) { audio.bgmExit.pause(); audio.bgmExit.currentTime = 0; }
+    if (audio.bgmExitOut) { audio.bgmExitOut.pause(); audio.bgmExitOut.currentTime = 0; }
+    if (audio.alerted) { audio.alerted.pause(); audio.alerted.currentTime = 0; }
+    if (audio.narration) { audio.narration.pause(); audio.narration.currentTime = 0; }
+    if (audio.heartbeat) { audio.heartbeat.pause(); audio.heartbeat.currentTime = 0; }
+  } catch(e){}
   // Kick off the Moses-figurine travel animation. The CSS transition
-  // (transform 2.2 s cubic-bezier) does the visual; we just toggle the
+  // (transform 2.6 s cubic-bezier) does the visual; we just toggle the
   // .arrived class to set the destination transform.
   setTimeout(() => {
     if (moses) moses.classList.add('arrived');
-  }, 350);
+  }, 400);
   // Mid-animation, update the caption so the kid reads progress.
   setTimeout(() => {
-    if (caption) caption.textContent = 'Crossing the wilderness sand…';
-  }, 1400);
+    if (caption) caption.textContent = 'Sand under his sandals. Stars over his head.';
+  }, 1500);
   setTimeout(() => {
-    if (caption) caption.textContent = 'Arrived at the Desert. Ready to begin?';
-  }, 2600);
+    if (caption) caption.textContent = 'Keep going, Moses. God is with you.';
+  }, 3000);
   // 2026-05-19 PM61 (Jane: "egyptian cover music.mp3 can be used as
   // we transition between scenes"). Egyptian cover music flourish
-  // plays as the world-map opens, falling back to the cover music
-  // pad if the new file is missing.
+  // plays as the world-map opens. PM62: explicit teardown of every
+  // other audio loop above first so this track doesn't layer.
   try {
     if (audio.egyptianCover) {
       audio.egyptianCover.currentTime = 0;
-      audio.egyptianCover.volume = 0.55;
+      audio.egyptianCover.volume = 0.6;
       audio.egyptianCover.play().catch(()=>{});
     } else if (audio.coverMusic) {
       audio.coverMusic.currentTime = 0;
@@ -22201,7 +22297,29 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // Also wired: puzzleBg.mp3 (loops in modal), scene2NarrBg.mp3
     // (Scene 2 opening cinematic bed), egyptianCover.mp3 (world-map
     // transition flourish).
-    const SW_VERSION = 'bek-moses1-v33';
+    // 2026-05-19 PM62: bumped to v34 — Jane post-PM61 audit fixes:
+    // * SECTION_4_PANELS replaced with canonical narration script
+    //   text + audio paths from NARRATION_SCRIPTS_AND_PROMPTS_bundle1
+    //   (Section 4). Removed the chronologically-wrong "well +
+    //   shepherd girls" panel — that belongs to Scene 3.
+    // * Scene 2 CIN_PANELS rewritten to match Section 5 (was 4
+    //   off-script ACT II panels; now 3 beats of the canonical
+    //   scene-2-narration text + audio).
+    // * cinNextBtn label context-aware — opening = "Begin Scene 1",
+    //   SECTION_4 transition deck = "Continue →" (no more wrong
+    //   "Begin Scene 1" appearing on the transition last panel).
+    // * Count image landscape: 65vh → 78vh, max-width 80vw → 90vw +
+    //   min-width 60vw; challenge-modal max-height 96vh → 98vh.
+    // * "Collect 3 torn scrolls" Interact toast removed — golden key
+    //   is a constant fixture; toast now points at its location.
+    // * Journey tracker overhauled: SVG viewBox 600×220 → 700×380,
+    //   pins 22r → 36r, Moses 14r → 22r with a pulsing amber glow
+    //   underneath, region labels (EGYPT/DESERT/MIDIAN), painted-
+    //   map gradient bg (orange-red Egypt / golden desert / teal
+    //   Midian), compass-rose corner, dramatic kid-friendly copy.
+    // * World-map audio leak: tear down every other loop track
+    //   BEFORE egyptianCover plays so it doesn't layer.
+    const SW_VERSION = 'bek-moses1-v34';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
