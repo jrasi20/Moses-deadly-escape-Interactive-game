@@ -1214,6 +1214,25 @@
       left: max(4px, env(safe-area-inset-left));
     }
   }
+  /* 2026-05-18 PM48 (Jane: "on landscape, the lore tile is hidden by
+     the compass. so if you can move the location of lore tile it will
+     be great"). The compass is anchored top-left of the canvas, and
+     lore tiles are placed at fixed map coords — when the camera puts
+     a lore tile under the compass it's invisible. We can't move the
+     lore tile (its position is map-anchored), and we can't move the
+     compass (no free corner — MAP button takes top-right, controls
+     take bottom). Compromise: on landscape, shrink the compass and
+     drop its opacity to ~0.55 so any glyph/halo underneath shows
+     through. The NSEW letters stay legible. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .compass-box {
+      transform: scale(0.65);
+      transform-origin: top left;
+      opacity: 0.55;
+      top:  max(4px, env(safe-area-inset-top));
+      left: max(4px, env(safe-area-inset-left));
+    }
+  }
   .pulse-vignette {
     pointer-events:none;
     position:absolute; inset:0;
@@ -1329,8 +1348,16 @@
        so they stay inside the scrollable modal. */
     .ch-pict-img       { width:auto !important; max-width:88%; max-height:48vh !important; }
     .ch-count-scene-img{ width:auto !important; max-width:88%; max-height:46vh !important; }
-    .ch-slider-thumb   { max-width:none !important; max-height:30vh !important; }
-    .ch-slider-grid    { width:min(46vh,72vw) !important; height:min(46vh,72vw) !important; }
+    /* 2026-05-18 PM48 (Jane: "on landscape slider puzzle, both the
+       images are extremely small making it hard to see the image.
+       make the images larger"). Previous caps (thumb 30vh, grid
+       46vh) left the puzzle ~140px on a 400-tall screen — too small
+       to read the tiles. New caps push toward the viewport's wider
+       axis (vw) since landscape phones have height ≪ width. Thumb
+       goes to min(36vh, 28vw) and the grid claims min(60vh, 50vw)
+       — roughly 240-320px on common landscape phones. */
+    .ch-slider-thumb   { max-width:none !important; max-height:min(38vh, 30vw) !important; }
+    .ch-slider-grid    { width:min(60vh, 48vw) !important; height:min(60vh, 48vw) !important; }
     /* 2026-05-15 PM24 (Jane: "spot the difference on landscape has halos
        outside the image"). Root cause: container was `width: min(540px,
        92vw)` while the image scaled to a smaller HEIGHT-bounded size —
@@ -2375,6 +2402,27 @@
     30%  { opacity:1; transform: translate(var(--gx,0), var(--gy,0)) scale(1.1) rotate(120deg); }
     100% { opacity:0; transform: translate(calc(var(--gx,0) * 1.3), calc(var(--gy,0) * 1.3 + 20px)) scale(0.4) rotate(360deg); }
   }
+  /* 2026-05-18 PM48 (Jane: "the overhead 'reach the gate' green
+     message bar shown during camera pan is hiding the EXIT image and
+     the text EXIT"). The intro-pan banner is created in JS with inline
+     style `top: 14%; padding: 10px 22px; font-size: 18px` — on
+     landscape phones 14% from top + that height puts it right where
+     the EXIT sprite sits in the panned-to view. CSS overrides below
+     bump it to the very top (just under the HUD) and shrink padding
+     + font so the canvas content area remains visible. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    #_introPanLabel {
+      top: max(46px, env(safe-area-inset-top) + 46px) !important;
+      padding: 5px 14px !important;
+      font-size: 13px !important;
+      border-width: 2px !important;
+      max-width: 88vw !important;
+      line-height: 1.2 !important;
+    }
+    #_introPanLabel span {
+      font-size: 11px !important;
+    }
+  }
   /* ==== HIDDEN CROWN + MAP PEEK ==== */
   .crown-hint-toast {
     position:fixed; top:90px; left:50%; transform:translateX(-50%);
@@ -2425,6 +2473,32 @@
     width: auto; height: auto;
     object-fit: contain;
     aspect-ratio: 640 / 400;
+  }
+  /* 2026-05-18 PM48 (Jane: "on landscape, the map is very small. can
+     you make it larger?"). The base rules cap width at 720 px and
+     height at `96svh - 100px` — on landscape phones the canvas
+     squishes to ~210 px tall because of the height clamp + tap-hint
+     row + legend row eating space. Force the box wider (98vw cap),
+     keep the canvas aspect ratio, and stack the legend + hint as
+     a single tight row below so vertical real-estate is preserved
+     for the map itself. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .map-peek-box {
+      width: min(98svw, 960px) !important;
+      max-width: 98svw !important;
+      max-height: 96svh !important;
+      padding: 8px 10px !important;
+    }
+    .map-peek-box canvas {
+      max-height: calc(96svh - 64px) !important;
+    }
+    .map-peek-legend {
+      gap: 4px 8px !important;
+      margin: 4px 2px 0 !important;
+      font-size: 10px !important;
+    }
+    .map-peek-legend .lg { padding: 1px 5px !important; }
+    .map-peek-box p { font-size: 10.5px !important; margin: 4px 0 0 !important; }
   }
   .map-peek-box p { color:#ffd976; text-align:center; margin:6px 0 0; font-size:12px; }
   /* v3.x audit D1 (canonical §5): legend strip — small color swatches
@@ -7710,7 +7784,16 @@ const CHALLENGE_BANK = {
 const CHALLENGE_POSITIONS = [
   { tx: 5,  ty: 7  },   // west single-tile break (row 7)
   { tx: 17, ty: 7  },   // mid single-tile break (row 7)
-  { tx: 30, ty: 7  },   // east single-tile break (row 7) — was 29 (wall)
+  // 2026-05-18 PM48 (Jane: "the hard level is shown as 6 gates. this
+  // is wrong. hard level is 5 gates only correct? at least the HUD
+  // shows 5 for hard level"). Root cause: row 7 of MAP_STR is
+  // "1111101111111111101111111111101111111111" — the east wall-gap
+  // is at col 29, NOT col 30. The previous (30,7) coord landed on
+  // a WALL, so the position validator at line ~7937 silently
+  // filtered it out and only 5 of the 6 hardcoded positions were
+  // usable. On Hard (gateCount=6) the seeder capped at 5 → HUD
+  // showed 5/5 while the cover legend said 6. Reverted to 29.
+  { tx: 29, ty: 7  },   // east single-tile break (row 7) — PM48: col 29 is the actual wall gap (was wrongly 30)
   { tx: 12, ty: 12 },   // mid corridor west break (row 12)
   { tx: 24, ty: 12 },   // mid corridor east break (row 12)
   { tx: 4,  ty: 18 },   // final single-tile break before exit (row 18)
@@ -10749,7 +10832,31 @@ function showTipPopup(eventKey, opts){
   } catch(e){}
   if (opts.pointAtChariot) {
     // 2026-05-18 PM45: live-track the chariot's current tile every frame.
-    _tipPointAtTile(0, 0);  // initialise the rAF
+    // 2026-05-18 PM48 (Jane: "ON PORTRAIT, chariot tutorial hand icon
+    // is pointing at the map. this is incorrect"). Root cause: the
+    // initial seed was _tipPointAtTile(0, 0) — top-left tile, which
+    // on portrait is where the MAP button overlays the canvas. The
+    // rAF tracker then only updated the tile IF chariot.active was
+    // true; if the chariot object existed but wasn't yet flagged
+    // active (or was already past), the halo froze at (0,0).
+    // Fix: seed from chariot's CURRENT pixel coords if available, AND
+    // drop the .active gate in the tracker (line ~10806) so any
+    // valid chariot.px/py is used regardless of state. Fallback to
+    // the secret-door tile if no chariot object yet.
+    let seedTx = 0, seedTy = 0;
+    try {
+      if (typeof _pharaohHunt !== 'undefined' && _pharaohHunt) {
+        const c = _pharaohHunt.chariot;
+        if (c && typeof c.px === 'number' && typeof c.py === 'number') {
+          seedTx = Math.floor(c.px / TILE);
+          seedTy = Math.floor(c.py / TILE);
+        } else if (_pharaohHunt.doorIn) {
+          seedTx = _pharaohHunt.doorIn.tx;
+          seedTy = _pharaohHunt.doorIn.ty;
+        }
+      }
+    } catch(e){}
+    _tipPointAtTile(seedTx, seedTy);
     // Override the tile target each tick with the chariot's CURRENT
     // tile so the halo follows the moving chariot.
     if (typeof window._tipChariotTrack === 'undefined') window._tipChariotTrack = false;
@@ -10803,8 +10910,14 @@ function _tipPointAtTile(tx, ty){
     try {
       // 2026-05-18 PM45: chariot-tracking mode — refresh the target
       // tile from the chariot's live pixel position every frame.
+      // 2026-05-18 PM48: dropped the .active gate — if the chariot
+      // object has px/py, track it. Fixes the case where the popup
+      // spawned slightly before chariot.active flipped on, leaving
+      // the halo frozen at (0,0) / MAP button on portrait.
       if (window._tipChariotTrack && typeof _pharaohHunt !== 'undefined'
-          && _pharaohHunt && _pharaohHunt.chariot && _pharaohHunt.chariot.active) {
+          && _pharaohHunt && _pharaohHunt.chariot
+          && typeof _pharaohHunt.chariot.px === 'number'
+          && typeof _pharaohHunt.chariot.py === 'number') {
         const c = _pharaohHunt.chariot;
         _tipPointerTile.tx = Math.floor(c.px / TILE);
         _tipPointerTile.ty = Math.floor(c.py / TILE);
@@ -10903,10 +11016,21 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     const btn = document.getElementById('tipPopupBtn');
     if (btn) btn.addEventListener('click', () => { play('click'); _hideTipPopup(); });
+    // 2026-05-18 PM48 (Jane: "the tutorial modals are getting closed
+    // when i press arrow buttons on phone. it shouldn't go away until
+    // i click on got it"). Root cause: the overlay is position:fixed
+    // inset:0 with z-index:56, so it sits ON TOP of the controls bar.
+    // A kid tapping a dpad button actually taps the overlay (the
+    // button is behind it), the e.target === overlay branch fires,
+    // and the popup dismisses. Removed the click-outside-to-dismiss
+    // path entirely — kids MUST tap "Got it!". The Escape-key path
+    // (line ~8488 in the global modal-dismiss listener) is kept for
+    // desktop accessibility, but on touch devices that's a no-op.
     const overlay = document.getElementById('tipPopupOverlay');
     if (overlay) overlay.addEventListener('click', (e) => {
-      // Click outside the card also dismisses.
-      if (e.target === overlay) { play('click'); _hideTipPopup(); }
+      // Swallow taps on the dim backdrop so they don't fall through
+      // to anything underneath (canvas / dpad). Do NOT dismiss.
+      if (e.target === overlay) { e.preventDefault(); e.stopPropagation(); }
     });
     // Cover-page toggle: load saved state + persist on change.
     const toggle = document.getElementById('tutModeToggle');
@@ -11951,41 +12075,29 @@ function _drawLoreTileProximityHints(){
   for (const t of _LORE_TILES) {
     if (game.loreSeen[t.key]) continue;     // already revealed → no hint
     // 2026-05-16 PM30 (Jane: "lore tile needs to be bigger and glowing
-    // so kids can find it"). Removed the 3-tile proximity gate — lore
-    // tiles now glow + pulse on the canvas WHENEVER they're on screen,
-    // so kids spot them from across the room. Halo bumped 1.3 → 2.0
-    // tiles, base alpha bumped 0.55 → 0.85, plus a second outer ring
-    // that pulses opposite-phase for extra visual "look here". Glyph
-    // size doubled (16 → 28 px) and floats higher above the tile.
+    // so kids can find it"). 2026-05-18 PM48 (Jane: "i asked you to
+    // remove the halo from over the lore tile. since it is out of
+    // place"). Pulled the two radial-gradient halos (outer + inner) —
+    // they were bleeding 2 tiles wide and overlapping adjacent decor /
+    // the compass / nearby sprites, reading as a giant unrelated
+    // glow. Kept the floating scroll glyph above the tile + a thin
+    // gold ring on the tile itself so kids still know it's
+    // interactable, but the tile no longer broadcasts a 2-tile
+    // bright zone.
     const dx = t.tx * TILE - camera.px;
     const dy = t.ty * TILE - camera.py;
     if (dx < -TILE*2 || dx > CANVAS_W+TILE || dy < -TILE*2 || dy > CANVAS_H+TILE) continue;
     const _now = performance.now();
     const _pulse = 0.55 + 0.45 * Math.sin(_now / 320);
-    const _pulseOut = 0.55 + 0.45 * Math.sin(_now / 320 + Math.PI);
     ctx.save();
     const cx = dx + TILE/2;
     const cy = dy + TILE/2;
-    // Outer ring — bigger, fainter, opposite-phase
-    const outerR = TILE * 2.0;
-    const grdOut = ctx.createRadialGradient(cx, cy, 4, cx, cy, outerR);
-    grdOut.addColorStop(0,   'rgba(255, 240, 160, 0)');
-    grdOut.addColorStop(0.55,'rgba(255, 230, 140, ' + (0.30 * _pulseOut).toFixed(2) + ')');
-    grdOut.addColorStop(1,   'rgba(255, 180,  80, 0)');
-    ctx.fillStyle = grdOut;
-    ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, Math.PI*2); ctx.fill();
-    // Inner halo — tighter, brighter, in-phase
-    const innerR = TILE * 1.35;
-    const grdIn = ctx.createRadialGradient(cx, cy, 4, cx, cy, innerR);
-    grdIn.addColorStop(0,   'rgba(255, 245, 180, ' + (0.85 * _pulse).toFixed(2) + ')');
-    grdIn.addColorStop(0.55,'rgba(255, 220, 130, ' + (0.45 * _pulse).toFixed(2) + ')');
-    grdIn.addColorStop(1,   'rgba(255, 180,  80, 0)');
-    ctx.fillStyle = grdIn;
-    ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, Math.PI*2); ctx.fill();
-    // Sharp gold ring outline so the tile reads as "interactable".
-    ctx.strokeStyle = 'rgba(255, 217, 118, ' + (0.85 * _pulse).toFixed(2) + ')';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(cx, cy, TILE * 0.55, 0, Math.PI*2); ctx.stroke();
+    // PM48: halo removed. Keep only a thin gold ring outline on the
+    // tile so kids still see "this tile is interactable" without the
+    // overpowering glow.
+    ctx.strokeStyle = 'rgba(255, 217, 118, ' + (0.75 * _pulse).toFixed(2) + ')';
+    ctx.lineWidth = 2.0;
+    ctx.beginPath(); ctx.arc(cx, cy, TILE * 0.42, 0, Math.PI*2); ctx.stroke();
     // Big floating scroll glyph above the tile so the kid SEES "scroll
     // here". Clamped inside canvas like the PHARAOH'S WAY pill.
     // 2026-05-18 PM45 (Jane: "lore tile is moving as moses moves").
@@ -20961,7 +21073,16 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // no longer wraps to a new line, .cover-info-card padding override
     // for the bottom legend card's blank-band issue, treasure tutorial
     // skips banner-concealed bags (was pointing at "empty" tiles).
-    const SW_VERSION = 'bek-moses1-v19';
+    // 2026-05-18 PM48: bumped to v20 — tutorial modal no longer
+    // dismissed by background taps (arrow buttons were closing it),
+    // CHALLENGE_POSITIONS (30,7) → (29,7) so Hard finally seeds the
+    // full 6 gates, landscape slider puzzle + map peek enlarged,
+    // compass faded on landscape so lore tile is visible underneath,
+    // intro-pan banner repositioned + shrunk on landscape so it no
+    // longer covers EXIT, chariot tutorial halo seeds from live
+    // chariot position (was frozen at tile 0,0 / MAP button), lore
+    // tile halo gradients removed (kept glyph + thin ring only).
+    const SW_VERSION = 'bek-moses1-v20';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
