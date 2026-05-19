@@ -4996,6 +4996,10 @@
      `bgm-throne.mp3` track for thematic consistency with the in-game
      throne-zone music swap. -->
 <audio id="audCoverMusic" loop preload="auto" src="assets/audio/bgm-throne.mp3"></audio>
+<!-- 2026-05-19 PM61 (Jane: "egyptian cover music.mp3 can be used as we
+     transition between scenes"). Plays on the world-map screen
+     between Scene 1 win and Scene 2 entry. -->
+<audio id="audEgyptianCover" preload="auto" src="assets/audio/egyptian%20cover%20music.mp3"></audio>
 <!-- Wave 3a (2026-05-07): heartbeat ambient that fades in when ANY guard's
      cone reaches within 3 tiles of Moses, plus the per-zone music tracks
      (throne / corridor / exit). All loop, all preloaded. play()/pause()
@@ -5288,6 +5292,7 @@ const audio = {
   // _LOOP_TRACKS set because it's a COVER-only loop — it stops the moment
   // the kid taps Begin Adventure, before in-game bgm starts.
   coverMusic:       $('audCoverMusic'),
+  egyptianCover:    $('audEgyptianCover'),    // PM61: world-map transition
   exitShut:         $('audExitShut'),       // PM29: locked-exit cue
   powerSpell:       $('audPowerSpell'),     // PM34: power-up activation
   frozen:           $('audFrozen'),         // PM34: guard-freeze cue
@@ -16320,10 +16325,16 @@ function _showWorldMap(){
   setTimeout(() => {
     if (caption) caption.textContent = 'Arrived at the Desert. Ready to begin?';
   }, 2600);
-  // Soft cover-music bed under the map screen — same "we did it" pad
-  // as the win modal so the audio continuity holds across screens.
+  // 2026-05-19 PM61 (Jane: "egyptian cover music.mp3 can be used as
+  // we transition between scenes"). Egyptian cover music flourish
+  // plays as the world-map opens, falling back to the cover music
+  // pad if the new file is missing.
   try {
-    if (audio.coverMusic) {
+    if (audio.egyptianCover) {
+      audio.egyptianCover.currentTime = 0;
+      audio.egyptianCover.volume = 0.55;
+      audio.egyptianCover.play().catch(()=>{});
+    } else if (audio.coverMusic) {
       audio.coverMusic.currentTime = 0;
       audio.coverMusic.volume = 0.45;
       audio.coverMusic.play().catch(()=>{});
@@ -22173,7 +22184,24 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     //     save (more robust than Scene 1's position-match fallback)
     //   - gate._submitting paths — already reset in retry branches
     //   - MAP button width — already a pill since v3.21
-    const SW_VERSION = 'bek-moses1-v32';
+    // 2026-05-19 PM61: bumped to v33 — CARAVAN-MAP JIGSAW shipped for
+    // Scene 2 (Jane: "i like 2 ... caravan map jigsaw ... it should be
+    // exciting and catchy ... colorful crystals not parchment ...
+    // exit sprite is revealed and we do the camera pan to show exit
+    // way found"). Three colored crystal fragments scattered across
+    // Scene 2: amethyst (4,5), turquoise (20,14), emerald (36,18).
+    // Each gives +5 stars on pickup. When 3 fragments collected AND
+    // all 6 checkpoints solved, jigsaw modal auto-opens with 3 unique
+    // crystal shapes (rotatable on tap, draggable to slots, snap on
+    // correct piece+rotation, bounce on wrong). Solve fires
+    // puzzleComplete.mp3 → "Moses — keep going!" overlay with Hebrews
+    // 11:27 verse → mystical.mp3 → camera pan → exit sprite finally
+    // reveals. Exit tile step is GATED on both "all checkpoints
+    // solved" AND "jigsawSolved" — locked toast otherwise.
+    // Also wired: puzzleBg.mp3 (loops in modal), scene2NarrBg.mp3
+    // (Scene 2 opening cinematic bed), egyptianCover.mp3 (world-map
+    // transition flourish).
+    const SW_VERSION = 'bek-moses1-v33';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",

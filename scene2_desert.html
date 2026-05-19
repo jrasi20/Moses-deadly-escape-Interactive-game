@@ -378,6 +378,224 @@
     box-shadow: 0 3px 10px rgba(0,0,0,0.4);
   }
   .tip-popup-btn:active { transform: scale(0.96); }
+
+  /* ============================================================
+     PM61 — CARAVAN MAP JIGSAW (colorful crystal tiles, NOT parchment)
+     Yellow-desert palette contrast: deep purple / teal / emerald.
+     ============================================================ */
+  .jigsaw-modal {
+    display: none;
+    background: radial-gradient(ellipse at top, rgba(40,18,70,0.92) 0%, rgba(15,5,30,0.96) 70%, rgba(5,2,15,0.98) 100%);
+    z-index: 70;
+  }
+  .jigsaw-modal.active { display: flex !important; }
+  .jigsaw-content {
+    background: linear-gradient(155deg, #1a0c3a 0%, #2a1450 50%, #1a0c3a 100%) !important;
+    border: 3px solid #ffd976 !important;
+    border-radius: 18px !important;
+    width: min(560px, 96vw);
+    max-width: 96vw;
+    padding: 18px 18px 22px !important;
+    box-shadow: 0 14px 48px rgba(0,0,0,0.7), inset 0 0 32px rgba(120,80,200,0.25);
+    color: #fff5d8;
+    text-align: center;
+  }
+  .jigsaw-header { margin-bottom: 12px; }
+  .jigsaw-eyebrow {
+    color: #ffd976;
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .jigsaw-title {
+    color: #fff6cc !important;
+    font-family: Georgia, serif;
+    font-size: clamp(20px, 4.8vw, 26px);
+    margin: 2px 0 6px !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.55);
+  }
+  .jigsaw-sub {
+    color: #d9c8ff;
+    font-size: clamp(12px, 3vw, 14px);
+    font-style: italic;
+    margin: 0 0 8px;
+    line-height: 1.35;
+  }
+  .jigsaw-board {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 5 / 3;
+    margin: 8px auto 14px;
+    background:
+      radial-gradient(ellipse at 50% 50%, rgba(255,217,118,0.06) 0%, transparent 70%),
+      linear-gradient(180deg, rgba(60,40,90,0.4) 0%, rgba(30,15,50,0.5) 100%);
+    border: 2px dashed rgba(255,217,118,0.45);
+    border-radius: 12px;
+    overflow: visible;
+  }
+  .jigsaw-route {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .jigsaw-slot {
+    position: absolute;
+    width: 18%;
+    aspect-ratio: 1;
+    border: 2.5px dashed rgba(255,217,118,0.65);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+    z-index: 1;
+  }
+  .jigsaw-slot.filled {
+    border-style: solid;
+    border-color: rgba(255,217,118,0.85);
+    background: rgba(255,217,118,0.10);
+    box-shadow: 0 0 18px rgba(255,217,118,0.5);
+  }
+  .jigsaw-tray {
+    display: flex; flex-direction: row;
+    justify-content: space-around;
+    gap: 6px;
+    background: rgba(0,0,0,0.35);
+    border: 1.5px solid rgba(255,217,118,0.35);
+    border-radius: 12px;
+    padding: 12px 10px;
+    min-height: 88px;
+    margin-bottom: 10px;
+  }
+  .jigsaw-piece {
+    position: relative;
+    width: 64px; height: 64px;
+    cursor: grab;
+    touch-action: none;
+    transition: transform 0.2s cubic-bezier(.2,1.4,.4,1), box-shadow 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+    z-index: 5;
+  }
+  .jigsaw-piece.dragging {
+    cursor: grabbing;
+    z-index: 99;
+    transition: none;
+  }
+  .jigsaw-piece.locked {
+    cursor: default;
+    pointer-events: none;
+  }
+  /* Each piece's CSS-painted crystal shape via clip-path + gradient.
+     Triangle (piece 1), rounded square (piece 2), pentagon (piece 3) —
+     three visually distinct silhouettes so kids see at a glance
+     which slot each piece is for. */
+  .jigsaw-piece .crystal-face {
+    position: absolute; inset: 0;
+    border-radius: 10px;
+    box-shadow:
+      0 0 14px rgba(255,255,255,0.4),
+      inset 0 0 18px rgba(255,255,255,0.25),
+      inset 0 -8px 16px rgba(0,0,0,0.35);
+    transition: transform 0.25s cubic-bezier(.2,1.4,.4,1);
+  }
+  .jigsaw-piece[data-piece="1"] .crystal-face {
+    background: linear-gradient(135deg, #b54fff 0%, #6a1ec0 50%, #3a0a78 100%);
+    clip-path: polygon(50% 0%, 100% 60%, 75% 100%, 25% 100%, 0% 60%);
+  }
+  .jigsaw-piece[data-piece="2"] .crystal-face {
+    background: linear-gradient(135deg, #4fffd0 0%, #1ec0b0 50%, #0a6a78 100%);
+    clip-path: polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%);
+  }
+  .jigsaw-piece[data-piece="3"] .crystal-face {
+    background: linear-gradient(135deg, #b5ff4f 0%, #28b04a 50%, #0a6824 100%);
+    clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+  }
+  .jigsaw-piece .crystal-spark {
+    position: absolute;
+    inset: 18% 50% 50% 18%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.85), transparent);
+    border-radius: 60%;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+  .jigsaw-piece.snapped .crystal-face {
+    animation: jigsawSnapPop 0.45s cubic-bezier(.2,1.4,.4,1);
+    box-shadow:
+      0 0 28px rgba(255,217,118,0.85),
+      0 0 14px rgba(255,255,255,0.6),
+      inset 0 0 18px rgba(255,255,255,0.35);
+  }
+  @keyframes jigsawSnapPop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+  .jigsaw-piece.bounce {
+    animation: jigsawBounce 0.35s ease-out;
+  }
+  @keyframes jigsawBounce {
+    0%, 100% { transform: translate(0, 0); }
+    25%      { transform: translate(-6px, 4px); }
+    75%      { transform: translate(6px, 4px); }
+  }
+  .jigsaw-footer { margin-top: 4px; }
+  .jigsaw-status {
+    color: #ffe9b0;
+    font-size: 12px;
+    font-style: italic;
+    min-height: 18px;
+  }
+  /* Landscape: tighter — board shrinks, tray inline-wraps. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .jigsaw-content { padding: 10px 14px 14px !important; max-height: 96svh; }
+    .jigsaw-board { aspect-ratio: 5 / 2; margin: 4px auto 8px; }
+    .jigsaw-tray { min-height: 70px; padding: 8px; }
+    .jigsaw-piece { width: 52px; height: 52px; }
+    .jigsaw-title { font-size: 18px !important; margin-bottom: 2px !important; }
+    .jigsaw-sub { font-size: 12px; margin-bottom: 4px; }
+  }
+  /* PM61: solve-reveal "Moses keep going" overlay. Fires after the
+     jigsaw closes; fades over the canvas before camera pan. */
+  .moses-keep-going {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(255,217,118,0.32) 0%, rgba(0,0,0,0.55) 70%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 68;
+    pointer-events: none;
+    animation: mkgFade 0.5s ease-out;
+  }
+  .moses-keep-going.active { display: flex; }
+  @keyframes mkgFade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .moses-keep-going-text {
+    font-family: Georgia, serif;
+    color: #fff6cc;
+    font-size: clamp(28px, 7vw, 52px);
+    font-weight: 900;
+    text-align: center;
+    text-shadow: 0 4px 0 #5a1d06, 0 8px 28px rgba(255,200,80,0.7);
+    letter-spacing: 1.5px;
+    animation: mkgBounce 1.6s cubic-bezier(.2,1.4,.4,1);
+  }
+  .moses-keep-going-text small {
+    display: block;
+    font-size: 50%;
+    font-weight: 700;
+    color: #ffe8b8;
+    margin-top: 12px;
+    letter-spacing: 0.8px;
+  }
+  @keyframes mkgBounce {
+    0%   { transform: scale(0.5); opacity: 0; }
+    35%  { transform: scale(1.1); opacity: 1; }
+    55%  { transform: scale(1.0); }
+    100% { transform: scale(1.0); opacity: 1; }
+  }
+
   /* 2026-05-19 PM58: halo + hand-pointer for tutorial popups. Ported
      from Scene 1. JS positions both fixed-page-coord on every rAF
      frame against the current camera offset so they stay glued to
@@ -2638,6 +2856,9 @@
       <!-- v2.1 Scene 2: altitude chip (shown only on scene 2, updated by updateHudAltitude) -->
       <!-- 2026-05-19 PM54: chip denominator now updated by updateHudAltitude from the actual seeded count (was hardcoded /9). -->
       <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/<span id="hudAltitudeTotal">6</span></span>
+      <!-- 2026-05-19 PM61: caravan-map fragments HUD chip. Hidden
+           until the kid picks up the first fragment. -->
+      <span class="hud-chip" id="hudMapChip" style="display:none;background:linear-gradient(145deg,#4a3a7a,#7a5ab8);border-color:#ffd976;color:#fff5d8;" title="Caravan map fragments collected">&#128506; <span id="hudMapNum">0</span>/3</span>
       <span class="hud-chip" id="hudTimer">3:00</span>
     </div>
     <div class="hud-group">
@@ -2726,6 +2947,45 @@
     <div class="tip-popup-title" id="tipPopupTitle">Tip</div>
     <div class="tip-popup-body" id="tipPopupBody">…</div>
     <button class="tip-popup-btn" id="tipPopupBtn">Got it!</button>
+  </div>
+</div>
+
+<!-- ============ PM61: CARAVAN MAP JIGSAW MODAL ============
+     Opens when the kid has collected all 3 map fragments AND
+     cleared every checkpoint. The "Caravan Map" is a 3-piece kid
+     jigsaw — each piece is a unique color, fits ONE slot, and can
+     be rotated by tapping. Pieces start randomly rotated; kid taps
+     to rotate (90° steps) + drags to drop on a slot. Wrong piece
+     bounces back. All 3 placed correctly = jigsaw solved → camera
+     pan reveals the EXIT path to Midian. NOT a parchment look — the
+     pieces are colorful CRYSTALS to contrast with the yellow desert
+     palette per Jane's PM58 direction. -->
+<div class="modal-overlay jigsaw-modal" id="jigsawModal" style="display:none;">
+  <div class="modal-content jigsaw-content">
+    <div class="jigsaw-header">
+      <div class="jigsaw-eyebrow">A CARAVAN MAP</div>
+      <h2 class="jigsaw-title">Read the path to Midian</h2>
+      <p class="jigsaw-sub">Drag each crystal piece onto its slot. Tap a piece to rotate it. All three fit a path that leads east.</p>
+    </div>
+    <div class="jigsaw-board" id="jigsawBoard">
+      <!-- Three slot drop-zones — JS sets piece1/piece2/piece3 fits -->
+      <div class="jigsaw-slot" data-slot="1" style="left:8%;top:30%;"></div>
+      <div class="jigsaw-slot" data-slot="2" style="left:40%;top:55%;"></div>
+      <div class="jigsaw-slot" data-slot="3" style="left:72%;top:30%;"></div>
+      <!-- Decorative dashed route line drawn behind slots -->
+      <svg class="jigsaw-route" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M 40 100 Q 130 30, 200 140 Q 270 250, 350 100"
+              fill="none" stroke="rgba(255,240,180,0.35)" stroke-width="3" stroke-dasharray="6 8"/>
+      </svg>
+    </div>
+    <div class="jigsaw-tray" id="jigsawTray">
+      <!-- 3 piece divs — generated by _openJigsawModal so each game
+           gets fresh random rotation. Each tile is a CSS-painted
+           crystal (no PNG needed). -->
+    </div>
+    <div class="jigsaw-footer">
+      <div class="jigsaw-status" id="jigsawStatus">Place 3 pieces · Tap to rotate · Drag to slot</div>
+    </div>
   </div>
 </div>
 
@@ -2997,6 +3257,15 @@
 <!-- 2026-05-19 PM60: win-screen sparkle (Scene 1 has had this since
      PM14 — Scene 2 was missing it). Layered on win-modal reveal. -->
 <audio id="audConfetti"       preload="auto" src="assets/audio/win%20confetti%20sparkle.mp3"></audio>
+<!-- 2026-05-19 PM61 (Jane: "puzzle background.mp3 ... puzzle complete.mp3
+     ... mystical music.mp3 ... scene 2 narration background.mp3 ...
+     egyptian cover music.mp3"). New audio tracks wired for the
+     Caravan Map jigsaw mechanic + scene transitions. -->
+<audio id="audPuzzleBg"       loop preload="auto" src="assets/audio/puzzle%20background.mp3"></audio>
+<audio id="audPuzzleComplete" preload="auto" src="assets/audio/puzzle%20complete.mp3"></audio>
+<audio id="audMystical"       preload="auto" src="assets/audio/mystical%20music.mp3"></audio>
+<audio id="audScene2NarrBg"   loop preload="auto" src="assets/audio/scene%202%20narration%20background.mp3"></audio>
+<audio id="audEgyptianCover"  preload="auto" src="assets/audio/egyptian%20cover%20music.mp3"></audio>
 
 <script>
 /* ============================================================================
@@ -3215,6 +3484,12 @@ const audio = {
   powerSpell:    $('audPowerSpell'),      // power-up activation primary (PM60)
   frozen:        $('audFrozen'),          // Foe Freeze layer (PM60)
   confetti:      $('audConfetti'),        // win-screen sparkle (PM60)
+  // 2026-05-19 PM61: jigsaw mechanic + scene transition audio.
+  puzzleBg:        $('audPuzzleBg'),        // loops while jigsaw modal is open
+  puzzleComplete:  $('audPuzzleComplete'),  // jigsaw solved sting
+  mystical:        $('audMystical'),        // "Moses keep going" reveal moment
+  scene2NarrBg:    $('audScene2NarrBg'),    // bg loop under Scene 2 narration
+  egyptianCover:   $('audEgyptianCover'),   // scene-transition flourish
 };
 // volumes
 audio.bgm.volume = 0.28;
@@ -4116,6 +4391,29 @@ const interactables = [
     name:'A Mysterious Cedar Box',
     body:'Moses finds a small cedar box half-buried near a rock. Inside - a scroll wrapped in cloth with a truth to carry into Midian.',
     used:false, reward:'truthcard' },
+  // 2026-05-19 PM61 — CARAVAN MAP JIGSAW FRAGMENTS. Three colored
+  // crystal-tile pieces that a passing caravan dropped along the
+  // route. Each shows part of the path to Midian. When all 3 are
+  // collected AND every checkpoint is cleared, the jigsaw modal
+  // opens — kid drags + rotates the pieces to complete the route,
+  // and the EXIT path becomes visible. Spread across the three
+  // bands (wadi west, dunes-mid, mesa-east) so the kid covers the
+  // whole map.
+  { tx: 4,  ty: 5,  kind:'mapFragment', icon:'[M1]',
+    fragment: 1, color: 'amethyst',
+    name:'A Caravan Map Piece',
+    body:'A torn corner of a traveler’s map, set in deep purple crystal. Part of the path to Midian glows on its surface.',
+    used:false, reward:'mapFragment1' },
+  { tx: 20, ty: 14, kind:'mapFragment', icon:'[M2]',
+    fragment: 2, color: 'turquoise',
+    name:'A Caravan Map Piece',
+    body:'Another torn map fragment — turquoise stone, smooth as a river pebble. The carved path leads on.',
+    used:false, reward:'mapFragment2' },
+  { tx: 36, ty: 18, kind:'mapFragment', icon:'[M3]',
+    fragment: 3, color: 'emerald',
+    name:'A Caravan Map Piece',
+    body:'The last map fragment — emerald-green, glittering. With all three pieces, Moses can read the way through the wilderness.',
+    used:false, reward:'mapFragment3' },
 ];
 
 // ---- v3.4 PALACE HURDLES (replaced the outdoor rolling-boulder) ----
@@ -5768,14 +6066,22 @@ function attemptMove(dir) {
           ? challengeGates.length : 0;
         const solvedGates = (typeof challengeGates !== 'undefined' && challengeGates)
           ? challengeGates.filter(g => g && g.solved).length : 0;
-        if (totalGates > 0 && solvedGates >= totalGates) {
+        // 2026-05-19 PM61: gating on jigsaw solved IN ADDITION to all
+        // checkpoints. Both must be done before the kid can reach the
+        // exit. Otherwise: locked toast + bounce-back. The toast
+        // copy adapts to which condition is missing.
+        if (totalGates > 0 && solvedGates >= totalGates && game.jigsawSolved) {
           onReachExit();
         } else {
           // v3.19 Jane 2026-04-25: friendlier prompt + bounce Moses back
           // one tile so he doesn't get camped on the locked exit.
           const remaining = Math.max(0, totalGates - solvedGates);
           try {
-            toast('\u{1F512} Locked! Clear ' + remaining + ' more checkpoint' + (remaining===1?'':'s') + ' to unlock the path to Midian.');
+            if (remaining > 0) {
+              toast('\u{1F512} Locked! Clear ' + remaining + ' more checkpoint' + (remaining===1?'':'s') + ' to unlock the path to Midian.');
+            } else if (!game.jigsawSolved) {
+              toast('\u{1F5FA} Find all 3 caravan map pieces — they reveal the path to Midian!');
+            }
           } catch(e){}
           try { play('friendlyAlert') || play('uhoh'); } catch(e){}
           // bounce Moses back so he isn't standing ON the locked exit
@@ -6072,8 +6378,25 @@ function openCinematic() {
       audio.cinNarrate.play().catch(()=>{});
     }
   } catch(e){}
+  // 2026-05-19 PM61 (Jane: "i think narration is not wired before scene 2.
+  // i dropped scene 2 narration background.mp3 as bg music"). Layer the
+  // dedicated Scene 2 narration bg under the voice-over at low volume.
+  try {
+    if (audio.scene2NarrBg) {
+      audio.scene2NarrBg.currentTime = 0;
+      audio.scene2NarrBg.volume = 0.32;
+      audio.scene2NarrBg.play().catch(()=>{});
+    }
+  } catch(e){}
 }
 function _stopCinNarration(){
+  // 2026-05-19 PM61: kill the narration BG loop along with the voice.
+  try {
+    if (audio.scene2NarrBg) {
+      audio.scene2NarrBg.pause();
+      audio.scene2NarrBg.currentTime = 0;
+    }
+  } catch(e){}
   try {
     if (audio.cinNarrate) {
       audio.cinNarrate.pause();
@@ -6160,6 +6483,9 @@ function _saveCheckpoint(){
       // denominator too so HUD + win-modal stay consistent across
       // resume. Restore site updates `_applyCheckpointAfterSeed`.
       treasuresTotal: game.treasuresTotal || 0,
+      // 2026-05-19 PM61: caravan-map jigsaw state.
+      mapFragments: game.mapFragments || {},
+      jigsawSolved: !!game.jigsawSolved,
       altitudeCleared: game.altitudeCleared || 0,
       timeLeft: Math.max(0, Math.round(game.timeLeft || 0)),
       collectedTiles: collectedTiles,
@@ -6214,6 +6540,12 @@ function _applyCheckpointAfterSeed(){
       if (game.treasuresTotal > _reachable) game.treasuresTotal = _reachable;
     }
     if (typeof p.altitudeCleared === 'number') game.altitudeCleared = p.altitudeCleared;
+    // 2026-05-19 PM61: restore caravan-map jigsaw state.
+    if (p.mapFragments && typeof p.mapFragments === 'object') {
+      game.mapFragments = Object.assign({}, p.mapFragments);
+    }
+    game.jigsawSolved = !!p.jigsawSolved;
+    try { updateHudMapFragments(); } catch(e){}
     if (typeof p.timeLeft === 'number' && p.timeLeft > 0) game.timeLeft = p.timeLeft;
     if (Array.isArray(p.gates) && Array.isArray(challengeGates)) {
       // Overwrite gate positions + solved state from the save so the kid
@@ -6763,6 +7095,267 @@ function updateHudTreasure(){
   const tot = $('hudTreasureTotal');
   if (tot) tot.textContent = game.treasuresTotal || 0;
 }
+// 2026-05-19 PM61: caravan-map fragment counter in HUD. Chip hidden
+// until kid collects the first piece; updates each pickup.
+function updateHudMapFragments(){
+  const chip = document.getElementById('hudMapChip');
+  const num  = document.getElementById('hudMapNum');
+  if (!chip || !num) return;
+  const mf = game.mapFragments || {};
+  const have = (mf[1]?1:0) + (mf[2]?1:0) + (mf[3]?1:0);
+  num.textContent = have;
+  chip.style.display = have > 0 ? '' : 'none';
+  if (have === 3) chip.style.boxShadow = '0 0 14px rgba(255,217,118,0.9)';
+}
+
+/* ============================================================
+   PM61 — CARAVAN MAP JIGSAW MECHANIC
+   ============================================================
+   Triggered when all 3 fragments are collected AND every checkpoint
+   is solved. Auto-opens the jigsaw modal. Kid drags + rotates 3
+   crystal pieces to slots; correct piece+slot match locks the
+   piece. All 3 placed → exit path revealed.
+   Save state: game.mapFragments + game.jigsawSolved are persisted
+   via _saveCheckpoint (Scene 2 already saves arbitrary keys via
+   the payload). */
+function _maybeOpenJigsaw(){
+  if (game.jigsawSolved) return;
+  const mf = game.mapFragments || {};
+  const allFragments = mf[1] && mf[2] && mf[3];
+  if (!allFragments) return;
+  const allGates = Array.isArray(challengeGates)
+    && challengeGates.length > 0
+    && challengeGates.every(g => g.solved);
+  if (!allGates) return;
+  // Both conditions met — open the modal after a brief delay so any
+  // gate-clear celebration sfx finishes first.
+  setTimeout(() => { try { _openJigsawModal(); } catch(e){} }, 800);
+}
+let _jigsawAssignments = null;  // randomized {slot: piece} mapping per play
+function _openJigsawModal(){
+  const modal = document.getElementById('jigsawModal');
+  if (!modal || game.jigsawSolved) return;
+  if (modal.classList.contains('active')) return;
+  // Randomise slot → piece assignments so the puzzle isn't memorisable.
+  // Each game: one of the 6 permutations of (piece1, piece2, piece3)
+  // across (slot1, slot2, slot3).
+  const perms = [
+    [1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1],
+  ];
+  const pick = perms[Math.floor(Math.random() * perms.length)];
+  _jigsawAssignments = { 1: pick[0], 2: pick[1], 3: pick[2] };
+  // Each piece also gets a random initial rotation (0/90/180/270).
+  // Correct rotation is always 0 (so kid rotates until upright).
+  const tray = document.getElementById('jigsawTray');
+  if (!tray) return;
+  tray.innerHTML = '';
+  for (let p = 1; p <= 3; p++) {
+    const div = document.createElement('div');
+    div.className = 'jigsaw-piece';
+    div.dataset.piece = String(p);
+    const initRot = [90, 180, 270][Math.floor(Math.random() * 3)];
+    div.dataset.rotation = String(initRot);
+    div.innerHTML =
+      '<div class="crystal-face" style="transform: rotate(' + initRot + 'deg);">'
+        + '<div class="crystal-spark"></div>'
+      + '</div>';
+    _wireJigsawPiece(div);
+    tray.appendChild(div);
+  }
+  // Clear any previously-filled slot UI.
+  document.querySelectorAll('#jigsawBoard .jigsaw-slot').forEach(s => {
+    s.classList.remove('filled');
+  });
+  // Reset status text.
+  const status = document.getElementById('jigsawStatus');
+  if (status) status.textContent = 'Place 3 pieces · Tap to rotate · Drag to slot';
+  // Pause game state + start puzzle bg music.
+  if (game.state !== 'puzzle') {
+    window._jigsawPrevState = game.state;
+    game.state = 'puzzle';
+  }
+  modal.classList.add('active');
+  try {
+    if (audio.puzzleBg) {
+      audio.puzzleBg.currentTime = 0;
+      audio.puzzleBg.volume = 0.45;
+      audio.puzzleBg.play().catch(()=>{});
+    }
+  } catch(e){}
+  try {
+    if (audio.bgm) audio.bgm.pause();
+    if (audio.alerted) audio.alerted.pause();
+  } catch(e){}
+}
+function _wireJigsawPiece(pieceEl){
+  let startX = 0, startY = 0, downX = 0, downY = 0;
+  let dragging = false, moved = false;
+  let homeRect = null;
+  pieceEl.addEventListener('pointerdown', e => {
+    if (pieceEl.classList.contains('locked')) return;
+    e.preventDefault();
+    try { pieceEl.setPointerCapture(e.pointerId); } catch(_){}
+    homeRect = pieceEl.getBoundingClientRect();
+    downX = e.clientX; downY = e.clientY;
+    startX = pieceEl.offsetLeft;
+    startY = pieceEl.offsetTop;
+    dragging = true;
+    moved = false;
+    pieceEl.classList.add('dragging');
+    // Capture absolute position so the piece can move freely.
+    pieceEl.style.position = 'fixed';
+    pieceEl.style.left = homeRect.left + 'px';
+    pieceEl.style.top  = homeRect.top + 'px';
+    pieceEl.style.width = homeRect.width + 'px';
+    pieceEl.style.height = homeRect.height + 'px';
+  });
+  pieceEl.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - downX;
+    const dy = e.clientY - downY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+    pieceEl.style.left = (homeRect.left + dx) + 'px';
+    pieceEl.style.top  = (homeRect.top  + dy) + 'px';
+  });
+  const _release = e => {
+    if (!dragging) return;
+    dragging = false;
+    pieceEl.classList.remove('dragging');
+    try { pieceEl.releasePointerCapture(e.pointerId); } catch(_){}
+    if (!moved) {
+      // Tap (no drag) → rotate 90°.
+      const cur = parseInt(pieceEl.dataset.rotation, 10) || 0;
+      const next = (cur + 90) % 360;
+      pieceEl.dataset.rotation = String(next);
+      const face = pieceEl.querySelector('.crystal-face');
+      if (face) face.style.transform = 'rotate(' + next + 'deg)';
+      // Reset position back to tray.
+      pieceEl.style.position = '';
+      pieceEl.style.left = '';
+      pieceEl.style.top  = '';
+      pieceEl.style.width = '';
+      pieceEl.style.height = '';
+      return;
+    }
+    // Drag ended — check if dropped on a slot.
+    const px = e.clientX, py = e.clientY;
+    const slots = document.querySelectorAll('#jigsawBoard .jigsaw-slot');
+    let hit = null;
+    for (const s of slots) {
+      if (s.classList.contains('filled')) continue;
+      const r = s.getBoundingClientRect();
+      if (px >= r.left && px <= r.right && py >= r.top && py <= r.bottom) {
+        hit = s; break;
+      }
+    }
+    if (!hit) {
+      // Dropped off-board → bounce back to tray.
+      pieceEl.style.position = '';
+      pieceEl.style.left = '';
+      pieceEl.style.top  = '';
+      pieceEl.style.width = '';
+      pieceEl.style.height = '';
+      pieceEl.classList.add('bounce');
+      setTimeout(() => pieceEl.classList.remove('bounce'), 380);
+      return;
+    }
+    const slotIdx = parseInt(hit.dataset.slot, 10);
+    const wantPiece = _jigsawAssignments[slotIdx];
+    const havePiece = parseInt(pieceEl.dataset.piece, 10);
+    const rotation  = parseInt(pieceEl.dataset.rotation, 10) || 0;
+    const isCorrect = (havePiece === wantPiece) && (rotation === 0);
+    if (!isCorrect) {
+      // Wrong piece OR wrong rotation → bounce.
+      pieceEl.style.position = '';
+      pieceEl.style.left = '';
+      pieceEl.style.top  = '';
+      pieceEl.style.width = '';
+      pieceEl.style.height = '';
+      pieceEl.classList.add('bounce');
+      setTimeout(() => pieceEl.classList.remove('bounce'), 380);
+      try { play('pop') || play('error'); } catch(_){}
+      const status = document.getElementById('jigsawStatus');
+      if (status) status.textContent = (rotation === 0)
+        ? 'Hmm, that piece doesn\'t fit this slot. Try another.'
+        : 'Tap to rotate until the carving lines up.';
+      return;
+    }
+    // Correct! Snap into the slot.
+    const slotRect = hit.getBoundingClientRect();
+    pieceEl.style.left   = slotRect.left + 'px';
+    pieceEl.style.top    = slotRect.top  + 'px';
+    pieceEl.style.width  = slotRect.width + 'px';
+    pieceEl.style.height = slotRect.height + 'px';
+    pieceEl.classList.add('locked');
+    pieceEl.classList.add('snapped');
+    hit.classList.add('filled');
+    try { play('chimeChomp') || play('chime'); } catch(_){}
+    try { spawnGlitterBurstAtPlayer(14); } catch(_){}
+    const status = document.getElementById('jigsawStatus');
+    const filled = document.querySelectorAll('#jigsawBoard .jigsaw-slot.filled').length;
+    if (status) status.textContent = filled === 3
+      ? 'Path complete!'
+      : `${filled} of 3 placed — keep going.`;
+    if (filled === 3) {
+      setTimeout(() => { try { _onJigsawSolved(); } catch(_){} }, 700);
+    }
+  };
+  pieceEl.addEventListener('pointerup', _release);
+  pieceEl.addEventListener('pointercancel', _release);
+}
+function _onJigsawSolved(){
+  game.jigsawSolved = true;
+  try { _saveCheckpoint(); } catch(e){}
+  // Stop the puzzle bg music; play the solve sting.
+  try {
+    if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; }
+  } catch(e){}
+  try { play('puzzleComplete') || play('victoryChime') || play('success'); } catch(e){}
+  // Close the modal.
+  const modal = document.getElementById('jigsawModal');
+  if (modal) modal.classList.remove('active');
+  // Show the "Moses — keep going!" overlay, then camera pan to exit.
+  _showMosesKeepGoing();
+}
+function _showMosesKeepGoing(){
+  let overlay = document.getElementById('mosesKeepGoing');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'mosesKeepGoing';
+    overlay.className = 'moses-keep-going';
+    overlay.innerHTML =
+      '<div class="moses-keep-going-text">' +
+        'Moses — keep going!' +
+        '<small>"By faith he left Egypt, not fearing the king\'s anger." (Hebrews 11:27)</small>' +
+      '</div>';
+    document.body.appendChild(overlay);
+  }
+  overlay.classList.add('active');
+  // Mystical music for the reveal beat.
+  try {
+    if (audio.mystical) {
+      audio.mystical.currentTime = 0;
+      audio.mystical.volume = 0.6;
+      audio.mystical.play().catch(()=>{});
+    }
+  } catch(e){}
+  // Restore game state + fade overlay after the reveal pan.
+  setTimeout(() => {
+    try { overlay.classList.remove('active'); } catch(_){}
+    game.state = window._jigsawPrevState || 'playing';
+    window._jigsawPrevState = null;
+    try { if (audio.bgm) audio.bgm.play().catch(()=>{}); } catch(_){}
+    // PM61: trigger a camera pan to the exit (reuses Scene 2's existing
+    // intro-pan if its function is available). Wrapped in try so we
+    // don't crash on browsers where the pan helper might be missing.
+    try {
+      if (typeof playIntroPan === 'function') {
+        playIntroPan(() => {});
+      }
+    } catch(_){}
+  }, 4200);
+}
+
 // v2.2.6 Jane feedback: HUD now tracks ALL mandatory Desert Gates (not just
 // climbs) so kids see a single "Gates 3/9" progress indicator and know they
 // must solve EVERY gate to unlock the exit. Icon is a question mark ? to
@@ -6943,6 +7536,29 @@ function triggerInteractable(obj){
       spawnScorePopup(txt, wx, wy, color);
     } catch(e){}
   };
+  // 2026-05-19 PM61: caravan-map fragment pickup. Each fragment ticks
+  // the game.mapFragments counter. When 3/3 + all gates solved →
+  // jigsaw modal auto-opens (handled in _maybeOpenJigsaw, called on
+  // every gate-solve and fragment pickup).
+  if (obj.reward === 'mapFragment1' || obj.reward === 'mapFragment2' || obj.reward === 'mapFragment3') {
+    const n = Number(obj.reward.replace('mapFragment', '')) || 0;
+    game.mapFragments = game.mapFragments || {};
+    game.mapFragments[n] = true;
+    game.stars += 5; updateHudStars();
+    spawnGlitterBurstAtPlayer(20);
+    try { play('chimeChomp') || play('coin'); } catch(e){}
+    const have = (game.mapFragments[1]?1:0) + (game.mapFragments[2]?1:0) + (game.mapFragments[3]?1:0);
+    try { updateHudMapFragments(); } catch(e){}
+    try {
+      toast(have === 3
+        ? '🗺 All 3 caravan map pieces collected! Clear every checkpoint to read the path.'
+        : `🗺 Caravan map piece ${have}/3 collected! +5 stars`);
+    } catch(e){}
+    _popupAt('+5 ' + (obj.color === 'amethyst' ? '💜' : obj.color === 'turquoise' ? '💎' : '💚'), '#ffd976');
+    try { _saveCheckpoint(); } catch(e){}
+    try { _maybeOpenJigsaw(); } catch(e){}
+    return;
+  }
   if (obj.reward === 'heal') {
     // v3.3 LANE 3 (Jane 2026-04-23): heal pickups (waterskin) were the only
     // pickup kind with no particle burst. Adding parity so every pickup feels
@@ -8707,6 +9323,10 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         $('challengeModal').classList.remove('active');
         game.state = 'playing';
         currentGate = null;
+        // 2026-05-19 PM61: gate-solve may complete the "all checkpoints
+        // cleared" condition. Combined with 3 collected map fragments,
+        // this auto-fires the caravan jigsaw modal.
+        try { _maybeOpenJigsaw(); } catch(e){}
         // v2.2.6 Jane feedback: Scene 2 no longer auto-completes when all
         // gates are cleared. Moses must still walk INTO the exit tile. We
         // only toast that the path east is now open — actual scene-complete
@@ -13291,7 +13911,13 @@ function drawTile(t, dx, dy, tx, ty){
       // ALWAYS render the exit sprite for tile-7. The checkpoint tablet
       // (drawn after this in drawChallengeGate) sits on TOP of unsolved
       // gates; on solved gates the exit shows alone.
-      const _showExitArt = true;
+      // 2026-05-19 PM61 (Jane: "exit sprite is revealed and we do the
+      // camera pan to show exit way found ... only after this is done
+      // exit sprite is revealed"). Hide the EXIT sprite art until the
+      // caravan-map jigsaw is solved. The tile is still walkable; it
+      // just reads as sand + a faint halo so the kid knows SOMETHING
+      // is here without seeing the goal until they earn it.
+      const _showExitArt = !!game.jigsawSolved;
       const _allGatesSolved = (typeof challengeGates !== 'undefined')
         ? challengeGates.every(g => g.solved)
         : false;
