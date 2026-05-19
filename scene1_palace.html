@@ -2331,9 +2331,20 @@
   .ch-memory-card.matched .mem-face { background:#c8eebf; border-color:#2e5e2e; opacity:1; }
   .ch-memory-card.matched .mem-back { opacity:0; }
   /* -- SLIDER PUZZLE: 3x3 image swap (ported from scene2) -- */
+  /* 2026-05-19 PM55 (Jane: "on portrait, slider puzzle, the reference
+     image is small. make that larger. landscape looks good for slider").
+     Portrait baseline was max 120 × 120 px — too small to read the
+     target picture. Bumped to min(220px, 60vw, 30vh) so it sizes against
+     whichever viewport axis is the limiting one: on 400-wide portrait
+     phones it lands ~220px (capped); on shorter phones the 30vh cap
+     keeps it inside the scrollable modal. Landscape rule below
+     overrides this. */
   .ch-slider-thumb {
-    display:block; max-width:120px; max-height:120px; object-fit:contain;
-    margin:4px auto 6px; border:3px solid #ffd976; border-radius:10px;
+    display:block;
+    max-width: min(220px, 60vw);
+    max-height: min(220px, 30vh);
+    object-fit:contain;
+    margin:4px auto 8px; border:3px solid #ffd976; border-radius:10px;
     background:rgba(255,255,255,0.15);
   }
   .ch-slider-hint {
@@ -5026,6 +5037,14 @@
 <audio id="audCorrectAnswer"  preload="auto" src="assets/audio/correct.mp3"></audio>
 <audio id="audMagicSfx"       preload="auto" src="assets/audio/magic%20sfx.mp3"></audio>
 <audio id="audCollect"        preload="auto" src="assets/audio/collect.mp3"></audio>
+<!-- 2026-05-19 PM55 (Jane: "when you show 'God was with moses' as the
+     scene completes, play bgm-exit.mp3 as it leads to the purple
+     victory modal"). Separate from audBgmExit (zone-bgm) since this
+     is a one-shot transition pad, not a loop. -->
+<audio id="audBgmExitOut"     preload="auto" src="assets/audio/bgm-exit.mp3"></audio>
+<!-- 2026-05-19 PM55 (Jane: "you can use level up 2.mp3 also somewhere
+     may be when GOD is arranged"). -->
+<audio id="audLevelUp2"       preload="auto" src="assets/audio/level%20up%202.mp3"></audio>
 
 <script>
 /* ============================================================================
@@ -5283,6 +5302,9 @@ const audio = {
   correctAnswer:    $('audCorrectAnswer'),    // correct answer inside a Bible challenge
   magicSfx:         $('audMagicSfx'),         // power-up activation
   collect:          $('audCollect'),          // generic collect feedback (chest open, etc.)
+  // 2026-05-19 PM55: extra Scene-1-complete audio cues.
+  bgmExitOut:       $('audBgmExitOut'),       // ambient pad during the "God was with Moses" lesson modal
+  levelUp2:         $('audLevelUp2'),         // when GOD scrolls are arranged → golden key spawns
 };
 // volumes
 audio.bgm.volume = 0.28;
@@ -12649,8 +12671,19 @@ function _drawLoreTileProximityHints(){
     ctx.fillStyle = 'rgba(255, 245, 180, ' + (0.95 * _pulse).toFixed(2) + ')';
     ctx.shadowColor = 'rgba(255, 220, 120, 0.95)';
     ctx.shadowBlur = 14;
-    let glyphY = dy - 14;
-    glyphY = Math.max(16, Math.min(CANVAS_H - 16, glyphY));
+    // 2026-05-19 PM55 (Jane: "the lore tile still moves and halo is
+    // away from the lore tile"). PM45 dropped the bob, PM48 dropped
+    // the halo gradients — but the glyph still had a
+    // `Math.max(16, ...)` clamp that pinned it to the canvas top edge
+    // when the tile was near the top of the viewport. The ring stays
+    // on the tile (no clamp); the glyph drifts to the canvas top —
+    // hence "halo away from lore tile". Smarter placement: try ABOVE
+    // the tile, but if that lands above the canvas top edge, flip to
+    // BELOW the tile so the glyph stays adjacent to the ring instead
+    // of clamping to the canvas edge.
+    const _glyphAbove = dy - 14;
+    const _glyphBelow = dy + TILE + 14;
+    const glyphY = (_glyphAbove < 16) ? _glyphBelow : _glyphAbove;
     ctx.fillText('📜', cx, glyphY);
     ctx.restore();
   }
@@ -12773,7 +12806,11 @@ $('clueSubmitBtn') && $('clueSubmitBtn').addEventListener('click', () => {
   const guess = (game._clueAnswer || []).join('');
   if (guess === 'GOD') {
     game.cluePuzzleSolved = true;
-    try { play('success') || play('chime'); } catch(e){}
+    // 2026-05-19 PM55 (Jane: "you can use level up 2.mp3 also somewhere
+    // may be when GOD is arranged"). Layer the level-up-2 sample on
+    // top of the existing success/chime so the moment of spelling
+    // the Name of God has its own celebratory identity.
+    try { play('levelUp2') || play('success') || play('chime'); } catch(e){}
     try { spawnGlitterBurstAtPlayer(24); } catch(e){}
     // 2026-05-16 PM33 (Jane: "the hint should not say 'has appeared'.
     // mention that the golden key is in this location"). Reward toast
@@ -13013,26 +13050,24 @@ $('hintBtn').addEventListener('click', () => {
     // as to where the golden key is at"). All gates solved but no key
     // yet → tell the kid which clue scrolls are still missing OR where
     // the spawned Golden Key is.
-    const _scrollsLeft = (game.clueLetters || []).length;
-    const _haveKey     = !!game.hasExitKey;
-    if (!_haveKey && _scrollsLeft < 3) {
-      // Find the nearest unused clue scroll
-      const unusedScrolls = interactables.filter(o => o.kind === 'clueScroll' && !o.used);
-      let nearestScroll = null, nd = Infinity;
-      for (const s of unusedScrolls) {
-        const d = Math.abs(s.tx - player.tx) + Math.abs(s.ty - player.ty);
-        if (d < nd) { nd = d; nearestScroll = s; }
-      }
-      if (nearestScroll) {
-        const dir = _compass(nearestScroll.tx - player.tx, nearestScroll.ty - player.ty);
-        ctxHint = 'All checkpoints cleared! Find the 3 torn scrolls — the next one is '
-                + nd + ' tiles ' + dir + ' (col ' + nearestScroll.tx + ', row ' + nearestScroll.ty + ').';
-      }
-    } else if (!_haveKey) {
-      // All scrolls collected, puzzle not solved yet — point at puzzle.
-      ctxHint = 'All scrolls collected! Open the arrange-letters puzzle and spell GOD to summon the Golden Key.';
-    } else {
-      // Has key OR is en route to it — point at golden key if spawned, else exit.
+    const _haveKey = !!game.hasExitKey;
+    // 2026-05-19 PM55 (Jane: "after clearing all the gates on scene 1,
+    // when i click on hint, the overhead message says 'all the gates
+    // are cleared but arrange GOD from the scrolls to summon to God
+    // to give the golden key' but i already did that. this should be
+    // changed. key will be available at all times").
+    // The golden key has been a CONSTANT fixture at (22,19) since
+    // PM29 — kids no longer need to spell GOD to spawn it. So the
+    // intermediate branches ("collect 3 scrolls" / "arrange GOD")
+    // were obsolete and showed even when the kid HAD already
+    // arranged GOD or never needed to.
+    // New branching:
+    //   - key picked up   → point at EXIT
+    //   - key not yet picked up → point at the golden key tile itself
+    // (Clue scrolls / GOD puzzle are now bonus-only content for
+    // kids who want to find them, not gate-progression mechanics.)
+    if (!_haveKey) {
+      // Kid hasn't grabbed the key yet — point at the golden-key tile.
       const goldenKey = interactables.find(o => o.kind === 'goldenKey' && !o.used);
       if (goldenKey) {
         const dir = _compass(goldenKey.tx - player.tx, goldenKey.ty - player.ty);
@@ -13054,6 +13089,17 @@ $('hintBtn').addEventListener('click', () => {
           ctxHint = 'All ready! The EXIT is ' + dist + ' tiles ' + dir
                   + ' (col ' + exit.x + ', row ' + exit.y + '). Run!';
         }
+      }
+    } else {
+      // Key in hand — point straight at the EXIT.
+      const exit = findTileOfType(7);
+      if (exit) {
+        const dxT = exit.x - player.tx;
+        const dyT = exit.y - player.ty;
+        const dist = Math.abs(dxT) + Math.abs(dyT);
+        const dir = _compass(dxT, dyT);
+        ctxHint = 'You have the Golden Key! The EXIT is ' + dist + ' tiles ' + dir
+                + ' (col ' + exit.x + ', row ' + exit.y + '). Run for it!';
       }
     }
   }
@@ -13330,6 +13376,11 @@ function openChallenge(gate) {
     // 2026-05-19 PM51 (Jane: new sfx file drop). Gate-solved now layers
     // the victory-chime sample on top of (or in place of) the older
     // gong, so each gate clear feels like its own small win.
+    // 2026-05-19 PM55 (Jane: "when the gate opens after you use the
+    // power unlock, play chime and chomp.mp3"). Layer the chime+chomp
+    // sample over the victory chime so a POWER-UP-skipped gate has
+    // its own audible identity ("ahh — magic carried me past!").
+    try { play('chimeChomp'); } catch(e){}
     try { play('victoryChime') || play('gateClear') || play('success'); } catch(e){}
     // 2026-05-16 PM31 (Jane: "using scribe's wisdom to unlock gate
     // message is also appearing late"). Force-prepend so the bonus
@@ -15303,7 +15354,12 @@ function onReachExit(){
   // modal stinger over the lesson + win screens.
   try { _killAllGameMusic(); } catch(e){}
   // Dedicated palace-door creak (falls back to gate-unlock chime).
+  // 2026-05-19 PM55 (Jane: "on scene 1 completion, play a nice music
+  // like victory chime.mp3. also play door open.mp3 to show exit
+  // door opened"). Layer the victory chime + door-open creak on top
+  // of the existing successModal stinger so the moment is bigger.
   play('doorOpen');
+  try { play('victoryChime'); } catch(e){}
   play('gate');
   setTimeout(() => { try { play('successModal') || play('win'); } catch(e){} }, 600);
   showLessonThenWin();
@@ -15312,6 +15368,17 @@ function onReachExit(){
 /* ---------- LESSON THEN WIN ---------- */
 function showLessonThenWin(){
   $('lessonModal').classList.add('active');
+  // 2026-05-19 PM55 (Jane: "when you show 'God was with moses' as the
+  // scene completes, play bgm-exit.mp3 as it leads to the purple
+  // victory modal"). Start the exit-out pad as the lesson modal
+  // appears so the audio carries through the win-modal reveal.
+  try {
+    if (audio.bgmExitOut) {
+      audio.bgmExitOut.currentTime = 0;
+      audio.bgmExitOut.volume = 0.55;
+      audio.bgmExitOut.play().catch(()=>{});
+    }
+  } catch(e){}
 }
 $('lessonContinueBtn').addEventListener('click', () => {
   play('click');
@@ -15635,11 +15702,12 @@ function _activatePowerup(key){
   }
   // 2026-05-16 PM34 (Jane: "every time power unlock is used, play
   // power spell.mp3"). Magical-incantation SFX on every successful
-  // activation. Falls back to the previous chime/success chain if
-  // the file is missing.
-  // 2026-05-19 PM51: power-up activation now uses the new magic-sfx
-  // sample first; falls back to the older powerSpell if missing.
-  try { play('magicSfx') || play('powerSpell') || play('chime') || play('success'); } catch(e){}
+  // activation.
+  // 2026-05-19 PM51: switched to magicSfx as the primary.
+  // 2026-05-19 PM55 (Jane: "for power unlocks use power spell.mp3. i
+  // liked that better instead of magic sfx.mp3"). Reverted to
+  // powerSpell as primary; magicSfx kept as fallback.
+  try { play('powerSpell') || play('magicSfx') || play('chime') || play('success'); } catch(e){}
   try { spawnGlitterBurstAtPlayer(20); } catch(e){}
   _refreshUnlockButtons();
   // Refresh again when the active effect ends + when the cooldown ends so
@@ -16121,7 +16189,25 @@ $('winNextBtn').addEventListener('click', () => {
   // 5-panel transition from palace to desert) before sending the kid
   // to Scene 2. Reuses the same opening-cinematic UI shell —
   // CIN_PANELS gets swapped for SECTION_4_PANELS just for this play.
-  _playTransitionToScene2();
+  // 2026-05-19 PM55 (Jane: "from the win modal, i tried to click on
+  // play desert but its not wired"). Defensive measures so the
+  // transition can't get stuck on stale state:
+  //   * force _inPrelude = false so the capture-phase prelude listener
+  //     can't swallow the Next-button taps during SECTION_4 playback
+  //   * close every other modal that might overlay the cinematic
+  //   * if anything throws inside the transition fn, hard-jump to
+  //     Scene 2 as a last-resort fallback
+  try { window._inPrelude = false; if (typeof _inPrelude !== 'undefined') _inPrelude = false; } catch(e){}
+  try {
+    ['winModal','dangerModal','pauseModal','dialogModal','tutorialModal','sceneBanner','truthChestModal','mapPeekOverlay','tipPopupOverlay']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('active'); });
+  } catch(e){}
+  try {
+    _playTransitionToScene2();
+  } catch(err){
+    try { console.error('Transition to Scene 2 failed; redirecting directly.', err); } catch(e){}
+    try { location.href = 'scene2_desert.html?from=scene1'; } catch(e){}
+  }
 });
 // 2026-05-15 PM25 — section-4 transition player. Hijacks the cinematic
 // modal with the SECTION_4_PANELS deck. On finish, returns to the
@@ -19624,13 +19710,19 @@ function drawTile(t, dx, dy, tx, ty){
       const _eAr = (_exitSprite.naturalWidth || 1) / (_exitSprite.naturalHeight || 1);
       const _eH  = TILE * 1.9;
       const _eW  = _eH * _eAr;
-      let   _eOX = dx + (TILE - _eW) / 2;  // centered anchor
-      try {
-        _eOX = _clampSpriteX(_eOX, _eW);
-        // 4 px right-edge breathing room beyond canvas clamp
-        if (_eOX + _eW > CANVAS_W - 4) _eOX = CANVAS_W - 4 - _eW;
-        if (_eOX < 0) _eOX = 0;
-      } catch(e){}
+      // 2026-05-19 PM55 (Jane: "the exit sprite is moving as moses
+      // moves"). PM45 added _clampSpriteX so the wide exit sprite
+      // wouldn't bleed past the canvas right edge — but the clamp
+      // made the sprite STICK to the canvas right edge whenever the
+      // tile was off-screen-right, then SNAP back to the tile when
+      // Moses got close enough. That's the "moving as Moses moves"
+      // visual. Reverted to a pure tile-anchored position. The exit
+      // tile is at col 33 of a 40-col map with 5 floor tiles east of
+      // it (cols 34-38, see PM40 map edit), so the sprite at 1.9×
+      // TILE wide doesn't actually bleed past the canvas right edge
+      // when Moses is anywhere near the exit — the clamp was
+      // solving a problem that no longer exists.
+      const _eOX = dx + (TILE - _eW) / 2;
       const _eOY = dy + TILE - _eH + 2;
       ctx.save();
       ctx.imageSmoothingEnabled = true;
@@ -21934,7 +22026,24 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // freezes BOTH guards AND pursuit scouts (Jane: "scouts are
     // there in scene 2 in addition to the guards"); EXIT sprite
     // scale bumped 1.85 → 2.1 TILE with _clampSpriteX guard.
-    const SW_VERSION = 'bek-moses1-v26';
+    // 2026-05-19 PM55: bumped to v27 — large polish pass:
+    // * Win modal "Next: The Desert" button hardened with defensive
+    //   _inPrelude reset + modal cleanup + last-resort redirect
+    // * Power-up activation reverted from magicSfx → powerSpell
+    //   (Jane preferred power spell.mp3)
+    // * Scribe's Wisdom gate-clear layers chime+chomp on top
+    // * Hint logic stripped of obsolete "arrange GOD" branch — key
+    //   is constant, hint points kid at key tile or exit
+    // * Scene-complete: victoryChime + door open layered, bgmExitOut
+    //   pad plays through the "God was with Moses" lesson modal
+    // * GOD-arrangement plays levelUp2.mp3
+    // * Portrait slider thumb 120×120 → min(220px, 60vw, 30vh)
+    // * Lore-tile glyph clamp-bug fixed (was pinning to canvas top
+    //   edge near the top of the map; now flips above/below smartly)
+    // * Scene 2 EXIT sprite REVERTED PM54 bump+clamp (matched
+    //   HANDOFF_scene2_v3.28 Bug 35/46/48 — clamp causes "jumping"
+    //   during camera pan; 1.85× TILE is the known-good scale)
+    const SW_VERSION = 'bek-moses1-v27';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",

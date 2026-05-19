@@ -12633,22 +12633,27 @@ function drawTile(t, dx, dy, tx, ty){
         ctx.ellipse(dx+TILE/2, dy+TILE-2, TILE*0.62, 5.5, 0, 0, Math.PI*2);
         ctx.fill();
         ctx.restore();
-        // 2026-05-19 PM54: bumped EXIT scale 1.85→2.1 for richness (more
-        // prominent goal). Applied _clampSpriteX so the new height-bump
-        // can't bleed past the canvas edge on narrow viewports.
-        const esH = TILE * 2.1;
+        // 2026-05-19 PM55: REVERTED PM54 scale bump + clamp. Per the
+        // HANDOFF_scene2_v3.28 + CANONICAL docs, Bug 35/46 explicitly
+        // removed `_clampSpriteX` from EXIT and oasis because the
+        // clamp made the sprite STICK to the canvas right edge during
+        // camera pan (then snap back to its tile). Bug 48 fixed the
+        // working scale at ~1.85× TILE. PM54 reintroduced both
+        // regressions for "richness"; this restores the known-good
+        // pre-PM54 values.
+        const esH = TILE * 1.85;
         const esAR = (exitPNG.naturalWidth || 1) / (exitPNG.naturalHeight || 1);
         let esW = Math.round(esH * esAR);
-        const esWMax = Math.round(TILE * 2.0);
+        const esWMax = Math.round(TILE * 1.8);
         let esHInt = Math.round(esH);
         if (esW > esWMax) {
           esHInt = Math.round(esWMax / esAR);
           esW = esWMax;
         }
-        // RIGHT-ANCHOR + canvas-clamp: sprite right edge = tile right edge.
-        // Clamp prevents bleed at canvas right border (PM54 — was missing).
-        let esOX = Math.round(dx + TILE - esW);
-        try { esOX = _clampSpriteX(esOX, esW); } catch(e){}
+        // RIGHT-ANCHOR (no clamp): sprite right edge = tile right edge.
+        // Stays glued to its tile during pan; map design (PM40)
+        // already ensures the sprite never bleeds past canvas right.
+        const esOX = Math.round(dx + TILE - esW);
         const esOY = Math.round(dy + TILE - esHInt + TILE*0.14);
         ctx.save();
         const coronaRaw = TILE * (2.0 + 0.4 * Math.sin(now/300));
