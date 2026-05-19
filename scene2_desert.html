@@ -5538,51 +5538,59 @@ function unlockGame() {
 try {
   if (localStorage.getItem('bek.moses2.unlocked') === '1') unlockGame();
 } catch(e){}
-// 2026-05-19 PM50 (Jane: "combination of 1 and 3. we need the
-// transition narration panel and then take us right into scene 2.
-// world map screen to give the feel of palace is over. now desert
-// ambience"). When the kid arrives here from Scene 1's win → transition
-// cinematic → world-map → Continue path, the URL has `?from=scene1`.
-// In that case, skip Scene 2's cover entirely and launch the opening
-// cinematic immediately so the journey feels continuous (Mario-style,
-// no second cover page between worlds).
-// Also auto-unlock the access gate — kids who bought the bundle and
-// played through Scene 1 already proved they own it; making them retype
-// the code between scenes would be hostile.
+// 2026-05-19 PM51 (Jane: "true there shouldn't be cover page for scene 2.
+// i will let you make it into how a top notch epic game should look
+// like"). PM50 only skipped the cover when arriving via ?from=scene1.
+// Now: skip it ALWAYS once the kid has unlocked the bundle (proved on
+// Scene 1 or by code). Cover page is fully gone from the Scene 2 flow.
+// The opening cinematic + gameplay become the entire experience.
+//
+// Difficulty: inherited from localStorage (last-used across scenes),
+// defaulting to medium. Kids who want a different difficulty change
+// it via the pause menu mid-scene (we'll surface a difficulty switch
+// there in a follow-up PM).
 try {
   const _urlFrom = new URLSearchParams(window.location.search).get('from');
-  if (_urlFrom === 'scene1') {
-    // Treat as unlocked.
+  const _fromScene1 = (_urlFrom === 'scene1');
+  // If the kid arrived from Scene 1, mark the bundle as unlocked even
+  // if they never typed a code — they obviously own it.
+  if (_fromScene1) {
     try { localStorage.setItem('bek.moses2.unlocked', '1'); } catch(e){}
     unlockGame();
-    // Default-difficulty pick (medium) since the kid didn't tap a
-    // difficulty pill on a cover they never saw. Independent per-scene
-    // score per Jane's PM50 design call (no carry-over from Scene 1).
-    // Run after the rest of the module parses so applyDifficultyConfig
-    // and openCinematic are defined.
+  }
+  // Auto-launch path: every boot, if the bundle is unlocked, skip the
+  // cover and go straight into the opening cinematic. The 80 ms
+  // setTimeout lets the rest of the module parse first (so
+  // applyDifficultyConfig + openCinematic exist).
+  const _isUnlocked = (() => {
+    try { return localStorage.getItem('bek.moses2.unlocked') === '1'; }
+    catch(e){ return false; }
+  })();
+  if (_isUnlocked || _fromScene1) {
     setTimeout(() => {
       try {
-        // Hide cover + any open access-gate that might still be visible.
+        // Hide cover + access gate.
         const cov = document.getElementById('coverPage');
         if (cov) cov.style.display = 'none';
         const gate = document.getElementById('accessGate');
         if (gate) gate.classList.add('hidden');
-        // Set difficulty + start. If a Scene 2 checkpoint exists from
-        // a previous play, resume it — kid was probably mid-scene
-        // before they triggered the transition somehow.
+        // Difficulty: take last-used from localStorage (cross-scene
+        // setting key 'bek.lastDifficulty'); fallback to medium.
+        let _diff = 'medium';
+        try {
+          const stored = localStorage.getItem('bek.lastDifficulty');
+          if (stored === 'easy' || stored === 'medium' || stored === 'hard') _diff = stored;
+        } catch(e){}
         try {
           if (typeof game !== 'undefined' && typeof applyDifficultyConfig === 'function') {
-            game.difficulty = 'medium';
-            applyDifficultyConfig('medium');
+            game.difficulty = _diff;
+            applyDifficultyConfig(_diff);
           }
         } catch(e){}
+        try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}
         try {
-          // Unlock audio so the cinematic narration + bgm aren't blocked
-          // by browser autoplay rules (the kid HAS interacted on the
-          // Scene 1 page, but Scene 2 is a fresh document load).
-          if (typeof unlockAudio === 'function') unlockAudio();
-        } catch(e){}
-        try {
+          // Resume mid-scene if a checkpoint exists; else play the
+          // opening cinematic and start fresh.
           const _savedGame = (typeof _loadCheckpoint === 'function') ? _loadCheckpoint() : null;
           if (_savedGame && typeof showResumePrompt === 'function') {
             showResumePrompt(_savedGame);
@@ -11553,11 +11561,27 @@ function drawAmbient(){
 // "EXIT in red is being cut", "START image cut", "oasis image cut on the
 // right side". These helpers shift the sprite inward at edges while
 // preserving its size.
+// 2026-05-19 PM51 (Jane: "in scene 2 ... some sprites are cut in the right
+// side similar to what was happening with exit image in scene 1"). Added
+// the 4-px right-edge breathing room from Scene 1's PM45 exit-clamp fix.
+// Any oversize sprite within 4 px of the canvas right edge shifts inward
+// so the wall decoration column never butts flush against the sprite.
+// This is a defense-in-depth — many wide-sprite paths in Scene 2 don't
+// currently call _clampSpriteX at all (TODO: audit drawCheckpointTablet,
+// drawOasis, drawCave, drawMirage). For now, anywhere the clamp IS
+// applied gets the bonus margin automatically.
 function _clampSpriteX(rawX, spriteW){
-  return Math.max(0, Math.min(CANVAS_W - spriteW, rawX));
+  let x = Math.max(0, Math.min(CANVAS_W - spriteW, rawX));
+  // 4-px right-edge guard
+  if (x + spriteW > CANVAS_W - 4) x = CANVAS_W - 4 - spriteW;
+  if (x < 0) x = 0;
+  return x;
 }
 function _clampSpriteY(rawY, spriteH){
-  return Math.max(0, Math.min(CANVAS_H - spriteH, rawY));
+  let y = Math.max(0, Math.min(CANVAS_H - spriteH, rawY));
+  if (y + spriteH > CANVAS_H - 4) y = CANVAS_H - 4 - spriteH;
+  if (y < 0) y = 0;
+  return y;
 }
 function drawTile(t, dx, dy, tx, ty){
   // --- FLOOR LAYER ---

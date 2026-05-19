@@ -1677,6 +1677,126 @@
     0%,100% { transform:scale(1); text-shadow:0 0 20px rgba(255,215,0,0.6); }
     50% { transform:scale(1.08); text-shadow:0 0 60px rgba(255,215,0,1); }
   }
+  /* 2026-05-19 PM51: personalized "proud of you" celebration block in
+     the win modal — kid's first name in big letters + a hero tag +
+     a verse spoken OVER them. Kicks in only after the kid types a
+     name on first win (kidNameModal). */
+  .win-hero-shoutout {
+    margin: 10px auto 8px;
+    padding: 14px 18px;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255,215,118,0.22), transparent 70%),
+      linear-gradient(180deg, rgba(255,247,210,0.16) 0%, rgba(255,200,80,0.10) 100%);
+    border: 2px solid rgba(255,215,118,0.55);
+    border-radius: 14px;
+    max-width: 92%;
+    box-shadow: 0 0 18px rgba(255,200,80,0.30), inset 0 0 14px rgba(255,247,210,0.18);
+    text-align: center;
+  }
+  .win-hero-name {
+    font-family: Georgia, serif;
+    font-size: clamp(22px, 5.8vw, 32px);
+    color: #fff6cc;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 0 #5a1d06, 0 4px 18px rgba(255,200,80,0.6);
+    margin-bottom: 4px;
+  }
+  .win-hero-tag {
+    font-size: clamp(14px, 3.6vw, 17px);
+    color: #ffe8b8;
+    font-style: italic;
+    margin-bottom: 10px;
+  }
+  .win-hero-verse {
+    font-size: clamp(13px, 3.2vw, 15px);
+    color: #ffeecf;
+    line-height: 1.5;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.22);
+    border-left: 3px solid #ffd976;
+    border-radius: 6px;
+    font-style: italic;
+  }
+  .win-hero-verse-ref {
+    display: block;
+    text-align: right;
+    margin-top: 4px;
+    color: #ffb86a;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 700;
+  }
+  /* Kid-name prompt — fired once on first win, replaces the generic
+     "Moses reached safety" headline with the kid's actual name. */
+  #kidNameScrim {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.78);
+    z-index: 99999;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 14px;
+    animation: wm-fade 0.4s ease-out;
+  }
+  #kidNameScrim.active { display: flex; }
+  #kidNameScrim .kn-card {
+    background: linear-gradient(180deg, #fff3c8 0%, #e9cf8a 60%, #d6b369 100%);
+    border: 3px solid #8a5a22;
+    border-radius: 16px;
+    padding: 22px 20px;
+    width: min(360px, 96%);
+    color: #3a1a00;
+    text-align: center;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.7), inset 0 0 0 2px #c59754;
+  }
+  #kidNameScrim h3 {
+    font-family: Georgia, serif;
+    color: #5a2a05;
+    font-size: 22px;
+    margin-bottom: 6px;
+  }
+  #kidNameScrim .kn-sub {
+    font-size: 14px;
+    color: #6a3a18;
+    margin-bottom: 14px;
+    font-style: italic;
+  }
+  #kidNameScrim input {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 18px;
+    border: 2px solid #8a5a22;
+    border-radius: 10px;
+    background: #fff8e7;
+    color: #3a1a00;
+    font-family: Georgia, serif;
+    text-align: center;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+  }
+  #kidNameScrim input:focus { outline: 3px solid #ffd976; outline-offset: 1px; }
+  #kidNameScrim .kn-btn {
+    background: linear-gradient(180deg, #ffd976 0%, #e0a544 100%);
+    color: #3a1505;
+    border: 2px solid #8a5a22;
+    border-radius: 24px;
+    padding: 10px 22px;
+    font-family: Georgia, serif;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(80,40,10,0.4), inset 0 -2px 0 rgba(0,0,0,0.18);
+  }
+  #kidNameScrim .kn-skip {
+    display: block;
+    margin: 10px auto 0;
+    background: transparent;
+    border: none;
+    color: #6a3a18;
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
   /* v3.x audit (Bug 125 — port from Scene 2 v3.20): pulsing Moses hero
      graphic above the win title. Sits in front of an animated radial-ray
      burst so the modal reads as a true celebration, not a wall of text. */
@@ -4586,6 +4706,21 @@
      competing for attention. Now: pulsing Moses hero graphic at top, then
      ONE celebration title, stars BEFORE tier (more cinematic), score row,
      truth card, badges, motivate, and three buttons. -->
+<!-- 2026-05-19 PM51 (Jane: "kids respond to a hero shot + custom kid name +
+     a verse said over them"). One-time first-win kid-name prompt. The
+     name persists in localStorage so subsequent wins/scenes show the
+     same name without re-asking. Skippable so anti-name kids aren't
+     forced. -->
+<div id="kidNameScrim" role="dialog" aria-modal="true" aria-labelledby="kidNameTitle">
+  <div class="kn-card">
+    <h3 id="kidNameTitle">You did it!</h3>
+    <p class="kn-sub">What's your name, brave explorer?</p>
+    <input id="kidNameInput" type="text" maxlength="18" placeholder="Your first name" autocomplete="off" inputmode="text">
+    <button class="kn-btn" id="kidNameSaveBtn" type="button">That's me!</button>
+    <button class="kn-skip" id="kidNameSkipBtn" type="button">Not now</button>
+  </div>
+</div>
+
 <div class="modal-overlay win-modal" id="winModal" role="dialog" aria-modal="true" aria-labelledby="winTitle">
   <div class="modal-content win-content-v2">
     <div class="win-hero">
@@ -4596,6 +4731,21 @@
            onerror="this.style.display='none'">
     </div>
     <h2 class="win-title" id="winTitle">Moses reached safety!</h2>
+    <!-- 2026-05-19 PM51 (Jane: "no 'I'm proud of you' moment. Win modal is
+         a stats summary. Kids respond to a hero shot + custom kid name +
+         a verse said over them"). Three-line celebration block: kid's
+         first name (collected via the one-time prompt at first win),
+         a hero line, and a short verse spoken OVER the kid. Falls
+         back gracefully when no name is stored. -->
+    <div class="win-hero-shoutout" id="winHeroShoutout" style="display:none;">
+      <div class="win-hero-name" id="winHeroName">Well done!</div>
+      <div class="win-hero-tag"  id="winHeroTag">You are brave just like Moses.</div>
+      <div class="win-hero-verse" id="winHeroVerse">
+        "Be strong and courageous. Do not be afraid; do not be discouraged,<br>
+        for the Lord your God will be with you wherever you go."
+        <span class="win-hero-verse-ref">— Joshua 1:9</span>
+      </div>
+    </div>
     <div class="win-stars" id="winStars">
       <span>&#9733;</span><span>&#9733;</span><span>&#9733;</span>
     </div>
@@ -4827,6 +4977,15 @@
 <audio id="audWaterSkin"      preload="auto" src="assets/audio/water%20skin.mp3"></audio>
 <audio id="audTimpaniRoll"    preload="auto" src="assets/audio/timpani%20roll.mp3"></audio>
 <audio id="audEat"            preload="auto" src="assets/audio/eat.mp3"></audio>
+<!-- 2026-05-19 PM51 (Jane: "you can use treasure chime.mp3, rank reveal.mp3 ... victory chime.mp3, wind chimes.mp3, chime and chomp.mp3, door open.mp3, magic sfx.mp3, collect.mp3"). New distinct sfx so the same generic chime stops firing for every event. Each maps to a single specific moment (see sound-design wiring lower in the script). -->
+<audio id="audTreasureChime"  preload="auto" src="assets/audio/treasure%20chime.mp3"></audio>
+<audio id="audVictoryChime"   preload="auto" src="assets/audio/victory%20chime.mp3"></audio>
+<audio id="audWindChimes"     preload="auto" src="assets/audio/wind%20chimes.mp3"></audio>
+<audio id="audChimeChomp"     preload="auto" src="assets/audio/chime%20and%20chomp.mp3"></audio>
+<audio id="audClearCombo"     preload="auto" src="assets/audio/clear%20combo.mp3"></audio>
+<audio id="audCorrectAnswer"  preload="auto" src="assets/audio/correct.mp3"></audio>
+<audio id="audMagicSfx"       preload="auto" src="assets/audio/magic%20sfx.mp3"></audio>
+<audio id="audCollect"        preload="auto" src="assets/audio/collect.mp3"></audio>
 
 <script>
 /* ============================================================================
@@ -5073,6 +5232,17 @@ const audio = {
   waterSkin:        $('audWaterSkin'),        // waterskin / jug pickup
   timpaniRoll:      $('audTimpaniRoll'),      // drum roll on chariot appearance
   eat:              $('audEat'),              // bread / figs pickup
+  // 2026-05-19 PM51 (Jane's new sfx file drop). Each gets a distinct
+  // event so kids hear different sounds for different moments
+  // (the old "everything plays chime" was muddy).
+  treasureChime:    $('audTreasureChime'),    // treasure bag pickup
+  victoryChime:     $('audVictoryChime'),     // gate cleared (mini-victory, NOT the full win)
+  windChimes:       $('audWindChimes'),       // palace torches start to dim
+  chimeChomp:       $('audChimeChomp'),       // scroll / clue-letter pickup
+  clearCombo:       $('audClearCombo'),       // collect every bag of one color → +1 heart bonus
+  correctAnswer:    $('audCorrectAnswer'),    // correct answer inside a Bible challenge
+  magicSfx:         $('audMagicSfx'),         // power-up activation
+  collect:          $('audCollect'),          // generic collect feedback (chest open, etc.)
 };
 // volumes
 audio.bgm.volume = 0.28;
@@ -10367,6 +10537,24 @@ function startScene1() {
           game.treasureCount = (game.treasureCount || 0) + 1;
         }
       }
+      // 2026-05-19 PM51: restore the saved DENOMINATOR so the HUD chip
+      // and win modal both read the same total the kid saw before they
+      // closed the game. Cap at max(savedTotal, seededTotal +
+      // collected) so the target is always reachable — if a shuffle
+      // produced fewer banners than the save expected, take the fresh
+      // count + already-collected as the working total so the kid can
+      // still hit 100% by collecting every remaining bag on the new
+      // map. Lock the value so subsequent re-seeds can't drift.
+      if (typeof _resume.treasuresTotal === 'number' && _resume.treasuresTotal > 0) {
+        const _seededTotal = game.treasuresTotal || 0;
+        const _alreadyCollected = game.treasureCount || 0;
+        const _reachable = _seededTotal + _alreadyCollected;
+        game.treasuresTotal = Math.min(_resume.treasuresTotal, Math.max(_reachable, _resume.treasuresTotal));
+        // Guarantee reachable — if the saved total exceeds what's
+        // physically findable, fall back to the reachable cap.
+        if (game.treasuresTotal > _reachable) game.treasuresTotal = _reachable;
+        game.treasuresTotalLocked = true;
+      }
       // 2026-05-16 PM28: restore per-color bag counts + heart-bonus
       // claim flags so the "collect ALL bags of one color = +1 heart"
       // bonus survives a resume (otherwise the kid loses progress
@@ -10678,6 +10866,16 @@ function _saveCheckpoint() {
       solvedGates,        // PM11: position list — authoritative for resume
       collectedTiles,     // legacy — kept so v1 reader path still works
       treasureCount: game.treasureCount || 0,            // PM28
+      // 2026-05-19 PM51 (Jane: "in resume sessions also numerator
+      // and denominator should be correct ... in each level this
+      // number count should be consistent"). The denominator
+      // (game.treasuresTotal) is computed from a fresh seedTreasures()
+      // call on resume — different shuffle = different banner layout
+      // = different bag count. Saving the total here and restoring it
+      // on resume locks the denominator across sessions. Pair with
+      // treasuresTotalLocked = true on restore so subsequent re-seeds
+      // can't drift the value back down.
+      treasuresTotal: game.treasuresTotal || 0,
       treasureColorCount: Object.assign({}, _treasureColorCount), // PM28
       treasureColorBonus: Object.assign({}, _treasureColorBonus), // PM28
       hasExitKey: !!game.hasExitKey,                     // PM28
@@ -12150,7 +12348,10 @@ function triggerInteractable(obj){
       try { _addLifetimeScrolls(1); } catch(e){}
     }
     spawnGlitterBurstAtPlayer(14);
-    try { play('chime'); } catch(e){}
+    // 2026-05-19 PM51 (Jane: new sfx file drop). Clue-letter pickup
+    // gets its own chime+chomp character so kids can hear "you got a
+    // letter" distinct from the bag-pickup chime.
+    try { play('chimeChomp') || play('chime'); } catch(e){}
     // 2026-05-08 PM2 (Jane: "i want an animated scroll to open to reveal
     // what the scroll says. in that the animated letter found is
     // revealed"). Replaced the plain dialog with the animated
@@ -13029,7 +13230,10 @@ function openChallenge(gate) {
     } catch(e){}
     // 2026-05-12 PM16 — per-gate stinger fires here too.
     try { play('challengeModal'); } catch(e){}
-    try { play('gateClear') || play('success'); } catch(e){}
+    // 2026-05-19 PM51 (Jane: new sfx file drop). Gate-solved now layers
+    // the victory-chime sample on top of (or in place of) the older
+    // gong, so each gate clear feels like its own small win.
+    try { play('victoryChime') || play('gateClear') || play('success'); } catch(e){}
     // 2026-05-16 PM31 (Jane: "using scribe's wisdom to unlock gate
     // message is also appearing late"). Force-prepend so the bonus
     // message lands the moment the gate flashes gold.
@@ -14497,7 +14701,10 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
     } else {
       showCorrectAnswerFlash('CORRECT!');
     }
-    play('success');
+    // 2026-05-19 PM51 (Jane: new sfx file drop). Layer the dedicated
+    // correct-answer chime over the generic success sting so a right
+    // answer has its own audible identity.
+    play('correctAnswer') || play('success');
     gate.bundleCorrect++;
     gate.strikes = 0; // reset strikes on success
     game.stars += 3;
@@ -14793,7 +15000,9 @@ function onTreasure(tx, ty){
   try { _addLifetimeTreasures(1); } catch(e){}
   try { _refreshUnlockButtons(); } catch(e){}
   updateHudTreasure(); updateHudStars();
-  play('coin');
+  // 2026-05-19 PM51 (Jane: new sfx file drop). Bag pickup uses the
+  // distinct treasure-chime now; falls back to coin if missing.
+  play('treasureChime') || play('coin');
   // v3.4: glitter sparkle burst at Moses's screen position on pickup
   spawnGlitterBurstAtPlayer(16);
   // 2026-05-16 PM31 (Jane: "no need to show +2 for green bag also in
@@ -14839,8 +15048,11 @@ function onTreasure(tx, ty){
           try {
             toast('💖 All ' + _color + ' bags collected! +1 heart for Moses!');
             // 2026-05-12 PM16 (Jane: "when extra heart is gained, play
-            // rank reveal.mp3"). Falls through to chime if missing.
-            play('rankReveal') || play('chime');
+            // rank reveal.mp3"). 2026-05-19 PM51: pair with the new
+            // clear-combo chord so the bonus has a unique 2-layer sfx
+            // (clear-combo first as the "you did it" bell, rankReveal
+            // as the celebratory accent).
+            play('clearCombo') || play('rankReveal') || play('chime');
           } catch(e){}
         }, 700);
       }
@@ -15318,7 +15530,9 @@ function _activatePowerup(key){
   // power spell.mp3"). Magical-incantation SFX on every successful
   // activation. Falls back to the previous chime/success chain if
   // the file is missing.
-  try { play('powerSpell') || play('chime') || play('success'); } catch(e){}
+  // 2026-05-19 PM51: power-up activation now uses the new magic-sfx
+  // sample first; falls back to the older powerSpell if missing.
+  try { play('magicSfx') || play('powerSpell') || play('chime') || play('success'); } catch(e){}
   try { spawnGlitterBurstAtPlayer(20); } catch(e){}
   _refreshUnlockButtons();
   // Refresh again when the active effect ends + when the cooldown ends so
@@ -15670,7 +15884,113 @@ function showWin(){
         audio.coverMusic.play().catch(()=>{});
       }
     } catch(e){}
+    // 2026-05-19 PM51: personalized "proud of you" moment. If we have
+    // a stored kid name, write it into the win-modal shoutout block
+    // and pick a verse line tuned to their finish — perfect run gets
+    // a victory verse, low-heart run gets a perseverance verse, etc.
+    try { _personalizeWinModal(); } catch(e){}
+    // First-win-ever: ask the kid for their name (one-time only). We
+    // wait until AFTER the win modal is on screen + celebration plays
+    // so we don't crash the celebration moment.
+    try {
+      if (!localStorage.getItem('bek.kidName') && !localStorage.getItem('bek.kidNameSkipped')) {
+        setTimeout(_openKidNameScrim, 1400);
+      }
+    } catch(e){}
   };
+// 2026-05-19 PM51 — Kid-name persistence + win-modal personalization.
+function _getKidName(){
+  try { return (localStorage.getItem('bek.kidName') || '').trim(); } catch(e){ return ''; }
+}
+function _setKidName(n){
+  try {
+    n = String(n || '').trim().slice(0, 18);
+    if (n) localStorage.setItem('bek.kidName', n);
+  } catch(e){}
+}
+function _personalizeWinModal(){
+  const name = _getKidName();
+  const block = document.getElementById('winHeroShoutout');
+  if (!block) return;
+  const nameEl = document.getElementById('winHeroName');
+  const tagEl  = document.getElementById('winHeroTag');
+  const verseEl= document.getElementById('winHeroVerse');
+  // Pick a celebratory tag based on the finish quality.
+  const hearts = (game && game.hearts) || 0;
+  const treasureRatio = (game && game.treasuresTotal)
+    ? (game.treasureCount / game.treasuresTotal) : 0;
+  let tag, verseBody, verseRef;
+  if (hearts === 3 && treasureRatio >= 0.9) {
+    tag = 'A perfect run — Moses (and YOU) made it through with everything!';
+    verseBody = '"For nothing is impossible with God."';
+    verseRef = '— Luke 1:37';
+  } else if (hearts === 3) {
+    tag = 'You guided Moses without losing a single heart. Incredible courage!';
+    verseBody = '"Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go."';
+    verseRef = '— Joshua 1:9';
+  } else if (hearts === 1) {
+    tag = 'You never gave up — even when it got hard. That\'s how Moses did it.';
+    verseBody = '"By faith he left Egypt, not fearing the king\'s anger; he persevered because he saw him who is invisible."';
+    verseRef = '— Hebrews 11:27';
+  } else {
+    tag = 'You helped Moses escape! God smiles on every brave step you took.';
+    verseBody = '"Be strong and courageous. Do not be afraid; do not be discouraged."';
+    verseRef = '— Joshua 1:9';
+  }
+  if (name) {
+    if (nameEl) nameEl.textContent = `Well done, ${name}!`;
+    if (tagEl)  tagEl.textContent  = tag;
+    if (verseEl) verseEl.innerHTML = `${verseBody}<span class="win-hero-verse-ref">${verseRef}</span>`;
+    block.style.display = 'block';
+  } else {
+    // No name yet — show a generic shoutout. The kid-name prompt below
+    // will collect it; from the next win onward the personalized
+    // version takes over.
+    if (nameEl) nameEl.textContent = 'Well done, brave explorer!';
+    if (tagEl)  tagEl.textContent  = tag;
+    if (verseEl) verseEl.innerHTML = `${verseBody}<span class="win-hero-verse-ref">${verseRef}</span>`;
+    block.style.display = 'block';
+  }
+}
+function _openKidNameScrim(){
+  const scrim = document.getElementById('kidNameScrim');
+  if (!scrim) return;
+  scrim.classList.add('active');
+  const input = document.getElementById('kidNameInput');
+  if (input) {
+    input.value = '';
+    setTimeout(() => { try { input.focus(); } catch(e){} }, 200);
+  }
+}
+function _closeKidNameScrim(){
+  const scrim = document.getElementById('kidNameScrim');
+  if (scrim) scrim.classList.remove('active');
+}
+(function _wireKidName(){
+  const save = document.getElementById('kidNameSaveBtn');
+  const skip = document.getElementById('kidNameSkipBtn');
+  const input = document.getElementById('kidNameInput');
+  if (!save || save._wired) return;
+  save._wired = true;
+  const _commit = () => {
+    const v = (input && input.value) ? input.value.trim() : '';
+    if (!v) { if (input) { input.focus(); } return; }
+    _setKidName(v);
+    try { play('chime'); } catch(e){}
+    _closeKidNameScrim();
+    // Re-personalize the win modal now that we have a name.
+    try { _personalizeWinModal(); } catch(e){}
+  };
+  save.addEventListener('click', _commit);
+  if (input) input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); _commit(); }
+  });
+  if (skip) skip.addEventListener('click', () => {
+    try { localStorage.setItem('bek.kidNameSkipped', '1'); } catch(e){}
+    try { play('click'); } catch(e){}
+    _closeKidNameScrim();
+  });
+})();
   if (banner) {
     banner.classList.add('active');
     setTimeout(() => {
@@ -17043,6 +17363,10 @@ function _updateTorchlight(){
     _torchlight.isDim = true;
     _torchlight.guardSeeBackup = guards.map(g => g.seeRadius);
     guards.forEach(g => { g.seeRadius = Math.max(1, g.seeRadius - 1); });
+    // 2026-05-19 PM51 (Jane: new sfx file drop). Play the wind-chimes
+    // sample as the dim phase begins — atmospheric cue so the kid can
+    // HEAR the moment the torches dip even with the screen averted.
+    try { play('windChimes'); } catch(e){}
     // v3.x audit (Bug 135 — Jane: "where it says palace dims for a moment,
     // i don't see any dimming happening"). The visual was too subtle AND
     // there was no transient toast announcing the moment, so kids missed
@@ -21451,7 +21775,19 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // (kid already proved purchase on Scene 1), picks medium
     // difficulty by default, and launches the opening cinematic.
     // Mario-flow: no second cover page between worlds.
-    const SW_VERSION = 'bek-moses1-v22';
+    // 2026-05-19 PM51: bumped to v23 — bag-count persistence (save
+    // + restore game.treasuresTotal so HUD denominator stays stable
+    // across resume sessions); 8 new sfx wired (treasureChime on bag
+    // pickup, clearCombo on color-bag bonus, magicSfx on power-ups,
+    // chimeChomp on clue-letter pickup, correctAnswer on right
+    // answer, victoryChime on gate clear, windChimes on palace dim);
+    // personalized "proud of you" win-modal block — kid-name prompt
+    // on first win, persistent in localStorage, plus a verse tuned
+    // to the kid's finish quality (perfect / no-loss / persevered /
+    // generic). Scene 2: cover page killed entirely (always auto-
+    // launches into cinematic + gameplay), _clampSpriteX upgraded
+    // with 4-px right-edge margin (matches Scene 1 PM45).
+    const SW_VERSION = 'bek-moses1-v23';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
