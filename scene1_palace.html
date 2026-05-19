@@ -22151,7 +22151,29 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // landscape covers it). Scout-arm loop N/A (Scene 2 scouts don't
     // have alerted state machine, they move every tick). Caught-toast
     // N/A (Scene 2 uses danger modal not toast).
-    const SW_VERSION = 'bek-moses1-v31';
+    // 2026-05-19 PM60: bumped to v32 — second-pass Scene 2 parity port.
+    // Per Jane PM59: "atleast 100 bugs you fixed for scene 1. check to
+    // see if scene 2 still has those bugs." Deeper audit caught:
+    // * Truth Seeker not wired in Scene 2 at all (always silently
+    //   fizzled). Added the MCQ hook + q.correct over q.answer fix.
+    // * Scribe's Wisdom auto-skip not wired (set the flag but never
+    //   consumed). Added gate auto-solve with chime+chomp.
+    // * Power-up activation sfx: magicSfx → powerSpell primary (Jane
+    //   PM55 preference). Added audPowerSpell + audFrozen elements
+    //   to Scene 2.
+    // * HUD treasure numerator now Math.min-clamped at denominator
+    //   (parity with Scene 1 PM45 — prevents "33/30" on stale resume).
+    // * 6 checkpoints for ALL 3 difficulties (was 4/5/6 — Jane
+    //   confirmed all-6 is fine). Hard time bumped 120 → 240, see
+    //   radius 5 → 4, patrol 460 → 540 (parity with Scene 1 PM49).
+    // * Win modal: confetti + doorOpen + victoryChime layered (Scene
+    //   2 was missing all three sounds).
+    // Verified already correct (no port needed):
+    //   - Resume gate logic — Scene 2 overwrites gate positions from
+    //     save (more robust than Scene 1's position-match fallback)
+    //   - gate._submitting paths — already reset in retry branches
+    //   - MAP button width — already a pill since v3.21
+    const SW_VERSION = 'bek-moses1-v32';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",

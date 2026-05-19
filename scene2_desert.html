@@ -2989,6 +2989,14 @@
 <audio id="audMagicSfx"       preload="auto" src="assets/audio/magic%20sfx.mp3"></audio>
 <audio id="audCollect"        preload="auto" src="assets/audio/collect.mp3"></audio>
 <audio id="audRankReveal"     preload="auto" src="assets/audio/rank%20reveal.mp3"></audio>
+<!-- 2026-05-19 PM60: power-up sfx that Scene 1 uses. powerSpell is
+     the primary activation sound (Jane PM55 preference over magicSfx);
+     frozen layered on Foe Freeze for the crystalline freeze beat. -->
+<audio id="audPowerSpell"     preload="auto" src="assets/audio/power%20spell.mp3"></audio>
+<audio id="audFrozen"         preload="auto" src="assets/audio/frozen.mp3"></audio>
+<!-- 2026-05-19 PM60: win-screen sparkle (Scene 1 has had this since
+     PM14 — Scene 2 was missing it). Layered on win-modal reveal. -->
+<audio id="audConfetti"       preload="auto" src="assets/audio/win%20confetti%20sparkle.mp3"></audio>
 
 <script>
 /* ============================================================================
@@ -3204,6 +3212,9 @@ const audio = {
   collect:       $('audCollect'),         // generic collect feedback
   correctAnswer: $('audCorrect'),         // PM53 alias matching Scene 1 key
   rankReveal:    $('audRankReveal'),      // new personal-best / extra heart
+  powerSpell:    $('audPowerSpell'),      // power-up activation primary (PM60)
+  frozen:        $('audFrozen'),          // Foe Freeze layer (PM60)
+  confetti:      $('audConfetti'),        // win-screen sparkle (PM60)
 };
 // volumes
 audio.bgm.volume = 0.28;
@@ -4006,16 +4017,21 @@ const guards = [
 // Easy:   1 slow guard, tiny sight, no servant, slow censer, 4 gates, lots of time.
 // Medium: 2 guards, full servant patrol, 5 gates, moderate time.
 // Hard:   3 fast guards with long sight, busy servant, fast censer, 6 gates, tight timer.
+// 2026-05-19 PM60 (Jane: "is it 6 checkpoints for all 3 levels on
+// scene 2? i am okay with that"). All three difficulties now seed the
+// full 6 checkpoints. Difference is in TIME + SCOUT/SCOUT-COUNT
+// pressure, not gate count. Also bumped Hard's time 120 → 240 to
+// match Scene 1 PM49 ease (Jane said 3 min was tight on Scene 1; the
+// same constraint applies here).
 const DIFFICULTY_CONFIG = {
-  // v2.2 FIX (R4): guardCount bumped — tighter desert patrols increase tension.
   easy:   { timeLimit: 240, guardCount: 2, guardSeeRadius: 3, guardPatrolMs: 820,
             censerActive: true,  censerSpeed: 1.0, servantActive: false,
-            gateCount: 4 },
-  medium: { timeLimit: 180, guardCount: 3, guardSeeRadius: 4, guardPatrolMs: 620,
+            gateCount: 6 },
+  medium: { timeLimit: 210, guardCount: 3, guardSeeRadius: 4, guardPatrolMs: 620,
             censerActive: true,  censerSpeed: 1.5, servantActive: true,
-            gateCount: 5 },
-  hard:   { timeLimit: 120, guardCount: 4, guardSeeRadius: 5, guardPatrolMs: 460,
-            censerActive: true,  censerSpeed: 1.95, servantActive: true,
+            gateCount: 6 },
+  hard:   { timeLimit: 240, guardCount: 4, guardSeeRadius: 4, guardPatrolMs: 540,
+            censerActive: true,  censerSpeed: 1.6, servantActive: true,
             gateCount: 6 },
 };
 function applyDifficultyConfig(diff){
@@ -6740,7 +6756,10 @@ function updateHudHearts(){
 }
 function updateHudStars(){ $('hudStars').textContent = game.stars; }
 function updateHudTreasure(){
-  $('hudTreasure').textContent = game.treasureCount;
+  // 2026-05-19 PM60 (parity with Scene 1 PM45): clamp numerator at
+  // denominator so a stale resume can never show "33/30" — HUD must
+  // never claim more collected than total.
+  $('hudTreasure').textContent = Math.min(game.treasureCount || 0, game.treasuresTotal || 0);
   const tot = $('hudTreasureTotal');
   if (tot) tot.textContent = game.treasuresTotal || 0;
 }
@@ -7424,6 +7443,26 @@ function openChallenge(gate) {
     game.state = 'playing';
     return;
   }
+  // 2026-05-19 PM60 (parity with Scene 1 PM15v3): Scribe's Wisdom
+  // auto-skip. If armed, the next gate opening just marks the gate
+  // solved + plays the chime+chomp beat (PM56 — only chime+chomp,
+  // no victoryChime layered) instead of presenting the question.
+  // Disarms after one use.
+  if (window._scribesWisdomArmed && !gate.solved) {
+    window._scribesWisdomArmed = false;
+    gate.solved = true;
+    try { if (Array.isArray(gate.questions)) gate.bundleIndex = gate.questions.length; } catch(e){}
+    try { updateHudAltitude(); } catch(e){}
+    try { game.stars += 5; updateHudStars(); } catch(e){}
+    // chime+chomp distinct from a kid-solved gate (PM56 Scene 1 rule)
+    try { play('chimeChomp'); } catch(e){}
+    try { spawnGlitterBurstAtPlayer(28); } catch(e){}
+    try { toast('🪶 SCRIBE\'S WISDOM grants this checkpoint!'); } catch(e){}
+    try { _saveCheckpoint(); } catch(e){}
+    try { _refreshUnlockButtons(); } catch(e){}
+    game.state = 'playing';
+    return;
+  }
   const _q_early = gate.questions[gate.bundleIndex];
   if (!_q_early || typeof _q_early !== 'object') {
     gate.solved = true;
@@ -7567,6 +7606,40 @@ function openChallenge(gate) {
         b.addEventListener('click', () => handleChallengeAnswer(gate, i, b));
         opts.appendChild(b);
       });
+      // 2026-05-19 PM60 (parity with Scene 1 PM15v3 + PM52 fix). Truth
+      // Seeker power-up: if armed AND this is an MCQ-style question,
+      // grey out 2 random WRONG options + auto-open clue box. Reads
+      // q.correct (matches handleChallengeAnswer) with q.answer as a
+      // legacy fallback (PM52 Scene 1 fix — previously read q.answer
+      // and could grey out the right answer).
+      if (window._truthSeekerArmed) {
+        try {
+          const correctIdx = Number(
+            (typeof q.correct === 'number') ? q.correct : q.answer
+          );
+          const buttons = opts.querySelectorAll('.ch-option');
+          const wrongIndexes = [];
+          for (let i = 0; i < buttons.length; i++) {
+            if (i !== correctIdx) wrongIndexes.push(i);
+          }
+          for (let i = wrongIndexes.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [wrongIndexes[i], wrongIndexes[j]] = [wrongIndexes[j], wrongIndexes[i]];
+          }
+          for (let k = 0; k < Math.min(2, wrongIndexes.length); k++) {
+            const btn = buttons[wrongIndexes[k]];
+            if (btn) {
+              btn.style.opacity = '0.32';
+              btn.style.textDecoration = 'line-through';
+              btn.style.pointerEvents = 'none';
+              btn.style.background = 'rgba(180,140,100,0.18)';
+            }
+          }
+          try { toast('📖 Truth Seeker: 2 wrong answers eliminated.'); } catch(e){}
+        } catch(e){}
+        window._truthSeekerArmed = false;
+        try { _refreshUnlockButtons(); } catch(e){}
+      }
     }
   } catch(rErr) {
     try {
@@ -8958,7 +9031,10 @@ function _activatePowerup(key){
   if (tier.cooldownMs && tier.cooldownMs > 0) {
     window._puCooldownUntil[key] = now + tier.cooldownMs;
   }
-  try { play('magicSfx') || play('chime') || play('success'); } catch(e){}
+  // 2026-05-19 PM60 (parity with Scene 1 PM55): Jane preferred
+  // powerSpell over magicSfx for power-up activation. Reverted
+  // primary; magicSfx kept as fallback.
+  try { play('powerSpell') || play('magicSfx') || play('chime') || play('success'); } catch(e){}
   try { spawnGlitterBurstAtPlayer(20); } catch(e){}
   _refreshUnlockButtons();
   if (window._puActiveUntil[key]) {
@@ -9131,6 +9207,12 @@ function onOasisStep(tx, ty){
 function onReachExit(){
   game.state = 'ended';
   try { audio.bgm.pause(); } catch(e){}
+  // 2026-05-19 PM60 (parity with Scene 1 PM55): layer victoryChime +
+  // doorOpen on top of the existing reachedExit + gate sounds so the
+  // moment of reaching Midian carries the same audio weight as Scene
+  // 1 reaching the palace gate.
+  try { play('doorOpen'); } catch(e){}
+  try { play('victoryChime'); } catch(e){}
   play('gate');
   try { play('reachedExit'); } catch(e){}  // v2.2.7: exit-tile celebratory sfx
   // v3.28: scene complete — clear the mid-game save so the next play
@@ -9251,6 +9333,7 @@ function showWin(){
       banner.classList.remove('active');
       play('win');
       try { play('levelUp'); } catch(e){}  // v2.2.7 victory-modal fanfare
+      try { play('confetti'); } catch(e){}  // PM60: parity with Scene 1 win sparkle
       $('winModal').classList.add('active');
       try { _personalizeWinModal(); } catch(e){}
       // v3.4: no chest animation here -- chest plays mid-scene only so the
@@ -9259,6 +9342,7 @@ function showWin(){
   } else {
     play('win');
     try { play('levelUp'); } catch(e){}  // v2.2.7 victory-modal fanfare
+    try { play('confetti'); } catch(e){}
     $('winModal').classList.add('active');
     try { _personalizeWinModal(); } catch(e){}
   }
