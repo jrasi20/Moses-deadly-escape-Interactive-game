@@ -21926,7 +21926,15 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // scout-closes-in, look-for-travelers, hiding-well, scene-
     // restarted), bag-count denominator now saved + restored on
     // resume with the same reachability cap as Scene 1.
-    const SW_VERSION = 'bek-moses1-v25';
+    // 2026-05-19 PM54: bumped to v26 — Scene 2 deep-dive part II.
+    // Reduced 9 → 6 checkpoints (4 zone + 2 climbs); ported full
+    // power-up dock + 5 unlocks (⚡❄️👁️📖🪶) using the SAME cross-
+    // scene lifetime counters as Scene 1, so unlocks earned in Scene
+    // 1 are immediately usable in Scene 2; Foe Freeze power-up now
+    // freezes BOTH guards AND pursuit scouts (Jane: "scouts are
+    // there in scene 2 in addition to the guards"); EXIT sprite
+    // scale bumped 1.85 → 2.1 TILE with _clampSpriteX guard.
+    const SW_VERSION = 'bek-moses1-v26';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",

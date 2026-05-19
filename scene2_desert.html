@@ -2339,7 +2339,8 @@
       <span class="hud-chip"><img src="assets/images/star%207.png" onerror="this.style.display='none'" alt=""><span id="hudStars">0</span></span>
       <span class="hud-chip"><img src="assets/images/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span>/<span id="hudTreasureTotal">0</span></span>
       <!-- v2.1 Scene 2: altitude chip (shown only on scene 2, updated by updateHudAltitude) -->
-      <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/9</span>
+      <!-- 2026-05-19 PM54: chip denominator now updated by updateHudAltitude from the actual seeded count (was hardcoded /9). -->
+      <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/<span id="hudAltitudeTotal">6</span></span>
       <span class="hud-chip" id="hudTimer">3:00</span>
     </div>
     <div class="hud-group">
@@ -2367,6 +2368,12 @@
       <p style="color:#ffd976;">Tap anywhere to close</p>
     </div>
   </div>
+  <!-- 2026-05-19 PM54 (Jane: "yes to all 6"). Ported power-up dock from
+       Scene 1. The kid earns these in Scene 1 (lifetime counters in
+       localStorage); Scene 2 surfaces the same dock so the unlocks the
+       kid grinded for in the palace are usable in the desert too. -->
+  <div id="hudPowerups" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;padding:4px max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left));justify-content:center;background:linear-gradient(180deg, rgba(40,14,3,0.85), rgba(58,22,7,0.75));border-bottom:1px solid rgba(255,215,118,0.35);z-index:5;"></div>
+  <style>#hudPowerups:empty { display:none !important; }</style>
   <div class="canvas-wrapper">
     <div class="pulse-vignette" id="pulseVignette"></div>
     <div class="verse-ticker" id="verseTicker">Exodus 2:13-15a (NIV)</div>
@@ -4686,13 +4693,15 @@ const CHALLENGE_BANK = {
       verse:'"By faith he left Egypt..." (Hebrews 11:27 NIV)' },
   ],
 };
-// v2.1 MANDATORY CHECKPOINTS
-// 9 UNAVOIDABLE challenge positions — 4 zone-gate checkpoints (one per zone, on
-// the row-12 path Moses starts at) + 5 mountain cliff ascent steps on col 39.
-// All 9 are proximity-triggered: entering a tile within 1 of any unclaimed
-// ascent fires its challenge modal. Moses cannot bypass them by walking around.
-// Scene 2 completes when all 5 'climb' ascents are solved.
-// Note: climb positions MUST match the type-7 tiles in MAP_STR.
+// 2026-05-19 PM54 (Jane: "scene 2 has 9 checkpoints. we can make the
+// number of checkpoints similar to scene 1"). Reduced 9 → 6 to match
+// Scene 1's 5-gate Hard cap and feel like the same game.
+// Kept: 4 zone checkpoints (one per geographic zone — feels like a
+// proper desert journey) + 2 climbs (the final ascent rhythm before
+// the Midian well, so kids still get the "we're almost there" beats).
+// Dropped: 2 mid climbs (the middle 2 east-edge climb steps were
+// pacing-redundant) + 1 dunes-north zone checkpoint (it sat too
+// close to the EXIT tile and clustered the upper-right corner).
 const CHALLENGE_POSITIONS = [
   // --- Zone checkpoints (mandatory mid-map challenges) ---
   // v3.8 PASS A Jane 2026-04-24 (Bug 42): previously all 4 zone checkpoints
@@ -4706,20 +4715,10 @@ const CHALLENGE_POSITIONS = [
   { tx: 14, ty: 16, kind: 'zone', zone: 'dunes', label: 'Dunes Checkpoint' },
   { tx: 24, ty: 10, kind: 'zone', zone: 'oasis', label: 'Oasis Checkpoint' },
   { tx: 33, ty: 17, kind: 'zone', zone: 'mesa',  label: 'Mesa Checkpoint'  },
-  // v3.7 PASS A Jane 2026-04-24: cliff concept removed. The 5 east-edge
-  // gates are now "Final Path Checkpoints" leading to the Midian well at
-  // the east edge. Internal `kind: 'climb'` retained so existing logic
-  // (challenge bundle assignment, altitude tracking, audio cues) keeps
-  // working without a renaming sweep across the file.
+  // PM54: kept the FIRST (south-east entry) climb + the LAST (just
+  // before the exit) so the kid still feels the "final ascent" arc.
   { tx: 39, ty: 22, kind: 'climb', step: 1, label: 'Final Path Checkpoint 1' },
-  { tx: 39, ty: 17, kind: 'climb', step: 2, label: 'Final Path Checkpoint 2' },
-  { tx: 39, ty: 12, kind: 'climb', step: 3, label: 'Final Path Checkpoint 3' },
-  { tx: 39, ty:  7, kind: 'climb', step: 4, label: 'Final Path Checkpoint 4' },
-  // v3.20 Jane 2026-04-25: topmost east-edge climb-step (39,2) RELOCATED
-  // inland so the topmost east-edge tile-7 stands ALONE as the visually-
-  // dominant EXIT tile (no checkpoint sprite stacked on top of it). Total
-  // gate count stays at 9 so HUD "▲ 0/9" math is unchanged.
-  { tx: 18, ty:  4, kind: 'zone', zone: 'dunes-north', label: 'Dunes North Checkpoint' },
+  { tx: 39, ty:  7, kind: 'climb', step: 2, label: 'Final Path Checkpoint 2' },
 ];
 const challengeGates = [];  // populated once difficulty is chosen (legacy name preserved for downstream code)
 
@@ -4804,8 +4803,9 @@ function _generateRandomChallengePositions(){
     }
   }
   // Fallback: pad from CHALLENGE_POSITIONS if any region failed
+  // 2026-05-19 PM54: target reduced 9 → 6 (matches new CHALLENGE_POSITIONS).
   let fbIdx = 0;
-  while (out.length < 9 && fbIdx < CHALLENGE_POSITIONS.length) {
+  while (out.length < 6 && fbIdx < CHALLENGE_POSITIONS.length) {
     const fb = CHALLENGE_POSITIONS[fbIdx++];
     if (out.some(p => p.tx === fb.tx && p.ty === fb.ty)) continue;
     out.push({ ...fb });
@@ -6229,7 +6229,10 @@ function updateHudAltitude(){
   const liveGates = (typeof challengeGates !== 'undefined' && challengeGates)
     ? challengeGates.length
     : 0;
-  const totalGates = liveGates > 0 ? liveGates : 9; // design: 4 zone + 5 eastern = 9
+  // 2026-05-19 PM54: design reduced 9 → 6 (4 zone + 2 climbs). The
+  // liveGates path is the authoritative source — only the fallback
+  // default changed.
+  const totalGates = liveGates > 0 ? liveGates : 6;
   const solved = (typeof challengeGates !== 'undefined' && challengeGates)
     ? challengeGates.filter(g => g && g.solved).length
     : 0;
@@ -8259,7 +8262,186 @@ function onTreasure(tx, ty){
   // Scene 1 PM31 "no per-pickup toast" rule).
   play('treasureChime') || play('coin');
   spawnGlitterBurstAtPlayer(16);
+  // 2026-05-19 PM54: bump the cross-scene lifetime counter so the kid
+  // can earn power-up unlocks by collecting bags in EITHER scene.
+  try { _addLifetimeTreasures(1); } catch(e){}
+  try { _refreshUnlockButtons(); } catch(e){}
 }
+
+/* ============================================================
+   POWER-UP SYSTEM (ported from Scene 1 PM54)
+   ============================================================
+   Shares the SAME localStorage keys as Scene 1 — bags collected in
+   either scene contribute to the same lifetime counter, and unlocks
+   earned in Scene 1 are immediately usable here. The 5 power-ups:
+     ⚡ Speed Burst    — 75 lifetime bags  (5s 2× speed)
+     ❄️ Guard Freeze   — 175 lifetime bags (5s freeze on guards + scouts)
+     👁️ Royal Vision   — 4 lifetime crowns (8s sight cones lit)
+     📖 Truth Seeker   — 350 lifetime bags (next gate: 2 wrong + free clue)
+     🪶 Scribe's Wisdom — 10 lifetime scrolls (skip next gate)
+   Cross-scene state — once earned, stays earned. */
+const _LIFETIME_TREASURES_KEY = 'bek.bundle1.totalTreasures';
+const _LIFETIME_CROWNS_KEY    = 'bek.bundle1.totalCrowns';
+const _LIFETIME_SCROLLS_KEY   = 'bek.bundle1.totalScrolls';
+const _UNLOCKS_KEY            = 'bek.bundle1.unlocks';
+const UNLOCK_TIERS = [
+  { threshold:  75, resource: 'treasures', key: 'speedBurst',
+    label: '⚡ Speed Burst',     cooldownMs: 25000,
+    desc: 'Moses sprints 2× for 5 seconds. Tap any time — recharges every 25 s.' },
+  { threshold: 175, resource: 'treasures', key: 'guardFreeze',
+    label: '❄️ Foe Freeze',      cooldownMs: 35000,
+    desc: 'Guards AND scouts freeze in place for 5 seconds. Recharges every 35 s.' },
+  { threshold:   4, resource: 'crowns',    key: 'royalVision',
+    label: '👁️ Royal Vision',    cooldownMs: 30000,
+    desc: 'Lights up every guard/scout sight cone so you can plan a safe path. Lasts 8 seconds.' },
+  { threshold: 350, resource: 'treasures', key: 'truthSeeker',
+    label: '📖 Truth Seeker',    cooldownMs: 60000,
+    desc: 'On the next Bible Gate: clue is free + 2 wrong options greyed out.' },
+  { threshold:  10, resource: 'scrolls',   key: 'scribesWisdom',
+    label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000,
+    desc: 'Skip the next Bible Gate (counts as solved). Recharges every 90 s.' },
+];
+function _loadLifetimeTreasures(){
+  try { return parseInt(localStorage.getItem(_LIFETIME_TREASURES_KEY) || '0', 10) || 0; }
+  catch(e){ return 0; }
+}
+function _loadLifetimeCrowns(){
+  try { return parseInt(localStorage.getItem(_LIFETIME_CROWNS_KEY) || '0', 10) || 0; }
+  catch(e){ return 0; }
+}
+function _loadLifetimeScrolls(){
+  try { return parseInt(localStorage.getItem(_LIFETIME_SCROLLS_KEY) || '0', 10) || 0; }
+  catch(e){ return 0; }
+}
+function _loadUnlocks(){
+  try { return JSON.parse(localStorage.getItem(_UNLOCKS_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+function _hasUnlock(key){
+  return _loadUnlocks().includes(key);
+}
+function _addLifetimeResource(which, n){
+  const KEY = which === 'crowns'  ? _LIFETIME_CROWNS_KEY
+            : which === 'scrolls' ? _LIFETIME_SCROLLS_KEY
+            :                       _LIFETIME_TREASURES_KEY;
+  let cur = 0;
+  try { cur = parseInt(localStorage.getItem(KEY) || '0', 10) || 0; } catch(e){}
+  const next = cur + (n || 0);
+  try { localStorage.setItem(KEY, String(next)); } catch(e){}
+  const have = new Set(_loadUnlocks());
+  const granted = [];
+  for (const tier of UNLOCK_TIERS) {
+    if ((tier.resource || 'treasures') !== which) continue;
+    if (cur < tier.threshold && next >= tier.threshold && !have.has(tier.key)) {
+      have.add(tier.key);
+      granted.push(tier);
+    }
+  }
+  if (granted.length) {
+    try { localStorage.setItem(_UNLOCKS_KEY, JSON.stringify([...have])); } catch(e){}
+    try { play('rankReveal') || play('success'); } catch(e){}
+    try { spawnGlitterBurstAtPlayer(28); } catch(e){}
+    granted.forEach(g => {
+      try { toast('✨ ' + g.label + ' unlocked! Tap the new button above to use it.'); } catch(e){}
+    });
+  }
+  return next;
+}
+function _addLifetimeTreasures(n){ return _addLifetimeResource('treasures', n); }
+function _addLifetimeCrowns(n){    return _addLifetimeResource('crowns',    n); }
+function _addLifetimeScrolls(n){   return _addLifetimeResource('scrolls',   n); }
+// Cooldown / active-effect state — per-power. Live on window so the
+// game loop can read them.
+window._puCooldownUntil = window._puCooldownUntil || {};
+window._puActiveUntil   = window._puActiveUntil   || {};
+function _puReady(key){ return performance.now() >= (window._puCooldownUntil[key] || 0); }
+function _puActive(key){ return performance.now() < (window._puActiveUntil[key] || 0); }
+function _activatePowerup(key){
+  const tier = UNLOCK_TIERS.find(t => t.key === key);
+  if (!tier) return;
+  if (!_hasUnlock(key)) return;
+  if (!_puReady(key)) {
+    const left = Math.max(0, Math.ceil(((window._puCooldownUntil[key] || 0) - performance.now()) / 1000));
+    try { toast('⏳ ' + tier.label + ' recharging — ' + left + 's left.'); } catch(e){}
+    return;
+  }
+  const now = performance.now();
+  if (key === 'speedBurst') {
+    window._speedBurstUntil = now + 5000;
+    window._puActiveUntil[key] = now + 5000;
+    try { toast('⚡ SPEED BURST! Run, Moses, run!'); } catch(e){}
+  } else if (key === 'guardFreeze') {
+    window._guardFreezeUntil = now + 5000;
+    // Reset alerted state on all guards AND pursuit-scouts so the
+    // cones stop pulsing red during the freeze (parity with Scene 1).
+    try {
+      for (const g of guards) {
+        if (g.state === 'alerted' || g.state === 'suspicious') {
+          g.state = 'patrol'; g.swordOut = false; g.swordAnim = 0;
+        }
+      }
+      if (typeof pursuitScouts !== 'undefined' && Array.isArray(pursuitScouts)) {
+        for (const s of pursuitScouts) {
+          if (s) { s.state = 'patrol'; s.frozenUntil = now + 5000; }
+        }
+      }
+    } catch(e){}
+    window._puActiveUntil[key] = now + 5000;
+    try { play('frozen'); } catch(e){}
+    try { toast('❄️ FOE FREEZE! Slip past while they\'re stuck!'); } catch(e){}
+  } else if (key === 'royalVision') {
+    window._royalVisionUntil = now + 8000;
+    window._puActiveUntil[key] = now + 8000;
+    try { toast('👁️ ROYAL VISION! Sight cones revealed.'); } catch(e){}
+  } else if (key === 'truthSeeker') {
+    window._truthSeekerArmed = true;
+    window._puActiveUntil[key] = now + 1500;
+    try { toast('📖 TRUTH SEEKER armed for the next Bible Gate.'); } catch(e){}
+  } else if (key === 'scribesWisdom') {
+    window._scribesWisdomArmed = true;
+    window._puActiveUntil[key] = now + 1500;
+    try { toast('🪶 SCRIBE\'S WISDOM armed — next Bible Gate skipped.'); } catch(e){}
+  }
+  if (tier.cooldownMs && tier.cooldownMs > 0) {
+    window._puCooldownUntil[key] = now + tier.cooldownMs;
+  }
+  try { play('magicSfx') || play('chime') || play('success'); } catch(e){}
+  try { spawnGlitterBurstAtPlayer(20); } catch(e){}
+  _refreshUnlockButtons();
+  if (window._puActiveUntil[key]) {
+    setTimeout(_refreshUnlockButtons, Math.max(60, window._puActiveUntil[key] - performance.now() + 50));
+  }
+  if (tier.cooldownMs && tier.cooldownMs > 0) {
+    setTimeout(_refreshUnlockButtons, tier.cooldownMs + 100);
+  }
+}
+function _refreshUnlockButtons(){
+  try {
+    const dock = document.getElementById('hudPowerups');
+    if (!dock) return;
+    const have = _loadUnlocks();
+    let html = '';
+    for (const tier of UNLOCK_TIERS) {
+      if (!have.includes(tier.key)) continue;
+      const ready  = _puReady(tier.key);
+      const active = _puActive(tier.key);
+      const css = active ? 'background:linear-gradient(145deg,#7fff8a,#3aa54a);box-shadow:0 0 14px rgba(120,255,140,0.85);'
+                : ready  ? 'background:linear-gradient(145deg,#ffd976,#c38b28);'
+                :          'background:linear-gradient(145deg,#6a4a20,#3a2810);opacity:0.55;';
+      const cdLeft = ready ? '' : Math.max(0, Math.ceil(((window._puCooldownUntil[tier.key] || 0) - performance.now()) / 1000));
+      const cdBadge = cdLeft ? '<span style="position:absolute;right:-4px;top:-4px;background:#000;color:#ffd976;border-radius:50%;width:18px;height:18px;font-size:10px;display:flex;align-items:center;justify-content:center;border:1px solid #ffd976;">' + cdLeft + '</span>' : '';
+      html += '<button type="button" data-pu="' + tier.key + '" class="hud-pu-btn" aria-label="' + tier.label + '" title="' + tier.desc + '" style="position:relative;border:2px solid #ffd976;border-radius:10px;width:48px;height:48px;font-size:22px;cursor:pointer;color:#3a1505;font-weight:900;' + css + '">' + tier.label.split(' ')[0] + cdBadge + '</button>';
+    }
+    dock.innerHTML = html;
+    dock.querySelectorAll('button[data-pu]').forEach(b => {
+      b.addEventListener('click', () => _activatePowerup(b.getAttribute('data-pu')));
+    });
+  } catch(e){}
+}
+// Initial render at module load + after each scene start.
+setTimeout(_refreshUnlockButtons, 100);
+// Tick the cooldown timer every second so the badge counts down visually.
+setInterval(() => { try { _refreshUnlockButtons(); } catch(e){} }, 1000);
 
 /* ---------- v3.4 GLITTER SPARKLES ----------
    Spawns a ring of tiny "spark" spans around Moses's screen position. Each
@@ -9318,6 +9500,10 @@ function updatePursuitScouts(dt){
   // scouts start patrolling. Without this, first-time players are caught
   // before they understand the controls. Grace ends 15s after game start.
   if (game.startedAt && (performance.now() - game.startedAt) < 15000) return;
+  // 2026-05-19 PM54: Foe Freeze power-up also freezes pursuit scouts
+  // (Jane: "scouts are there in scene 2 in addition to the guards").
+  // Scene 1's freeze only had to stop guards; Scene 2 has both.
+  if (performance.now() < (window._guardFreezeUntil || 0)) return;
   const now = performance.now();
   let closestDist = 99;
   // v2.2.2 Jane feedback: "when they see Moses they don't move after that"
@@ -9873,6 +10059,14 @@ function updateGuards(dt){
   // before he had time to orient. Scene 1 (palace) guards are still
   // allowed to patrol normally since Scene 1 has its own tutorial flow.
   if (game.scene === 2 && game.startedAt && (performance.now() - game.startedAt) < 15000) return;
+  // 2026-05-19 PM54: Foe Freeze power-up — skip ALL guard logic for 5 s
+  // when armed. Mirrors Scene 1's guardFreeze gate.
+  if (performance.now() < (window._guardFreezeUntil || 0)) {
+    for (const g of guards) {
+      if (g.swordOut) g.swordAnim = Math.min(g.swordAnim + dt*0.003, 1);
+    }
+    return;
+  }
   for (const g of guards) {
     g.timer -= dt;
     if (g.swordOut) g.swordAnim = Math.min(g.swordAnim + dt*0.003, 1);
@@ -12439,19 +12633,22 @@ function drawTile(t, dx, dy, tx, ty){
         ctx.ellipse(dx+TILE/2, dy+TILE-2, TILE*0.62, 5.5, 0, 0, Math.PI*2);
         ctx.fill();
         ctx.restore();
-        const esH = TILE * 1.85;
+        // 2026-05-19 PM54: bumped EXIT scale 1.85→2.1 for richness (more
+        // prominent goal). Applied _clampSpriteX so the new height-bump
+        // can't bleed past the canvas edge on narrow viewports.
+        const esH = TILE * 2.1;
         const esAR = (exitPNG.naturalWidth || 1) / (exitPNG.naturalHeight || 1);
         let esW = Math.round(esH * esAR);
-        const esWMax = Math.round(TILE * 1.8);
+        const esWMax = Math.round(TILE * 2.0);
         let esHInt = Math.round(esH);
         if (esW > esWMax) {
           esHInt = Math.round(esWMax / esAR);
           esW = esWMax;
         }
-        // RIGHT-ANCHOR: sprite right edge = tile right edge. Sprite extends
-        // LEFTWARD into col 38 (always open sand on row 2). Never bleeds
-        // past canvas right edge. Stays glued to its tile during pan.
-        const esOX = Math.round(dx + TILE - esW);
+        // RIGHT-ANCHOR + canvas-clamp: sprite right edge = tile right edge.
+        // Clamp prevents bleed at canvas right border (PM54 — was missing).
+        let esOX = Math.round(dx + TILE - esW);
+        try { esOX = _clampSpriteX(esOX, esW); } catch(e){}
         const esOY = Math.round(dy + TILE - esHInt + TILE*0.14);
         ctx.save();
         const coronaRaw = TILE * (2.0 + 0.4 * Math.sin(now/300));
