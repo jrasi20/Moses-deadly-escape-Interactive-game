@@ -1709,7 +1709,11 @@
   /* 2026-05-19 PM63 (Jane: "where you see found0/4 for spot the
      difference text color is not seen"). Yellow on cream-papyrus
      was invisible. Switched to deep brown on a high-contrast gold
-     pill — matches Scene 1 PM34 fix exactly. */
+     pill — matches Scene 1 PM34 fix exactly.
+     PM63 follow-up (Jane screenshot: counter offscreen above the
+     scrolled images). Position: sticky at top of .ch-scroll so the
+     "Found: 0/4" pill is ALWAYS visible no matter how far the kid
+     scrolls through the side-by-side images. */
   .ch-spotdiff-counter {
     font-size: 15px; font-weight: 800;
     color: #5a2a05;
@@ -1717,10 +1721,14 @@
     border: 1.5px solid #b88a2c;
     border-radius: 14px;
     padding: 4px 14px;
-    display: inline-block;
+    display: block;
     text-align: center;
     margin: 6px auto 4px;
+    max-width: max-content;
     box-shadow: 0 2px 4px rgba(0,0,0,0.18);
+    position: sticky;
+    top: 4px;
+    z-index: 5;
   }
   /* 2026-05-19 PM63 (Jane: "spot-diff halos still incorrect"). Two bugs:
      1. width/height in % refer to container WIDTH/HEIGHT separately, so
@@ -8342,6 +8350,16 @@ function openChallenge(gate) {
     } catch(e){}
   }
   const _cm = $('challengeModal'); if (_cm) _cm.classList.add('active');
+  // 2026-05-19 PM63 (Jane screenshot: spot-diff modal opened with the
+  // question header scrolled offscreen — only "differences:" visible at
+  // the very top, no Found counter visible). The browser was preserving
+  // the previous challenge's scroll offset across opens. Reset .ch-scroll
+  // to top every time the modal is shown so the title + Found counter
+  // are always the first thing kids see.
+  try {
+    const _sc = _cm && _cm.querySelector('.ch-scroll');
+    if (_sc) _sc.scrollTop = 0;
+  } catch(e){}
   // v3.12 Jane 2026-04-24: force-stop transient SFX (camel grunt, hello-there,
   // etc.) so they don't keep playing under the challenge modal. BGM stays.
   try {
@@ -10927,6 +10945,7 @@ function updatePursuitScouts(dt){
   if (performance.now() < (window._guardFreezeUntil || 0)) return;
   const now = performance.now();
   let closestDist = 99;
+  let closestScout = null; // PM63: track for tutorial-halo target
   // v2.2.2 Jane feedback: "when they see Moses they don't move after that"
   // — the old logic stalled whenever scout.tx >= player.tx. Now scouts
   // ALWAYS take a step each tick: east if possible, otherwise lateral
@@ -11011,7 +11030,7 @@ function updatePursuitScouts(dt){
     const dx = Math.abs(s.tx - player.tx);
     const dy = Math.abs(s.ty - player.ty);
     const chebyshev = Math.max(dx, dy);
-    if (chebyshev < closestDist) closestDist = chebyshev;
+    if (chebyshev < closestDist) { closestDist = chebyshev; closestScout = s; }
     // v2.2.2 capture check: Chebyshev <= 1 (adjacent or on top) AND Moses
     // is NOT hidden behind cover. Hiding must protect.
     if (chebyshev <= 1 && !moses_hidden) {
@@ -11043,11 +11062,17 @@ function updatePursuitScouts(dt){
     // the first time a scout closes to within 3 tiles — kid learns
     // what scouts do + how to hide.
     try {
-      showTipPopup('scout', {
+      // 2026-05-19 PM63 (Jane screenshot: red halo landed on Moses because
+      // the scout popup didn't tell the halo system which sprite to mark).
+      // Pass the closest-scout tile so the halo + finger pointer lands on
+      // the ACTUAL scout sprite, not somewhere generic.
+      const _scoutOpts = {
         icon: '🏹',
         title: 'Pharaoh\'s Scout!',
         body: 'Pharaoh\'s scouts hunt Moses across the desert. Get behind a boulder or into a cave to break their line of sight. They lose interest if you stay hidden long enough.',
-      });
+      };
+      if (closestScout) _scoutOpts.pointAtTile = { tx: closestScout.tx, ty: closestScout.ty };
+      showTipPopup('scout', _scoutOpts);
     } catch(e){}
   }
 }

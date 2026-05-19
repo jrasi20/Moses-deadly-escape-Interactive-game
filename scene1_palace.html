@@ -13674,6 +13674,15 @@ function openChallenge(gate) {
     }
   }
   $('challengeModal').classList.add('active');
+  // 2026-05-19 PM63 (mirrored from Scene 2 fix): reset .ch-scroll to top
+  // so kids always see the question + Found counter at the top of the
+  // modal instead of a mid-scroll position carried over from the
+  // previous challenge.
+  try {
+    const _cm = document.getElementById('challengeModal');
+    const _sc = _cm && _cm.querySelector('.ch-scroll');
+    if (_sc) _sc.scrollTop = 0;
+  } catch(e){}
 }
 
 /* ---------- v3.4: GOLDEN UPPERCASE CORRECT-ANSWER FLASH ----------
@@ -22347,7 +22356,7 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     //   Midian), compass-rose corner, dramatic kid-friendly copy.
     // * World-map audio leak: tear down every other loop track
     //   BEFORE egyptianCover plays so it doesn't layer.
-    const SW_VERSION = 'bek-moses1-v35';
+    const SW_VERSION = 'bek-moses1-v36';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
