@@ -1347,16 +1347,26 @@
        Now sized by viewport height so they're big + readable, capped
        so they stay inside the scrollable modal. */
     .ch-pict-img       { width:auto !important; max-width:88%; max-height:48vh !important; }
-    /* 2026-05-19 PM49 (Jane: "for count the soldiers also on landscape,
-       make the image larger as it is impossible to see the details of
-       the image"). Was 46vh — on a 360-tall landscape phone that's
-       ~165 px tall. Bumped to the taller of 70vh OR 56vw so the scene
-       claims real estate from BOTH axes. Caps at 90% width so it
-       still respects the modal's horizontal padding. */
+    /* 2026-05-19 PM49 + PM56 (Jane: "count challenge image is small on
+       landscape. make it larger"). The PM49 max-height caps were being
+       overridden by the modal content's max-height (~368px on 400-tall
+       landscape) → image was effectively pinned to ~250 px tall.
+       Switched to FIXED height of 65vh + width:auto so the image fills
+       most of the vertical real estate inside the challenge modal,
+       letting its aspect ratio drive the width. max-width 80vw guards
+       against an extremely wide aspect blowing past the modal padding. */
     .ch-count-scene-img{
       width:auto !important;
-      max-width:90% !important;
-      max-height:max(70vh, 56vw) !important;
+      max-width:80vw !important;
+      height:65vh !important;
+      max-height:65vh !important;
+      object-fit:contain !important;
+    }
+    /* Also bump challenge-modal max-height a touch on landscape so
+       the bigger image has room without pushing the Exit button off. */
+    .modal-overlay.challenge-modal .modal-content {
+      max-height: 96vh !important;
+      max-height: 96dvh !important;
     }
     /* 2026-05-18 PM48 (Jane: "on landscape slider puzzle, both the
        images are extremely small making it hard to see the image.
@@ -3523,11 +3533,17 @@
     min-height: 28px;
   }
   /* Phone: stack the three sections vertically for readability */
+  /* 2026-05-19 PM56 (Jane: "personal best modal is cut on portrait").
+     The stats-panel + stats-section both needed explicit box-sizing:
+     border-box so padding doesn't push their used width past the
+     parent container. Plus tightened the outer panel padding so
+     even narrow phones (≤380 px) have room for the section frames. */
+  .stats-panel, .stats-section { box-sizing: border-box; }
   @media (max-width: 600px) {
-    .stats-panel { gap: 6px; padding: 8px 10px; flex-direction: column; }
-    .stats-section { flex: 1 1 100%; padding: 7px 8px 8px; }
+    .stats-panel { gap: 6px; padding: 6px 8px; flex-direction: column; width: min(680px, 94vw); }
+    .stats-section { flex: 1 1 100%; padding: 7px 8px 8px; max-width: 100%; }
     .stats-section-label { font-size: 10.5px; margin-bottom: 4px; }
-    .treasure-chip { padding: 3px 10px; }
+    .treasure-chip { padding: 3px 10px; margin: 3px 4px; }
     .treasure-chip .chip-emoji { font-size: 14px; }
     .treasure-chip .chip-num   { font-size: 13px; }
   }
@@ -6657,6 +6673,25 @@ function applyDifficultyConfig(diff){
   // Trim guards array to configured count, reset remaining guards' stats
   while (guards.length > cfg.guardCount) guards.pop();
   guards.forEach(g => { g.seeRadius = cfg.guardSeeRadius; g.patrolMs = cfg.guardPatrolMs; });
+  // 2026-05-19 PM56 (Jane: "hard is still hard not in terms of time.
+  // time 3 mins is enough. but there is a passage where there is
+  // both a dog and a guard. and both are charging toward moses. may
+  // be you can ease it up a bit"). Dog #3 (8,20) patrols the same
+  // exit-corridor zone as Guard #4 (10,22) → double-pursuit pincer.
+  // Eased two ways:
+  //   1. Dog seeRadius scales with difficulty (easy 4, medium 5,
+  //      hard 4 — back down from the across-the-room 5). On Hard
+  //      the dog now has to be 4 tiles away vs the guard's 4,
+  //      so Moses gets ONE warning instead of being spotted by both
+  //      simultaneously.
+  //   2. Dog patrolMs scales 600/520/600 so on Hard the dog moves
+  //      a bit slower than Medium — Moses has time to slip past.
+  // Only applied to Scene 1 dogs (Scene 2 has different NPCs).
+  if (typeof dogs !== 'undefined' && Array.isArray(dogs)) {
+    const dogSee = (diff === 'easy') ? 4 : (diff === 'medium') ? 5 : 4;
+    const dogPat = (diff === 'easy') ? 600 : (diff === 'medium') ? 520 : 600;
+    dogs.forEach(d => { d.seeRadius = dogSee; d.patrolMs = dogPat; });
+  }
   // Scale hurdles
   if (typeof censer !== 'undefined') {
     censer.active = cfg.censerActive;
@@ -13373,15 +13408,15 @@ function openChallenge(gate) {
     } catch(e){}
     // 2026-05-12 PM16 — per-gate stinger fires here too.
     try { play('challengeModal'); } catch(e){}
-    // 2026-05-19 PM51 (Jane: new sfx file drop). Gate-solved now layers
-    // the victory-chime sample on top of (or in place of) the older
-    // gong, so each gate clear feels like its own small win.
-    // 2026-05-19 PM55 (Jane: "when the gate opens after you use the
-    // power unlock, play chime and chomp.mp3"). Layer the chime+chomp
-    // sample over the victory chime so a POWER-UP-skipped gate has
-    // its own audible identity ("ahh — magic carried me past!").
+    // 2026-05-19 PM55: chime+chomp for the magic-carry-past beat.
+    // 2026-05-19 PM56 (Jane: "remove victory chime.mp3 after gate
+    // opens using scribe. only play chime and chomp.mp3"). Dropped
+    // the layered victoryChime on this specific path; the chime+chomp
+    // sample stands alone as the power-unlock identity. The NORMAL
+    // (kid-answered-correctly) gate-clear path further down still
+    // plays victoryChime — that's the audible difference between
+    // "I solved it" vs "magic solved it".
     try { play('chimeChomp'); } catch(e){}
-    try { play('victoryChime') || play('gateClear') || play('success'); } catch(e){}
     // 2026-05-16 PM31 (Jane: "using scribe's wisdom to unlock gate
     // message is also appearing late"). Force-prepend so the bonus
     // message lands the moment the gate flashes gold.
@@ -16459,7 +16494,12 @@ function _softCatch(msg, imgSrc, kind){
   // Friendly toast — kid sees "X heart lost — try again"
   try {
     const heartsLeft = game.hearts;
-    toast('💔 Caught! ' + heartsLeft + ' heart' + (heartsLeft === 1 ? '' : 's') + ' left. Hide better!');
+    // 2026-05-19 PM56 (Jane: "remove overhead message saying 'caught -
+    // 2 hearts'. this doesn't make sense as after getting caught, why
+    // do hearts matter?"). The toast was redundant with the heart-loss
+    // animation in the HUD (heart fades + count drops). Kept the
+    // screen-reader announcement for accessibility — that's not an
+    // overhead toast, it just speaks to assistive tech.
     _ariaAnnounce('Moses was caught. ' + heartsLeft + ' heart' + (heartsLeft === 1 ? '' : 's') + ' left.');
   } catch(e){}
   game.state = 'playing';
@@ -17005,6 +17045,17 @@ function canGuardSeePlayer(g){
   return hasLineOfSight(g.tx, g.ty, player.tx, player.ty);
 }
 function triggerGuardAlert(originX, originY){
+  // 2026-05-19 PM56 (Jane: "guard is arming even when moses is hiding.
+  // it is going in a loop even though moses is hidden — guard is
+  // getting armed to catch in a loop"). Root cause: this function
+  // was called from external events (dog barking, palace alerts)
+  // and force-set the nearest guard to 'alerted' without checking
+  // whether Moses was actually visible. Dog barks ~every few seconds,
+  // so guards kept re-arming → kid in cover saw a never-ending
+  // pursuit loop. Now: if Moses is crouched (hiding), the alert is
+  // suppressed entirely. The dog still barks audibly + the vignette
+  // flashes, but hidden Moses doesn't get hunted.
+  if (typeof player !== 'undefined' && player.crouched) return;
   game.guardAlertActive = true;
   $('pulseVignette').classList.add('alerted');
   // alert nearest guard
@@ -22026,6 +22077,23 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // freezes BOTH guards AND pursuit scouts (Jane: "scouts are
     // there in scene 2 in addition to the guards"); EXIT sprite
     // scale bumped 1.85 → 2.1 TILE with _clampSpriteX guard.
+    // 2026-05-19 PM56: bumped to v28 — 6-fix polish pass:
+    // * Count challenge image enlarged on landscape (65vh fixed
+    //   height + modal max-height bumped 92vh→96vh)
+    // * Scribe's Wisdom auto-skip path now ONLY plays chimeChomp
+    //   (Jane: "remove victory chime.mp3 after gate opens using
+    //   scribe. only play chime and chomp.mp3")
+    // * triggerGuardAlert no-ops when Moses is crouched — fixes the
+    //   re-arm loop where dog barks every few seconds were alerting
+    //   guards even while Moses hid in cover
+    // * Hard mode dog ease — dogs now scale with difficulty (Hard
+    //   gets seeRadius 4 instead of 5, patrolMs 600 not 520) so the
+    //   exit-corridor dog+guard pincer is survivable
+    // * "Caught — N hearts" overhead toast removed — HUD heart
+    //   animation conveys the loss; toast was redundant noise
+    // * Personal Best stats-panel cut on portrait fixed — added
+    //   box-sizing: border-box to stats-panel + stats-section, tightened
+    //   outer panel padding, capped section width 100%
     // 2026-05-19 PM55: bumped to v27 — large polish pass:
     // * Win modal "Next: The Desert" button hardened with defensive
     //   _inPrelude reset + modal cleanup + last-resort redirect
@@ -22043,7 +22111,7 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // * Scene 2 EXIT sprite REVERTED PM54 bump+clamp (matched
     //   HANDOFF_scene2_v3.28 Bug 35/46/48 — clamp causes "jumping"
     //   during camera pan; 1.85× TILE is the known-good scale)
-    const SW_VERSION = 'bek-moses1-v27';
+    const SW_VERSION = 'bek-moses1-v28';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
