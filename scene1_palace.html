@@ -352,6 +352,47 @@
   }
   .verse-box .ref { display:block; text-align:right; color:#ffb86a; margin-top:5px; font-size:12px; font-style:normal; font-weight:700; }
 
+  /* 2026-05-18 PM47: difficulty legend table — replaces the ambiguous
+     "Difficulty (set above) — Easy 4 min · Medium 3 min · Hard 3 min
+     (faster guards · 5 gates)" one-liner. 3-row table makes per-tier
+     time/gates/guards explicit so kids understand what they're picking. */
+  .diff-legend {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 auto;
+    font-size: 13px;
+    color: #ffeecf;
+  }
+  .diff-legend th, .diff-legend td {
+    padding: 5px 6px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,215,118,0.18);
+  }
+  .diff-legend th {
+    color: #ffd976;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .diff-legend tbody tr:last-child td { border-bottom: none; }
+  .diff-legend td:first-child { color: #ffd976; font-weight: 700; }
+
+  /* 2026-05-18 PM47 (Jane: "the bottom grid that says set difficulty
+     above has a lot of blank space on top and bottom. i noticed this
+     issue on cover page of portrait"). The .story-card uses
+     justify-content:center + the cards-row uses align-items:stretch,
+     so the short legend card stretched to the tall Story card's
+     height and centered its sparse contents → big empty bands top
+     and bottom. The .cover-info-card override pins content to the
+     top, tightens padding, and stops the stretch so the card hugs
+     its real content height. */
+  .cover-info-card {
+    justify-content: flex-start !important;
+    align-self: flex-start;
+    padding: 12px 16px !important;
+  }
+
   /* 2026-05-08 PM7 (Jane: "i see this grid being cut in the top"). The
      stacked cover layout was overflowing the viewport on small / mid
      desktop windows, so the kid couldn't see the hero row above the
@@ -499,6 +540,52 @@
     .cover-quickdiff-btn { padding: 6px 10px; font-size: 13px; min-width: 52px; }
     .cover-quickstart-btn { padding: 10px 14px !important; font-size: 14px !important; }
     .cover-gear-btn { width: 34px; height: 34px; font-size: 15px; }
+  }
+  /* 2026-05-18 PM47 (Jane: "on landscape, the settings button is on a
+     new line. it looks uneven"). On landscape phones the quickstart
+     row has 3 diff pills + Begin button + 📖 + 🔓 + ⚙ — six items
+     after the diff group. With default font sizes it overflowed and
+     the trailing gear wrapped to a new row.
+     Two-step fix: (1) FORCE single-row via flex-wrap:nowrap so any
+     overflow is absorbed by item shrinking instead of wrapping, and
+     (2) shrink each item enough that the natural width comfortably
+     fits the available landscape pane.
+     Continue chip keeps its flex:1 1 100% — that wraps intentionally
+     onto its own row above the diff group, since it's only present
+     for returning kids and shouldn't compete for horizontal space. */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .cover-quickstart {
+      gap: 5px;
+      padding: 6px 10px;
+      flex-wrap: nowrap;
+      width: min(720px, 96%);
+    }
+    .cover-quickdiff { gap: 4px; flex: 0 1 auto; }
+    .cover-quickdiff-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      min-width: 0;
+    }
+    .cover-quickstart-btn {
+      padding: 8px 14px !important;
+      font-size: 14px !important;
+      flex-shrink: 1;
+    }
+    .cover-gear-btn {
+      width: 34px;
+      height: 34px;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .cover-quick-iconbtn { font-size: 14px; }
+    /* Continue chip is full-width on portrait; on landscape it can
+       sit inline beside the diff pills if present — but never push
+       the row to wrap. */
+    .cover-continue-chip {
+      flex: 0 1 auto;
+      padding: 8px 16px;
+      font-size: 14px;
+    }
   }
 
   /* 2026-05-18 PM44 (Jane audit #8): lowered breakpoint 820 → 720 so iPad
@@ -3792,9 +3879,31 @@
          Easy/Medium/Hard pills + Begin button (PM44). Dropped the
          duplicate bottom "Choose Your Difficulty" card, kept the
          short legend + tutorial toggle as a slim info row. -->
-    <div class="story-card" style="text-align:center;">
-      <div style="font-size:12px;color:#ffd976;opacity:0.85;line-height:1.55;">
-        Difficulty (set above) — Easy: 4 min · Medium: 3 min · Hard: 3 min (faster guards · 5 gates)
+    <!-- 2026-05-18 PM47 (Jane: "medium and hard are 5 gates? but hard
+         has faster gates? can you update difficulty section on cover
+         page clearly?"). Previous one-liner read ambiguously: the
+         "(faster guards · 5 gates)" parenthetical seemed to apply to
+         BOTH Medium and Hard. AND the gate count was wrong — Hard is
+         6 gates (DIFFICULTY_CONFIG line ~5954), not 5. Rewrote as a
+         3-row table so every difficulty's gate count, guard count, and
+         time limit are crystal clear and independent. -->
+    <!-- Also adds a cover-info-card class (CSS below) so the bottom
+         card's padding/min-height can be tuned independently — Jane:
+         "the bottom grid that says set difficulty above has a lot of
+         blank space on top and bottom". -->
+    <div class="story-card cover-info-card" style="text-align:center;">
+      <table class="diff-legend" aria-label="Difficulty details">
+        <thead>
+          <tr><th>Level</th><th>Time</th><th>Gates</th><th>Guards</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Easy</td>   <td>4 min</td><td>4</td><td>2 (slow)</td></tr>
+          <tr><td>Medium</td> <td>3 min</td><td>5</td><td>3</td></tr>
+          <tr><td>Hard</td>   <td>3 min</td><td>6</td><td>5 (fast, sharp eyes)</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:11px;color:#ffeecf;opacity:0.7;margin-top:6px;">
+        Set your level in the panel above ↑
       </div>
       <!-- 2026-05-16 PM29 — Tutorial-mode toggle. Default ON for first
            play; persists in localStorage `bek.bundle1.tutMode`. -->
@@ -3807,7 +3916,15 @@
     </div>
   </div>
 
-  <button class="start-btn" id="startBtn" aria-label="Begin Adventure — start Scene 1: The Palace">Begin Adventure</button>
+  <!-- 2026-05-18 PM47 (Jane: "there are still 2 Begin adventure buttons.
+       the begin adventure buttons do not work and i am not able to
+       start the game"). Removed the duplicate bottom #startBtn — the
+       top quickstart panel's #quickStartBtn is the single canonical
+       Begin button. Its click handler used to require a
+       `.difficulty-btn.selected` element (the bottom card's pills,
+       deleted in PM45) which made BOTH buttons silently fail. Logic
+       moved into a `_beginAdventure()` function keyed off the top
+       pills (`.cover-quickdiff-btn.selected`). -->
 
   <!-- Inline progress bar — visible while images + audio are loading -->
   <div id="coverPreload" style="display:none; margin:14px auto 0; width:min(340px,86vw);">
@@ -8565,16 +8682,35 @@ document.querySelectorAll('.difficulty-btn').forEach(btn => {
     play('click');
   });
 });
-$('startBtn').addEventListener('click', () => {
+// 2026-05-18 PM47 (Jane: "begin adventure buttons do not work and i am
+// not able to start the game ... there are still 2 Begin adventure
+// buttons"). PM45 removed the bottom "Choose Your Difficulty" card but
+// LEFT the bottom #startBtn alone — and its handler still required a
+// `.difficulty-btn.selected` element (the bottom card's pills) to start
+// the game. Since those pills no longer exist, the handler always took
+// the "highlight difficulty card" early-return path → game never
+// launched. Two fixes in one swing:
+//   1. Delete the bottom #startBtn entirely (HTML below). The top
+//      quickstart panel's #quickStartBtn is now the ONLY Begin button.
+//   2. Move the launch logic into a reusable `_beginAdventure()` function
+//      keyed off the top-panel pills (`.cover-quickdiff-btn.selected`),
+//      so the single remaining button uses a single canonical path.
+function _beginAdventure(){
   unlockAudio();
-  if (!document.querySelector('.difficulty-btn.selected')) {
-    const sel = document.querySelector('.difficulty-selector');
-    sel.style.outline = '3px solid #ffd976';
-    sel.style.borderRadius = '8px';
-    setTimeout(() => { sel.style.outline=''; }, 1800);
-    const hint = $('difficultyHint');
-    hint.style.display = 'block';
-    setTimeout(() => { hint.style.display='none'; }, 2500);
+  // Difficulty gate: top quickstart pill must be selected (the bottom
+  // card's pills no longer exist).
+  if (!document.querySelector('.cover-quickdiff-btn.selected')) {
+    const sel = document.querySelector('.cover-quickdiff');
+    if (sel) {
+      sel.style.outline = '3px solid #ffd976';
+      sel.style.borderRadius = '20px';
+      setTimeout(() => { sel.style.outline=''; }, 1800);
+    }
+    const hint = document.getElementById('difficultyHint');
+    if (hint) {
+      hint.style.display = 'block';
+      setTimeout(() => { hint.style.display='none'; }, 2500);
+    }
     return;
   }
   play('click');
@@ -8617,7 +8753,10 @@ $('startBtn').addEventListener('click', () => {
       if (_pendingBeginTap) { const fn = _pendingBeginTap; _pendingBeginTap = null; fn(); }
     }, 12000);
   }
-});
+}
+// Expose to global scope so the quickstart wirer + any legacy callers
+// can hit the same code path.
+window._beginAdventure = _beginAdventure;
 
 // 2026-05-18 PM44 (Jane audit #5/#6/#13): wire the above-the-fold
 // quick-start panel — Continue chip + 3 difficulty pills + Begin button +
@@ -8644,12 +8783,11 @@ $('startBtn').addEventListener('click', () => {
   document.querySelectorAll('.difficulty-btn').forEach(b => {
     b.addEventListener('click', () => { _syncSelectedPills(b.dataset.diff); });
   });
-  // The top Begin button just clicks the canonical bottom Begin button —
-  // single code path, zero divergence risk.
+  // 2026-05-18 PM47: bottom #startBtn deleted, so the top button now
+  // calls _beginAdventure() directly. Single code path, single button.
   const qb = document.getElementById('quickStartBtn');
   if (qb) qb.addEventListener('click', () => {
-    const sb = document.getElementById('startBtn');
-    if (sb) sb.click();
+    try { _beginAdventure(); } catch(e){ console.error('begin failed', e); }
   });
   // Continue Adventure chip — shows whenever a valid checkpoint exists.
   // Same _validResume predicate as the bottom-Begin handler, just surfaced.
@@ -8680,8 +8818,8 @@ $('startBtn').addEventListener('click', () => {
     document.getElementById('coverPage').style.display = 'none';
     try { showResumePrompt(saved); } catch(e){
       // Fallback: if showResumePrompt errors, just trigger normal Begin flow.
-      const sb = document.getElementById('startBtn');
-      if (sb) sb.click();
+      // 2026-05-18 PM47: #startBtn was deleted; call the unified function.
+      try { _beginAdventure(); } catch(err){ console.error('continue fallback failed', err); }
     }
   });
   // Settings gear → popover with only TRUE settings (Daily, Sound).
@@ -11061,13 +11199,35 @@ function _maybeFireFirstEventTip(){
   //    color-set heart bonus explanation. Treasure bags auto-pickup on
   //    step. PM30: also highlight the nearest bag with the canvas-tile
   //    pointer so the kid can see WHICH bag the tip is talking about.
+  // 2026-05-18 PM47 (Jane: "sometimes, even though there is no treasure
+  //   bag, the tutorial places a halo on the location and says there
+  //   is a treasure bag"). Root cause: seedTreasures() conceals a bag
+  //   UNDER every banner sprite (MAP cell flipped 0→5) — kids are
+  //   supposed to DISCOVER them by walking into banners. The tutorial
+  //   scan was matching those concealed cells, so the halo + popup
+  //   pointed at a banner tile with no visible bag (the banner art
+  //   covers the bag sprite). Fix: build a set of banner tiles from
+  //   PALACE_DECOR and skip them — only VISIBLE bags fire the tip.
   if (!_firstEventSeen.treasure && Array.isArray(MAP)) {
+    // Snapshot banner tiles once per call so we can skip concealed bags.
+    const _bannerTiles = new Set();
+    try {
+      if (typeof PALACE_DECOR !== 'undefined' && Array.isArray(PALACE_DECOR)) {
+        for (const d of PALACE_DECOR) {
+          if (d && d.kind === 'banner') _bannerTiles.add(d.tx + ',' + d.ty);
+        }
+      }
+    } catch(e){}
     let bag = null;
     for (let dy = -NEAR; dy <= NEAR && !bag; dy++) {
       for (let dx = -NEAR; dx <= NEAR && !bag; dx++) {
         const ny = py + dy, nx = px + dx;
         if (ny < 0 || ny >= MAP_H || nx < 0 || nx >= MAP_W) continue;
-        if (MAP[ny][nx] === 5) bag = { tx: nx, ty: ny };
+        if (MAP[ny][nx] !== 5) continue;
+        // Skip banner-concealed bags — the sprite covers them, so a
+        // halo on this tile would point at "nothing" visible.
+        if (_bannerTiles.has(nx + ',' + ny)) continue;
+        bag = { tx: nx, ty: ny };
       }
     }
     if (bag) {
@@ -20794,7 +20954,14 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // 2026-05-18 PM46: bumped to v18 for landscape unified bottom
     // row: LEFT UP [Interact Hint Menu] [⚡👁🪶] DOWN RIGHT;
     // top hudPowerups strip hidden on landscape (canvas grows).
-    const SW_VERSION = 'bek-moses1-v18';
+    // 2026-05-18 PM47: bumped to v19 — Begin Adventure click handler
+    // fix (was checking deleted .difficulty-btn.selected), duplicate
+    // bottom #startBtn removed, accurate 3-row difficulty legend table,
+    // landscape cover-quickstart nowrap + tightened items so the gear
+    // no longer wraps to a new line, .cover-info-card padding override
+    // for the bottom legend card's blank-band issue, treasure tutorial
+    // skips banner-concealed bags (was pointing at "empty" tiles).
+    const SW_VERSION = 'bek-moses1-v19';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
