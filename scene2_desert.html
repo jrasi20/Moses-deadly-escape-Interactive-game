@@ -367,6 +367,33 @@
     box-shadow: 0 3px 10px rgba(0,0,0,0.4);
   }
   .tip-popup-btn:active { transform: scale(0.96); }
+  /* 2026-05-19 PM58: halo + hand-pointer for tutorial popups. Ported
+     from Scene 1. JS positions both fixed-page-coord on every rAF
+     frame against the current camera offset so they stay glued to
+     their tile during camera pans. */
+  .tip-pointer-ring {
+    position: fixed; z-index: 57;
+    border: 4px solid #ffd976;
+    border-radius: 18px;
+    pointer-events: none;
+    box-shadow: 0 0 18px rgba(255,217,118,0.85), inset 0 0 12px rgba(255,217,118,0.45);
+    animation: tipRingPulse 1.1s ease-in-out infinite;
+  }
+  @keyframes tipRingPulse {
+    0%,100% { transform: scale(1.0);  opacity: 1.0; }
+    50%     { transform: scale(1.18); opacity: 0.55; }
+  }
+  .tip-pointer-hand {
+    position: fixed; z-index: 58;
+    font-size: 36px;
+    pointer-events: none;
+    animation: tipHandBounce 0.9s ease-in-out infinite;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  }
+  @keyframes tipHandBounce {
+    0%,100% { transform: translate(-50%, 0); }
+    50%     { transform: translate(-50%, -8px); }
+  }
   .hud {
     display:flex; align-items:center; justify-content:space-between;
     padding:8px 12px;
@@ -2287,6 +2314,32 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    /* 2026-05-19 PM58: power-up dock relocated INTO the right-side
+       .controls column on landscape (matches the in-game-strip pattern
+       from Scene 1 PM46, but adapted for Scene 2's side-column layout
+       instead of bottom-row). The top dock (still in .game-page) is
+       hidden so the canvas claims its space. */
+    .game-page > #hudPowerups { display: none !important; }
+    .controls #hudPowerups {
+      display: flex !important;
+      flex-direction: column !important;
+      flex-wrap: nowrap !important;
+      gap: 5px !important;
+      padding: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      flex: 0 0 auto;
+      align-items: center;
+      max-height: 40vh;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .controls #hudPowerups::-webkit-scrollbar { display: none; }
+    .controls #hudPowerups .hud-pu-btn {
+      width: 38px !important;
+      height: 38px !important;
+      font-size: 16px !important;
+    }
   }
 </style>
 </head>
@@ -2865,6 +2918,42 @@ window.addEventListener('resize', () => { resizeCanvas(); });
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', () => { resizeCanvas(); });
 }
+
+// 2026-05-19 PM58 (Jane PM55 queue item: Scene 2 power-ups landscape).
+// Ported from Scene 1 PM46. On LANDSCAPE phones (≤960 px wide) we move
+// `#hudPowerups` INTO `.controls` so it sits in the bottom row next to
+// the dpad + action buttons (frees the top strip for the canvas).
+// On PORTRAIT we move it back above the canvas-wrapper. The dock is a
+// single DOM element — relocation is appendChild calls only.
+function _relocatePowerupsForOrientation() {
+  try {
+    const dock = document.getElementById('hudPowerups');
+    if (!dock) return;
+    const isLandscape = window.matchMedia('(orientation: landscape) and (max-width: 960px)').matches;
+    const controls = document.querySelector('.controls');
+    const gamePage = document.getElementById('gamePage');
+    if (!gamePage) return;
+    if (isLandscape && controls) {
+      if (dock.parentNode !== controls) controls.appendChild(dock);
+    } else {
+      // Portrait — restore above the canvas-wrapper.
+      const wrapper = gamePage.querySelector('.canvas-wrapper');
+      if (wrapper && dock.parentNode !== gamePage) {
+        gamePage.insertBefore(dock, wrapper);
+      }
+    }
+  } catch(e){}
+}
+window.addEventListener('orientationchange', () => {
+  resizeCanvas();
+  setTimeout(resizeCanvas, 350);
+  try { _relocatePowerupsForOrientation(); } catch(e){}
+});
+window.addEventListener('resize', () => {
+  try { _relocatePowerupsForOrientation(); } catch(e){}
+});
+// Call once at boot so the initial position matches orientation.
+setTimeout(_relocatePowerupsForOrientation, 0);
 
 /* ---------- TILE TYPES ----------
    0 = floor (walkable sand)
@@ -6269,6 +6358,10 @@ function _resetFirstEventSeen(){
   for (const k in _firstEventSeen) _firstEventSeen[k] = false;
 }
 let _tipPopupPrevState = null;
+let _tipPopupActiveRing = null;
+let _tipPopupActiveHand = null;
+let _tipPointerRAF = 0;
+let _tipPointerTile = null;
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
@@ -6294,6 +6387,79 @@ function showTipPopup(eventKey, opts){
     _tipPopupPrevState = game.state;
     game.state = 'tutorial';
   }
+  // 2026-05-19 PM58: anchor decision. If pointAtTile, top-anchor when
+  // the tile is in the bottom half of the canvas so card doesn't sit
+  // on the halo. Default = bottom-anchored.
+  try {
+    overlay.classList.remove('top-anchored');
+    if (opts.pointAtTile && typeof opts.pointAtTile === 'object'
+        && typeof opts.pointAtTile.ty === 'number') {
+      const screenTileY = (opts.pointAtTile.ty * TILE) - camera.py + TILE/2;
+      if (screenTileY > CANVAS_H * 0.5) {
+        overlay.classList.add('top-anchored');
+      }
+    }
+  } catch(e){}
+  // 2026-05-19 PM58: optional halo + hand pointer on a canvas tile.
+  if (opts.pointAtTile && typeof opts.pointAtTile === 'object') {
+    _tipPointAtTile(opts.pointAtTile.tx, opts.pointAtTile.ty);
+  } else {
+    _tipPointAt(null);
+  }
+}
+// Point at a tile on the game canvas with a live-tracking halo + hand.
+// Position is recomputed every rAF against the current camera offset
+// so the halo stays glued to its tile during camera pans (intro pan,
+// look-ahead bias, etc.). Ported from Scene 1 PM33.
+function _tipPointAtTile(tx, ty){
+  // Clear any prior pointer (cancels the previous rAF loop too).
+  if (_tipPopupActiveRing) { try { _tipPopupActiveRing.remove(); } catch(e){} _tipPopupActiveRing = null; }
+  if (_tipPopupActiveHand) { try { _tipPopupActiveHand.remove(); } catch(e){} _tipPopupActiveHand = null; }
+  if (_tipPointerRAF) { try { cancelAnimationFrame(_tipPointerRAF); } catch(e){} _tipPointerRAF = 0; }
+  _tipPointerTile = null;
+  const cnv = document.getElementById('gameCanvas');
+  if (!cnv || typeof camera === 'undefined' || typeof TILE === 'undefined') return;
+  _tipPointerTile = { tx, ty };
+  const ring = document.createElement('div');
+  ring.className = 'tip-pointer-ring';
+  document.body.appendChild(ring);
+  _tipPopupActiveRing = ring;
+  const hand = document.createElement('div');
+  hand.className = 'tip-pointer-hand';
+  hand.textContent = '👇';
+  document.body.appendChild(hand);
+  _tipPopupActiveHand = hand;
+  const _tick = () => {
+    if (!_tipPointerTile || !_tipPopupActiveRing) { _tipPointerRAF = 0; return; }
+    try {
+      const cnv2 = document.getElementById('gameCanvas');
+      if (!cnv2) { _tipPointerRAF = requestAnimationFrame(_tick); return; }
+      const r = cnv2.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) { _tipPointerRAF = requestAnimationFrame(_tick); return; }
+      const cssTile = (r.width / CANVAS_W) * TILE;
+      const cx = r.left + ((_tipPointerTile.tx * TILE - camera.px) + TILE/2) * (r.width / CANVAS_W);
+      const cy = r.top  + ((_tipPointerTile.ty * TILE - camera.py) + TILE/2) * (r.height / CANVAS_H);
+      const size = cssTile * 2.0;
+      _tipPopupActiveRing.style.left   = (cx - size/2) + 'px';
+      _tipPopupActiveRing.style.top    = (cy - size/2) + 'px';
+      _tipPopupActiveRing.style.width  = size + 'px';
+      _tipPopupActiveRing.style.height = size + 'px';
+      if (_tipPopupActiveHand) {
+        _tipPopupActiveHand.style.left = cx + 'px';
+        _tipPopupActiveHand.style.top  = (cy - size/2 - 44) + 'px';
+      }
+    } catch(e){}
+    _tipPointerRAF = requestAnimationFrame(_tick);
+  };
+  _tipPointerRAF = requestAnimationFrame(_tick);
+}
+function _tipPointAt(_unused){
+  // No-op variant for non-tile pointers (kept as a hook for future
+  // pointAtEl support). Just clears any active ring/hand.
+  if (_tipPopupActiveRing) { try { _tipPopupActiveRing.remove(); } catch(e){} _tipPopupActiveRing = null; }
+  if (_tipPopupActiveHand) { try { _tipPopupActiveHand.remove(); } catch(e){} _tipPopupActiveHand = null; }
+  if (_tipPointerRAF) { try { cancelAnimationFrame(_tipPointerRAF); } catch(e){} _tipPointerRAF = 0; }
+  _tipPointerTile = null;
 }
 function _hideTipPopup(){
   const overlay = document.getElementById('tipPopupOverlay');
@@ -6302,6 +6468,8 @@ function _hideTipPopup(){
     game.state = _tipPopupPrevState || 'playing';
     _tipPopupPrevState = null;
   }
+  // 2026-05-19 PM58: tear down the live pointer on dismiss.
+  _tipPointAt(null);
 }
 // Wire dismiss buttons (DOMContentLoaded + setTimeout(0) belt-and-
 // suspenders, same pattern as Scene 1).
@@ -7057,6 +7225,7 @@ function openChallenge(gate) {
         icon: '🛡️',
         title: 'A Desert Checkpoint',
         body: 'Step on a glowing ? tile to start a Bible challenge. Answer all 3 questions correctly to clear it and continue east toward Midian!',
+        pointAtTile: { tx: gate.tx, ty: gate.ty },
       });
     } catch(e){}
   }
@@ -8452,11 +8621,14 @@ function onTreasure(tx, ty){
   try { _addLifetimeTreasures(1); } catch(e){}
   try { _refreshUnlockButtons(); } catch(e){}
   // 2026-05-19 PM57: first-treasure tutorial popup.
+  // 2026-05-19 PM58: point at Moses's current tile (where the bag
+  // just was) so the halo + finger reinforce what the kid just did.
   try {
     showTipPopup('treasure', {
       icon: '💎',
       title: 'A Desert Treasure',
       body: 'Treasures hidden in the sand give you +2 stars. Look out for more as you cross the dunes!',
+      pointAtTile: { tx: tx, ty: ty },
     });
   } catch(e){}
 }
@@ -8762,6 +8934,7 @@ function onOasisStep(tx, ty){
       icon: '💧',
       title: 'An Oasis!',
       body: 'Oases in the desert restore Moses\'s heart. Step on the palm-and-pool tiles when your hearts are low. Each oasis can only be used once!',
+      pointAtTile: { tx: tx, ty: ty },
     });
   } catch(e){}
 }
@@ -9978,6 +10151,7 @@ function onMirageStep(nx, ny){
           icon: '🌫️',
           title: 'Beware Mirages!',
           body: 'The desert sun tricks Moses into seeing water that isn\'t there. Each mirage steals 1 heart and bounces him backward. Watch for the shimmer and walk around them!',
+          pointAtTile: { tx: m.tx, ty: m.ty },
         });
       } catch(e){}
       // v2.3.4 Jane: "Stepping on mirage should move Moses one tile back."

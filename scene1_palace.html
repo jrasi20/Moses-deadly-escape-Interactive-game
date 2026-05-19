@@ -22120,7 +22120,16 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // (matches Scene 1 PM48 — arrow-button-tap regression). No
     // halo/hand pointer ported yet — deferred to PM58 alongside
     // Scene 2's power-up dock landscape relocation.
-    const SW_VERSION = 'bek-moses1-v29';
+    // 2026-05-19 PM58: bumped to v30 — Scene 2 PM55 queue items 2+3:
+    // power-up dock landscape relocation (#hudPowerups moves into
+    // .controls on landscape ≤960px wide; restored above canvas on
+    // portrait; .game-page > #hudPowerups hidden on landscape so top
+    // strip is gone). Halo/hand-pointer system ported (CSS for
+    // .tip-pointer-ring + .tip-pointer-hand; JS _tipPointAtTile rAF
+    // tracker; pointAtTile wired on treasure / checkpoint / oasis /
+    // mirage first-event triggers; scout intentionally NOT wired
+    // because scouts move every frame).
+    const SW_VERSION = 'bek-moses1-v30';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
