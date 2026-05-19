@@ -2645,6 +2645,18 @@
 <audio id="audVulture"        preload="auto" src="assets/audio/vulture.mp3"></audio>
 <audio id="audCamelGrunt"     preload="auto" src="assets/audio/camel%20grunt.mp3"></audio>
 <audio id="audSuccess3"       preload="auto" src="assets/audio/success%203.mp3"></audio>
+<!-- 2026-05-19 PM53 (Jane: "deep dive into scene 2 fixes based on all
+     the bug fixes you have done in this thread"). Port the 8 new
+     distinct sfx from Scene 1's PM51 audio refresh so Scene 2 has
+     the same audio identity per event (no more chime-for-everything). -->
+<audio id="audTreasureChime"  preload="auto" src="assets/audio/treasure%20chime.mp3"></audio>
+<audio id="audVictoryChime"   preload="auto" src="assets/audio/victory%20chime.mp3"></audio>
+<audio id="audWindChimes"     preload="auto" src="assets/audio/wind%20chimes.mp3"></audio>
+<audio id="audChimeChomp"     preload="auto" src="assets/audio/chime%20and%20chomp.mp3"></audio>
+<audio id="audClearCombo"     preload="auto" src="assets/audio/clear%20combo.mp3"></audio>
+<audio id="audMagicSfx"       preload="auto" src="assets/audio/magic%20sfx.mp3"></audio>
+<audio id="audCollect"        preload="auto" src="assets/audio/collect.mp3"></audio>
+<audio id="audRankReveal"     preload="auto" src="assets/audio/rank%20reveal.mp3"></audio>
 
 <script>
 /* ============================================================================
@@ -2814,6 +2826,16 @@ const audio = {
   vulture:       $('audVulture'),        // vulture dive hazard
   camelGrunt:    $('audCamelGrunt'),     // friendly camel interaction
   success3:      $('audSuccess3'),       // truth card reveal sting
+  // 2026-05-19 PM53: distinct sfx per event (ported from Scene 1 PM51).
+  treasureChime: $('audTreasureChime'),   // treasure bag pickup
+  victoryChime:  $('audVictoryChime'),    // checkpoint cleared (mini-victory)
+  windChimes:    $('audWindChimes'),      // ambient desert moment / sandstorm calm
+  chimeChomp:    $('audChimeChomp'),      // clue-letter / scroll pickup
+  clearCombo:    $('audClearCombo'),      // color-bag bonus / heart bonus
+  magicSfx:      $('audMagicSfx'),        // power-up activation (when wired)
+  collect:       $('audCollect'),         // generic collect feedback
+  correctAnswer: $('audCorrect'),         // PM53 alias matching Scene 1 key
+  rankReveal:    $('audRankReveal'),      // new personal-best / extra heart
 };
 // volumes
 audio.bgm.volume = 0.28;
@@ -5184,7 +5206,9 @@ function attemptMove(dir) {
                   || (prevTx === nx && ct.ty === ny);
       if (blocks) {
         play('pop');
-        try { toast('Move around the caravan trader!'); } catch(e){}
+        // 2026-05-19 PM53 (ported from Scene 1 PM52 toast cleanup):
+        // bump SFX + visible blocked-step is enough feedback. Toast
+        // removed.
         return;
       }
     }
@@ -5198,7 +5222,7 @@ function attemptMove(dir) {
                     || ((fc.tx - fd) === nx && fc.ty === ny);
       if (fcBlocks) {
         play('pop');
-        try { toast('The camel is grazing — walk around it!'); } catch(e){}
+        // 2026-05-19 PM53: toast removed — bump SFX is enough.
         return;
       }
     }
@@ -5242,7 +5266,9 @@ function attemptMove(dir) {
     // Comprehensive diagnostics + hard reset + force-show modal with
     // multiple retries AND a state-recovery bailout so Moses never gets
     // stuck in 'dialog' state with no modal visible.
-    try { toast('Checkpoint activated!'); } catch(e){}
+    // 2026-05-19 PM53: "Checkpoint activated!" toast removed — the
+    // modal opening + Moses standing on the visible ? tile is the
+    // feedback. Toast was redundant.
     // reset any competing modal that might steal focus
     try {
       const others = ['winModal','dangerModal','dialogModal','pauseModal','tutorialModal','sceneBanner','truthChestModal','mapPeekOverlay'];
@@ -5753,6 +5779,10 @@ function _saveCheckpoint(){
       hearts: game.hearts,
       stars: game.stars,
       treasureCount: game.treasureCount,
+      // 2026-05-19 PM53 (ported from Scene 1 PM51): save the
+      // denominator too so HUD + win-modal stay consistent across
+      // resume. Restore site updates `_applyCheckpointAfterSeed`.
+      treasuresTotal: game.treasuresTotal || 0,
       altitudeCleared: game.altitudeCleared || 0,
       timeLeft: Math.max(0, Math.round(game.timeLeft || 0)),
       collectedTiles: collectedTiles,
@@ -5794,6 +5824,18 @@ function _applyCheckpointAfterSeed(){
     if (typeof p.hearts === 'number') game.hearts = p.hearts;
     if (typeof p.stars === 'number') game.stars = p.stars;
     if (typeof p.treasureCount === 'number') game.treasureCount = p.treasureCount;
+    // 2026-05-19 PM53 (ported from Scene 1 PM51): restore saved
+    // denominator so HUD + win-modal show the same total the kid saw
+    // before they closed the tab. Reachability cap: if a fresh seed
+    // produced fewer bag tiles than the saved total, take the lower
+    // of (saved, fresh + already-collected) so 100% is still reachable.
+    if (typeof p.treasuresTotal === 'number' && p.treasuresTotal > 0) {
+      const _seededTotal = game.treasuresTotal || 0;
+      const _alreadyCollected = game.treasureCount || 0;
+      const _reachable = _seededTotal + _alreadyCollected;
+      game.treasuresTotal = Math.min(p.treasuresTotal, Math.max(_reachable, p.treasuresTotal));
+      if (game.treasuresTotal > _reachable) game.treasuresTotal = _reachable;
+    }
     if (typeof p.altitudeCleared === 'number') game.altitudeCleared = p.altitudeCleared;
     if (typeof p.timeLeft === 'number' && p.timeLeft > 0) game.timeLeft = p.timeLeft;
     if (Array.isArray(p.gates) && Array.isArray(challengeGates)) {
@@ -6056,7 +6098,7 @@ function restartScene() {
     playIntroPan(() => {
       game.state = 'playing';
       startTimers();
-      toast('Scene restarted - try again!');
+      /* 2026-05-19 PM53 (ported from Scene 1 PM52): scene-restart toast removed — cinematic + HUD reset is enough feedback. */
     });
   } catch(e) {
     game.state = 'playing';
@@ -6325,11 +6367,13 @@ function interact(){
       return;
     }
   }
-  // contextual fallback based on where Moses is
+  // 2026-05-19 PM53 (ported from Scene 1 PM52): contextual fallback
+  // toasts removed — Hint button is the authoritative "what now?"
+  // tap. The "you are hiding well" / "look for travelers" toasts
+  // were noisy filler. Only keep the late-game exit-is-near hint
+  // since it reveals hidden goal state.
   const nearExit = (player.tx >= 35);
   if (nearExit) toast('The Midian well is just ahead - keep going!');
-  else if (player.crouched) toast('You are hiding well. Move when the coast is clear.');
-  else toast('Look for travelers, markers, and water skins to interact with.');
 }
 
 function triggerInteractable(obj){
@@ -8014,6 +8058,10 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
           if (isClimb) toast('Desert Checkpoint ' + (gate.step || '') + ' cleared - Moses presses on!');
           else toast('Checkpoint cleared!');
         }
+        // 2026-05-19 PM53 (ported from Scene 1 PM51): distinct
+        // victory-chime sfx so each checkpoint clear feels like its
+        // own mini-win.
+        try { play('victoryChime') || play('success'); } catch(e){}
         // v3.3 LANE 3 (Jane 2026-04-23): celebration on every gate clear —
         // particle burst + verse drift across the top so kids feel rewarded.
         // Particles + showVerseDrift are both safe to no-op if undefined.
@@ -8205,10 +8253,12 @@ function onTreasure(tx, ty){
   game.treasureCount++;
   game.stars += 2;
   updateHudTreasure(); updateHudStars();
-  play('coin');
-  // v3.4: glitter sparkle burst at Moses's screen position on pickup
+  // 2026-05-19 PM53: ported Scene 1's distinct treasure-chime; falls
+  // back to coin if file missing. Toast removed — the chime + glitter
+  // burst + HUD counter ticking is enough feedback (parity with the
+  // Scene 1 PM31 "no per-pickup toast" rule).
+  play('treasureChime') || play('coin');
   spawnGlitterBurstAtPlayer(16);
-  toast('+2 stars! Treasure collected (' + game.treasureCount + '/' + game.treasuresTotal + ')');
 }
 
 /* ---------- v3.4 GLITTER SPARKLES ----------
@@ -9379,12 +9429,9 @@ function updatePursuitScouts(dt){
       pv.classList.add('alerted');
       setTimeout(() => pv.classList.remove('alerted'), 1400);
     }
-    try {
-      if (!window._scoutWarnShown) {
-        window._scoutWarnShown = true;
-        toast('A scout closes in! Hide behind a boulder or keep moving east.');
-      }
-    } catch(e){}
+    // 2026-05-19 PM53 (ported from Scene 1 PM52 'guard saw you' toast
+    // removal): the scout-closes-in toast is redundant with the alert
+    // vignette flash + scout sprite visible on screen. Suppressed.
   }
 }
 function drawPursuitScouts(ctx){

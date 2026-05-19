@@ -6620,9 +6620,13 @@ const DIFFICULTY_CONFIG = {
   //                              between gates)
   //   censerSpeed   1.95 → 1.6  (smoke hazard cycles slower, easier to
   //                              time crossings)
+  // 2026-05-19 PM53: gateCount 6 → 5 since CHALLENGE_POSITIONS now has
+  // only 5 reachable cells (orphaned (29,7) removed). seedChallenges
+  // would have capped at 5 anyway; making it explicit so HUD math is
+  // always consistent on first-load.
   hard:   { timeLimit: 240, guardCount: 4, guardSeeRadius: 4, guardPatrolMs: 560,
             censerActive: true,  censerSpeed: 1.6, servantActive: true,
-            gateCount: 6 },
+            gateCount: 5 },
 };
 function applyDifficultyConfig(diff){
   const cfg = DIFFICULTY_CONFIG[diff] || DIFFICULTY_CONFIG.easy;
@@ -8224,19 +8228,36 @@ const CHALLENGE_BANK = {
 // at cols 5, 17, and 30 (NOT 29). The (29,7) entry was off-by-one and
 // placed the gate on a WALL tile, surrounded by walls on every side.
 // Fixed to (30, 7) which is the true east gap.
+// 2026-05-19 PM53 (Jane: "tell me how you will access this circled gate?
+// its impossible"). BFS from Moses's start tile (2,5) confirms gate
+// (29,7) is structurally UNREACHABLE: cells (29,7) sit in chamber C
+// (rows 1-6, cols 23-38), connected to corridor 3 (rows 8-11,
+// cols 27-38). Both regions are walled off from the rest of the
+// playable map:
+//   - rows 0-6 have wall columns at 9 and 22 separating Moses's
+//     start chamber from chamber C
+//   - rows 8-11 have wall columns at 14 and 26 separating corridor 1
+//     from corridor 3
+//   - row 12 wall-gaps are at cols 12 and 24 — neither lands in
+//     corridor 3 (cols 27-38)
+//   - row 7 wall-gaps at cols 5, 17, 29 — col 29 IS chamber C's only
+//     entry but reaching it requires already being in chamber C or
+//     corridor 3, neither of which is reachable
+// So 144 tiles are orphaned. PM48 thought changing (30,7) → (29,7)
+// fixed the seed validator; in reality (30,7) was a wall that the
+// validator dropped (so kids saw 5 gates and could finish the level)
+// and PM48 unintentionally REPLACED that with a walkable-but-orphaned
+// cell — same outcome (Hard caps at 5 visible gates) but now an
+// orphan gate could in theory seed AND mock the kid. Dropped the
+// entry entirely. Hard officially has 5 reachable gates. The cover
+// legend (PM52) doesn't promise a count anymore so this is clean.
 const CHALLENGE_POSITIONS = [
   { tx: 5,  ty: 7  },   // west single-tile break (row 7)
   { tx: 17, ty: 7  },   // mid single-tile break (row 7)
-  // 2026-05-18 PM48 (Jane: "the hard level is shown as 6 gates. this
-  // is wrong. hard level is 5 gates only correct? at least the HUD
-  // shows 5 for hard level"). Root cause: row 7 of MAP_STR is
-  // "1111101111111111101111111111101111111111" — the east wall-gap
-  // is at col 29, NOT col 30. The previous (30,7) coord landed on
-  // a WALL, so the position validator at line ~7937 silently
-  // filtered it out and only 5 of the 6 hardcoded positions were
-  // usable. On Hard (gateCount=6) the seeder capped at 5 → HUD
-  // showed 5/5 while the cover legend said 6. Reverted to 29.
-  { tx: 29, ty: 7  },   // east single-tile break (row 7) — PM48: col 29 is the actual wall gap (was wrongly 30)
+  // PM53: removed (29,7) — orphaned chamber, kid can never reach it.
+  // If a future map redesign opens chamber C to the rest of the
+  // palace (e.g. via a new wall-gap in col 22 between chamber B and
+  // chamber C, OR via a secret door cluster), re-add this entry.
   { tx: 12, ty: 12 },   // mid corridor west break (row 12)
   { tx: 24, ty: 12 },   // mid corridor east break (row 12)
   { tx: 4,  ty: 18 },   // final single-tile break before exit (row 18)
@@ -21893,7 +21914,19 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     // opposite horizontal half from the halo tile so they never
     // overlap. Fixed misleading MAP_STR row-7 comment (gaps at
     // 5/17/29, not 5/16/27 as previous comment claimed).
-    const SW_VERSION = 'bek-moses1-v24';
+    // 2026-05-19 PM53: bumped to v25 — orphaned gate (29,7) removed
+    // from CHALLENGE_POSITIONS (BFS proves it's unreachable from
+    // Moses's start tile — 144 tiles of chamber C / corridor 3 are
+    // walled off). Hard's gateCount 6 → 5 to match the new pool.
+    // Scene 2 deep-dive ported all Scene 1 fixes that apply:
+    // distinct sfx wiring (treasureChime on bag pickup, victoryChime
+    // on checkpoint clear, magicSfx/clearCombo/chimeChomp/windChimes
+    // pre-registered for future use), redundant toasts removed
+    // (caravan-trader bump, camel-grazing, checkpoint-activated,
+    // scout-closes-in, look-for-travelers, hiding-well, scene-
+    // restarted), bag-count denominator now saved + restored on
+    // resume with the same reachability cap as Scene 1.
+    const SW_VERSION = 'bek-moses1-v25';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
