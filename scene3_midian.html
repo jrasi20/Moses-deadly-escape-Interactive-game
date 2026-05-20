@@ -2938,18 +2938,25 @@ const SPRITE_QUALITY_DOWNSCALE = new Set([
 for (const k in IMG_SRC) {
   const img = new Image();
   img.onload = () => {
-    try {
-      const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
-      if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
-        IMG[k] = _preRender(bled, 256);
-      } else if (SKIP_PRERENDER.has(k)) {
-        IMG[k] = bled;
-      } else {
-        IMG[k] = _preRender(bled);
-      }
-    } catch(e) { IMG[k] = img; }
-    imagesReady++;
-    if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    // 2026-05-19 (Jane: "sprites don't all load on the first pass; a reload
+    // fixes it"). Force a full decode() before counting the image ready so
+    // the game starts only once every sprite is render-instant.
+    const _finalize = () => {
+      try {
+        const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
+        if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
+          IMG[k] = _preRender(bled, 256);
+        } else if (SKIP_PRERENDER.has(k)) {
+          IMG[k] = bled;
+        } else {
+          IMG[k] = _preRender(bled);
+        }
+      } catch(e) { IMG[k] = img; }
+      imagesReady++;
+      if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    };
+    if (typeof img.decode === 'function') img.decode().then(_finalize).catch(_finalize);
+    else _finalize();
   };
   img.onerror = () => {
     try { window._imgFailures.push({ key: k, src: IMG_SRC[k] }); } catch(e){}

@@ -4251,23 +4251,32 @@ const SPRITE_QUALITY_DOWNSCALE = new Set([
 for (const k in IMG_SRC) {
   const img = new Image();
   img.onload = () => {
-    try {
-      // v3.19: Bleed RGB into transparent edge pixels FIRST to kill white halos
-      const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
-      // v3.26 Jane 2026-04-26: load-time multi-step downscale ONLY for the
-      // explicit SPRITE_QUALITY_DOWNSCALE set. Everything else keeps the
-      // safer SKIP_PRERENDER path (fixes Jane's "oasis is so distorted /
-      // blurred" without re-breaking guard / Moses-back / Moses-right).
-      if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
-        IMG[k] = _preRender(bled, 256);
-      } else if (SKIP_PRERENDER.has(k)) {
-        IMG[k] = bled;
-      } else {
-        IMG[k] = _preRender(bled);
-      }
-    } catch(e) { IMG[k] = img; }
-    imagesReady++;
-    if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    // 2026-05-19 (Jane: "sprites don't all load on the first pass; a reload
+    // fixes it"). onload fires when the PNG is downloaded but NOT yet
+    // decoded — so the first draw decodes on the main thread and the sprite
+    // can flash missing. Force a full decode() before counting the image as
+    // ready, so the game only starts once every sprite is render-instant.
+    const _finalize = () => {
+      try {
+        // v3.19: Bleed RGB into transparent edge pixels FIRST to kill white halos
+        const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
+        // v3.26 Jane 2026-04-26: load-time multi-step downscale ONLY for the
+        // explicit SPRITE_QUALITY_DOWNSCALE set. Everything else keeps the
+        // safer SKIP_PRERENDER path (fixes Jane's "oasis is so distorted /
+        // blurred" without re-breaking guard / Moses-back / Moses-right).
+        if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
+          IMG[k] = _preRender(bled, 256);
+        } else if (SKIP_PRERENDER.has(k)) {
+          IMG[k] = bled;
+        } else {
+          IMG[k] = _preRender(bled);
+        }
+      } catch(e) { IMG[k] = img; }
+      imagesReady++;
+      if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    };
+    if (typeof img.decode === 'function') img.decode().then(_finalize).catch(_finalize);
+    else _finalize();
   };
   img.onerror = () => {
     try {

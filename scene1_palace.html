@@ -6306,21 +6306,28 @@ const SPRITE_QUALITY_DOWNSCALE = new Set([
 for (const k in IMG_SRC) {
   const img = new Image();
   img.onload = () => {
-    try {
-      // Wave 3b polish: chariot PNGs ship with black backgrounds; chroma-key
-      // them BEFORE the standard alpha-bleed so the silhouette is clean.
-      const _chromaSrc = SPRITE_BLACK_CHROMA.has(k) ? _blackChromaKey(img) : img;
-      const bled = SPRITE_BLEED.has(k) ? _alphaBleed(_chromaSrc) : _chromaSrc;
-      if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
-        IMG[k] = _preRender(bled, 256);
-      } else if (SKIP_PRERENDER.has(k)) {
-        IMG[k] = bled;
-      } else {
-        IMG[k] = _preRender(bled);
-      }
-    } catch(e) { IMG[k] = img; }
-    imagesReady++;
-    if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    // 2026-05-19 (Jane: "sprites don't all load on the first pass; a reload
+    // fixes it"). Force a full decode() before counting the image ready so
+    // the game starts only once every sprite is render-instant.
+    const _finalize = () => {
+      try {
+        // Wave 3b polish: chariot PNGs ship with black backgrounds; chroma-key
+        // them BEFORE the standard alpha-bleed so the silhouette is clean.
+        const _chromaSrc = SPRITE_BLACK_CHROMA.has(k) ? _blackChromaKey(img) : img;
+        const bled = SPRITE_BLEED.has(k) ? _alphaBleed(_chromaSrc) : _chromaSrc;
+        if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
+          IMG[k] = _preRender(bled, 256);
+        } else if (SKIP_PRERENDER.has(k)) {
+          IMG[k] = bled;
+        } else {
+          IMG[k] = _preRender(bled);
+        }
+      } catch(e) { IMG[k] = img; }
+      imagesReady++;
+      if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    };
+    if (typeof img.decode === 'function') img.decode().then(_finalize).catch(_finalize);
+    else _finalize();
   };
   img.onerror = () => {
     try {
