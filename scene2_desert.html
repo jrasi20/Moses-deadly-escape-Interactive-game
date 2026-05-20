@@ -4994,7 +4994,10 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference moses in nile A.png',
       imgB:'assets/images/spot the difference moses in nile B.png',
       answer:4,
-      diffs:[{x:22,y:28,r:10},{x:72,y:18,r:10},{x:45,y:68,r:10},{x:78,y:72,r:10}],
+      // 2026-05-19 (Jane bug: "differences not detected; halo at wrong
+      // coords"). Re-derived by pixel-diffing imgA vs imgB: pottery (left),
+      // boat sail (top-centre), basket (centre), frog (bottom-right).
+      diffs:[{x:13,y:55,r:10},{x:48,y:42,r:10},{x:47,y:67,r:11},{x:88,y:88,r:9}],
       clue:'Look very carefully — some colours, shapes or objects have changed between the two pictures!',
       verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
     // --- Pictionary ---
@@ -5289,7 +5292,9 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference moses running A.png',
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
-      diffs:[{x:30,y:25,r:10},{x:65,y:35,r:10},{x:20,y:70,r:10},{x:75,y:65,r:10}],
+      // 2026-05-19 (Jane bug): re-derived by pixel-diff: sun (top-left),
+      // vulture (left), Moses' hand/object (centre), camel (right).
+      diffs:[{x:20,y:30,r:9},{x:12,y:49,r:9},{x:40,y:52,r:10},{x:85,y:57,r:10}],
       clue:'Look very carefully at both pictures — some things have changed!',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     // --- Pictionary ---
@@ -5560,7 +5565,10 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference princess rescue A.png',
       imgB:'assets/images/spot the difference princess rescue B.png',
       answer:4,
-      diffs:[{x:25,y:22,r:10},{x:68,y:30,r:10},{x:40,y:65,r:10},{x:80,y:58,r:10}],
+      // 2026-05-19 (Jane bug): re-derived by pixel-diff: dragonfly (left),
+      // crown (top-right), attendants' dresses (centre-right), baby's
+      // blanket in the basket (centre).
+      diffs:[{x:20,y:50,r:10},{x:78,y:22,r:9},{x:65,y:52,r:11},{x:38,y:64,r:10}],
       clue:'Look very carefully at both pictures — some things have changed between them!',
       verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
     // --- Pictionary ---
@@ -6483,9 +6491,12 @@ $('startBtn').addEventListener('click', () => {
     if (overlay) overlay.classList.remove('active');
     // Check for a mid-game save — show a resume prompt instead of the cinematic.
     const _savedGame = _loadCheckpoint();
-    if (_savedGame) {
+    if (_savedGame && _hasResumableProgress(_savedGame)) {
       showResumePrompt(_savedGame);
     } else {
+      // No save, or a save with 0 checkpoints cleared — nothing worth
+      // resuming, so wipe the stale save and start the adventure fresh.
+      if (_savedGame) { try { _clearCheckpoint(); } catch(e){} }
       openCinematic();
     }
   };
@@ -6606,9 +6617,10 @@ try {
           const _launchCin = () => {
             try {
               const _savedGame = (typeof _loadCheckpoint === 'function') ? _loadCheckpoint() : null;
-              if (_savedGame && typeof showResumePrompt === 'function') {
+              if (_savedGame && _hasResumableProgress(_savedGame) && typeof showResumePrompt === 'function') {
                 showResumePrompt(_savedGame);
               } else if (typeof openCinematic === 'function') {
+                if (_savedGame) { try { _clearCheckpoint(); } catch(e){} }
                 openCinematic();
               }
             } catch(e){}
@@ -6921,6 +6933,15 @@ function _applyCheckpointAfterSeed(){
   } catch(e) { return false; }
 }
 
+// 2026-05-19 (Jane bug): a save with ZERO checkpoints cleared was still
+// offering "Continue Adventure — 0 of N checkpoints already cleared", which
+// is nonsense (there's nothing to resume). Only treat a save as resumable
+// once the kid has actually cleared at least one checkpoint.
+function _hasResumableProgress(p){
+  if (!p) return false;
+  const cleared = Array.isArray(p.gates) ? p.gates.filter(g => g && g.solved).length : 0;
+  return cleared >= 1;
+}
 function showResumePrompt(p) {
   const gatesCleared = Array.isArray(p.gates) ? p.gates.filter(g => g.solved).length : 0;
   const totalGates   = Array.isArray(p.gates) ? p.gates.length : 9;
