@@ -4014,35 +4014,41 @@
        JS `_relocatePowerupsForOrientation` moves `#hudPowerups`
        INTO `.controls` on landscape. The standalone top
        hudPowerups strip is hidden so the canvas claims that space. */
+    /* 2026-05-19 (Jane: "playing with both hands in landscape is hard").
+       Two-thumb layout: D-pad CROSS bottom-left, actions stacked
+       bottom-right, powerups centered (parity with scene 2). */
     .controls {
       display: flex !important;
       flex-direction: row !important;
       align-items: center;
       justify-content: space-between !important;
-      gap: 6px;
-      padding: 6px max(10px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right)) !important;
+      gap: 8px;
+      padding: 4px max(10px, env(safe-area-inset-left)) max(4px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right)) !important;
       max-height: none;
-      min-height: 60px;
+      min-height: 94px;
       overflow: visible;
       flex-wrap: nowrap;
     }
     .dpad {
-      display: contents !important;
+      display: grid !important;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(2, 40px);
+      gap: 4px;
+      width: auto;
+      order: 1;
+      flex: 0 0 auto;
+      align-self: center;
     }
     .dpad-spacer { display: none !important; }
     .dpad-btn {
       position: static !important;
       z-index: auto;
-      width: 48px;
-      height: 48px;
-      min-width: 48px;
+      width: 44px; height: 40px; min-width: 44px;
       border-radius: 10px;
-      font-size: 20px;
-      padding: 2px 0 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      font-size: 19px;
+      padding: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       line-height: 1.0;
       background: linear-gradient(145deg, #ffd976, #c38b28);
       border: 0;
@@ -4050,59 +4056,56 @@
       color: #5a1d06;
       flex: 0 0 auto;
     }
+    .dpad-btn[data-dir="up"]    { grid-column: 2; grid-row: 1; }
+    .dpad-btn[data-dir="left"]  { grid-column: 1; grid-row: 2; }
+    .dpad-btn[data-dir="down"]  { grid-column: 2; grid-row: 2; }
+    .dpad-btn[data-dir="right"] { grid-column: 3; grid-row: 2; }
     .dpad-text {
       display: block !important;
-      font-size: 8px;
-      letter-spacing: 0.3px;
-      font-weight: 700;
-      opacity: 0.85;
-      margin-top: 1px;
+      font-size: 7px; letter-spacing: 0.2px; font-weight: 700; opacity: 0.8; margin-top: 0;
     }
-    /* Order across .controls: LEFT(1) UP(2) action(3) hudPowerups(4) DOWN(5) RIGHT(6) */
-    .dpad-btn[data-dir="left"]  { order: 1; }
-    .dpad-btn[data-dir="up"]    { order: 2; }
     .action-panel {
       order: 3;
-      flex-direction: row !important;
-      flex: 1 1 auto;
-      max-width: 40%;
-      gap: 6px;
-      flex-wrap: nowrap;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 5px;
+      flex: 0 0 auto;
+      max-width: 36%;
       justify-content: center;
     }
     .action-btn {
-      height: 40px;
+      height: 28px;
       font-size: 11px;
-      padding: 0 8px;
-      width: auto;
-      flex: 1 1 0;
-      min-width: 0;
+      padding: 0 14px;
+      width: 100%;
+      min-width: 86px;
       white-space: nowrap;
     }
     .controls #hudPowerups {
-      order: 4;
-      flex: 0 1 auto;
+      order: 2;
+      flex: 1 1 auto;
       display: flex !important;
       flex-direction: row !important;
-      flex-wrap: nowrap !important;
-      gap: 4px !important;
+      flex-wrap: wrap !important;
+      gap: 5px !important;
       padding: 0 !important;
       background: transparent !important;
       border: none !important;
-      overflow-x: auto;
-      overflow-y: hidden;
-      max-width: 28vw;
+      max-width: 40vw;
+      max-height: 90px;
+      overflow-y: auto;
+      overflow-x: hidden;
       scrollbar-width: none;
       align-items: center;
+      align-content: center;
+      justify-content: center;
     }
     .controls #hudPowerups::-webkit-scrollbar { display: none; }
     .controls #hudPowerups .hud-pu-btn {
-      width: 44px !important;
-      height: 44px !important;
+      width: 42px !important;
+      height: 42px !important;
       font-size: 18px !important;
     }
-    .dpad-btn[data-dir="down"]  { order: 5; }
-    .dpad-btn[data-dir="right"] { order: 6; }
     .pause-btn { width:36px; height:36px; font-size:13px; margin-right:0; }
     .hud-group { flex-shrink: 0; gap: 4px; }
     /* Hide the standalone top hudPowerups strip on landscape — the
