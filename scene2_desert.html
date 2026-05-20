@@ -4411,6 +4411,30 @@ function isCover(tx, ty) { return tileAt(tx, ty) === 3; }
 function isAdjacentToCover(tx, ty) {
   return isCover(tx-1,ty)||isCover(tx+1,ty)||isCover(tx,ty-1)||isCover(tx,ty+1);
 }
+// 2026-05-19 (Jane: "decorations overlapping each other"). The desert
+// cactus sprinkle draws a cactus on ~7% of tiles at 1.45x TILE size, so two
+// cacti on ADJACENT tiles (centres only 1 TILE apart) overlap badly.
+// _cactusCandidate returns the deterministic hash for a tile IF it qualifies
+// as a cactus tile (same rule as the draw loop), else null. Drawing then
+// only happens for the "winner" of each adjacency cluster (smallest hash),
+// which guarantees surviving cacti are >=2 tiles apart -> never overlap,
+// while keeping the scattered, non-grid look.
+function _cactusCandidate(tx, ty){
+  if (tx < 5 || tx > 34) return null;            // matches draw-loop x-range
+  const h1 = ((tx * 2654435761) ^ (ty * 40503)) >>> 0;
+  if ((h1 % 100) >= 7) return null;              // not in the ~7% bucket
+  return h1;
+}
+function _cactusIsWinner(tx, ty){
+  const self = _cactusCandidate(tx, ty);
+  if (self === null) return false;
+  for (let ny = -1; ny <= 1; ny++) for (let nx = -1; nx <= 1; nx++){
+    if (nx === 0 && ny === 0) continue;
+    const nb = _cactusCandidate(tx + nx, ty + ny);
+    if (nb !== null && nb < self) return false;  // a stronger neighbour wins
+  }
+  return true;
+}
 /* Line-of-sight between two tile positions. Returns true if clear,
    false if a wall (1) or pillar (3) blocks the sight line. Uses a
    simple DDA sampling between centers. */
@@ -14082,10 +14106,10 @@ function drawTile(t, dx, dy, tx, ty){
         // positions look genuinely scattered. Also added per-tile X/Y
         // jitter (±0.18 × TILE) so neighbouring cacti don't line up on
         // the grid even when they do co-occur.
-        const _h1 = ((tx * 2654435761) ^ (ty * 40503)) >>> 0;
         const _h2 = ((tx * 374761393) ^ (ty * 668265263)) >>> 0;
-        const cactusBucket = _h1 % 100;
-        if (cactusBucket < 7 && tx >= 5 && tx <= 34 && IMG.desertCactus && IMG.desertCactus.complete && IMG.desertCactus.naturalWidth) {
+        // 2026-05-19 PM (Jane: overlapping decor). Only the winner of each
+        // adjacency cluster draws, so no two cacti are ever neighbours.
+        if (_cactusIsWinner(tx, ty) && IMG.desertCactus && IMG.desertCactus.complete && IMG.desertCactus.naturalWidth) {
           ctx.save();
           ctx.globalAlpha = 0.95;
           const cSz = TILE * 1.45;
