@@ -526,17 +526,25 @@
     position: absolute;
     width: 18%;
     aspect-ratio: 1;
-    border: 2.5px dashed rgba(255,217,118,0.65);
-    border-radius: 14px;
-    background: rgba(255,255,255,0.04);
+    border: 2.5px dashed rgba(120,80,30,0.6);
+    border-radius: 10px;
+    background: rgba(120,80,30,0.06);
     transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
     z-index: 1;
+    overflow: hidden;
   }
+  /* ghost preview of the fragment that belongs here — guides young kids
+     without a single line of reading. Injected per-play in _openJigsawModal. */
+  .jigsaw-slot .slot-hint {
+    position: absolute; inset: 8%; width: 84%; height: 84%;
+    opacity: 0.28; pointer-events: none; filter: grayscale(0.2);
+  }
+  .jigsaw-slot.filled .slot-hint { display: none; }
   .jigsaw-slot.filled {
     border-style: solid;
-    border-color: rgba(255,217,118,0.85);
-    background: rgba(255,217,118,0.10);
-    box-shadow: 0 0 18px rgba(255,217,118,0.5);
+    border-color: rgba(255,217,118,0.9);
+    background: rgba(255,217,118,0.12);
+    box-shadow: 0 0 18px rgba(255,217,118,0.55);
   }
   .jigsaw-tray {
     display: flex; flex-direction: row;
@@ -7601,9 +7609,13 @@ function _openJigsawModal(){
     _wireJigsawPiece(div);
     tray.appendChild(div);
   }
-  // Clear any previously-filled slot UI.
+  // Clear any previously-filled slot UI + paint each slot's ghost hint
+  // (a faint preview of the fragment that belongs there THIS play, since
+  // slot→piece is randomized). Lets a non-reader match by terrain.
   document.querySelectorAll('#jigsawBoard .jigsaw-slot').forEach(s => {
     s.classList.remove('filled');
+    const wantPiece = _jigsawAssignments[parseInt(s.dataset.slot, 10)];
+    s.innerHTML = '<div class="slot-hint">' + _mapPieceSVG(wantPiece) + '</div>';
   });
   // Reset status text.
   const status = document.getElementById('jigsawStatus');
@@ -7702,9 +7714,13 @@ function _wireJigsawPiece(pieceEl){
     const wantPiece = _jigsawAssignments[slotIdx];
     const havePiece = parseInt(pieceEl.dataset.piece, 10);
     const rotation  = parseInt(pieceEl.dataset.rotation, 10) || 0;
-    const isCorrect = (havePiece === wantPiece) && (rotation === 0);
+    // 2026-05-19 (Jane: "correct slot AND correct rotation is fine — it
+    // shouldn't be too easy for a 10-year-old"). Both are required. The
+    // ghost-terrain hint in each slot + the distinct messages below keep
+    // it approachable for 6-7 yos without making it trivial.
+    const rightSlot = (havePiece === wantPiece);
+    const isCorrect = rightSlot && (rotation === 0);
     if (!isCorrect) {
-      // Wrong piece OR wrong rotation → bounce.
       pieceEl.style.position = '';
       pieceEl.style.left = '';
       pieceEl.style.top  = '';
@@ -7714,12 +7730,12 @@ function _wireJigsawPiece(pieceEl){
       setTimeout(() => pieceEl.classList.remove('bounce'), 380);
       try { play('pop') || play('error'); } catch(_){}
       const status = document.getElementById('jigsawStatus');
-      if (status) status.textContent = (rotation === 0)
-        ? 'Hmm, that piece doesn\'t fit this slot. Try another.'
-        : 'Tap to rotate until the carving lines up.';
+      if (status) status.textContent = rightSlot
+        ? 'So close! This is the right spot — tap the scrap to turn it upright.'
+        : 'Not quite — try this scrap on a different spot of the map.';
       return;
     }
-    // Correct! Snap into the slot.
+    // Correct slot + upright! Snap into place.
     const slotRect = hit.getBoundingClientRect();
     pieceEl.style.left   = slotRect.left + 'px';
     pieceEl.style.top    = slotRect.top  + 'px';
@@ -12907,6 +12923,69 @@ function drawFootprints(){
   }
   ctx.restore();
 }
+// 2026-05-19 (Jane: world fog-lift). Once the caravan map is solved, a
+// gentle stream of golden motes drifts from Moses toward the exit — a
+// guiding light (pillar-of-fire motif) so the kid always knows the way to
+// Midian. Pure cosmetic particles (no pathfinding); they head in the exit
+// DIRECTION and fade, so they read as "the way is shown" even when the
+// exit is off-screen. Doable for any age: it literally points the path.
+let _guideMotes = [];
+let _lastGuideSpawn = 0;
+function drawGuidingLights(){
+  if (game.scene !== 2 || !game.jigsawSolved) return;
+  if (game.state !== 'playing') return;
+  // Resolve the exit even while it's still off-screen (the lazy
+  // _topmostExit is only set when the exit tile scrolls into view).
+  let ex = window._topmostExit;
+  if (!ex || ex.tx < 0) {
+    let topY = MAP_H, topX = -1;
+    for (let _y = 0; _y < MAP_H; _y++) for (let _x = 0; _x < MAP_W; _x++) {
+      if (MAP[_y][_x] === 7 && _y < topY) { topY = _y; topX = _x; }
+    }
+    if (topX >= 0) { window._topmostExit = { tx: topX, ty: topY }; ex = window._topmostExit; }
+  }
+  if (!ex || ex.tx < 0) return;
+  const now = performance.now();
+  const psx = (player.px - camera.px) + TILE/2;
+  const psy = (player.py - camera.py) + TILE/2;
+  const esx = (ex.tx * TILE - camera.px) + TILE/2;
+  const esy = (ex.ty * TILE - camera.py) + TILE/2;
+  let dx = esx - psx, dy = esy - psy;
+  const dist = Math.hypot(dx, dy) || 1;
+  const ux = dx / dist, uy = dy / dist;
+  // spawn fresh motes at Moses heading toward the exit — a steady,
+  // readable ribbon of light (catchy on a small phone screen).
+  if (now - _lastGuideSpawn > 120) {
+    _lastGuideSpawn = now;
+    _guideMotes.push({ x: psx + ux * TILE * 0.4, y: psy + uy * TILE * 0.4 - TILE * 0.25,
+                       ux, uy, t: 0, ph: Math.random() * 6.28,
+                       off: (Math.random() - 0.5) * TILE * 0.5 });
+  }
+  ctx.save();
+  for (let i = _guideMotes.length - 1; i >= 0; i--) {
+    const m = _guideMotes[i];
+    m.t++;
+    if (m.t > 64) { _guideMotes.splice(i, 1); continue; }
+    const p = m.t / 64;
+    m.x += m.ux * TILE * 0.10;
+    m.y += m.uy * TILE * 0.10;
+    const wob = Math.sin(now / 160 + m.ph) * 4 + m.off;
+    const px = m.x + (-m.uy) * wob;
+    const py = m.y + (m.ux) * wob;
+    const a = Math.sin(p * Math.PI) * 0.95;          // fade in then out
+    const r = 3.6 + 2.2 * Math.sin(now / 130 + m.ph);
+    const g = ctx.createRadialGradient(px, py, 0.5, px, py, r * 2.6);
+    g.addColorStop(0,   'rgba(255,248,200,' + a.toFixed(2) + ')');
+    g.addColorStop(0.45,'rgba(255,210,95,'  + (a * 0.6).toFixed(2) + ')');
+    g.addColorStop(1,   'rgba(255,170,50,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(px, py, r * 2.6, 0, Math.PI * 2); ctx.fill();
+    // bright core sparkle
+    ctx.fillStyle = 'rgba(255,255,238,' + (a * 0.9).toFixed(2) + ')';
+    ctx.beginPath(); ctx.arc(px, py, Math.max(0.8, r * 0.4), 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
 
 /* ---------- RENDER ---------- */
 function render(){
@@ -13051,6 +13130,11 @@ function render(){
   try { drawCaves(ctx); } catch(e){}
   // moses
   drawMoses();
+  // 2026-05-19 (Jane: world "fog-lift" after the caravan map is solved).
+  // A stream of golden guiding lights flows from Moses toward the hidden
+  // exit — the "pillar of fire / God lights the path" payoff that turns the
+  // trackless desert into a clearly-shown way to Midian.
+  try { drawGuidingLights(); } catch(e){}
   // v2.1 Scene 2: mirage shimmer overlay (drawn above everything at floor level)
   try { drawMirages(ctx); } catch(e){}
   // v3.5: discoverability cues so kids know WHEN they can interact & hide
