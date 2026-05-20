@@ -227,12 +227,15 @@
     overflow-y:auto;
   }
   .cinematic.active { display:flex; }
+  /* 2026-05-19 PM63f (Jane: "why is pane is so tiny?"). Cinematic panel
+     widened 640→960 px so the Section-4/5 art reads at storybook size
+     on desktop. Padding bumped too so the image has room to breathe. */
   .cin-panel {
-    width:min(640px, 96%);
+    width:min(960px, 96%);
     background:rgba(255,215,118,0.04);
     border:2px solid rgba(255,215,118,0.3);
     border-radius:14px;
-    padding:18px 22px;
+    padding:22px 26px;
     color:#ffeecf;
     box-shadow:0 6px 28px rgba(0,0,0,0.6);
     min-height:auto;
@@ -4896,12 +4899,19 @@ const CHALLENGE_BANK = {
       clue:'Moses\' journey to Midian was long and full of God\'s protection (Exodus 2:15).',
       verse:'"By faith he left Egypt, not fearing the king\'s anger; he persevered because he saw him who is invisible." (Hebrews 11:27 NIV)' },
     // --- Spot the difference ---
+    // 2026-05-19 PM63f (Jane: "halos are off by a mile. mark per what i
+    // gave you"). The 4 diff coords below are PLACEHOLDERS spread across
+    // the image — Jane needs to send the actual per-image coordinates
+    // for each PNG so the halo lands on the real difference.
+    // TODO Jane: send {x,y,r} as % of image (top-left = 0,0; r ~ 5-8).
+    // Until then, halo radius lowered 10 → 7 so even slightly-off
+    // placements feel less wildly wrong.
     { id:'eSdiff1', type:'spotdiff',
       q:'Tap on the 4 differences between these pictures of baby Moses!',
       imgA:'assets/images/spot the difference moses in nile A.png',
       imgB:'assets/images/spot the difference moses in nile B.png',
       answer:4,
-      diffs:[{x:22,y:28,r:10},{x:72,y:18,r:10},{x:45,y:68,r:10},{x:78,y:72,r:10}],
+      diffs:[{x:22,y:28,r:7},{x:72,y:18,r:7},{x:45,y:68,r:7},{x:78,y:72,r:7}],
       clue:'Look very carefully — some colours, shapes or objects have changed between the two pictures!',
       verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
     // --- Pictionary ---
@@ -5196,7 +5206,7 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference moses running A.png',
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
-      diffs:[{x:30,y:25,r:10},{x:65,y:35,r:10},{x:20,y:70,r:10},{x:75,y:65,r:10}],
+      diffs:[{x:30,y:25,r:7},{x:65,y:35,r:7},{x:20,y:70,r:7},{x:75,y:65,r:7}],
       clue:'Look very carefully at both pictures — some things have changed!',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     // --- Pictionary ---
@@ -5467,7 +5477,7 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference princess rescue A.png',
       imgB:'assets/images/spot the difference princess rescue B.png',
       answer:4,
-      diffs:[{x:25,y:22,r:10},{x:68,y:30,r:10},{x:40,y:65,r:10},{x:80,y:58,r:10}],
+      diffs:[{x:25,y:22,r:7},{x:68,y:30,r:7},{x:40,y:65,r:7},{x:80,y:58,r:7}],
       clue:'Look very carefully at both pictures — some things have changed between them!',
       verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
     // --- Pictionary ---
@@ -6579,19 +6589,40 @@ if (accessInput) accessInput.addEventListener('keydown', e => { if (e.key === 'E
 // scene-2-narration.mp3 voice file. Replaced the 4 panels with the
 // canonical single-panel script — split into 3 beats so the kid
 // reads + hears it as the cinematic plays through.
+// 2026-05-19 PM63f (Jane: "the entire text for section 5 is not present.
+// i added couple more images for section 5 narration"). Section 5 has
+// 5 narration beats per NARRATION_SCRIPTS_AND_PROMPTS_bundle1.md. Old
+// deck collapsed them into 3 panels which read too quickly and lost the
+// "[pause]" rhythm of the script. New deck = 5 panels, one per beat,
+// with Jane's new intro scene 2_1.png + intro scene 2_2.png wired in
+// for the middle beats. The scene-2-narration.mp3 voice-over still
+// plays once from panel 1 (covers all 5 beats with natural pauses).
 const CIN_PANELS = [
   {
-    text: "The desert is wide. The desert is hot. Scorpions hide in the cracks. Vultures circle high above.",
+    text: "The desert is wide. The desert is hot.",
     cap:  "",
+    image: 'assets/images/intro%20scene%202.png',
     audio: 'assets/audio/scene-2-narration.mp3',
   },
   {
-    text: "Moses has no water, no friends, no map. But somewhere east — past the dunes, past the mesas, past the cliffs — there's a well in a land called Midian.",
+    text: "Scorpions hide in the cracks. Vultures circle high above.",
     cap:  "",
+    image: 'assets/images/intro%20scene%202_1.png',
+  },
+  {
+    text: "Moses has no water, no friends, no map.",
+    cap:  "",
+    image: 'assets/images/intro%20scene%202_2.png',
+  },
+  {
+    text: "But somewhere east — past the dunes, past the mesas, past the cliffs — there's a well in a land called Midian.",
+    cap:  "",
+    image: 'assets/images/intro%20scene%202_3.png',
   },
   {
     text: "Help Moses cross the desert. God is watching every step.",
     cap:  "",
+    image: 'assets/images/intro%20scene%202.png',
   },
 ];
 function openCinematic() {
@@ -6645,6 +6676,16 @@ function showCinPanel() {
   $('cinCaption').textContent = p.cap;
   $('cinProgress').textContent = (game.cinStep+1) + ' of ' + CIN_PANELS.length;
   $('cinNextBtn').textContent = (game.cinStep === CIN_PANELS.length-1) ? 'Begin Scene 2' : 'Next';
+  // 2026-05-19 PM63f: per-panel image swap so each Section-5 beat shows
+  // its own art (intro scene 2.png / _1.png / _2.png). The shell <img>
+  // in the HTML is the default; we just replace its src here.
+  try {
+    const imgEl = document.querySelector('#openingCinematic .cin-scene-img');
+    if (imgEl && p.image) {
+      imgEl.src = p.image;
+      imgEl.style.display = '';
+    }
+  } catch(e){}
 }
 $('cinNextBtn').addEventListener('click', () => {
   play('click');
@@ -7207,11 +7248,18 @@ function showTipPopup(eventKey, opts){
       }
     }
   } catch(e){}
-  // 2026-05-19 PM58: optional halo + hand pointer on a canvas tile.
+  // 2026-05-19 PM63f (Jane: "i am still seeing tutorial halos on the
+  // modal instead of surrounding the object/subject"). The PM63e
+  // z-index drop helped but the kid's main confusion was the halo
+  // visible AT ALL during the modal — visually it merged with the
+  // modal icon area. New behaviour: STASH the halo target while the
+  // modal is up, then SHOW IT after dismiss for ~3.5 s so the kid
+  // sees exactly which tile they should walk to.
+  _tipPointAt(null);
   if (opts.pointAtTile && typeof opts.pointAtTile === 'object') {
-    _tipPointAtTile(opts.pointAtTile.tx, opts.pointAtTile.ty);
+    window._tipPendingTile = { tx: opts.pointAtTile.tx, ty: opts.pointAtTile.ty };
   } else {
-    _tipPointAt(null);
+    window._tipPendingTile = null;
   }
 }
 // Point at a tile on the game canvas with a live-tracking halo + hand.
@@ -7275,8 +7323,19 @@ function _hideTipPopup(){
     game.state = _tipPopupPrevState || 'playing';
     _tipPopupPrevState = null;
   }
-  // 2026-05-19 PM58: tear down the live pointer on dismiss.
-  _tipPointAt(null);
+  // 2026-05-19 PM63f: NOW that the modal is dismissed, surface the halo
+  // + hand pointer at the stashed tile for a short visible window
+  // (~3.5 s) so the kid sees exactly where to walk.
+  try {
+    const t = window._tipPendingTile;
+    if (t && typeof t.tx === 'number' && typeof t.ty === 'number') {
+      _tipPointAtTile(t.tx, t.ty);
+      setTimeout(() => { try { _tipPointAt(null); } catch(e){} }, 3500);
+    } else {
+      _tipPointAt(null);
+    }
+    window._tipPendingTile = null;
+  } catch(e){ try { _tipPointAt(null); } catch(_){} }
 }
 // Wire dismiss buttons (DOMContentLoaded + setTimeout(0) belt-and-
 // suspenders, same pattern as Scene 1).
@@ -9656,10 +9715,14 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
           if (isClimb) toast('Desert Checkpoint ' + (gate.step || '') + ' cleared - Moses presses on!');
           else toast('Checkpoint cleared!');
         }
-        // 2026-05-19 PM53 (ported from Scene 1 PM51): distinct
-        // victory-chime sfx so each checkpoint clear feels like its
-        // own mini-win.
-        try { play('victoryChime') || play('success'); } catch(e){}
+        // 2026-05-19 PM63f (Jane: "when a checkpoint is over, which audio
+        // do you play in scene 1? play the same. is it chime and
+        // chomp.mp3"). Scene 1 (line ~15121, 15601) layers `challengeModal`
+        // + `gateClear` + `chimeChomp` on full gate clear. Mirror that
+        // exact stack so every Scene 2 checkpoint clear sounds identical.
+        try { play('challengeModal'); } catch(e){}
+        try { play('gateClear') || play('victoryChime') || play('success'); } catch(e){}
+        try { play('chimeChomp'); } catch(e){}
         // v3.3 LANE 3 (Jane 2026-04-23): celebration on every gate clear —
         // particle burst + verse drift across the top so kids feel rewarded.
         // Particles + showVerseDrift are both safe to no-op if undefined.
@@ -13562,6 +13625,67 @@ function drawInteractable(obj){
       ctx.fillText('\u2728', cx - 14, dy+TILE*0.3+bob);
       ctx.fillText('\u2728', cx + 14, dy+TILE*0.3-bob);
     }
+  } else if (obj.kind === 'mapFragment') {
+    // 2026-05-19 PM63f (Jane: "i don't see scrolls or anything leading to
+    // jigsaws. they should be constantly present"). Map fragments had no
+    // renderer at all \u2014 they sat in the interactables list invisibly,
+    // and the kid had no idea where to walk to collect them. Now they
+    // render as a colour-coded crystal-puzzle-piece sprite with a
+    // pulsing halo, big floating "!" above, and a tiny "MAP" label
+    // below so kids spot them across the canvas.
+    const _cx = dx + TILE/2;
+    const _cy = dy + TILE/2;
+    const _t = performance.now();
+    const _pulse = 0.55 + 0.35 * Math.sin(_t/300 + obj.tx);
+    // Halo
+    const _hg = ctx.createRadialGradient(_cx, _cy, 2, _cx, _cy, TILE*0.85);
+    _hg.addColorStop(0, 'rgba(255,225,140,' + (0.55*_pulse).toFixed(2) + ')');
+    _hg.addColorStop(1, 'rgba(255,180,80,0)');
+    ctx.fillStyle = _hg;
+    ctx.beginPath(); ctx.arc(_cx, _cy, TILE*0.85, 0, Math.PI*2); ctx.fill();
+    // Crystal puzzle-piece (colour per fragment)
+    const _color = obj.color === 'amethyst' ? '#a865e0'
+                 : obj.color === 'turquoise' ? '#5fc8d2'
+                 : obj.color === 'emerald'   ? '#6cd28a'
+                 : '#a865e0';
+    const _bob = Math.sin(_t/360 + obj.tx*0.7) * 2;
+    const _sz = TILE * 0.62;
+    ctx.save();
+    ctx.translate(_cx, _cy + _bob);
+    ctx.rotate(Math.sin(_t/520) * 0.15);
+    ctx.shadowColor = 'rgba(40,15,5,0.55)';
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetY = 2;
+    ctx.fillStyle = _color;
+    ctx.strokeStyle = '#3a1a05';
+    ctx.lineWidth = 2.2;
+    // Puzzle-piece-ish rounded square
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(-_sz/2, -_sz/2, _sz, _sz, 7);
+    } else {
+      ctx.rect(-_sz/2, -_sz/2, _sz, _sz);
+    }
+    ctx.fill(); ctx.stroke();
+    // Knob nub on top to read as a puzzle piece
+    ctx.beginPath();
+    ctx.arc(0, -_sz/2, _sz*0.18, Math.PI, 0);
+    ctx.fillStyle = _color;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+    // Big "MAP" label below
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#3a1a05';
+    ctx.lineWidth = 2.5;
+    ctx.font = 'bold 10px Georgia';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const _lblY = dy + TILE + 8;
+    ctx.strokeText('MAP', _cx, _lblY);
+    ctx.fillText('MAP',  _cx, _lblY);
+    ctx.restore();
   }
   // floating "!" indicator if not used and Moses adjacent
   const adj = Math.abs(player.tx-obj.tx) + Math.abs(player.ty-obj.ty);
@@ -14474,42 +14598,73 @@ function drawTile(t, dx, dy, tx, ty){
       // pulsing amber glow — visual promise of the jigsaw modal that
       // unlocks once they collect all 3 map fragments + clear gates.
       if (!_showExitArt) {
+        // 2026-05-19 PM63f (Jane: "what is this? exit?"). The earlier
+        // 3-dot sigil was too small to read as anything meaningful.
+        // Replaced with a BIG GOLDEN PADLOCK (TILE × 0.9) + a "LOCKED"
+        // label below + the 3 mini puzzle pieces still rotating around
+        // it as a hint. Kid reads it as "locked goal, collect the
+        // matching map pieces to open."
         ctx.save();
         const _jPulse = 0.6 + 0.4 * Math.sin(now / 280);
-        const _jR = TILE * 0.32;
-        const _jG = ctx.createRadialGradient(ecx, ecy, 2, ecx, ecy, _jR * 2);
+        const _jR = TILE * 0.95;
+        // Outer pulsing amber glow — readable from across the map
+        const _jG = ctx.createRadialGradient(ecx, ecy, 2, ecx, ecy, _jR);
         _jG.addColorStop(0, 'rgba(255,225,140,' + (0.55 * _jPulse).toFixed(2) + ')');
         _jG.addColorStop(1, 'rgba(255,180,80,0)');
         ctx.fillStyle = _jG;
-        ctx.beginPath(); ctx.arc(ecx, ecy, _jR * 2, 0, Math.PI*2); ctx.fill();
-        // three puzzle-piece dots arranged around exit center
-        const _jColors = ['#a865e0', '#5fc8d2', '#6cd28a']; // amethyst, turquoise, emerald
-        for (let i = 0; i < 3; i++) {
-          const ang = (i / 3) * Math.PI * 2 - Math.PI / 2 + now / 1400;
-          const px = ecx + Math.cos(ang) * _jR * 0.85;
-          const py = ecy + Math.sin(ang) * _jR * 0.85;
-          ctx.fillStyle = _jColors[i];
-          ctx.strokeStyle = 'rgba(60,30,5,0.8)';
-          ctx.lineWidth = 1.5;
-          // rounded square (puzzle-piece-ish)
-          const _sz = TILE * 0.20;
-          ctx.beginPath();
-          if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(px - _sz/2, py - _sz/2, _sz, _sz, 4);
-          } else {
-            ctx.rect(px - _sz/2, py - _sz/2, _sz, _sz);
-          }
-          ctx.fill(); ctx.stroke();
-        }
-        // small "?" badge at center
-        ctx.fillStyle = '#fff8c8';
-        ctx.strokeStyle = '#5a2a06';
+        ctx.beginPath(); ctx.arc(ecx, ecy, _jR, 0, Math.PI*2); ctx.fill();
+        // Padlock body
+        const _lbW = TILE * 0.62, _lbH = TILE * 0.52;
+        const _lbX = ecx - _lbW/2, _lbY = ecy - _lbH/2 + TILE * 0.08;
+        ctx.fillStyle = '#e8c46b';
+        ctx.strokeStyle = '#5a3a0a';
         ctx.lineWidth = 2.5;
-        ctx.font = 'bold ' + Math.max(13, Math.floor(TILE * 0.42)) + 'px Georgia';
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') ctx.roundRect(_lbX, _lbY, _lbW, _lbH, 6);
+        else ctx.rect(_lbX, _lbY, _lbW, _lbH);
+        ctx.fill(); ctx.stroke();
+        // Padlock shackle (arc on top)
+        ctx.strokeStyle = '#5a3a0a';
+        ctx.lineWidth = TILE * 0.10;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(ecx, _lbY, _lbW * 0.32, Math.PI, 0, false);
+        ctx.stroke();
+        // Keyhole "?" inside lock body — bold, pulsing
+        ctx.fillStyle = '#fff8c8';
+        ctx.strokeStyle = '#5a3a0a';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold ' + Math.max(18, Math.floor(TILE * 0.50)) + 'px Georgia';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.strokeText('?', ecx, ecy);
-        ctx.fillText('?', ecx, ecy);
+        ctx.strokeText('?', ecx, _lbY + _lbH/2 + 2);
+        ctx.fillText('?', ecx, _lbY + _lbH/2 + 2);
+        // 3 mini map-piece dots circling the lock
+        const _jColors = ['#a865e0', '#5fc8d2', '#6cd28a'];
+        const _orbitR = TILE * 0.78;
+        for (let i = 0; i < 3; i++) {
+          const ang = (i / 3) * Math.PI * 2 - Math.PI / 2 + now / 1400;
+          const px = ecx + Math.cos(ang) * _orbitR;
+          const py = ecy + Math.sin(ang) * _orbitR;
+          ctx.fillStyle = _jColors[i];
+          ctx.strokeStyle = '#3a1a05';
+          ctx.lineWidth = 1.8;
+          const _sz = TILE * 0.22;
+          ctx.beginPath();
+          if (typeof ctx.roundRect === 'function') ctx.roundRect(px - _sz/2, py - _sz/2, _sz, _sz, 4);
+          else ctx.rect(px - _sz/2, py - _sz/2, _sz, _sz);
+          ctx.fill(); ctx.stroke();
+        }
+        // "LOCKED" label below the lock so the meaning is unambiguous
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#3a1a05';
+        ctx.lineWidth = 3;
+        ctx.font = 'bold 12px Georgia';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const _lockLblY = dy + TILE + 16;
+        ctx.strokeText('LOCKED · FIND 3 MAP PIECES', ecx, _lockLblY);
+        ctx.fillText('LOCKED · FIND 3 MAP PIECES',  ecx, _lockLblY);
         ctx.restore();
         return;
       }
