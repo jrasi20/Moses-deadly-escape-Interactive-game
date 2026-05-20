@@ -22630,5 +22630,15 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
   } catch(e){}
 })();
 </script>
+<!-- 2026-05-19 (Jane: QR/hosted build). Shared service worker for instant
+     repeat-loads + scene jumps. Supersedes the old inline blob: SW above
+     (which browsers reject, so it never actually registered). No-op on file://. -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
+</script>
 </body>
 </html>

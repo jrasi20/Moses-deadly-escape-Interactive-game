@@ -17025,5 +17025,14 @@ requestAnimationFrame(loop);
 // Start on cover page; game flow triggered by Start button
 updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){}
 </script>
+<!-- 2026-05-19 (Jane: QR/hosted build). Register the shared service worker
+     for instant repeat-loads + instant scene jumps. No-ops on file://. -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
+</script>
 </body>
 </html>

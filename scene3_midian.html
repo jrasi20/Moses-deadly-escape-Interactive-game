@@ -15236,5 +15236,14 @@ try {
 } catch(e){}
 /* v3.28: console banner stripped for ship */
 </script>
+<!-- 2026-05-19 (Jane: QR/hosted build). Shared service worker for instant
+     repeat-loads + scene jumps. No-op on file://. -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
+</script>
 </body>
 </html>
