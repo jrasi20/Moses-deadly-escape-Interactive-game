@@ -3410,6 +3410,9 @@ const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 /* ---------- GLOBALS ---------- */
+// Scratch buffer for the deferred big-sprite render pass (oasis/exit/START).
+// Flat [t,dx,dy,tx,ty, ...] tuples; reused each frame to avoid GC churn.
+const _deferredBigSprites = [];
 let TILE = 36;                // actual pixel size per tile (adjusted on resize)
 let VIEW_COLS = 14;           // visible columns on screen
 let VIEW_ROWS = 10;           // visible rows on screen
@@ -12840,9 +12843,29 @@ function render(){
       // the "half-cut sprite at bottom edge" visual. Skip those tiles
       // entirely so the bottom of canvas stays clean.
       if (dy >= CANVAS_H) continue;
+      // 2026-05-18 (Jane audit): oasis (6), exit (7) and START (8) render
+      // sprites that overflow their tile (1.45×–2.5× TILE). The row-major
+      // loop draws each tile's opaque sand floor first, so the tile to the
+      // RIGHT (and the row BELOW) painted sand over the previous sprite's
+      // overhang — that's the "oasis / start cut on the right" Jane saw.
+      // The old per-sprite clamp was removed in v3.26 because clamping to
+      // the canvas edge made sprites "jump" during camera pan. Instead we
+      // DEFER these big sprites to a second pass below: the full floor grid
+      // is laid first, then the overhang sprites paint on top of it, so
+      // nothing clips them AND they stay anchored to their real tile (no
+      // jump). Quicksand (9, only 1.15×) is small enough to stay inline.
+      if (t === 6 || t === 7 || t === 8) { _deferredBigSprites.push(t, dx, dy, tx, ty); continue; }
       drawTile(t, dx, dy, tx, ty);
     }
   }
+  // Second pass — big overhang sprites on top of the finished floor grid.
+  // Still drawn BEFORE gates / interactables / NPCs / player, so Moses and
+  // friends correctly render in front of the oasis / START / EXIT art.
+  for (let i = 0; i < _deferredBigSprites.length; i += 5) {
+    drawTile(_deferredBigSprites[i], _deferredBigSprites[i+1],
+             _deferredBigSprites[i+2], _deferredBigSprites[i+3], _deferredBigSprites[i+4]);
+  }
+  _deferredBigSprites.length = 0;
 
   // v3.7 PASS A Jane 2026-04-24: cliff concept REMOVED. Jane: "let's remove
   // cliff concept? its not doing anything much." The east edge of the map
