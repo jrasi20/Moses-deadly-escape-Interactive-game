@@ -10371,6 +10371,18 @@ $('cinSkipBtn').addEventListener('click', () => {
     game.state = 'cover';
     return;
   }
+  // 2026-05-18 (Jane audit): if a post-play hook is set — e.g. the
+  // section-4 palace→desert transition deck — Skip must run THAT hook
+  // (which navigates to scene2_desert.html), NOT restart Scene 1. The
+  // Next button already honours _cinPostPlay; Skip didn't, so skipping
+  // the transition cinematic dumped the kid back into Scene 1.
+  if (typeof window._cinPostPlay === 'function') {
+    const _cb = window._cinPostPlay;
+    window._cinPostPlay = null;
+    try { _stopCinFrameCycle(); } catch(e){}
+    try { _cb(); } catch(e){}
+    return;
+  }
   // Direct to game — no second cinematic step on skip.
   startScene1();
 });
