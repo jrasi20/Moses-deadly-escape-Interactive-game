@@ -2851,18 +2851,30 @@
        thumb, ACTIONS stacked bottom-RIGHT for the right thumb, powerups in
        the middle — replacing the old flat row that strung the 4 arrows
        across the whole width (unreachable as a pad). */
+    /* 2026-05-19 (Jane: "use the whole screen — kids can't see oncoming
+       danger"). FLOAT the controls over the game so the canvas-wrapper
+       (flex:1) grows to fill the viewport — more rows + full width. The
+       container is click-through; only the D-pad / actions / powerups
+       capture taps, sitting in the bottom corners (two-thumb). */
     .controls {
+      position: fixed !important;
+      left: 0; right: 0; bottom: 0;
+      z-index: 40;
       display: flex !important;
       flex-direction: row !important;
-      align-items: center;
+      align-items: flex-end;
       justify-content: space-between !important;
       gap: 8px;
-      padding: 4px max(10px, env(safe-area-inset-left)) max(4px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right)) !important;
+      padding: 0 max(10px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right)) !important;
       max-height: none;
-      min-height: 94px;
+      min-height: 0;
       overflow: visible;
       flex-wrap: nowrap;
+      background: transparent !important;
+      border-top: none !important;
+      pointer-events: none;
     }
+    .dpad, .action-panel, .controls #hudPowerups { pointer-events: auto; }
     /* LEFT thumb — D-pad cross (3 cols × 2 rows) */
     .dpad {
       display: grid !important;
@@ -3618,7 +3630,12 @@ function resizeCanvas() {
   // already had good fill; landscape phones get +30-50% canvas area.
   const minCols = _isMobile ? 9 : 12;
   const minRows = _isMobile ? 6 : 8;
-  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 64 : 72) : 56;
+  // 2026-05-19 (Jane: "kids can't see oncoming danger in landscape"). With
+  // the controls now FLOATING (canvas fills the screen), a big tile cap just
+  // zoomed in (fewer tiles visible). Cap landscape phones smaller so the
+  // extra space shows MORE of the map (≈9 rows × ≈20 cols) instead of
+  // bigger sprites — far more visual warning of danger from every side.
+  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 36 : 72) : 56;
   const MIN_TILE = 28;
   const tileFromH = Math.floor(availH / minRows);
   const tileFromW = Math.floor(availW / minCols);
