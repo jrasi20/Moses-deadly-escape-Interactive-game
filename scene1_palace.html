@@ -2022,6 +2022,24 @@
     100% { opacity:0; transform:translateY(420px); }
   }
   .win-scorebox strong { color:#5a1d06; font-size:15.5px; font-weight:900; }
+  /* 2026-05-19 (Jane: cross-scene "Your Journey" tally) */
+  .win-journey {
+    background: linear-gradient(180deg, rgba(60,30,8,0.55), rgba(40,18,4,0.5));
+    border: 1.5px solid rgba(255,215,118,0.45); border-radius: 12px;
+    padding: 10px 12px; margin: 8px auto 10px; max-width: 340px;
+  }
+  .win-journey .wj-title { color:#ffd976; font-weight:800; font-size:13px; letter-spacing:0.5px; margin-bottom:6px; }
+  .win-journey .wj-res { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:13px; color:#ffeeb5; margin-bottom:8px; }
+  .win-journey .wj-res strong { color:#fff; font-size:15px; }
+  .win-journey .wj-powers { display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:8px; }
+  .win-journey .wj-power { font-size:11px; font-weight:700; padding:3px 8px; border-radius:12px; border:1px solid; }
+  .win-journey .wj-power.on { color:#0d2a12; background:linear-gradient(135deg,#7ef0a0,#39c46a); border-color:#bdf7cf; box-shadow:0 0 8px rgba(80,220,120,0.5); }
+  .win-journey .wj-power.off { color:#cdb88a; background:rgba(0,0,0,0.25); border-color:rgba(255,215,118,0.3); }
+  .win-journey .wj-power.off .wj-prog { color:#ffd976; font-weight:800; }
+  .win-journey .wj-next { font-size:12px; color:#fff2c4; }
+  .win-journey .wj-next strong { color:#ffd976; }
+  .win-journey .wj-bar { height:8px; border-radius:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,215,118,0.3); margin-top:5px; overflow:hidden; }
+  .win-journey .wj-bar-fill { height:100%; background:linear-gradient(90deg,#ffd700,#ffa500); border-radius:6px; transition:width 0.6s ease-out; }
   .win-badge-strip {
     display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin:8px 0 6px;
   }
@@ -4920,6 +4938,8 @@
       <span><strong id="winTreasureNum">0/0</strong> Treasures</span>
       <span><strong id="winHeartsNum">3/3</strong> Hearts</span>
     </div>
+    <!-- 2026-05-19 (Jane: cross-scene "Your Journey" tally) -->
+    <div class="win-journey" id="winJourney"></div>
     <!-- v3.4: finish-modal is compact; the chest reveal plays mid-scene only.
          2026-05-13 PM21 (Jane: "when you show 'scene 1 is complete', you are
          mentioning something about truth card that you will get a truth
@@ -16312,7 +16332,57 @@ function _setKidName(n){
     if (n) localStorage.setItem('bek.kidName', n);
   } catch(e){}
 }
+// 2026-05-19 (Jane: cross-scene "Your Journey" tally). Self-contained so
+// the identical function lives in all 3 scenes. Keep _WJ_TIERS in sync
+// with UNLOCK_TIERS.
+function _renderJourneyPanel(){
+  const host = document.getElementById('winJourney');
+  if (!host) return;
+  const _ls = (k) => { try { return localStorage.getItem(k); } catch(e){ return null; } };
+  const t = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
+  const c = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
+  const s = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
+  let owned = [];
+  try { owned = JSON.parse(_ls('bek.bundle1.unlocks') || '[]') || []; } catch(e){ owned = []; }
+  const _WJ_TIERS = [
+    { th:75,  res:'treasures', key:'speedBurst',    label:'⚡ Speed Burst' },
+    { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
+    { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
+    { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
+    { th:10,  res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
+  ];
+  const resVal = { treasures: t, crowns: c, scrolls: s };
+  let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
+    + '<div class="wj-res">'
+    +   '<span>\u{1F48E} <strong>' + t + '</strong> Treasures</span>'
+    +   '<span>\u{1F451} <strong>' + c + '</strong> Crowns</span>'
+    +   '<span>\u{1F4DC} <strong>' + s + '</strong> Scrolls</span>'
+    + '</div><div class="wj-powers">';
+  let next = null;
+  for (const tier of _WJ_TIERS) {
+    const have = owned.includes(tier.key);
+    const cur = resVal[tier.res] || 0;
+    if (have) html += '<div class="wj-power on">' + tier.label + '</div>';
+    else {
+      html += '<div class="wj-power off">' + tier.label
+        + ' <span class="wj-prog">' + Math.min(cur, tier.th) + '/' + tier.th + '</span></div>';
+      if (!next) next = { tier: tier, cur: cur };
+    }
+  }
+  html += '</div>';
+  if (next) {
+    const pct = Math.max(0, Math.min(100, Math.round(next.cur / next.tier.th * 100)));
+    const need = Math.max(0, next.tier.th - next.cur);
+    html += '<div class="wj-next">Next power: <strong>' + next.tier.label + '</strong> — '
+      + need + ' more ' + next.tier.res + '!'
+      + '<div class="wj-bar"><div class="wj-bar-fill" style="width:' + pct + '%"></div></div></div>';
+  } else {
+    html += '<div class="wj-next">\u{1F389} Every power unlocked — you’re a legend!</div>';
+  }
+  host.innerHTML = html;
+}
 function _personalizeWinModal(){
+  try { _renderJourneyPanel(); } catch(e){}
   const name = _getKidName();
   const block = document.getElementById('winHeroShoutout');
   if (!block) return;
