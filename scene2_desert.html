@@ -308,6 +308,23 @@
     padding-bottom: 0;
     padding-top: max(60px, 12vh);
   }
+  /* 2026-05-19 PM63e (Jane: "halo on the tutorial modal for oasis is on
+     the modal. same for beware mirages"). Halo ring is fixed-positioned
+     at the canvas tile (z-index 57, above the modal overlay at 56). On
+     desktop the modal centers and the halo can land directly under the
+     modal card, looking like "the halo is on the modal." The PM59
+     left/right anchoring already flips the modal away from the halo —
+     but it was scoped to `@media landscape max-height 500` (phones
+     only). Promote those rules to ALL screen sizes so the modal also
+     dodges the halo on desktop + portrait. */
+  .tip-popup-overlay.left-anchored {
+    justify-content: flex-start;
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+  .tip-popup-overlay.right-anchored {
+    justify-content: flex-end;
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
   .tip-popup-card {
     background: linear-gradient(160deg,#3a1508,#5a2510);
     border: 3px solid #ffd976;
@@ -600,8 +617,13 @@
      from Scene 1. JS positions both fixed-page-coord on every rAF
      frame against the current camera offset so they stay glued to
      their tile during camera pans. */
+  /* 2026-05-19 PM63e: halo z-index DROPPED below the modal overlay
+     (was 57, now 50 < modal overlay's 56). The halo + hand pointer
+     now render UNDER the modal's dim backdrop — kid still sees them
+     glowing through the dimmed canvas, but they no longer paint
+     OVER the modal card if the tile happens to align with it. */
   .tip-pointer-ring {
-    position: fixed; z-index: 57;
+    position: fixed; z-index: 50;
     border: 4px solid #ffd976;
     border-radius: 18px;
     pointer-events: none;
@@ -613,7 +635,7 @@
     50%     { transform: scale(1.18); opacity: 0.55; }
   }
   .tip-pointer-hand {
-    position: fixed; z-index: 58;
+    position: fixed; z-index: 51; /* PM63e: was 58, below modal */
     font-size: 36px;
     pointer-events: none;
     animation: tipHandBounce 0.9s ease-in-out infinite;
@@ -5732,9 +5754,13 @@ function seedChallenges(difficulty) {
     }
   }
 
-  // Per-gate recipe: 1 classic (trivia/tf/fill), 1 interactive, 1 classic.
-  // interactiveQueues is SHUFFLED each run so no single type is always skipped
-  // when the pool has more types (11) than gates (9).
+  // 2026-05-19 PM63e (Jane: "in scene 2 also make less of trivia and
+  // more of other challenges"). Old recipe was [classic, interactive,
+  // classic] — 2 of every 3 questions were trivia/tf/fill which felt
+  // text-heavy. New recipe: [interactive, classic, interactive] —
+  // flips the ratio so kids get more puzzles + fewer text questions.
+  // Classic still seeds slot 2 so every gate has at least one quick
+  // Bible-verse trivia/fill/tf for variety + verse exposure.
   const classicQueues     = [byType.trivia, byType.fill, byType.tf];
   const interactiveQueues = shuffle([
     byType.unscramble, byType.match, byType.sequence,
@@ -5763,12 +5789,10 @@ function seedChallenges(difficulty) {
   const bundles = [];
   for (let i = 0; i < gatePool.length; i++) {
     const bundle = [];
-    // slot 1: classic (trivia/tf/fill)
-    const c1 = cycle(classicQueues); if (c1) bundle.push(c1);
-    // slot 2: interactive (unscramble/match/sequence)
-    const iq = cycle(interactiveQueues); if (iq) bundle.push(iq);
-    // slot 3: another classic, preferring a DIFFERENT sub-type from slot 1
-    const c2 = cycle(classicQueues); if (c2) bundle.push(c2);
+    // PM63e flipped recipe: slot 1 INTERACTIVE, slot 2 CLASSIC, slot 3 INTERACTIVE.
+    const i1 = cycle(interactiveQueues); if (i1) bundle.push(i1);
+    const c1 = cycle(classicQueues);     if (c1) bundle.push(c1);
+    const i2 = cycle(interactiveQueues); if (i2) bundle.push(i2);
     while (bundle.length < CHALLENGES_PER_GATE) {
       const usedIds = new Set(bundles.flat().map(q => q.id).concat(bundle.map(q => q.id)));
       const remaining = [].concat(
@@ -6088,7 +6112,13 @@ function attemptMove(dir) {
       }
     }
     for (const obj of interactables) {
-      if (!obj.used && !obj.collected && obj.tx === nx && obj.ty === ny) { play('pop'); return; }
+      // 2026-05-19 PM63e (Jane: "moses is able to pass over him"). Servant
+      // NPCs stay SOLID even after `used` because they're people, not
+      // collectibles. Only pickup-kind items (waterskin/scroll/etc) open
+      // up for walk-through once collected.
+      const isSolid = (!obj.used && !obj.collected)
+                   || (obj.kind === 'servant' && obj.active !== false);
+      if (isSolid && obj.tx === nx && obj.ty === ny) { play('pop'); return; }
     }
   }
   // v2.1: challenge ascent/checkpoint — if player tries to step ON an unclaimed
@@ -6941,8 +6971,24 @@ function restartScene() {
   // truly fresh (otherwise the very next startScene1 would auto-resume).
   try { _clearCheckpoint(); } catch(e){}
   // close every modal
-  ['winModal','dangerModal','challengeModal','dialogModal','pauseModal','tutorialModal','sceneBanner','truthChestModal','mapPeekOverlay']
+  // 2026-05-19 PM63e (Jane: "even after the game is restarted, the modal
+  // opened in previous game is still open"). The previous list missed
+  // `tipPopupOverlay` (first-event tutorial popups with the canvas halo
+  // + finger pointer) and `jigsawModal`. Both could be left active when
+  // a kid hit "Try Again" on the danger modal, then reload-survived
+  // into the new run. Also kill the active halo / hand ring + cancel
+  // its rAF loop so no orphan DOM nodes float over the new gameplay.
+  ['winModal','dangerModal','challengeModal','dialogModal','pauseModal','tutorialModal','sceneBanner','truthChestModal','mapPeekOverlay','tipPopupOverlay','jigsawModal']
     .forEach(id => { const el = $(id); if (el) el.classList.remove('active'); });
+  try {
+    if (_tipPopupActiveRing) { _tipPopupActiveRing.remove(); _tipPopupActiveRing = null; }
+    if (_tipPopupActiveHand) { _tipPopupActiveHand.remove(); _tipPopupActiveHand = null; }
+    if (_tipPointerRAF) { cancelAnimationFrame(_tipPointerRAF); _tipPointerRAF = 0; }
+  } catch(e){}
+  // Reset first-event flags so tutorial popups re-fire on the new run.
+  try {
+    for (const k in _firstEventSeen) _firstEventSeen[k] = false;
+  } catch(e){}
   // lift any lingering capture FX on the canvas wrapper
   const _wr = document.querySelector('.canvas-wrapper');
   if (_wr) _wr.classList.remove('capture-freeze','capture-shake');
@@ -11016,17 +11062,19 @@ function startTimers(){
     try { scheduleFox(); } catch(e){}
   }
 }
-// v4.2 Jane: ALL verse-drift lines are now strictly scoped to Exodus 2:11-25
-// (the Scene 2 boundary). Out-of-scope Hebrews 11 citations were removed at
-// her request so the ticker matches the question pool.
+// v4.2 Jane: scoped to Exodus 2:11-25 (Scene 2's boundary).
+// 2026-05-19 PM63e (Jane: "there is overhead message about zipporah
+// giving birth to a son and naming gershom. remove that"). Zipporah's
+// marriage + Gershom's birth happen in MIDIAN (Scene 3) \u2014 Scene 2 ends
+// at "Moses arrives in Midian." Removed both Exodus 2:21 (Zipporah)
+// and Exodus 2:22 (Gershom). Also dropped 2:24 + 2:25 since those are
+// the Exodus epilogue that bridges into Bundle 2 \u2014 not gameplay
+// flavour for a desert-flight scene. What remains: the three lines
+// that actually describe Moses's flight across the desert.
 const VERSE_DRIFT_LINES = [
   '"Moses fled from Pharaoh and went to live in Midian." \u2014 Exodus 2:15',
   '"When he arrived in Midian, he sat down by a well." \u2014 Exodus 2:15',
-  '"Moses got up and came to their rescue and watered their flock." \u2014 Exodus 2:17',
-  '"Moses agreed to stay with the man, who gave his daughter Zipporah to Moses." \u2014 Exodus 2:21',
-  '"Zipporah gave birth to a son, and Moses named him Gershom." \u2014 Exodus 2:22',
-  '"God heard their groaning and he remembered his covenant with Abraham." \u2014 Exodus 2:24',
-  '"So God looked on the Israelites and was concerned about them." \u2014 Exodus 2:25'
+  '"Moses got up and came to their rescue and watered their flock." \u2014 Exodus 2:17'
 ];
 let _lastVerseDriftIdx = -1;
 function showVerseDrift(){
@@ -12784,6 +12832,14 @@ function render(){
       const t = MAP[ty][tx];
       const dx = tx*TILE - camera.px;
       const dy = ty*TILE - camera.py;
+      // 2026-05-19 PM63e (Jane: "bottom end shows partial images. this
+      // shouldn't be"). With smooth-camera + the +1 buffer row in `ey`,
+      // tiles whose TOP is past the canvas bottom were still being
+      // drawn — bottom-anchored decor (rocks 1.32×, caves 2.3×) had
+      // its TOP showing inside canvas but BOTTOM clipped, producing
+      // the "half-cut sprite at bottom edge" visual. Skip those tiles
+      // entirely so the bottom of canvas stays clean.
+      if (dy >= CANVAS_H) continue;
       drawTile(t, dx, dy, tx, ty);
     }
   }
@@ -13191,10 +13247,15 @@ function drawInteractable(obj){
   // v1.2 FIX (§3.7): pickable objects (water skin, crown, bread, scroll,
   // cedar box) FULLY disappear after Moses picks them up. Servant NPCs
   // remain visible (they're people, just their one-time dialog is spent).
+  // 2026-05-19 PM63e (Jane: "the worried merchant is fading away after
+  // talking with moses"). Dropped the 0.35-alpha fade for used
+  // servants — NPCs are people, not collectibles. They stay at full
+  // opacity and KEEP BLOCKING Moses's movement (walkability check at
+  // attemptMove line ~6113 updated in tandem).
   if (obj.used) {
     obj.collected = true;
     if (obj.kind !== 'servant') return;
-    ctx.globalAlpha = 0.35;
+    // no alpha change — servant stays solid both visually and in walk-check
   }
   // pedestal glow
   const pulse = 0.35 + 0.25 * Math.sin(performance.now()/400 + obj.tx*3 + obj.ty);
@@ -13270,14 +13331,35 @@ function drawInteractable(obj){
       ctx.fillRect(dx+TILE-7, dy+8, 3, TILE-14);
     }
   } else if (obj.kind === 'jug') {
-    ctx.fillStyle = '#6b3a14';
-    ctx.beginPath();
-    ctx.ellipse(dx+TILE/2, dy+TILE/2+2, 8, 11, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#a76a2e';
-    ctx.fillRect(dx+TILE/2-4, dy+TILE/2-8, 8, 4);
-    // water sparkle
-    ctx.fillStyle = 'rgba(120,220,255,0.7)';
-    ctx.fillRect(dx+TILE/2-3, dy+TILE/2-7, 6, 2);
+    // 2026-05-19 PM63e (Jane: "where it says 'take water skin', i don't
+    // see waterskin as i start"). The 'jug' kind was rendering as a
+    // tiny canvas-drawn ellipse (8×11 px), invisible against the
+    // sand. Use the real waterSkin PNG bottom-anchored on the tile,
+    // matching the pickup-toast wording. Falls back to the old vector
+    // drawing if the PNG hasn't loaded yet.
+    const wsImg = (IMG.waterSkin && IMG.waterSkin.complete && IMG.waterSkin.naturalWidth) ? IMG.waterSkin : null;
+    if (wsImg) {
+      const ws = TILE * 1.20;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(dx+TILE/2, dy+TILE-3, TILE*0.40, 4, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+      ctx.drawImage(wsImg, _safeAnchorX(dx, ws), dy + TILE - ws + 2, ws, ws);
+      // pulsing gold halo so it pops against the sand even more
+      const _wp = 0.4 + 0.3 * Math.sin(performance.now()/280);
+      ctx.fillStyle = 'rgba(255,220,140,' + (_wp * 0.45).toFixed(2) + ')';
+      ctx.beginPath(); ctx.arc(dx+TILE/2, dy+TILE/2+4, TILE*0.55, 0, Math.PI*2); ctx.fill();
+    } else {
+      ctx.fillStyle = '#6b3a14';
+      ctx.beginPath();
+      ctx.ellipse(dx+TILE/2, dy+TILE/2+2, 8, 11, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#a76a2e';
+      ctx.fillRect(dx+TILE/2-4, dy+TILE/2-8, 8, 4);
+      ctx.fillStyle = 'rgba(120,220,255,0.7)';
+      ctx.fillRect(dx+TILE/2-3, dy+TILE/2-7, 6, 2);
+    }
   } else if (obj.kind === 'bread' || obj.kind === 'dates') {
     // v2.3 Jane: enlarge bread pickup so it reads at a glance.
     // v2.3.4: aspect-preserved, pixel-snapped, bottom-anchored draw to stop
