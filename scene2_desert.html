@@ -2876,6 +2876,7 @@
       border-top: 2px solid #5a1d06 !important;
       border-radius: 14px !important;
       box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
+      opacity: 0.9;            /* see game content behind the pill */
       pointer-events: auto;
     }
     /* D-pad floats as a cross bottom-left, OVER the full-screen game */
@@ -2883,6 +2884,7 @@
       position: fixed !important;
       left: 10px; bottom: 10px; right: auto; top: auto;
       z-index: 41;
+      opacity: 0.85;           /* see game content behind the dpad */
       display: grid !important;
       grid-template-columns: repeat(3, 44px);
       grid-template-rows: repeat(2, 40px);
