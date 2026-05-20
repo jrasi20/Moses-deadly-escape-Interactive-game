@@ -1816,15 +1816,23 @@
      panel sits IN the bottom controls strip beside the d-pad (NOT
      fixed-right). Canvas takes the full wrapper width above. */
   @media (max-height: 500px) and (orientation: landscape) {
+    /* 2026-05-19 (Jane: "use the whole screen in landscape"). Float controls
+       so the canvas fills the viewport (parity with scenes 1 & 2). */
     .controls {
+      position: fixed !important;
+      left: 0; right: 0; bottom: 0;
+      z-index: 40;
       flex-direction: row !important;
-      align-items: center;
+      align-items: flex-end;
       justify-content: space-between !important;
       gap: 8px !important;
       min-height: unset;
-      padding: 4px 6px;
-      background: linear-gradient(0deg, rgba(42,14,3,0.92) 0%, rgba(58,21,8,0.85) 100%);
+      padding: 0 max(8px, env(safe-area-inset-right, 8px)) max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left, 8px));
+      background: transparent !important;
+      border-top: none !important;
+      pointer-events: none;
     }
+    .dpad, .action-panel, .controls #hudPowerups { pointer-events: auto; }
     .dpad {
       width: 132px;
       gap: 4px;
@@ -2366,7 +2374,9 @@ function resizeCanvas() {
   const _isMobile = (innerWidth < 700) || _isLandscapePhone;
   const minCols = _isMobile ? 9 : 12;
   const minRows = _isMobile ? 6 : 8;
-  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 64 : 72) : 56;
+  // 2026-05-19 (Jane): landscape phones cap smaller so the floating-controls
+  // full-screen canvas shows MORE map instead of zooming in (parity w/ S1/S2).
+  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 36 : 72) : 56;
   const MIN_TILE = 28;
   const tileFromH = Math.floor(availH / minRows);
   const tileFromW = Math.floor(availW / minCols);

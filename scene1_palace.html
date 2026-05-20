@@ -4017,18 +4017,27 @@
     /* 2026-05-19 (Jane: "playing with both hands in landscape is hard").
        Two-thumb layout: D-pad CROSS bottom-left, actions stacked
        bottom-right, powerups centered (parity with scene 2). */
+    /* 2026-05-19 (Jane: "use the whole screen in landscape"). Float the
+       controls so the canvas fills the viewport (parity with scene 2). */
     .controls {
+      position: fixed !important;
+      left: 0; right: 0; bottom: 0;
+      z-index: 40;
       display: flex !important;
       flex-direction: row !important;
-      align-items: center;
+      align-items: flex-end;
       justify-content: space-between !important;
       gap: 8px;
-      padding: 4px max(10px, env(safe-area-inset-left)) max(4px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right)) !important;
+      padding: 0 max(10px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right)) !important;
       max-height: none;
-      min-height: 94px;
+      min-height: 0;
       overflow: visible;
       flex-wrap: nowrap;
+      background: transparent !important;
+      border-top: none !important;
+      pointer-events: none;
     }
+    .dpad, .action-panel, .controls #hudPowerups { pointer-events: auto; }
     .dpad {
       display: grid !important;
       grid-template-columns: repeat(3, 44px);
@@ -5240,7 +5249,9 @@ function resizeCanvas() {
   const _isMobile = (innerWidth < 700) || _isLandscapePhone;
   const minCols = _isMobile ? 9 : 12;
   const minRows = _isMobile ? 6 : 8;
-  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 64 : 72) : 56;
+  // 2026-05-19 (Jane): landscape phones cap smaller so the floating-controls
+  // full-screen canvas shows MORE map instead of zooming in (parity w/ S2).
+  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 36 : 72) : 56;
   const MIN_TILE = 28;
   const tileFromH = Math.floor(availH / minRows);
   const tileFromW = Math.floor(availW / minCols);
