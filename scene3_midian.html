@@ -731,6 +731,24 @@
     font-size:13px; color:#ffeeb5;
   }
   .win-scorebox strong { color:#fff; font-size:15px; }
+  /* 2026-05-19 (Jane: cross-scene "Your Journey" tally) */
+  .win-journey {
+    background: linear-gradient(180deg, rgba(60,30,8,0.55), rgba(40,18,4,0.5));
+    border: 1.5px solid rgba(255,215,118,0.45); border-radius: 12px;
+    padding: 10px 12px; margin: 8px auto 10px; max-width: 340px;
+  }
+  .win-journey .wj-title { color:#ffd976; font-weight:800; font-size:13px; letter-spacing:0.5px; margin-bottom:6px; }
+  .win-journey .wj-res { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:13px; color:#ffeeb5; margin-bottom:8px; }
+  .win-journey .wj-res strong { color:#fff; font-size:15px; }
+  .win-journey .wj-powers { display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:8px; }
+  .win-journey .wj-power { font-size:11px; font-weight:700; padding:3px 8px; border-radius:12px; border:1px solid; }
+  .win-journey .wj-power.on { color:#0d2a12; background:linear-gradient(135deg,#7ef0a0,#39c46a); border-color:#bdf7cf; box-shadow:0 0 8px rgba(80,220,120,0.5); }
+  .win-journey .wj-power.off { color:#cdb88a; background:rgba(0,0,0,0.25); border-color:rgba(255,215,118,0.3); }
+  .win-journey .wj-power.off .wj-prog { color:#ffd976; font-weight:800; }
+  .win-journey .wj-next { font-size:12px; color:#fff2c4; }
+  .win-journey .wj-next strong { color:#ffd976; }
+  .win-journey .wj-bar { height:8px; border-radius:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,215,118,0.3); margin-top:5px; overflow:hidden; }
+  .win-journey .wj-bar-fill { height:100%; background:linear-gradient(90deg,#ffd700,#ffa500); border-radius:6px; transition:width 0.6s ease-out; }
   .win-badge-strip {
     display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin:8px 0 6px;
   }
@@ -1020,12 +1038,82 @@
   .ch-memory-card.matched .mem-face { display:flex; }
   .ch-memory-card .mem-face img { max-width:78%; max-height:78%; object-fit:contain; }
   /* -- SPOT THE DIFFERENCE: two images side by side -- */
+  /* 2026-05-19 (Jane): scene 3 spot-the-difference upgraded to the tap
+     mechanic (parity with scenes 1 & 2). Full CSS ported from scene 2
+     incl. the flex-shrink:0 crop fix + halo/counter styling. */
   .ch-spotdiff-wrapper {
-    display:flex; gap:6px; justify-content:center; margin:6px auto 4px;
+    display:flex; flex-direction:column; gap:8px; align-items:center;
+    margin:6px auto 4px; max-height:52vh; overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    box-sizing: border-box; max-width: 100%;
+  }
+  .ch-spotdiff-container {
+    position: relative; display: inline-block;
+    box-sizing: border-box;
+    width: min(540px, 84vw);
+    max-width: 100%;
+    flex-shrink: 0;        /* don't squish/crop on small/short screens */
+    overflow: hidden;
+    border-radius: 8px;
+    cursor: pointer;
   }
   .ch-spotdiff-img {
-    width:min(136px, 36vw); height:auto; object-fit:contain;
+    width:100%; height:auto; display:block; object-fit:contain;
     border:2px solid #ffd976; border-radius:8px;
+    box-sizing: border-box; max-width: 100%;
+    user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+  }
+  .ch-spotdiff-label {
+    position:absolute; top:4px; left:4px;
+    background:rgba(0,0,0,0.6); color:#fff;
+    padding:2px 8px; border-radius:4px;
+    font-size:12px; font-weight:700; pointer-events:none;
+  }
+  .ch-spotdiff-counter {
+    font-size: 15px; font-weight: 800; color: #5a2a05;
+    background: linear-gradient(180deg, #fff3c8, #f8da78);
+    border: 1.5px solid #b88a2c; border-radius: 14px;
+    padding: 4px 14px; display: block; text-align: center;
+    margin: 6px auto 4px; max-width: max-content;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.18);
+    position: sticky; top: 4px; z-index: 5;
+  }
+  .ch-spotdiff-hit {
+    position:absolute; border:3px solid #00ff88; border-radius:50%;
+    pointer-events:none; box-shadow:0 0 8px rgba(0,255,136,0.5);
+    animation:sdiff-pop 0.4s ease-out forwards;
+    aspect-ratio: 1 / 1; box-sizing: border-box;
+    transform: translate(-50%, -50%); transform-origin: center;
+  }
+  .ch-spotdiff-miss {
+    position:absolute; width:30px; height:30px;
+    border:3px solid #ff4444; border-radius:50%;
+    pointer-events:none; opacity:0;
+    animation:sdiff-miss 0.6s ease-out forwards; box-sizing: border-box;
+  }
+  @keyframes sdiff-pop {
+    0%{transform:translate(-50%,-50%) scale(0);opacity:0}
+    50%{transform:translate(-50%,-50%) scale(1.3)}
+    100%{transform:translate(-50%,-50%) scale(1);opacity:1}
+  }
+  @keyframes sdiff-miss {
+    0%{opacity:1;transform:translate(-50%,-50%) scale(0.5)}
+    100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}
+  }
+  @media (min-width: 720px) {
+    .ch-spotdiff-wrapper   { flex-direction: row !important; gap: 10px; flex-wrap: nowrap; }
+    .ch-spotdiff-container { width: auto !important; max-width: min(46vw, 600px) !important; }
+    .ch-spotdiff-img       { max-height: 60vh !important; }
+  }
+  @media (orientation: landscape) and (max-height: 600px) {
+    .ch-spotdiff-img {
+      width: auto !important; max-width: 100%;
+      max-height: max(72vh, 36vw) !important;
+      height: max(72vh, 36vw) !important;
+      object-fit: contain !important;
+    }
+    .ch-spotdiff-container { width: auto !important; max-width: 46vw !important; }
+    .ch-spotdiff-wrapper   { flex-direction: row !important; gap: 6px; flex-wrap: nowrap; }
   }
   /* -- PICTIONARY: full-width scene image above verse MCQ buttons -- */
   .ch-pict-img {
@@ -1728,45 +1816,99 @@
      panel sits IN the bottom controls strip beside the d-pad (NOT
      fixed-right). Canvas takes the full wrapper width above. */
   @media (max-height: 500px) and (orientation: landscape) {
+    /* 2026-05-19 (Jane: "dpad floating left, slim brown bar just for the
+       power-ups + 3 buttons"). Controls FLOAT so the canvas is full-screen.
+       D-pad = floating cross bottom-left; power rack + actions in a slim
+       brown PILL bottom-right. (Parity with scenes 1 & 2.) */
     .controls {
+      position: fixed !important;
+      bottom: 6px; right: 6px; left: auto; top: auto;
+      z-index: 40;
+      display: flex !important;
       flex-direction: row !important;
       align-items: center;
-      justify-content: space-between !important;
+      justify-content: flex-end !important;
       gap: 8px !important;
-      min-height: unset;
-      padding: 4px 6px;
-      background: linear-gradient(0deg, rgba(42,14,3,0.92) 0%, rgba(58,21,8,0.85) 100%);
+      width: auto;
+      max-width: calc(100vw - 168px);
+      min-height: 0;
+      padding: 5px 10px !important;
+      flex-wrap: nowrap;
+      background: linear-gradient(0deg, rgba(42,14,3,0.96) 0%, rgba(74,28,10,0.94) 100%) !important;
+      border: 2px solid #5a1d06 !important;
+      border-radius: 14px !important;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
+      opacity: 0.9;            /* see game content behind the pill */
+      pointer-events: auto;
     }
     .dpad {
-      width: 132px;
+      position: fixed !important;
+      left: 10px; bottom: 10px; right: auto; top: auto;
+      z-index: 41;
+      opacity: 0.85;           /* see game content behind the dpad */
+      display: grid !important;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(2, 40px);
+      width: auto;
       gap: 4px;
+      pointer-events: auto;
+    }
+    .dpad-spacer { display: none !important; }
+    .dpad-btn {
+      position: static !important;
+      width: 44px; height: 40px; min-width: 44px;
+      border-radius: 50%;
+      font-size: 18px;
       flex: 0 0 auto;
     }
-    .dpad-btn, .dpad-spacer { height: 32px; border-radius: 50%; font-size: 16px; }
-    .dpad-text { display: none; }
+    .dpad-btn[data-dir="up"]    { grid-column: 2; grid-row: 1; }
+    .dpad-btn[data-dir="left"]  { grid-column: 1; grid-row: 2; }
+    .dpad-btn[data-dir="down"]  { grid-column: 2; grid-row: 2; }
+    .dpad-btn[data-dir="right"] { grid-column: 3; grid-row: 2; }
+    .dpad-text { display: none !important; }
+    .game-page > #hudPowerups { display: none !important; }
+    .controls #hudPowerups {
+      order: 1;
+      flex: 0 1 auto;
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      gap: 5px !important;
+      padding: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      overflow-x: auto; overflow-y: hidden;
+      scrollbar-width: none;
+      align-items: center; justify-content: flex-end;
+      max-width: 46vw;
+    }
+    .controls #hudPowerups:empty { display: none !important; }
+    .controls #hudPowerups::-webkit-scrollbar { display: none; }
+    .controls #hudPowerups .hud-pu-btn { width: 42px !important; height: 42px !important; font-size: 18px !important; flex: 0 0 auto; }
     .action-panel {
+      order: 2;
       position: relative;
       top: auto; right: auto; transform: none;
-      flex: 1 1 auto;
+      flex: 0 0 auto;
+      display: flex !important;
       flex-direction: row !important;
+      flex-wrap: nowrap !important;
       justify-content: flex-end;
       align-items: center;
-      gap: 8px;
-      max-width: unset;
+      gap: 6px;
+      max-width: none !important;
       width: auto;
-      z-index: 30;
-      padding-right: max(4px, env(safe-area-inset-right, 4px));
     }
     .action-btn {
       width: auto;
-      min-width: 64px;
-      max-width: 90px;
-      height: 36px;
+      min-width: 0;
+      max-width: none !important;
+      height: 40px;
       border-radius: 18px;
-      padding: 0 10px;
+      padding: 0 12px;
       font-size: 12px;
       font-weight: 800;
-      flex: 0 0 auto;
+      flex: 0 0 auto !important;
       line-height: 1;
       letter-spacing: 0.2px;
       background: rgba(0,0,0,0.62);
@@ -1774,8 +1916,6 @@
       color: #ffeaa3;
       box-shadow: 0 3px 10px rgba(0,0,0,0.55);
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
   }
   @media (max-height: 620px) and (orientation: landscape) and (min-height: 501px) {
@@ -2098,6 +2238,8 @@
       <span><strong id="winTreasureNum">0/0</strong> Treasures</span>
       <span><strong id="winHeartsNum">3/3</strong> Hearts</span>
     </div>
+    <!-- 2026-05-19 (Jane: cross-scene "Your Journey" tally) -->
+    <div class="win-journey" id="winJourney"></div>
     <div class="win-truth-card" id="winTruthCard">
       <span class="tc-label">&#9733; 1 Truth Card Collected &#9733;</span>
       <div class="tc-body" id="winTruthText">God had a plan for Moses.</div>
@@ -2276,7 +2418,9 @@ function resizeCanvas() {
   const _isMobile = (innerWidth < 700) || _isLandscapePhone;
   const minCols = _isMobile ? 9 : 12;
   const minRows = _isMobile ? 6 : 8;
-  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 64 : 72) : 56;
+  // 2026-05-19 (Jane): landscape phones cap smaller so the floating-controls
+  // full-screen canvas shows MORE map instead of zooming in (parity w/ S1/S2).
+  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 36 : 72) : 56;
   const MIN_TILE = 28;
   const tileFromH = Math.floor(availH / minRows);
   const tileFromW = Math.floor(availW / minCols);
@@ -2868,18 +3012,25 @@ const SPRITE_QUALITY_DOWNSCALE = new Set([
 for (const k in IMG_SRC) {
   const img = new Image();
   img.onload = () => {
-    try {
-      const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
-      if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
-        IMG[k] = _preRender(bled, 256);
-      } else if (SKIP_PRERENDER.has(k)) {
-        IMG[k] = bled;
-      } else {
-        IMG[k] = _preRender(bled);
-      }
-    } catch(e) { IMG[k] = img; }
-    imagesReady++;
-    if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    // 2026-05-19 (Jane: "sprites don't all load on the first pass; a reload
+    // fixes it"). Force a full decode() before counting the image ready so
+    // the game starts only once every sprite is render-instant.
+    const _finalize = () => {
+      try {
+        const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
+        if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
+          IMG[k] = _preRender(bled, 256);
+        } else if (SKIP_PRERENDER.has(k)) {
+          IMG[k] = bled;
+        } else {
+          IMG[k] = _preRender(bled);
+        }
+      } catch(e) { IMG[k] = img; }
+      imagesReady++;
+      if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    };
+    if (typeof img.decode === 'function') img.decode().then(_finalize).catch(_finalize);
+    else _finalize();
   };
   img.onerror = () => {
     try { window._imgFailures.push({ key: k, src: IMG_SRC[k] }); } catch(e){}
@@ -4499,17 +4650,19 @@ const CHALLENGE_BANK = {
       verse:'"Now Moses was tending the flock of Jethro his father-in-law." (Exodus 3:1 NIV)' },
     // --- Spot the Difference ---
     { id:'s3eSdiff1', type:'spotdiff',
-      q:'How many differences can you spot between these two pictures of baby Moses?',
+      q:'Tap the 4 differences between these two pictures of baby Moses!',
       imgA:'assets/images/spot the difference moses in nile A.png',
       imgB:'assets/images/spot the difference moses in nile B.png',
       answer:4,
+      diffs:[{x:13,y:55,r:10},{x:48,y:42,r:10},{x:47,y:67,r:11},{x:88,y:88,r:9}],
       clue:'Look very carefully — some colours, shapes or objects have changed between the two pictures!',
       verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
     { id:'s3eSdiff2', type:'spotdiff',
-      q:'How many differences can you spot between these two pictures of Moses fleeing Egypt?',
+      q:'Tap the 4 differences between these two pictures of Moses fleeing Egypt!',
       imgA:'assets/images/spot the difference moses running A.png',
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
+      diffs:[{x:20,y:30,r:9},{x:12,y:49,r:9},{x:40,y:52,r:10},{x:85,y:57,r:10}],
       clue:'Look carefully at both pictures — things like clothes, colours, or objects may have changed!',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     // --- Pictionary ---
@@ -4739,17 +4892,19 @@ const CHALLENGE_BANK = {
       verse:'"His sister stood at a distance to see what would happen to him." (Exodus 2:4 NIV)' },
     // --- Spot the Difference ---
     { id:'s3mSdiff1', type:'spotdiff',
-      q:'How many differences can you spot between these two pictures of the princess rescuing Moses?',
+      q:'Tap the 4 differences between these two pictures of the princess rescuing Moses!',
       imgA:'assets/images/spot the difference princess rescue A.png',
       imgB:'assets/images/spot the difference princess rescue B.png',
       answer:4,
+      diffs:[{x:20,y:50,r:10},{x:78,y:22,r:9},{x:65,y:52,r:11},{x:38,y:64,r:10}],
       clue:'Look carefully at both pictures — some colours, objects or details have changed!',
       verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
     { id:'s3mSdiff2', type:'spotdiff',
-      q:'How many differences can you spot in these two pictures of Moses by the Nile?',
+      q:'Tap the 4 differences in these two pictures of Moses by the Nile!',
       imgA:'assets/images/spot the difference moses in nile A.png',
       imgB:'assets/images/spot the difference moses in nile B.png',
       answer:4,
+      diffs:[{x:13,y:55,r:10},{x:48,y:42,r:10},{x:47,y:67,r:11},{x:88,y:88,r:9}],
       clue:'Some shapes, colours or background details have changed between the two pictures. Look closely!',
       verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
     // --- Pictionary ---
@@ -4982,17 +5137,19 @@ const CHALLENGE_BANK = {
       verse:'"By faith Moses, when he had grown up, refused to be known as the son of Pharaoh\'s daughter." (Hebrews 11:24 NIV)' },
     // --- Spot the Difference ---
     { id:'s3hSdiff1', type:'spotdiff',
-      q:'How many differences can you spot between these two pictures of Moses fleeing?',
+      q:'Tap the 4 differences between these two pictures of Moses fleeing!',
       imgA:'assets/images/spot the difference moses running A.png',
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
+      diffs:[{x:20,y:30,r:9},{x:12,y:49,r:9},{x:40,y:52,r:10},{x:85,y:57,r:10}],
       clue:'Study both images carefully. Not everything is as it seems — colours, objects, or backgrounds may have changed.',
       verse:'"By faith he left Egypt, not fearing the king\'s anger." (Hebrews 11:27 NIV)' },
     { id:'s3hSdiff2', type:'spotdiff',
-      q:'How many differences can you spot between these two pictures of the princess at the Nile?',
+      q:'Tap the 4 differences between these two pictures of the princess at the Nile!',
       imgA:'assets/images/spot the difference princess rescue A.png',
       imgB:'assets/images/spot the difference princess rescue B.png',
       answer:4,
+      diffs:[{x:20,y:50,r:10},{x:78,y:22,r:9},{x:65,y:52,r:11},{x:38,y:64,r:10}],
       clue:'Examine the pictures closely — some details, colours or items have been changed in one of them.',
       verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
     // --- Pictionary ---
@@ -8096,46 +8253,98 @@ function renderSlider(gate, q, container){
 
 /* ---------- SPOT THE DIFFERENCE -- two images, count the differences ----------
    Bank entry shape: { type:'spotdiff', q, imgA, imgB, answer:4 } */
+// 2026-05-19 (Jane: scene 3 was using the OLD "pick the number of
+// differences" mechanic — passive + guessable). Replaced with the same
+// tap-the-difference puzzle used in scenes 1 & 2 so the whole game is
+// consistent. Coordinates on each q.diffs[] are pixel-diff-verified.
 function renderSpotDiff(gate, q, container){
-  const wrapper = document.createElement('div');
+  const totalDiffs = Number(q.answer) || 4;
+  const diffs = Array.isArray(q.diffs) ? q.diffs : [];
+  const found = new Set();
+  var sdiffDone = false;
+
+  var counter = document.createElement('div');
+  counter.className = 'ch-spotdiff-counter';
+  counter.textContent = 'Found: 0 / ' + totalDiffs;
+  container.appendChild(counter);
+
+  var hint = document.createElement('div');
+  hint.className = 'ch-slider-hint';
+  hint.textContent = 'Compare the two pictures and tap on the differences!';
+  container.appendChild(hint);
+
+  var wrapper = document.createElement('div');
   wrapper.className = 'ch-spotdiff-wrapper';
-  ['imgA','imgB'].forEach(key => {
-    const img = document.createElement('img');
+
+  var imgContainers = [];
+  ['imgA','imgB'].forEach(function(key, idx){
+    var c = document.createElement('div');
+    c.className = 'ch-spotdiff-container';
+    var img = document.createElement('img');
     img.src = q[key] || '';
-    img.alt = (key === 'imgA') ? 'Picture 1' : 'Picture 2';
+    img.alt = idx === 0 ? 'Picture A' : 'Picture B';
     img.className = 'ch-spotdiff-img';
-    wrapper.appendChild(img);
+    img.draggable = false;
+    c.appendChild(img);
+    var lbl = document.createElement('div');
+    lbl.className = 'ch-spotdiff-label';
+    lbl.textContent = idx === 0 ? 'A' : 'B';
+    c.appendChild(lbl);
+    imgContainers.push(c);
+    wrapper.appendChild(c);
   });
   container.appendChild(wrapper);
-  const hint = document.createElement('div');
-  hint.className = 'ch-slider-hint';
-  hint.textContent = 'Look carefully at both pictures. How many differences can you find?';
-  container.appendChild(hint);
-  const answer = Number(q.answer) || 4;
-  const choices = new Set([answer]);
-  while (choices.size < 4) {
-    const n = answer + (Math.random() < 0.5 ? -1 : 1) * (Math.floor(Math.random() * 3) + 1);
-    if (n > 0) choices.add(n);
+
+  function handleTap(e, imgC){
+    if (sdiffDone || found.size >= totalDiffs) return;
+    var img = imgC.querySelector('.ch-spotdiff-img');
+    if (!img) return;
+    var rect = img.getBoundingClientRect();
+    var tapX = ((e.clientX - rect.left) / rect.width) * 100;
+    var tapY = ((e.clientY - rect.top) / rect.height) * 100;
+    var hitIdx = -1;
+    for (var i = 0; i < diffs.length; i++){
+      if (found.has(i)) continue;
+      var d = diffs[i];
+      var dx = tapX - d.x, dy = tapY - d.y;
+      if (Math.sqrt(dx*dx + dy*dy) <= (d.r || 10)){
+        hitIdx = i; break;
+      }
+    }
+    if (hitIdx >= 0){
+      found.add(hitIdx);
+      var dd = diffs[hitIdx];
+      try { play('chime'); } catch(ex){}
+      imgContainers.forEach(function(ic){
+        var circle = document.createElement('div');
+        circle.className = 'ch-spotdiff-hit';
+        var r = dd.r || 10;
+        circle.style.left = dd.x + '%';
+        circle.style.top  = dd.y + '%';
+        circle.style.width = (r * 2) + '%';
+        ic.appendChild(circle);
+      });
+      counter.textContent = 'Found: ' + found.size + ' / ' + totalDiffs;
+      if (found.size >= totalDiffs){
+        sdiffDone = true;
+        setTimeout(function(){
+          handleChallengeAnswer(gate, 0, null, { answerLabel: totalDiffs + ' differences found' });
+        }, 800);
+      }
+    } else {
+      try { play('tap'); } catch(ex){}
+      var miss = document.createElement('div');
+      miss.className = 'ch-spotdiff-miss';
+      miss.style.left = tapX + '%';
+      miss.style.top  = tapY + '%';
+      imgC.appendChild(miss);
+      setTimeout(function(){ try{miss.remove();}catch(ex){} }, 700);
+    }
   }
-  const arr = Array.from(choices);
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  const row = document.createElement('div');
-  row.className = 'ch-count-choices';
-  arr.forEach(n => {
-    const b = document.createElement('button');
-    b.className = 'ch-count-btn';
-    b.textContent = String(n) + ' difference' + (n === 1 ? '' : 's');
-    b.addEventListener('click', () => {
-      const correct = (n === answer);
-      try { play(correct ? 'chime' : 'tap'); } catch(e){}
-      handleChallengeAnswer(gate, correct ? 0 : -1, b, { answerLabel: String(answer) + ' differences' });
-    });
-    row.appendChild(b);
+
+  imgContainers.forEach(function(ic){
+    ic.addEventListener('click', function(e){ handleTap(e, ic); });
   });
-  container.appendChild(row);
 }
 
 /* ---------- PICTIONARY -- decode a Bible scene image, pick the verse ----------
@@ -8450,10 +8659,63 @@ $('dlgCloseBtn').addEventListener('click', () => {
 /* ---------- TREASURE ----------
    v3.6: uses its OWN "coin collect" sound so treasure pickup does not share
    the same chime as a correct Bible-answer. Different event, different cue. */
+// 2026-05-19 (Jane: "wire scene 3 into the unified game"). Scene 3 was not
+// feeding the cross-scene lifetime collectables / power-unlock progression at
+// all. Ported the DATA layer from scenes 1 & 2 so treasures collected here
+// now count toward the SAME lifetime totals + unlock thresholds (and the
+// "Your Journey" win panel). NOTE: the in-game power DOCK + effects are NOT
+// wired here yet — those are built alongside scene 3's rogue-shepherd
+// antagonist so the foe-powers target the right enemy (the temporary `guards`
+// here will be replaced by shepherds). Keep these tiers in sync with S1/S2.
+const _LIFETIME_TREASURES_KEY = 'bek.bundle1.totalTreasures';
+const _LIFETIME_CROWNS_KEY    = 'bek.bundle1.totalCrowns';
+const _LIFETIME_SCROLLS_KEY   = 'bek.bundle1.totalScrolls';
+const _UNLOCKS_KEY            = 'bek.bundle1.unlocks';
+const UNLOCK_TIERS = [
+  { threshold:  75, resource: 'treasures', key: 'speedBurst',    label: '⚡ Speed Burst' },
+  { threshold: 175, resource: 'treasures', key: 'guardFreeze',   label: '❄️ Foe Freeze' },
+  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '👁️ Royal Vision' },
+  { threshold: 350, resource: 'treasures', key: 'truthSeeker',   label: '📖 Truth Seeker' },
+  { threshold:  10, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom' },
+];
+function _loadLifetimeTreasures(){ try { return parseInt(localStorage.getItem(_LIFETIME_TREASURES_KEY) || '0', 10) || 0; } catch(e){ return 0; } }
+function _loadLifetimeCrowns(){    try { return parseInt(localStorage.getItem(_LIFETIME_CROWNS_KEY)    || '0', 10) || 0; } catch(e){ return 0; } }
+function _loadLifetimeScrolls(){   try { return parseInt(localStorage.getItem(_LIFETIME_SCROLLS_KEY)   || '0', 10) || 0; } catch(e){ return 0; } }
+function _loadUnlocks(){ try { return JSON.parse(localStorage.getItem(_UNLOCKS_KEY) || '[]'); } catch(e){ return []; } }
+function _hasUnlock(key){ return _loadUnlocks().includes(key); }
+function _addLifetimeResource(which, n){
+  const KEY = which === 'crowns'  ? _LIFETIME_CROWNS_KEY
+            : which === 'scrolls' ? _LIFETIME_SCROLLS_KEY
+            :                       _LIFETIME_TREASURES_KEY;
+  let cur = 0;
+  try { cur = parseInt(localStorage.getItem(KEY) || '0', 10) || 0; } catch(e){}
+  const next = cur + (n || 0);
+  try { localStorage.setItem(KEY, String(next)); } catch(e){}
+  const have = new Set(_loadUnlocks());
+  const granted = [];
+  for (const tier of UNLOCK_TIERS) {
+    if ((tier.resource || 'treasures') !== which) continue;
+    if (cur < tier.threshold && next >= tier.threshold && !have.has(tier.key)) { have.add(tier.key); granted.push(tier); }
+  }
+  if (granted.length) {
+    try { localStorage.setItem(_UNLOCKS_KEY, JSON.stringify([...have])); } catch(e){}
+    try { play('rankReveal') || play('success'); } catch(e){}
+    try { spawnGlitterBurstAtPlayer(28); } catch(e){}
+    // Scene 3 has no power dock yet, so don't tell the kid to "tap the button".
+    granted.forEach(g => { try { toast('✨ ' + g.label + ' power unlocked!'); } catch(e){} });
+  }
+  return next;
+}
+function _addLifetimeTreasures(n){ return _addLifetimeResource('treasures', n); }
+function _addLifetimeCrowns(n){    return _addLifetimeResource('crowns',    n); }
+function _addLifetimeScrolls(n){   return _addLifetimeResource('scrolls',   n); }
 function onTreasure(tx, ty){
   setTile(tx, ty, 0);
   game.treasureCount++;
   game.stars += 2;
+  // 2026-05-19 (Jane): feed the cross-scene lifetime total so scene-3
+  // treasures count toward the shared power unlocks + "Your Journey" panel.
+  try { _addLifetimeTreasures(1); } catch(e){}
   updateHudTreasure(); updateHudStars();
   play('coin');
   // v3.4: glitter sparkle burst at Moses's screen position on pickup
@@ -8592,6 +8854,55 @@ function onReachExit(){
 }
 
 /* ---------- LESSON THEN WIN ---------- */
+// 2026-05-19 (Jane: cross-scene "Your Journey" tally). Self-contained
+// (reads shared localStorage; scene 3 has no UNLOCK_TIERS/loaders yet).
+// Keep _WJ_TIERS in sync with scenes 1 & 2's UNLOCK_TIERS.
+function _renderJourneyPanel(){
+  const host = document.getElementById('winJourney');
+  if (!host) return;
+  const _ls = (k) => { try { return localStorage.getItem(k); } catch(e){ return null; } };
+  const t = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
+  const c = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
+  const s = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
+  let owned = [];
+  try { owned = JSON.parse(_ls('bek.bundle1.unlocks') || '[]') || []; } catch(e){ owned = []; }
+  const _WJ_TIERS = [
+    { th:75,  res:'treasures', key:'speedBurst',    label:'⚡ Speed Burst' },
+    { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
+    { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
+    { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
+    { th:10,  res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
+  ];
+  const resVal = { treasures: t, crowns: c, scrolls: s };
+  let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
+    + '<div class="wj-res">'
+    +   '<span>\u{1F48E} <strong>' + t + '</strong> Treasures</span>'
+    +   '<span>\u{1F451} <strong>' + c + '</strong> Crowns</span>'
+    +   '<span>\u{1F4DC} <strong>' + s + '</strong> Scrolls</span>'
+    + '</div><div class="wj-powers">';
+  let next = null;
+  for (const tier of _WJ_TIERS) {
+    const have = owned.includes(tier.key);
+    const cur = resVal[tier.res] || 0;
+    if (have) html += '<div class="wj-power on">' + tier.label + '</div>';
+    else {
+      html += '<div class="wj-power off">' + tier.label
+        + ' <span class="wj-prog">' + Math.min(cur, tier.th) + '/' + tier.th + '</span></div>';
+      if (!next) next = { tier: tier, cur: cur };
+    }
+  }
+  html += '</div>';
+  if (next) {
+    const pct = Math.max(0, Math.min(100, Math.round(next.cur / next.tier.th * 100)));
+    const need = Math.max(0, next.tier.th - next.cur);
+    html += '<div class="wj-next">Next power: <strong>' + next.tier.label + '</strong> — '
+      + need + ' more ' + next.tier.res + '!'
+      + '<div class="wj-bar"><div class="wj-bar-fill" style="width:' + pct + '%"></div></div></div>';
+  } else {
+    html += '<div class="wj-next">\u{1F389} Every power unlocked — you’re a legend!</div>';
+  }
+  host.innerHTML = html;
+}
 function showLessonThenWin(){
   $('lessonModal').classList.add('active');
 }
@@ -8694,6 +9005,7 @@ function showWin(){
     play('win');
     try { play('levelUp'); } catch(e){}  // victory-modal fanfare
     $('winModal').classList.add('active');
+    try { _renderJourneyPanel(); } catch(e){}
   };
   const _runClosingThenWin = () => {
     try {
@@ -14967,6 +15279,15 @@ try {
   try { updateHudAltitude(); } catch(e){}
 } catch(e){}
 /* v3.28: console banner stripped for ship */
+</script>
+<!-- 2026-05-19 (Jane: QR/hosted build). Shared service worker for instant
+     repeat-loads + scene jumps. No-op on file://. -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
 </script>
 </body>
 </html>

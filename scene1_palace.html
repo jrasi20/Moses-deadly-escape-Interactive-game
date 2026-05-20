@@ -2025,6 +2025,24 @@
     100% { opacity:0; transform:translateY(420px); }
   }
   .win-scorebox strong { color:#5a1d06; font-size:15.5px; font-weight:900; }
+  /* 2026-05-19 (Jane: cross-scene "Your Journey" tally) */
+  .win-journey {
+    background: linear-gradient(180deg, rgba(60,30,8,0.55), rgba(40,18,4,0.5));
+    border: 1.5px solid rgba(255,215,118,0.45); border-radius: 12px;
+    padding: 10px 12px; margin: 8px auto 10px; max-width: 340px;
+  }
+  .win-journey .wj-title { color:#ffd976; font-weight:800; font-size:13px; letter-spacing:0.5px; margin-bottom:6px; }
+  .win-journey .wj-res { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:13px; color:#ffeeb5; margin-bottom:8px; }
+  .win-journey .wj-res strong { color:#fff; font-size:15px; }
+  .win-journey .wj-powers { display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:8px; }
+  .win-journey .wj-power { font-size:11px; font-weight:700; padding:3px 8px; border-radius:12px; border:1px solid; }
+  .win-journey .wj-power.on { color:#0d2a12; background:linear-gradient(135deg,#7ef0a0,#39c46a); border-color:#bdf7cf; box-shadow:0 0 8px rgba(80,220,120,0.5); }
+  .win-journey .wj-power.off { color:#cdb88a; background:rgba(0,0,0,0.25); border-color:rgba(255,215,118,0.3); }
+  .win-journey .wj-power.off .wj-prog { color:#ffd976; font-weight:800; }
+  .win-journey .wj-next { font-size:12px; color:#fff2c4; }
+  .win-journey .wj-next strong { color:#ffd976; }
+  .win-journey .wj-bar { height:8px; border-radius:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,215,118,0.3); margin-top:5px; overflow:hidden; }
+  .win-journey .wj-bar-fill { height:100%; background:linear-gradient(90deg,#ffd700,#ffa500); border-radius:6px; transition:width 0.6s ease-out; }
   .win-badge-strip {
     display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin:8px 0 6px;
   }
@@ -4003,35 +4021,57 @@
        JS `_relocatePowerupsForOrientation` moves `#hudPowerups`
        INTO `.controls` on landscape. The standalone top
        hudPowerups strip is hidden so the canvas claims that space. */
+    /* 2026-05-19 (Jane: "playing with both hands in landscape is hard").
+       Two-thumb layout: D-pad CROSS bottom-left, actions stacked
+       bottom-right, powerups centered (parity with scene 2). */
+    /* 2026-05-19 (Jane: "dpad floating left, slim brown bar just for the
+       power-ups + 3 buttons"). Controls FLOAT so the canvas is full-screen
+       (≈9 rows). D-pad = floating cross bottom-left; power rack + actions in
+       a slim brown PILL bottom-right. (Parity with scene 2.) */
     .controls {
+      position: fixed !important;
+      bottom: 6px; right: 6px; left: auto; top: auto;
+      z-index: 40;
       display: flex !important;
       flex-direction: row !important;
       align-items: center;
-      justify-content: space-between !important;
-      gap: 6px;
-      padding: 6px max(10px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right)) !important;
-      max-height: none;
-      min-height: 60px;
+      justify-content: flex-end !important;
+      gap: 8px;
+      width: auto;
+      max-width: calc(100vw - 168px);
+      min-height: 0; max-height: none;
+      padding: 5px 10px !important;
       overflow: visible;
       flex-wrap: nowrap;
+      background: linear-gradient(0deg, rgba(42,14,3,0.96) 0%, rgba(74,28,10,0.94) 100%) !important;
+      border: 2px solid #5a1d06 !important;
+      border-radius: 14px !important;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
+      opacity: 0.9;            /* see game content behind the pill */
+      pointer-events: auto;
     }
     .dpad {
-      display: contents !important;
+      position: fixed !important;
+      left: 10px; bottom: 10px; right: auto; top: auto;
+      z-index: 41;
+      opacity: 0.85;           /* see game content behind the dpad */
+      display: grid !important;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(2, 40px);
+      gap: 4px;
+      width: auto;
+      pointer-events: auto;
     }
     .dpad-spacer { display: none !important; }
     .dpad-btn {
       position: static !important;
       z-index: auto;
-      width: 48px;
-      height: 48px;
-      min-width: 48px;
+      width: 44px; height: 40px; min-width: 44px;
       border-radius: 10px;
-      font-size: 20px;
-      padding: 2px 0 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      font-size: 19px;
+      padding: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       line-height: 1.0;
       background: linear-gradient(145deg, #ffd976, #c38b28);
       border: 0;
@@ -4039,67 +4079,60 @@
       color: #5a1d06;
       flex: 0 0 auto;
     }
+    .dpad-btn[data-dir="up"]    { grid-column: 2; grid-row: 1; }
+    .dpad-btn[data-dir="left"]  { grid-column: 1; grid-row: 2; }
+    .dpad-btn[data-dir="down"]  { grid-column: 2; grid-row: 2; }
+    .dpad-btn[data-dir="right"] { grid-column: 3; grid-row: 2; }
     .dpad-text {
       display: block !important;
-      font-size: 8px;
-      letter-spacing: 0.3px;
-      font-weight: 700;
-      opacity: 0.85;
-      margin-top: 1px;
+      font-size: 7px; letter-spacing: 0.2px; font-weight: 700; opacity: 0.8; margin-top: 0;
     }
-    /* Order across .controls: LEFT(1) UP(2) action(3) hudPowerups(4) DOWN(5) RIGHT(6) */
-    .dpad-btn[data-dir="left"]  { order: 1; }
-    .dpad-btn[data-dir="up"]    { order: 2; }
-    .action-panel {
-      order: 3;
-      flex-direction: row !important;
-      flex: 1 1 auto;
-      max-width: 40%;
-      gap: 6px;
-      flex-wrap: nowrap;
-      justify-content: center;
-    }
-    .action-btn {
-      height: 40px;
-      font-size: 11px;
-      padding: 0 8px;
-      width: auto;
-      flex: 1 1 0;
-      min-width: 0;
-      white-space: nowrap;
-    }
+    .game-page > #hudPowerups { display: none !important; }
     .controls #hudPowerups {
-      order: 4;
+      order: 1;
       flex: 0 1 auto;
       display: flex !important;
       flex-direction: row !important;
       flex-wrap: nowrap !important;
-      gap: 4px !important;
+      gap: 5px !important;
       padding: 0 !important;
       background: transparent !important;
       border: none !important;
-      overflow-x: auto;
-      overflow-y: hidden;
-      max-width: 28vw;
+      overflow-x: auto; overflow-y: hidden;
       scrollbar-width: none;
-      align-items: center;
+      align-items: center; justify-content: flex-end;
+      max-width: 46vw;
     }
+    .controls #hudPowerups:empty { display: none !important; }
     .controls #hudPowerups::-webkit-scrollbar { display: none; }
     .controls #hudPowerups .hud-pu-btn {
-      width: 44px !important;
-      height: 44px !important;
-      font-size: 18px !important;
+      width: 42px !important; height: 42px !important; font-size: 18px !important;
+      flex: 0 0 auto;
     }
-    .dpad-btn[data-dir="down"]  { order: 5; }
-    .dpad-btn[data-dir="right"] { order: 6; }
+    .action-panel {
+      order: 2;
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      gap: 6px;
+      flex: 0 0 auto;
+      align-self: center;
+      max-width: none !important;
+      position: relative; top: auto; right: auto; transform: none;
+      justify-content: center;
+    }
+    .action-btn {
+      height: 40px;
+      font-size: 12px;
+      padding: 0 12px;
+      width: auto;
+      min-width: 0;
+      flex: 0 0 auto !important;
+      max-width: none !important;
+      white-space: nowrap;
+    }
     .pause-btn { width:36px; height:36px; font-size:13px; margin-right:0; }
     .hud-group { flex-shrink: 0; gap: 4px; }
-    /* Hide the standalone top hudPowerups strip on landscape — the
-       JS relocates it INTO .controls. Scope by parent so the moved
-       dock inside .controls isn't accidentally hidden. */
-    .game-page > #hudPowerups {
-      display: none !important;
-    }
   }
   /* 2026-05-18 PM46: extra-short landscapes — shrink every control
      in the inline row so the canvas still gets the lion's share. */
@@ -4939,6 +4972,8 @@
       <span><strong id="winTreasureNum">0/0</strong> Treasures</span>
       <span><strong id="winHeartsNum">3/3</strong> Hearts</span>
     </div>
+    <!-- 2026-05-19 (Jane: cross-scene "Your Journey" tally) -->
+    <div class="win-journey" id="winJourney"></div>
     <!-- v3.4: finish-modal is compact; the chest reveal plays mid-scene only.
          2026-05-13 PM21 (Jane: "when you show 'scene 1 is complete', you are
          mentioning something about truth card that you will get a truth
@@ -5242,7 +5277,9 @@ function resizeCanvas() {
   const _isMobile = (innerWidth < 700) || _isLandscapePhone;
   const minCols = _isMobile ? 9 : 12;
   const minRows = _isMobile ? 6 : 8;
-  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 64 : 72) : 56;
+  // 2026-05-19 (Jane): landscape phones cap smaller so the floating-controls
+  // full-screen canvas shows MORE map instead of zooming in (parity w/ S2).
+  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 36 : 72) : 56;
   const MIN_TILE = 28;
   const tileFromH = Math.floor(availH / minRows);
   const tileFromW = Math.floor(availW / minCols);
@@ -6332,21 +6369,28 @@ const SPRITE_QUALITY_DOWNSCALE = new Set([
 for (const k in IMG_SRC) {
   const img = new Image();
   img.onload = () => {
-    try {
-      // Wave 3b polish: chariot PNGs ship with black backgrounds; chroma-key
-      // them BEFORE the standard alpha-bleed so the silhouette is clean.
-      const _chromaSrc = SPRITE_BLACK_CHROMA.has(k) ? _blackChromaKey(img) : img;
-      const bled = SPRITE_BLEED.has(k) ? _alphaBleed(_chromaSrc) : _chromaSrc;
-      if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
-        IMG[k] = _preRender(bled, 256);
-      } else if (SKIP_PRERENDER.has(k)) {
-        IMG[k] = bled;
-      } else {
-        IMG[k] = _preRender(bled);
-      }
-    } catch(e) { IMG[k] = img; }
-    imagesReady++;
-    if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    // 2026-05-19 (Jane: "sprites don't all load on the first pass; a reload
+    // fixes it"). Force a full decode() before counting the image ready so
+    // the game starts only once every sprite is render-instant.
+    const _finalize = () => {
+      try {
+        // Wave 3b polish: chariot PNGs ship with black backgrounds; chroma-key
+        // them BEFORE the standard alpha-bleed so the silhouette is clean.
+        const _chromaSrc = SPRITE_BLACK_CHROMA.has(k) ? _blackChromaKey(img) : img;
+        const bled = SPRITE_BLEED.has(k) ? _alphaBleed(_chromaSrc) : _chromaSrc;
+        if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
+          IMG[k] = _preRender(bled, 256);
+        } else if (SKIP_PRERENDER.has(k)) {
+          IMG[k] = bled;
+        } else {
+          IMG[k] = _preRender(bled);
+        }
+      } catch(e) { IMG[k] = img; }
+      imagesReady++;
+      if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    };
+    if (typeof img.decode === 'function') img.decode().then(_finalize).catch(_finalize);
+    else _finalize();
   };
   img.onerror = () => {
     try {
@@ -16332,7 +16376,57 @@ function _setKidName(n){
     if (n) localStorage.setItem('bek.kidName', n);
   } catch(e){}
 }
+// 2026-05-19 (Jane: cross-scene "Your Journey" tally). Self-contained so
+// the identical function lives in all 3 scenes. Keep _WJ_TIERS in sync
+// with UNLOCK_TIERS.
+function _renderJourneyPanel(){
+  const host = document.getElementById('winJourney');
+  if (!host) return;
+  const _ls = (k) => { try { return localStorage.getItem(k); } catch(e){ return null; } };
+  const t = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
+  const c = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
+  const s = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
+  let owned = [];
+  try { owned = JSON.parse(_ls('bek.bundle1.unlocks') || '[]') || []; } catch(e){ owned = []; }
+  const _WJ_TIERS = [
+    { th:75,  res:'treasures', key:'speedBurst',    label:'⚡ Speed Burst' },
+    { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
+    { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
+    { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
+    { th:10,  res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
+  ];
+  const resVal = { treasures: t, crowns: c, scrolls: s };
+  let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
+    + '<div class="wj-res">'
+    +   '<span>\u{1F48E} <strong>' + t + '</strong> Treasures</span>'
+    +   '<span>\u{1F451} <strong>' + c + '</strong> Crowns</span>'
+    +   '<span>\u{1F4DC} <strong>' + s + '</strong> Scrolls</span>'
+    + '</div><div class="wj-powers">';
+  let next = null;
+  for (const tier of _WJ_TIERS) {
+    const have = owned.includes(tier.key);
+    const cur = resVal[tier.res] || 0;
+    if (have) html += '<div class="wj-power on">' + tier.label + '</div>';
+    else {
+      html += '<div class="wj-power off">' + tier.label
+        + ' <span class="wj-prog">' + Math.min(cur, tier.th) + '/' + tier.th + '</span></div>';
+      if (!next) next = { tier: tier, cur: cur };
+    }
+  }
+  html += '</div>';
+  if (next) {
+    const pct = Math.max(0, Math.min(100, Math.round(next.cur / next.tier.th * 100)));
+    const need = Math.max(0, next.tier.th - next.cur);
+    html += '<div class="wj-next">Next power: <strong>' + next.tier.label + '</strong> — '
+      + need + ' more ' + next.tier.res + '!'
+      + '<div class="wj-bar"><div class="wj-bar-fill" style="width:' + pct + '%"></div></div></div>';
+  } else {
+    html += '<div class="wj-next">\u{1F389} Every power unlocked — you’re a legend!</div>';
+  }
+  host.innerHTML = html;
+}
 function _personalizeWinModal(){
+  try { _renderJourneyPanel(); } catch(e){}
   const name = _getKidName();
   const block = document.getElementById('winHeroShoutout');
   if (!block) return;
@@ -22581,6 +22675,16 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     });
   } catch(e){}
 })();
+</script>
+<!-- 2026-05-19 (Jane: QR/hosted build). Shared service worker for instant
+     repeat-loads + scene jumps. Supersedes the old inline blob: SW above
+     (which browsers reject, so it never actually registered). No-op on file://. -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
 </script>
 </body>
 </html>

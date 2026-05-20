@@ -448,33 +448,107 @@
     width: 100%;
     aspect-ratio: 5 / 3;
     margin: 8px auto 14px;
+    /* Unfurled ancient parchment — warm aged paper with scorched edges. */
     background:
-      radial-gradient(ellipse at 50% 50%, rgba(255,217,118,0.06) 0%, transparent 70%),
-      linear-gradient(180deg, rgba(60,40,90,0.4) 0%, rgba(30,15,50,0.5) 100%);
-    border: 2px dashed rgba(255,217,118,0.45);
-    border-radius: 12px;
+      radial-gradient(ellipse at 28% 22%, rgba(255,250,228,0.65) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 85%, rgba(150,95,40,0.35) 0%, transparent 60%),
+      linear-gradient(150deg, #efdcae 0%, #e3c688 45%, #d2ad66 100%);
+    border: 3px solid #a9803f;
+    border-radius: 10px;
+    box-shadow: inset 0 0 26px rgba(120,75,25,0.45), 0 6px 20px rgba(0,0,0,0.5);
     overflow: visible;
+  }
+  /* faint cartographer's grid + compass rose etched on the parchment */
+  .jigsaw-board::before {
+    content: ''; position: absolute; inset: 0; border-radius: 8px; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(120,80,30,0.10) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,80,30,0.10) 1px, transparent 1px);
+    background-size: 14% 18%;
+    opacity: 0.6;
   }
   .jigsaw-route {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     pointer-events: none;
+    z-index: 2;
   }
+  /* START / EXIT pins on the parchment */
+  .jigsaw-pin {
+    position: absolute; z-index: 3; transform: translate(-50%, -50%);
+    font-size: 11px; font-weight: 800; font-family: Georgia, serif;
+    color: #5a2d0c; text-shadow: 0 1px 0 rgba(255,250,220,0.6);
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    pointer-events: none;
+  }
+  .jigsaw-pin .pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #fff5d8;
+  }
+  .jigsaw-pin.start .pin-dot { background: #2e9e44; box-shadow: 0 0 8px rgba(60,200,90,0.8); }
+  .jigsaw-pin.exit  .pin-dot { background: #d33a28; box-shadow: 0 0 8px rgba(230,80,60,0.8); }
+  /* the animated golden caravan route drawn on reveal */
+  .jigsaw-goldroute {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 4; opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .jigsaw-board.revealed .jigsaw-goldroute { opacity: 1; }
+  .jigsaw-goldroute path {
+    fill: none; stroke: #ffcf4a; stroke-width: 4; stroke-linecap: round;
+    filter: drop-shadow(0 0 5px rgba(255,205,80,0.95));
+    stroke-dasharray: 600; stroke-dashoffset: 600;
+  }
+  .jigsaw-board.revealed .jigsaw-goldroute path {
+    animation: goldRouteDraw 1.8s ease-out forwards;
+  }
+  @keyframes goldRouteDraw { to { stroke-dashoffset: 0; } }
+  /* the little caravan footprint that travels the route on reveal */
+  .jigsaw-walker {
+    position: absolute; z-index: 5; font-size: 18px; opacity: 0;
+    transform: translate(-50%, -50%);
+  }
+  .jigsaw-board.revealed .jigsaw-walker { animation: walkerTravel 1.9s ease-out forwards; }
+  @keyframes walkerTravel {
+    0%   { opacity: 0; left: 6%;  top: 49%; }
+    12%  { opacity: 1; }
+    50%  { left: 50%; top: 61%; }
+    88%  { opacity: 1; }
+    100% { opacity: 0; left: 95%; top: 49%; }
+  }
+  /* verse banner that lands at the end of the reveal */
+  .jigsaw-verse {
+    margin: 6px auto 2px; max-width: 92%;
+    color: #fff2c4; font-family: Georgia, serif; font-style: italic;
+    font-size: clamp(12px, 3vw, 14.5px); line-height: 1.4;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.6s, transform 0.6s;
+  }
+  .jigsaw-verse.show { opacity: 1; transform: translateY(0); }
+  .jigsaw-verse small { display:block; color:#ffd976; font-style:normal; font-size:0.82em; margin-top:3px; letter-spacing:0.5px; }
   .jigsaw-slot {
     position: absolute;
     width: 18%;
     aspect-ratio: 1;
-    border: 2.5px dashed rgba(255,217,118,0.65);
-    border-radius: 14px;
-    background: rgba(255,255,255,0.04);
+    border: 2.5px dashed rgba(120,80,30,0.6);
+    border-radius: 10px;
+    background: rgba(120,80,30,0.06);
     transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
     z-index: 1;
+    overflow: hidden;
   }
+  /* ghost preview of the fragment that belongs here — guides young kids
+     without a single line of reading. Injected per-play in _openJigsawModal. */
+  .jigsaw-slot .slot-hint {
+    position: absolute; inset: 8%; width: 84%; height: 84%;
+    opacity: 0.28; pointer-events: none; filter: grayscale(0.2);
+  }
+  .jigsaw-slot.filled .slot-hint { display: none; }
   .jigsaw-slot.filled {
     border-style: solid;
-    border-color: rgba(255,217,118,0.85);
-    background: rgba(255,217,118,0.10);
-    box-shadow: 0 0 18px rgba(255,217,118,0.5);
+    border-color: rgba(255,217,118,0.9);
+    background: rgba(255,217,118,0.12);
+    box-shadow: 0 0 18px rgba(255,217,118,0.55);
   }
   .jigsaw-tray {
     display: flex; flex-direction: row;
@@ -510,34 +584,42 @@
      Triangle (piece 1), rounded square (piece 2), pentagon (piece 3) —
      three visually distinct silhouettes so kids see at a glance
      which slot each piece is for. */
+  /* 2026-05-19 (Jane: "make the jigsaw epic"). Pieces are now torn
+     PARCHMENT MAP fragments (not crystals). Each carries a hand-inked
+     route segment + a terrain glyph (canyon / dunes / oasis). At the
+     correct slot AND upright, the segments line up edge-to-edge so the
+     three fragments read as ONE continuous caravan route to Midian. */
   .jigsaw-piece .crystal-face {
     position: absolute; inset: 0;
-    border-radius: 10px;
+    border-radius: 6px;
+    /* torn-parchment silhouette — slightly irregular so it reads as a
+       ripped map scrap, not a clean tile */
+    clip-path: polygon(3% 6%, 28% 0%, 55% 5%, 82% 0%, 97% 8%, 100% 34%,
+                       96% 62%, 100% 90%, 74% 98%, 46% 94%, 20% 100%, 4% 92%,
+                       0% 64%, 4% 36%);
+    background:
+      radial-gradient(ellipse at 32% 28%, rgba(255,250,225,0.55) 0%, transparent 55%),
+      linear-gradient(150deg, #e9d3a0 0%, #d8b878 48%, #c39a52 100%);
     box-shadow:
-      0 0 14px rgba(255,255,255,0.4),
-      inset 0 0 18px rgba(255,255,255,0.25),
-      inset 0 -8px 16px rgba(0,0,0,0.35);
-    transition: transform 0.25s cubic-bezier(.2,1.4,.4,1);
+      0 3px 10px rgba(0,0,0,0.45),
+      inset 0 0 14px rgba(120,80,30,0.35),
+      inset 0 -6px 12px rgba(90,55,15,0.30);
+    transition: transform 0.25s cubic-bezier(.2,1.4,.4,1), filter 0.25s;
+    overflow: hidden;
   }
-  .jigsaw-piece[data-piece="1"] .crystal-face {
-    background: linear-gradient(135deg, #b54fff 0%, #6a1ec0 50%, #3a0a78 100%);
-    clip-path: polygon(50% 0%, 100% 60%, 75% 100%, 25% 100%, 0% 60%);
+  /* the inked map detail (terrain + route segment) lives in an inline SVG
+     injected per-piece by _openJigsawModal; it inherits the face rotation */
+  .jigsaw-piece .map-ink { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .jigsaw-piece .map-ink .route-seg {
+    stroke: #6b3f14; stroke-width: 7; fill: none; stroke-linecap: round;
+    stroke-dasharray: 5 7;
   }
-  .jigsaw-piece[data-piece="2"] .crystal-face {
-    background: linear-gradient(135deg, #4fffd0 0%, #1ec0b0 50%, #0a6a78 100%);
-    clip-path: polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%);
-  }
-  .jigsaw-piece[data-piece="3"] .crystal-face {
-    background: linear-gradient(135deg, #b5ff4f 0%, #28b04a 50%, #0a6824 100%);
-    clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-  }
-  .jigsaw-piece .crystal-spark {
-    position: absolute;
-    inset: 18% 50% 50% 18%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.85), transparent);
-    border-radius: 60%;
-    pointer-events: none;
-    opacity: 0.7;
+  .jigsaw-piece.snapped .crystal-face { filter: drop-shadow(0 0 10px rgba(255,217,118,0.8)); }
+  /* when the whole route is revealed, every placed segment glows gold */
+  .jigsaw-board.revealed .jigsaw-piece .map-ink .route-seg {
+    stroke: #ffcf4a; stroke-dasharray: none;
+    filter: drop-shadow(0 0 4px rgba(255,210,90,0.95));
+    transition: stroke 0.5s;
   }
   .jigsaw-piece.snapped .crystal-face {
     animation: jigsawSnapPop 0.45s cubic-bezier(.2,1.4,.4,1);
@@ -1350,6 +1432,44 @@
     font-size:13px; color:#ffeeb5;
   }
   .win-scorebox strong { color:#fff; font-size:15px; }
+  /* 2026-05-19 (Jane: cross-scene "Your Journey" tally) */
+  .win-journey {
+    background: linear-gradient(180deg, rgba(60,30,8,0.55), rgba(40,18,4,0.5));
+    border: 1.5px solid rgba(255,215,118,0.45); border-radius: 12px;
+    padding: 10px 12px; margin: 8px auto 10px; max-width: 340px;
+  }
+  .win-journey .wj-title {
+    color:#ffd976; font-weight:800; font-size:13px; letter-spacing:0.5px; margin-bottom:6px;
+  }
+  .win-journey .wj-res {
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+    font-size:13px; color:#ffeeb5; margin-bottom:8px;
+  }
+  .win-journey .wj-res strong { color:#fff; font-size:15px; }
+  .win-journey .wj-powers {
+    display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:8px;
+  }
+  .win-journey .wj-power {
+    font-size:11px; font-weight:700; padding:3px 8px; border-radius:12px; border:1px solid;
+  }
+  .win-journey .wj-power.on {
+    color:#0d2a12; background:linear-gradient(135deg,#7ef0a0,#39c46a); border-color:#bdf7cf;
+    box-shadow:0 0 8px rgba(80,220,120,0.5);
+  }
+  .win-journey .wj-power.off {
+    color:#cdb88a; background:rgba(0,0,0,0.25); border-color:rgba(255,215,118,0.3);
+  }
+  .win-journey .wj-power.off .wj-prog { color:#ffd976; font-weight:800; }
+  .win-journey .wj-next { font-size:12px; color:#fff2c4; }
+  .win-journey .wj-next strong { color:#ffd976; }
+  .win-journey .wj-bar {
+    height:8px; border-radius:6px; background:rgba(0,0,0,0.4);
+    border:1px solid rgba(255,215,118,0.3); margin-top:5px; overflow:hidden;
+  }
+  .win-journey .wj-bar-fill {
+    height:100%; background:linear-gradient(90deg,#ffd700,#ffa500); border-radius:6px;
+    transition:width 0.6s ease-out;
+  }
   .win-badge-strip {
     display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin:8px 0 6px;
   }
@@ -1718,6 +1838,13 @@
     box-sizing: border-box;
     width: min(540px, 84vw);
     max-width: 100%;
+    /* 2026-05-19 (Jane: "spot the difference images are cropped"). The
+       flex-column wrapper has max-height:52vh; without flex-shrink:0 the
+       two image containers get SQUISHED on small/short screens and, with
+       overflow:hidden, the bottom of each picture is clipped off — hiding
+       (and making untappable) any differences in the lower half. Keep the
+       container at its natural (image) height and let the wrapper scroll. */
+    flex-shrink: 0;
     overflow: hidden;
     border-radius: 8px;
     cursor: pointer;
@@ -2723,35 +2850,62 @@
     }
     /* SINGLE-ROW CONTROLS — everything left→right inside the brown bar:
        LEFT UP [Interact Hint Menu] [⚡ 👁 🪶] DOWN RIGHT. */
+    /* 2026-05-19 (Jane: "playing with both hands in landscape is hard").
+       Real two-thumb layout: a proper D-PAD CROSS bottom-LEFT for the left
+       thumb, ACTIONS stacked bottom-RIGHT for the right thumb, powerups in
+       the middle — replacing the old flat row that strung the 4 arrows
+       across the whole width (unreachable as a pad). */
+    /* 2026-05-19 (Jane: "dpad floating left, slim brown bar just for the
+       power-ups + 3 buttons, horizontal"). Controls FLOAT so the canvas is
+       full-screen (≈9 rows). D-pad = floating cross bottom-left (over the
+       game). Power rack + action buttons sit in a slim brown PILL bottom-
+       right. Nothing steals vertical space from the play area. */
     .controls {
+      position: fixed !important;
+      bottom: 6px; right: 6px; left: auto; top: auto;
+      z-index: 40;
       display: flex !important;
       flex-direction: row !important;
       align-items: center;
-      justify-content: space-between !important;
-      gap: 6px;
-      padding: 6px max(10px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right)) !important;
-      max-height: none;
-      min-height: 60px;
+      justify-content: flex-end !important;
+      gap: 8px;
+      width: auto;
+      max-width: calc(100vw - 168px); /* keep the bottom-left clear for the dpad */
+      min-height: 0; max-height: none;
+      padding: 5px 10px !important;
       overflow: visible;
       flex-wrap: nowrap;
+      background: linear-gradient(0deg, rgba(42,14,3,0.96) 0%, rgba(74,28,10,0.94) 100%) !important;
+      border: 2px solid #5a1d06 !important;
+      border-top: 2px solid #5a1d06 !important;
+      border-radius: 14px !important;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
+      opacity: 0.9;            /* see game content behind the pill */
+      pointer-events: auto;
     }
+    /* D-pad floats as a cross bottom-left, OVER the full-screen game */
     .dpad {
-      display: contents !important;
+      position: fixed !important;
+      left: 10px; bottom: 10px; right: auto; top: auto;
+      z-index: 41;
+      opacity: 0.85;           /* see game content behind the dpad */
+      display: grid !important;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(2, 40px);
+      gap: 4px;
+      width: auto;
+      pointer-events: auto;
     }
     .dpad-spacer { display: none !important; }
     .dpad-btn {
       position: static !important;
       z-index: auto;
-      width: 48px;
-      height: 48px;
-      min-width: 48px;
+      width: 44px; height: 40px; min-width: 44px;
       border-radius: 10px;
-      font-size: 20px;
-      padding: 2px 0 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      font-size: 19px;
+      padding: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       line-height: 1.0;
       background: linear-gradient(145deg, #ffd976, #c38b28);
       border: 0;
@@ -2759,62 +2913,61 @@
       color: #5a1d06;
       flex: 0 0 auto;
     }
+    .dpad-btn[data-dir="up"]    { grid-column: 2; grid-row: 1; }
+    .dpad-btn[data-dir="left"]  { grid-column: 1; grid-row: 2; }
+    .dpad-btn[data-dir="down"]  { grid-column: 2; grid-row: 2; }
+    .dpad-btn[data-dir="right"] { grid-column: 3; grid-row: 2; }
     .dpad-text {
       display: block !important;
-      font-size: 8px;
-      letter-spacing: 0.3px;
-      font-weight: 700;
-      opacity: 0.85;
-      margin-top: 1px;
+      font-size: 7px; letter-spacing: 0.2px; font-weight: 700; opacity: 0.8; margin-top: 0;
     }
-    /* Order across .controls: LEFT(1) UP(2) action(3) hudPowerups(4) DOWN(5) RIGHT(6) */
-    .dpad-btn[data-dir="left"]  { order: 1; }
-    .dpad-btn[data-dir="up"]    { order: 2; }
-    .action-panel {
-      order: 3;
+    /* Power rack — single horizontal row inside the pill */
+    .game-page > #hudPowerups { display: none !important; }
+    .controls #hudPowerups {
+      order: 1;
+      flex: 0 1 auto;
+      display: flex !important;
       flex-direction: row !important;
-      flex: 1 1 auto;
-      max-width: 40%;
+      flex-wrap: nowrap !important;
+      gap: 5px !important;
+      padding: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      overflow-x: auto; overflow-y: hidden;
+      scrollbar-width: none;
+      align-items: center; justify-content: flex-end;
+      max-width: 46vw;
+    }
+    .controls #hudPowerups:empty { display: none !important; }
+    .controls #hudPowerups::-webkit-scrollbar { display: none; }
+    .controls #hudPowerups .hud-pu-btn {
+      width: 42px !important; height: 42px !important; font-size: 18px !important;
+      flex: 0 0 auto;
+    }
+    /* Action buttons — horizontal row inside the pill. !important overrides
+       the max-width:700px portrait rules that otherwise wrap them. */
+    .action-panel {
+      order: 2;
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
       gap: 6px;
-      flex-wrap: nowrap;
-      justify-content: center;
+      flex: 0 0 auto;
+      align-self: center;
+      max-width: none !important;
       position: relative;
       top: auto; right: auto; transform: none;
     }
     .action-btn {
       height: 40px;
-      font-size: 11px;
-      padding: 0 8px;
+      font-size: 12px;
+      padding: 0 12px;
       width: auto;
-      flex: 1 1 0;
       min-width: 0;
+      flex: 0 0 auto !important;
+      max-width: none !important;
       white-space: nowrap;
     }
-    .game-page > #hudPowerups { display: none !important; }
-    .controls #hudPowerups {
-      order: 4;
-      flex: 0 1 auto;
-      display: flex !important;
-      flex-direction: row !important;
-      flex-wrap: nowrap !important;
-      gap: 4px !important;
-      padding: 0 !important;
-      background: transparent !important;
-      border: none !important;
-      overflow-x: auto;
-      overflow-y: hidden;
-      max-width: 28vw;
-      scrollbar-width: none;
-      align-items: center;
-    }
-    .controls #hudPowerups::-webkit-scrollbar { display: none; }
-    .controls #hudPowerups .hud-pu-btn {
-      width: 44px !important;
-      height: 44px !important;
-      font-size: 18px !important;
-    }
-    .dpad-btn[data-dir="down"]  { order: 5; }
-    .dpad-btn[data-dir="right"] { order: 6; }
     .hud-group { flex-shrink: 0; gap: 4px; }
   }
   /* 2026-05-19 PM63: ultra-short landscapes (mirrors Scene 1 PM46/PM47). */
@@ -3088,28 +3241,39 @@
 <div class="modal-overlay jigsaw-modal" id="jigsawModal" style="display:none;">
   <div class="modal-content jigsaw-content">
     <div class="jigsaw-header">
-      <div class="jigsaw-eyebrow">A CARAVAN MAP</div>
-      <h2 class="jigsaw-title">Read the path to Midian</h2>
-      <p class="jigsaw-sub">Drag each crystal piece onto its slot. Tap a piece to rotate it. All three fit a path that leads east.</p>
+      <div class="jigsaw-eyebrow">THE TORN CARAVAN MAP</div>
+      <h2 class="jigsaw-title">Piece the map back together</h2>
+      <p class="jigsaw-sub">Moses found 3 scraps of an old caravan map. Drag each onto its place and tap to turn it — line up the trail and it will reveal the hidden path to Midian.</p>
     </div>
     <div class="jigsaw-board" id="jigsawBoard">
-      <!-- Three slot drop-zones — JS sets piece1/piece2/piece3 fits -->
-      <div class="jigsaw-slot" data-slot="1" style="left:8%;top:30%;"></div>
-      <div class="jigsaw-slot" data-slot="2" style="left:40%;top:55%;"></div>
-      <div class="jigsaw-slot" data-slot="3" style="left:72%;top:30%;"></div>
-      <!-- Decorative dashed route line drawn behind slots -->
+      <!-- Three slot drop-zones — JS sets piece1/piece2/piece3 fits.
+           Laid out left→right as the journey: canyon → dunes → oasis. -->
+      <div class="jigsaw-slot" data-slot="1" style="left:6%;top:34%;"></div>
+      <div class="jigsaw-slot" data-slot="2" style="left:41%;top:46%;"></div>
+      <div class="jigsaw-slot" data-slot="3" style="left:76%;top:34%;"></div>
+      <!-- START / EXIT pins on the parchment -->
+      <div class="jigsaw-pin start" style="left:8%;top:49%;"><span class="pin-dot"></span>START</div>
+      <div class="jigsaw-pin exit"  style="left:90%;top:49%;"><span class="pin-dot"></span>MIDIAN</div>
+      <!-- Faint dashed guide showing roughly where the trail will run -->
       <svg class="jigsaw-route" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M 40 100 Q 130 30, 200 140 Q 270 250, 350 100"
-              fill="none" stroke="rgba(255,240,180,0.35)" stroke-width="3" stroke-dasharray="6 8"/>
+        <path d="M16,118 C60,110 130,150 200,146 C270,142 340,110 384,118"
+              fill="none" stroke="rgba(120,80,30,0.30)" stroke-width="3" stroke-dasharray="5 9"/>
       </svg>
+      <!-- Golden caravan route — drawn in on the reveal -->
+      <svg class="jigsaw-goldroute" id="jigsawGoldRoute" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M16,118 C60,110 130,150 200,146 C270,142 340,110 384,118"/>
+      </svg>
+      <!-- Traveling footprint on reveal -->
+      <div class="jigsaw-walker" id="jigsawWalker" aria-hidden="true">&#128099;</div>
     </div>
     <div class="jigsaw-tray" id="jigsawTray">
-      <!-- 3 piece divs — generated by _openJigsawModal so each game
-           gets fresh random rotation. Each tile is a CSS-painted
-           crystal (no PNG needed). -->
+      <!-- 3 piece divs — generated by _openJigsawModal. Each is a torn
+           parchment map fragment (colourful terrain + route segment),
+           CSS + inline SVG, no PNG needed. -->
     </div>
     <div class="jigsaw-footer">
       <div class="jigsaw-status" id="jigsawStatus">Place 3 pieces · Tap to rotate · Drag to slot</div>
+      <div class="jigsaw-verse" id="jigsawVerse">&#8220;Your word is a lamp for my feet, a light on my path.&#8221;<small>Psalm 119:105 (NIV)</small></div>
     </div>
   </div>
 </div>
@@ -3255,6 +3419,11 @@
       <span><strong id="winTreasureNum">0/0</strong> Treasures</span>
       <span><strong id="winHeartsNum">3/3</strong> Hearts</span>
     </div>
+    <!-- 2026-05-19 (Jane: "tally collectables across scenes + show at
+         transitions; surface the power unlocks"). Cross-scene cumulative
+         progress, populated by _renderJourneyPanel() from shared
+         localStorage so it reads the SAME totals in every scene. -->
+    <div class="win-journey" id="winJourney"></div>
     <div class="win-truth-card" id="winTruthCard">
       <span class="tc-label">&#9733; 1 Truth Card Collected &#9733;</span>
       <div class="tc-body" id="winTruthText">God had a plan for Moses.</div>
@@ -3474,7 +3643,12 @@ function resizeCanvas() {
   // already had good fill; landscape phones get +30-50% canvas area.
   const minCols = _isMobile ? 9 : 12;
   const minRows = _isMobile ? 6 : 8;
-  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 64 : 72) : 56;
+  // 2026-05-19 (Jane: "kids can't see oncoming danger in landscape"). With
+  // the controls now FLOATING (canvas fills the screen), a big tile cap just
+  // zoomed in (fewer tiles visible). Cap landscape phones smaller so the
+  // extra space shows MORE of the map (≈9 rows × ≈20 cols) instead of
+  // bigger sprites — far more visual warning of danger from every side.
+  const MAX_TILE = _isMobile ? (_isLandscapePhone ? 36 : 72) : 56;
   const MIN_TILE = 28;
   const tileFromH = Math.floor(availH / minRows);
   const tileFromW = Math.floor(availW / minCols);
@@ -4166,23 +4340,32 @@ const SPRITE_QUALITY_DOWNSCALE = new Set([
 for (const k in IMG_SRC) {
   const img = new Image();
   img.onload = () => {
-    try {
-      // v3.19: Bleed RGB into transparent edge pixels FIRST to kill white halos
-      const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
-      // v3.26 Jane 2026-04-26: load-time multi-step downscale ONLY for the
-      // explicit SPRITE_QUALITY_DOWNSCALE set. Everything else keeps the
-      // safer SKIP_PRERENDER path (fixes Jane's "oasis is so distorted /
-      // blurred" without re-breaking guard / Moses-back / Moses-right).
-      if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
-        IMG[k] = _preRender(bled, 256);
-      } else if (SKIP_PRERENDER.has(k)) {
-        IMG[k] = bled;
-      } else {
-        IMG[k] = _preRender(bled);
-      }
-    } catch(e) { IMG[k] = img; }
-    imagesReady++;
-    if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    // 2026-05-19 (Jane: "sprites don't all load on the first pass; a reload
+    // fixes it"). onload fires when the PNG is downloaded but NOT yet
+    // decoded — so the first draw decodes on the main thread and the sprite
+    // can flash missing. Force a full decode() before counting the image as
+    // ready, so the game only starts once every sprite is render-instant.
+    const _finalize = () => {
+      try {
+        // v3.19: Bleed RGB into transparent edge pixels FIRST to kill white halos
+        const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
+        // v3.26 Jane 2026-04-26: load-time multi-step downscale ONLY for the
+        // explicit SPRITE_QUALITY_DOWNSCALE set. Everything else keeps the
+        // safer SKIP_PRERENDER path (fixes Jane's "oasis is so distorted /
+        // blurred" without re-breaking guard / Moses-back / Moses-right).
+        if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
+          IMG[k] = _preRender(bled, 256);
+        } else if (SKIP_PRERENDER.has(k)) {
+          IMG[k] = bled;
+        } else {
+          IMG[k] = _preRender(bled);
+        }
+      } catch(e) { IMG[k] = img; }
+      imagesReady++;
+      if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    };
+    if (typeof img.decode === 'function') img.decode().then(_finalize).catch(_finalize);
+    else _finalize();
   };
   img.onerror = () => {
     try {
@@ -4332,6 +4515,30 @@ function isWalkable(tx, ty) {
 function isCover(tx, ty) { return tileAt(tx, ty) === 3; }
 function isAdjacentToCover(tx, ty) {
   return isCover(tx-1,ty)||isCover(tx+1,ty)||isCover(tx,ty-1)||isCover(tx,ty+1);
+}
+// 2026-05-19 (Jane: "decorations overlapping each other"). The desert
+// cactus sprinkle draws a cactus on ~7% of tiles at 1.45x TILE size, so two
+// cacti on ADJACENT tiles (centres only 1 TILE apart) overlap badly.
+// _cactusCandidate returns the deterministic hash for a tile IF it qualifies
+// as a cactus tile (same rule as the draw loop), else null. Drawing then
+// only happens for the "winner" of each adjacency cluster (smallest hash),
+// which guarantees surviving cacti are >=2 tiles apart -> never overlap,
+// while keeping the scattered, non-grid look.
+function _cactusCandidate(tx, ty){
+  if (tx < 5 || tx > 34) return null;            // matches draw-loop x-range
+  const h1 = ((tx * 2654435761) ^ (ty * 40503)) >>> 0;
+  if ((h1 % 100) >= 7) return null;              // not in the ~7% bucket
+  return h1;
+}
+function _cactusIsWinner(tx, ty){
+  const self = _cactusCandidate(tx, ty);
+  if (self === null) return false;
+  for (let ny = -1; ny <= 1; ny++) for (let nx = -1; nx <= 1; nx++){
+    if (nx === 0 && ny === 0) continue;
+    const nb = _cactusCandidate(tx + nx, ty + ny);
+    if (nb !== null && nb < self) return false;  // a stronger neighbour wins
+  }
+  return true;
 }
 /* Line-of-sight between two tile positions. Returns true if clear,
    false if a wall (1) or pillar (3) blocks the sight line. Uses a
@@ -4923,7 +5130,10 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference moses in nile A.png',
       imgB:'assets/images/spot the difference moses in nile B.png',
       answer:4,
-      diffs:[{x:22,y:28,r:7},{x:72,y:18,r:7},{x:45,y:68,r:7},{x:78,y:72,r:7}],
+      // 2026-05-20 PM63 merge: real per-image coords pixel-diffed by the
+      // caravan-map agent (replaces the placeholder spread). pottery
+      // (left), boat sail (top-centre), basket (centre), frog (bottom-right).
+      diffs:[{x:13,y:55,r:10},{x:48,y:42,r:10},{x:47,y:67,r:11},{x:88,y:88,r:9}],
       clue:'Look very carefully — some colours, shapes or objects have changed between the two pictures!',
       verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
     // --- Pictionary ---
@@ -5218,7 +5428,10 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference moses running A.png',
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
-      diffs:[{x:30,y:25,r:7},{x:65,y:35,r:7},{x:20,y:70,r:7},{x:75,y:65,r:7}],
+      // 2026-05-20 PM63 merge: real per-image coords pixel-diffed by the
+      // caravan-map agent. sun (top-left), vulture (left), Moses'
+      // hand/object (centre), camel (right).
+      diffs:[{x:20,y:30,r:9},{x:12,y:49,r:9},{x:40,y:52,r:10},{x:85,y:57,r:10}],
       clue:'Look very carefully at both pictures — some things have changed!',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     // --- Pictionary ---
@@ -5489,7 +5702,10 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference princess rescue A.png',
       imgB:'assets/images/spot the difference princess rescue B.png',
       answer:4,
-      diffs:[{x:25,y:22,r:7},{x:68,y:30,r:7},{x:40,y:65,r:7},{x:80,y:58,r:7}],
+      // 2026-05-20 PM63 merge: real per-image coords pixel-diffed by the
+      // caravan-map agent. dragonfly (left), crown (top-right),
+      // attendants' dresses (centre-right), baby's blanket (centre).
+      diffs:[{x:20,y:50,r:10},{x:78,y:22,r:9},{x:65,y:52,r:11},{x:38,y:64,r:10}],
       clue:'Look very carefully at both pictures — some things have changed between them!',
       verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
     // --- Pictionary ---
@@ -6424,9 +6640,12 @@ $('startBtn').addEventListener('click', () => {
     if (overlay) overlay.classList.remove('active');
     // Check for a mid-game save — show a resume prompt instead of the cinematic.
     const _savedGame = _loadCheckpoint();
-    if (_savedGame) {
+    if (_savedGame && _hasResumableProgress(_savedGame)) {
       showResumePrompt(_savedGame);
     } else {
+      // No save, or a save with 0 checkpoints cleared — nothing worth
+      // resuming, so wipe the stale save and start the adventure fresh.
+      if (_savedGame) { try { _clearCheckpoint(); } catch(e){} }
       openCinematic();
     }
   };
@@ -6568,9 +6787,10 @@ try {
           const _launchCin = () => {
             try {
               const _savedGame = (typeof _loadCheckpoint === 'function') ? _loadCheckpoint() : null;
-              if (_savedGame && typeof showResumePrompt === 'function') {
+              if (_savedGame && _hasResumableProgress(_savedGame) && typeof showResumePrompt === 'function') {
                 showResumePrompt(_savedGame);
               } else if (typeof openCinematic === 'function') {
+                if (_savedGame) { try { _clearCheckpoint(); } catch(e){} }
                 openCinematic();
               }
             } catch(e){}
@@ -6956,6 +7176,15 @@ function _applyCheckpointAfterSeed(){
   } catch(e) { return false; }
 }
 
+// 2026-05-19 (Jane bug): a save with ZERO checkpoints cleared was still
+// offering "Continue Adventure — 0 of N checkpoints already cleared", which
+// is nonsense (there's nothing to resume). Only treat a save as resumable
+// once the kid has actually cleared at least one checkpoint.
+function _hasResumableProgress(p){
+  if (!p) return false;
+  const cleared = Array.isArray(p.gates) ? p.gates.filter(g => g && g.solved).length : 0;
+  return cleared >= 1;
+}
 function showResumePrompt(p) {
   const gatesCleared = Array.isArray(p.gates) ? p.gates.filter(g => g.solved).length : 0;
   const totalGates   = Array.isArray(p.gates) ? p.gates.length : 9;
@@ -7009,6 +7238,10 @@ function startScene1() {
   // so a fresh replay starts at 0/3 and the jigsaw modal re-arms.
   try { game.mapFragments = {}; game.jigsawSolved = false; updateHudMapFragments(); } catch(e){}
   game.perfectRun = true;
+  // 2026-05-19 (Jane): clear the Scene 2 spectacle/fog-lift state on a
+  // fresh start so a replay doesn't open mid-sandstorm or with stale
+  // guiding lights.
+  try { _sandstormOn = false; _sandstormLevel = 0; _sandStreaks = []; _guideMotes = []; } catch(e){}
   // v1.2 FIX (§3.8): full scene reset on Start so picking a new difficulty
   // after playing actually re-spawns Moses at the start cell and clears
   // footprints / sand puffs / collected pickups / used NPC dialog.
@@ -7605,6 +7838,41 @@ function _maybeOpenJigsaw(){
   setTimeout(() => { try { _openJigsawModal(); } catch(e){} }, 800);
 }
 let _jigsawAssignments = null;  // randomized {slot: piece} mapping per play
+// 2026-05-19 (Jane: "make it epic + colorful — the desert is yellow and
+// redundant"). Each fragment is a hand-inked third of the caravan map with
+// its own COLOURFUL terrain so the three torn scraps read as a real journey:
+//   piece 1 = Wadi Canyon (warm ochre rock)
+//   piece 2 = Dune Sea (gold dunes + teal sky shimmer)
+//   piece 3 = Oasis of Midian (green palm, blue water, red destination tent)
+// The `.route-seg` line on each is positioned so that — at the correct slot
+// AND upright (rotation 0) — the three segments meet edge-to-edge and form
+// one continuous caravan trail, which then lights up gold on the reveal.
+function _mapPieceSVG(p){
+  if (p === 1) {
+    return '<svg class="map-ink" viewBox="0 0 100 100" preserveAspectRatio="none">'
+      + '<path d="M0,70 L18,38 L31,68 L47,28 L61,70 L79,42 L100,72 L100,100 L0,100 Z" fill="#cf6a2c" opacity="0.9"/>'
+      + '<path d="M0,80 L24,58 L45,82 L67,55 L100,84 L100,100 L0,100 Z" fill="#9c4216" opacity="0.92"/>'
+      + '<path class="route-seg" d="M1,50 C30,42 47,58 99,50"/>'
+      + '</svg>';
+  }
+  if (p === 2) {
+    return '<svg class="map-ink" viewBox="0 0 100 100" preserveAspectRatio="none">'
+      + '<path d="M0,0 L100,0 L100,30 Q50,40 0,30 Z" fill="#56c6d6" opacity="0.20"/>'
+      + '<path d="M0,68 Q25,50 50,66 T100,64 L100,100 L0,100 Z" fill="#e8b84e" opacity="0.92"/>'
+      + '<path d="M0,82 Q30,68 60,82 T100,80 L100,100 L0,100 Z" fill="#c89e38" opacity="0.95"/>'
+      + '<path class="route-seg" d="M1,50 C30,60 52,40 99,50"/>'
+      + '</svg>';
+  }
+  return '<svg class="map-ink" viewBox="0 0 100 100" preserveAspectRatio="none">'
+    + '<ellipse cx="33" cy="72" rx="24" ry="10" fill="#34a7cc" opacity="0.92"/>'
+    + '<ellipse cx="33" cy="70" rx="14" ry="5" fill="#9fe4f2" opacity="0.7"/>'
+    + '<rect x="31" y="40" width="4" height="28" fill="#7a4a1e"/>'
+    + '<path d="M33,41 q-17,-7 -23,1 M33,41 q17,-7 23,1 M33,41 q-9,-15 -2,-19 M33,41 q11,-13 4,-18" stroke="#2f9a3c" stroke-width="4.5" fill="none" stroke-linecap="round"/>'
+    + '<rect x="85" y="40" width="2.4" height="20" fill="#7a2018"/>'
+    + '<path d="M77,58 L86,39 L95,58 Z" fill="#d33a28"/>'
+    + '<path class="route-seg" d="M1,50 C30,55 55,46 86,52"/>'
+    + '</svg>';
+}
 function _openJigsawModal(){
   const modal = document.getElementById('jigsawModal');
   if (!modal || game.jigsawSolved) return;
@@ -7630,14 +7898,18 @@ function _openJigsawModal(){
     div.dataset.rotation = String(initRot);
     div.innerHTML =
       '<div class="crystal-face" style="transform: rotate(' + initRot + 'deg);">'
-        + '<div class="crystal-spark"></div>'
+        + _mapPieceSVG(p)
       + '</div>';
     _wireJigsawPiece(div);
     tray.appendChild(div);
   }
-  // Clear any previously-filled slot UI.
+  // Clear any previously-filled slot UI + paint each slot's ghost hint
+  // (a faint preview of the fragment that belongs there THIS play, since
+  // slot→piece is randomized). Lets a non-reader match by terrain.
   document.querySelectorAll('#jigsawBoard .jigsaw-slot').forEach(s => {
     s.classList.remove('filled');
+    const wantPiece = _jigsawAssignments[parseInt(s.dataset.slot, 10)];
+    s.innerHTML = '<div class="slot-hint">' + _mapPieceSVG(wantPiece) + '</div>';
   });
   // Reset status text.
   const status = document.getElementById('jigsawStatus');
@@ -7736,9 +8008,13 @@ function _wireJigsawPiece(pieceEl){
     const wantPiece = _jigsawAssignments[slotIdx];
     const havePiece = parseInt(pieceEl.dataset.piece, 10);
     const rotation  = parseInt(pieceEl.dataset.rotation, 10) || 0;
-    const isCorrect = (havePiece === wantPiece) && (rotation === 0);
+    // 2026-05-19 (Jane: "correct slot AND correct rotation is fine — it
+    // shouldn't be too easy for a 10-year-old"). Both are required. The
+    // ghost-terrain hint in each slot + the distinct messages below keep
+    // it approachable for 6-7 yos without making it trivial.
+    const rightSlot = (havePiece === wantPiece);
+    const isCorrect = rightSlot && (rotation === 0);
     if (!isCorrect) {
-      // Wrong piece OR wrong rotation → bounce.
       pieceEl.style.position = '';
       pieceEl.style.left = '';
       pieceEl.style.top  = '';
@@ -7748,12 +8024,12 @@ function _wireJigsawPiece(pieceEl){
       setTimeout(() => pieceEl.classList.remove('bounce'), 380);
       try { play('pop') || play('error'); } catch(_){}
       const status = document.getElementById('jigsawStatus');
-      if (status) status.textContent = (rotation === 0)
-        ? 'Hmm, that piece doesn\'t fit this slot. Try another.'
-        : 'Tap to rotate until the carving lines up.';
+      if (status) status.textContent = rightSlot
+        ? 'So close! This is the right spot — tap the scrap to turn it upright.'
+        : 'Not quite — try this scrap on a different spot of the map.';
       return;
     }
-    // Correct! Snap into the slot.
+    // Correct slot + upright! Snap into place.
     const slotRect = hit.getBoundingClientRect();
     pieceEl.style.left   = slotRect.left + 'px';
     pieceEl.style.top    = slotRect.top  + 'px';
@@ -7779,16 +8055,36 @@ function _wireJigsawPiece(pieceEl){
 function _onJigsawSolved(){
   game.jigsawSolved = true;
   try { _saveCheckpoint(); } catch(e){}
-  // Stop the puzzle bg music; play the solve sting.
-  try {
-    if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; }
-  } catch(e){}
+  // 2026-05-19 (Jane: "make it epic"). Don't snap the modal shut — play
+  // the REVEAL beat first: the three placed segments light gold, a golden
+  // caravan route draws itself START→MIDIAN, a footprint walks the trail,
+  // and the verse lands. THEN close + hand off to the world camera pan.
+  _playMapReveal();
+}
+function _playMapReveal(){
+  const board  = document.getElementById('jigsawBoard');
+  const status = document.getElementById('jigsawStatus');
+  const verse  = document.getElementById('jigsawVerse');
+  const title  = document.querySelector('#jigsawModal .jigsaw-title');
+  if (board) {
+    board.classList.remove('revealed');
+    void board.offsetWidth;            // reflow so the draw animation restarts
+    board.classList.add('revealed');
+  }
+  if (title)  title.textContent = 'The path is revealed!';
+  if (status) status.textContent = 'God lights the way to Midian ✨';
   try { play('puzzleComplete') || play('victoryChime') || play('success'); } catch(e){}
-  // Close the modal.
-  const modal = document.getElementById('jigsawModal');
-  if (modal) modal.classList.remove('active');
-  // Show the "Moses — keep going!" overlay, then camera pan to exit.
-  _showMosesKeepGoing();
+  // verse lands once the golden route has finished drawing
+  setTimeout(() => { try { if (verse) verse.classList.add('show'); } catch(_){} }, 1500);
+  // hold on the glowing map, then close and continue to the world pan
+  setTimeout(() => {
+    try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(_){}
+    const modal = document.getElementById('jigsawModal');
+    if (modal) modal.classList.remove('active');
+    if (board) board.classList.remove('revealed');
+    if (verse) verse.classList.remove('show');
+    _showMosesKeepGoing();
+  }, 3600);
 }
 function _showMosesKeepGoing(){
   let overlay = document.getElementById('mosesKeepGoing');
@@ -9849,6 +10145,13 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         // cleared" condition. Combined with 3 collected map fragments,
         // this auto-fires the caravan jigsaw modal.
         try { _maybeOpenJigsaw(); } catch(e){}
+        // 2026-05-19 (Jane: Scene 2 spectacle). When the LAST checkpoint
+        // clears, the sandstorm rolls in (regardless of gate type — the
+        // old all-cleared toast only fired for climb gates). The map's
+        // guiding lights are what lead Moses through it.
+        try {
+          if (challengeGates.length > 0 && challengeGates.every(g => g.solved)) _triggerSandstorm();
+        } catch(e){}
         // v2.2.6 Jane feedback: Scene 2 no longer auto-completes when all
         // gates are cleared. Moses must still walk INTO the exit tile. We
         // only toast that the path east is now open — actual scene-complete
@@ -10377,6 +10680,9 @@ function onOasisStep(tx, ty){
 /* ---------- EXIT ---------- */
 function onReachExit(){
   game.state = 'ended';
+  // 2026-05-19 (Jane): the storm clears the instant Moses reaches Midian
+  // so the victory beat is calm, not stormy.
+  try { _stopSandstorm(); } catch(e){}
   try { audio.bgm.pause(); } catch(e){}
   // 2026-05-19 PM60 (parity with Scene 1 PM55): layer victoryChime +
   // doorOpen on top of the existing reachedExit + gate sounds so the
@@ -10558,6 +10864,64 @@ function _personalizeWinModal(){
   if (tagEl)  tagEl.textContent  = tag;
   if (verseEl) verseEl.innerHTML = `${verseBody}<span class="win-hero-verse-ref">${verseRef}</span>`;
   block.style.display = 'block';
+  try { _renderJourneyPanel(); } catch(e){}
+}
+// 2026-05-19 (Jane: cross-scene "Your Journey" tally). Reads the shared
+// lifetime collectable totals + power unlocks from localStorage and renders
+// them into #winJourney, so every scene's finish screen shows the SAME
+// running progress + what powers are unlocked / what's next. Makes the 3
+// scenes feel like one game and surfaces the (otherwise invisible) powers.
+// Self-contained (reads shared localStorage + inline tier table) so the
+// EXACT same function drops into all 3 scenes — including scene 3, which
+// doesn't yet have the UNLOCK_TIERS / lifetime-loader infrastructure.
+// Keep _WJ_TIERS thresholds in sync with UNLOCK_TIERS.
+function _renderJourneyPanel(){
+  const host = document.getElementById('winJourney');
+  if (!host) return;
+  const _ls = (k) => { try { return localStorage.getItem(k); } catch(e){ return null; } };
+  const t = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
+  const c = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
+  const s = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
+  let owned = [];
+  try { owned = JSON.parse(_ls('bek.bundle1.unlocks') || '[]') || []; } catch(e){ owned = []; }
+  const _WJ_TIERS = [
+    { th:75,  res:'treasures', key:'speedBurst',    label:'⚡ Speed Burst' },
+    { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
+    { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
+    { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
+    { th:10,  res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
+  ];
+  const resVal = { treasures: t, crowns: c, scrolls: s };
+  let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
+    + '<div class="wj-res">'
+    +   '<span>\u{1F48E} <strong>' + t + '</strong> Treasures</span>'
+    +   '<span>\u{1F451} <strong>' + c + '</strong> Crowns</span>'
+    +   '<span>\u{1F4DC} <strong>' + s + '</strong> Scrolls</span>'
+    + '</div>';
+  html += '<div class="wj-powers">';
+  let next = null;
+  for (const tier of _WJ_TIERS) {
+    const have = owned.includes(tier.key);
+    const cur = resVal[tier.res] || 0;
+    if (have) {
+      html += '<div class="wj-power on">' + tier.label + '</div>';
+    } else {
+      html += '<div class="wj-power off">' + tier.label
+        + ' <span class="wj-prog">' + Math.min(cur, tier.th) + '/' + tier.th + '</span></div>';
+      if (!next) next = { tier: tier, cur: cur };
+    }
+  }
+  html += '</div>';
+  if (next) {
+    const pct = Math.max(0, Math.min(100, Math.round(next.cur / next.tier.th * 100)));
+    const need = Math.max(0, next.tier.th - next.cur);
+    html += '<div class="wj-next">Next power: <strong>' + next.tier.label + '</strong> — '
+      + need + ' more ' + next.tier.res + '!'
+      + '<div class="wj-bar"><div class="wj-bar-fill" style="width:' + pct + '%"></div></div></div>';
+  } else {
+    html += '<div class="wj-next">\u{1F389} Every power unlocked — you’re a legend!</div>';
+  }
+  host.innerHTML = html;
 }
 /* ---------- TRANSITION CINEMATIC 2→3 ---------- */
 const TRANS_2TO3_PANELS = [
@@ -13027,6 +13391,128 @@ function drawFootprints(){
   }
   ctx.restore();
 }
+// 2026-05-19 (Jane: world fog-lift). Once the caravan map is solved, a
+// gentle stream of golden motes drifts from Moses toward the exit — a
+// guiding light (pillar-of-fire motif) so the kid always knows the way to
+// Midian. Pure cosmetic particles (no pathfinding); they head in the exit
+// DIRECTION and fade, so they read as "the way is shown" even when the
+// exit is off-screen. Doable for any age: it literally points the path.
+let _guideMotes = [];
+let _lastGuideSpawn = 0;
+function drawGuidingLights(){
+  if (game.scene !== 2 || !game.jigsawSolved) return;
+  if (game.state !== 'playing') return;
+  // Resolve the exit even while it's still off-screen (the lazy
+  // _topmostExit is only set when the exit tile scrolls into view).
+  let ex = window._topmostExit;
+  if (!ex || ex.tx < 0) {
+    let topY = MAP_H, topX = -1;
+    for (let _y = 0; _y < MAP_H; _y++) for (let _x = 0; _x < MAP_W; _x++) {
+      if (MAP[_y][_x] === 7 && _y < topY) { topY = _y; topX = _x; }
+    }
+    if (topX >= 0) { window._topmostExit = { tx: topX, ty: topY }; ex = window._topmostExit; }
+  }
+  if (!ex || ex.tx < 0) return;
+  const now = performance.now();
+  const psx = (player.px - camera.px) + TILE/2;
+  const psy = (player.py - camera.py) + TILE/2;
+  const esx = (ex.tx * TILE - camera.px) + TILE/2;
+  const esy = (ex.ty * TILE - camera.py) + TILE/2;
+  let dx = esx - psx, dy = esy - psy;
+  const dist = Math.hypot(dx, dy) || 1;
+  const ux = dx / dist, uy = dy / dist;
+  // spawn fresh motes at Moses heading toward the exit — a steady,
+  // readable ribbon of light (catchy on a small phone screen).
+  if (now - _lastGuideSpawn > 120) {
+    _lastGuideSpawn = now;
+    _guideMotes.push({ x: psx + ux * TILE * 0.4, y: psy + uy * TILE * 0.4 - TILE * 0.25,
+                       ux, uy, t: 0, ph: Math.random() * 6.28,
+                       off: (Math.random() - 0.5) * TILE * 0.5 });
+  }
+  ctx.save();
+  for (let i = _guideMotes.length - 1; i >= 0; i--) {
+    const m = _guideMotes[i];
+    m.t++;
+    if (m.t > 64) { _guideMotes.splice(i, 1); continue; }
+    const p = m.t / 64;
+    m.x += m.ux * TILE * 0.10;
+    m.y += m.uy * TILE * 0.10;
+    const wob = Math.sin(now / 160 + m.ph) * 4 + m.off;
+    const px = m.x + (-m.uy) * wob;
+    const py = m.y + (m.ux) * wob;
+    const a = Math.sin(p * Math.PI) * 0.95;          // fade in then out
+    const r = 3.6 + 2.2 * Math.sin(now / 130 + m.ph);
+    const g = ctx.createRadialGradient(px, py, 0.5, px, py, r * 2.6);
+    g.addColorStop(0,   'rgba(255,248,200,' + a.toFixed(2) + ')');
+    g.addColorStop(0.45,'rgba(255,210,95,'  + (a * 0.6).toFixed(2) + ')');
+    g.addColorStop(1,   'rgba(255,170,50,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(px, py, r * 2.6, 0, Math.PI * 2); ctx.fill();
+    // bright core sparkle
+    ctx.fillStyle = 'rgba(255,255,238,' + (a * 0.9).toFixed(2) + ')';
+    ctx.beginPath(); ctx.arc(px, py, Math.max(0.8, r * 0.4), 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+// 2026-05-19 (Jane: Scene 2 needs a "Pharaoh-cameo" spectacle). THE
+// SANDSTORM — rolls in the moment the last checkpoint clears. It's pure
+// drama + tension, NOT a fail-state (no heart drain), so a 6-7 yo can
+// always finish: the vignette keeps Moses lit, and the caravan map's
+// golden guiding lights punch through the haze to show the way. This is
+// why the map matters — it's what leads you through the storm to Midian.
+let _sandstormOn = false;
+let _sandstormLevel = 0;          // 0..1 eased intensity
+let _sandStreaks = [];
+function _triggerSandstorm(){
+  if (_sandstormOn) return;
+  _sandstormOn = true;
+  try { play('wind') || play('vulture') || play('uhoh'); } catch(e){}
+  try { toast('🌪️ A sandstorm sweeps in — follow the lights to Midian!'); } catch(e){}
+  _sandStreaks = [];
+  for (let i = 0; i < 48; i++) {
+    _sandStreaks.push({ x: Math.random() * CANVAS_W, y: Math.random() * CANVAS_H,
+                        len: 28 + Math.random() * 64, spd: 4 + Math.random() * 7,
+                        a: 0.08 + Math.random() * 0.18 });
+  }
+}
+function _stopSandstorm(){ _sandstormOn = false; }
+function drawSandstorm(ctx){
+  if (game.scene !== 2) return;
+  const target = _sandstormOn ? 1 : 0;
+  _sandstormLevel += (target - _sandstormLevel) * 0.04;   // smooth ramp in/out
+  if (_sandstormLevel < 0.01) { _sandstormLevel = 0; return; }
+  const L = _sandstormLevel, now = performance.now();
+  ctx.save();
+  // warm haze wash
+  ctx.fillStyle = 'rgba(214,150,80,' + (0.34 * L).toFixed(3) + ')';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  // drifting tonal band for depth/movement
+  const drift = (now / 40) % (CANVAS_W || 1);
+  const hg = ctx.createLinearGradient(-drift, 0, CANVAS_W - drift, 0);
+  hg.addColorStop(0,   'rgba(190,120,60,0)');
+  hg.addColorStop(0.5, 'rgba(205,140,72,' + (0.16 * L).toFixed(3) + ')');
+  hg.addColorStop(1,   'rgba(190,120,60,0)');
+  ctx.fillStyle = hg; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  // wind streaks blowing across
+  ctx.lineCap = 'round';
+  for (const s of _sandStreaks) {
+    s.x -= s.spd * (0.6 + L);
+    s.y += s.spd * 0.18;
+    if (s.x < -s.len) { s.x = CANVAS_W + Math.random() * 60; s.y = Math.random() * CANVAS_H; }
+    if (s.y > CANVAS_H) s.y = -10;
+    ctx.strokeStyle = 'rgba(255,235,200,' + (s.a * L).toFixed(3) + ')';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x + s.len, s.y - s.len * 0.12); ctx.stroke();
+  }
+  // vignette focused on Moses so he (and the guiding lights) stay readable
+  const pcx = (player.px - camera.px) + TILE / 2;
+  const pcy = (player.py - camera.py) + TILE / 2;
+  const vg = ctx.createRadialGradient(pcx, pcy, TILE * 1.6, pcx, pcy, Math.max(CANVAS_W, CANVAS_H) * 0.72);
+  vg.addColorStop(0, 'rgba(55,32,10,0)');
+  vg.addColorStop(1, 'rgba(48,26,8,' + (0.55 * L).toFixed(3) + ')');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  ctx.restore();
+}
 
 /* ---------- RENDER ---------- */
 function render(){
@@ -13172,6 +13658,15 @@ function render(){
   try { drawCaves(ctx); } catch(e){}
   // moses
   drawMoses();
+  // 2026-05-19 (Jane: Scene 2 spectacle). Sandstorm haze drawn OVER the
+  // world (incl. Moses) but UNDER the guiding lights, so the golden path
+  // punches through the storm — "follow the lights to Midian".
+  try { drawSandstorm(ctx); } catch(e){}
+  // 2026-05-19 (Jane: world "fog-lift" after the caravan map is solved).
+  // A stream of golden guiding lights flows from Moses toward the hidden
+  // exit — the "pillar of fire / God lights the path" payoff that turns the
+  // trackless desert into a clearly-shown way to Midian.
+  try { drawGuidingLights(); } catch(e){}
   // v2.1 Scene 2: mirage shimmer overlay (drawn above everything at floor level)
   try { drawMirages(ctx); } catch(e){}
   // v3.5: discoverability cues so kids know WHEN they can interact & hide
@@ -14107,10 +14602,10 @@ function drawTile(t, dx, dy, tx, ty){
         // positions look genuinely scattered. Also added per-tile X/Y
         // jitter (±0.18 × TILE) so neighbouring cacti don't line up on
         // the grid even when they do co-occur.
-        const _h1 = ((tx * 2654435761) ^ (ty * 40503)) >>> 0;
         const _h2 = ((tx * 374761393) ^ (ty * 668265263)) >>> 0;
-        const cactusBucket = _h1 % 100;
-        if (cactusBucket < 7 && tx >= 5 && tx <= 34 && IMG.desertCactus && IMG.desertCactus.complete && IMG.desertCactus.naturalWidth) {
+        // 2026-05-19 PM (Jane: overlapping decor). Only the winner of each
+        // adjacency cluster draws, so no two cacti are ever neighbours.
+        if (_cactusIsWinner(tx, ty) && IMG.desertCactus && IMG.desertCactus.complete && IMG.desertCactus.naturalWidth) {
           ctx.save();
           ctx.globalAlpha = 0.95;
           const cSz = TILE * 1.45;
@@ -16914,6 +17409,15 @@ requestAnimationFrame(loop);
 /* ---------- BOOT ---------- */
 // Start on cover page; game flow triggered by Start button
 updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){}
+</script>
+<!-- 2026-05-19 (Jane: QR/hosted build). Register the shared service worker
+     for instant repeat-loads + instant scene jumps. No-ops on file://. -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
 </script>
 </body>
 </html>
