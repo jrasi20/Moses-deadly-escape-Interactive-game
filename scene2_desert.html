@@ -6496,6 +6496,27 @@ try {
 // defaulting to medium. Kids who want a different difficulty change
 // it via the pause menu mid-scene (we'll surface a difficulty switch
 // there in a follow-up PM).
+// 2026-05-20 PM63h (Jane: "i am still not able to test the jigsaw"). Add
+// a `?testjigsaw=1` URL flag that arms all 3 map fragments + marks every
+// challenge gate solved, then opens the jigsaw modal a moment after
+// gameplay starts. Lets Jane test the jigsaw flow without playing
+// through 6 checkpoints + finding 3 fragments.
+try {
+  const _urlTestJig = new URLSearchParams(window.location.search).get('testjigsaw') === '1';
+  if (_urlTestJig) {
+    // Defer until startScene1 has seeded challengeGates + drawn the map.
+    setTimeout(() => {
+      try {
+        if (typeof game === 'undefined') return;
+        game.mapFragments = {1:true, 2:true, 3:true};
+        if (Array.isArray(challengeGates)) challengeGates.forEach(g => { g.solved = true; });
+        try { if (typeof updateHudAltitude === 'function') updateHudAltitude(); } catch(e){}
+        try { if (typeof updateHudMapFragments === 'function') updateHudMapFragments(); } catch(e){}
+        try { _openJigsawModal(); } catch(e){ console.error('testjigsaw open failed', e); }
+      } catch(e){ console.error('testjigsaw arm failed', e); }
+    }, 4000);
+  }
+} catch(e){}
 try {
   const _urlFrom = new URLSearchParams(window.location.search).get('from');
   const _fromScene1 = (_urlFrom === 'scene1');
@@ -6654,28 +6675,28 @@ function openCinematic() {
   game.cinStep = 0;
   showCinPanel();
   $('openingCinematic').classList.add('active');
-  // v2.3.1 (Jane): route every loop track through setMusic so bgm and alert
-  // can't leak underneath the narration bed.
-  setMusic('narration');
-  // v3.28 Jane 2026-04-27: voice-over plays alongside the panel text. The
-  // mp3 file is dropped in by Jane (assets/audio/scene-2-narration.mp3);
-  // until then, .play() rejects silently on a missing file and the panel
-  // text still functions as plain captions.
+  // 2026-05-20 PM63h (Jane: "2 music tracks are being played during
+  // narration section 5"). The narration BG bed + scene2NarrBg + cover
+  // music + bgm could ALL leak under the Section 5 voice-over depending
+  // on entry path. Hard-stop EVERY loop track first so the only audio
+  // playing is the scene-2-narration.mp3 voice-over (clean kid-storybook
+  // narration with no music competing under it).
+  const _killTracks = ['bgm','alerted','narration','scene2NarrBg','coverMusic','egyptianCover','palmShadow','desertMusic'];
+  for (const _k of _killTracks) {
+    try {
+      const _a = audio && audio[_k];
+      if (_a) { _a.pause(); _a.currentTime = 0; _a.loop = false; }
+    } catch(e){}
+  }
+  try { if (typeof setMusic === 'function') setMusic(null); } catch(e){}
+  // Voice-over (only) — scene-2-narration.mp3 covers the full Section 5
+  // script with built-in pauses. .play() rejects silently on a missing
+  // file and the panels still function as plain captions.
   try {
     if (audio.cinNarrate) {
       audio.cinNarrate.currentTime = 0;
-      audio.cinNarrate.volume = 0.85;
+      audio.cinNarrate.volume = 0.95;
       audio.cinNarrate.play().catch(()=>{});
-    }
-  } catch(e){}
-  // 2026-05-19 PM61 (Jane: "i think narration is not wired before scene 2.
-  // i dropped scene 2 narration background.mp3 as bg music"). Layer the
-  // dedicated Scene 2 narration bg under the voice-over at low volume.
-  try {
-    if (audio.scene2NarrBg) {
-      audio.scene2NarrBg.currentTime = 0;
-      audio.scene2NarrBg.volume = 0.32;
-      audio.scene2NarrBg.play().catch(()=>{});
     }
   } catch(e){}
 }
@@ -6714,12 +6735,21 @@ function showCinPanel() {
   $('cinText').textContent = p.text;
   $('cinCaption').textContent = p.cap;
   $('cinProgress').textContent = (game.cinStep+1) + ' of ' + CIN_PANELS.length;
-  // Hide Next entirely on multi-panel auto-advance decks (Section 5);
-  // single-panel decks still get the Next/Begin label as before.
+  // 2026-05-20 PM63h (Jane: "there should be a continue before the game
+  // loads"). Auto-advance every panel EXCEPT the last. Last panel shows
+  // a "Continue" button and waits for the kid to tap it — that's the
+  // explicit "I'm ready for gameplay" gate Jane asked for.
+  const _isLastPanel = (game.cinStep === CIN_PANELS.length - 1);
   const _nextBtn = $('cinNextBtn');
   if (_nextBtn) {
-    _nextBtn.style.display = (CIN_PANELS.length > 1) ? 'none' : '';
-    _nextBtn.textContent = (game.cinStep === CIN_PANELS.length-1) ? 'Begin Scene 2' : 'Next';
+    if (CIN_PANELS.length > 1 && !_isLastPanel) {
+      // mid-deck auto-advance: hide Next button entirely
+      _nextBtn.style.display = 'none';
+      _nextBtn.textContent = 'Next';
+    } else {
+      _nextBtn.style.display = '';
+      _nextBtn.textContent = _isLastPanel ? 'Continue →' : 'Next';
+    }
   }
   // Per-panel image swap (Jane's intro scene 2.png / _1.png / _2.png / _3.png).
   try {
@@ -6729,19 +6759,16 @@ function showCinPanel() {
       imgEl.style.display = '';
     }
   } catch(e){}
-  // Auto-advance: schedule the next panel or auto-close on the last.
+  // Auto-advance the mid-deck panels; LAST panel waits for the kid to
+  // tap Continue (no auto-close).
   _clearCinAutoTimer();
-  _cinAutoTimer = setTimeout(() => {
-    _cinAutoTimer = 0;
-    if (game.cinStep < CIN_PANELS.length - 1) {
+  if (!_isLastPanel) {
+    _cinAutoTimer = setTimeout(() => {
+      _cinAutoTimer = 0;
       game.cinStep++;
       showCinPanel();
-    } else {
-      try { $('openingCinematic').classList.remove('active'); } catch(e){}
-      try { _stopCinNarration(); } catch(e){}
-      try { startScene1(); } catch(e){}
-    }
-  }, CIN_PANEL_DWELL_MS);
+    }, CIN_PANEL_DWELL_MS);
+  }
 }
 $('cinNextBtn').addEventListener('click', () => {
   play('click');
@@ -11253,16 +11280,32 @@ function scheduleSandstorm(){
   }, ms);
 }
 
-/* 2026-05-20 PM63g (Jane: "like pharaoh chariot cameo in scene1, we need
-   some thrill in scene 2 to bring in the wow factor"). HORIZON CAMEO:
-   every 60-90 s of active play, a Pharaoh chariot silhouette gallops
-   east-to-west across the TOP STRIP of the canvas with a dust trail
-   and the `pharaohEntry` announcement sfx. Pure atmosphere — no
-   collision, no hazard. Tells the kid "Pharaoh's hunting you, keep
-   moving" without bumping difficulty. */
+/* 2026-05-20 PM63h (Jane: "i thought you will brainstorm with me about
+   wow factor for scene 2. i said like we have pharaoh chariot for scene
+   1, we need an EQUIVALENT for scene 2. not the same thing or it will
+   be redundant"). DISABLED — the cameo + scheduler stay in the code as
+   a hook (so swapping a different cameo in is one edit), but
+   schedulePharaohCameo is a no-op until Jane picks one of the
+   brainstormed alternatives. Options on the table:
+     A. Caravan-of-strangers silhouette on the distant horizon
+        (camels + merchants crossing east) — wonder/hope beat,
+        signals Moses is heading TOWARD a wider populated world.
+     B. Burning-bush preview — a tiny flickering flame in the Mesa
+        cliff face during the last 30 s of the scene; foreshadows
+        Bundle 2.
+     C. Mirage-caravan — for a few seconds Moses sees a friendly
+        caravan, then it dissolves into the existing mirage shimmer.
+     D. Eagle / falcon swoop with verse drift overlay ("On wings
+        like eagles" — Isaiah 40:31 / Exodus 19:4).
+     E. Mt Horeb silhouette growing larger as Moses progresses east
+        — promises the Bundle 2 destination.
+   Once Jane picks: replace this no-op body with the chosen draw +
+   scheduler. */
 let _pharaohCameoTimeout = null;
 const _pharaohCameo = { active: false, startMs: 0, dirRight: false };
 function schedulePharaohCameo(){
+  return; // PM63h disabled — see header comment for brainstorm options
+  /* eslint-disable */
   if (game.scene !== 2) return;
   if (_pharaohCameoTimeout) clearTimeout(_pharaohCameoTimeout);
   const ms = 60000 + Math.random() * 30000;
