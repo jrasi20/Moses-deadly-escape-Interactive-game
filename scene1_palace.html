@@ -4527,10 +4527,20 @@
           <text x="38" y="-32" text-anchor="middle" font-size="22" fill="#fff" font-weight="900">✓</text>
           <text x="0" y="-78" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="800">Palace</text>
         </g>
-        <!-- Desert pin (ACTIVE, current scene) -->
+        <!-- Desert pin (ACTIVE, current scene). 2026-05-20 PM63g
+             (Jane: "use palm shadow.png for the desert thumbnail").
+             Palm-shadow illustration inside an amber ring so the
+             active scene visually parallels the Palace/Midian/Jethro
+             art-disc style. The ▸ arrow moved INTO the corner as a
+             small "active" badge. -->
         <g class="wm-pin wm-pin-active" transform="translate(320, 250)">
-          <circle r="58" fill="#e8a83a" stroke="#7a4509" stroke-width="6"/>
-          <text x="0" y="18" text-anchor="middle" font-size="52" fill="#3a1505" font-weight="900">▸</text>
+          <circle r="58" fill="#fffbe6" stroke="#7a4509" stroke-width="6"/>
+          <image href="assets/images/palm%20shadow.png" x="-48" y="-48" width="96" height="96"
+                 preserveAspectRatio="xMidYMid slice" clip-path="circle(48px at 48px 48px)"
+                 onerror="this.style.display='none'"/>
+          <!-- Amber play-badge in corner showing this is the live scene -->
+          <circle cx="40" cy="-40" r="17" fill="#e8a83a" stroke="#7a4509" stroke-width="2.5"/>
+          <text x="40" y="-33" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="900">▸</text>
           <text x="0" y="-80" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="800">Desert</text>
         </g>
         <!-- Midian pin (NEXT, scene 3 entry) -->
@@ -22507,7 +22517,7 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     //   Midian), compass-rose corner, dramatic kid-friendly copy.
     // * World-map audio leak: tear down every other loop track
     //   BEFORE egyptianCover plays so it doesn't layer.
-    const SW_VERSION = 'bek-moses1-v40';
+    const SW_VERSION = 'bek-moses1-v41';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",

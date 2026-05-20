@@ -311,22 +311,23 @@
     padding-bottom: 0;
     padding-top: max(60px, 12vh);
   }
-  /* 2026-05-19 PM63e (Jane: "halo on the tutorial modal for oasis is on
-     the modal. same for beware mirages"). Halo ring is fixed-positioned
-     at the canvas tile (z-index 57, above the modal overlay at 56). On
-     desktop the modal centers and the halo can land directly under the
-     modal card, looking like "the halo is on the modal." The PM59
-     left/right anchoring already flips the modal away from the halo —
-     but it was scoped to `@media landscape max-height 500` (phones
-     only). Promote those rules to ALL screen sizes so the modal also
-     dodges the halo on desktop + portrait. */
-  .tip-popup-overlay.left-anchored {
-    justify-content: flex-start;
-    padding-left: max(14px, env(safe-area-inset-left));
-  }
-  .tip-popup-overlay.right-anchored {
-    justify-content: flex-end;
-    padding-right: max(14px, env(safe-area-inset-right));
+  /* 2026-05-20 PM63g (Jane: "tutorial modals went to the right corner.
+     why?"). The PM63e left/right anchoring shoved the modal into a
+     corner on desktop where there was plenty of room. Since PM63f
+     hides the halo entirely while the modal is up (so they never
+     overlap), the corner shift is no longer needed. Reverted: keep
+     left/right anchoring SCOPED to landscape phones (where space
+     really is tight). On desktop + portrait the modal stays centered
+     so kids don't have to track their eyes to a corner. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .tip-popup-overlay.left-anchored {
+      justify-content: flex-start;
+      padding-left: max(14px, env(safe-area-inset-left));
+    }
+    .tip-popup-overlay.right-anchored {
+      justify-content: flex-end;
+      padding-right: max(14px, env(safe-area-inset-right));
+    }
   }
   .tip-popup-card {
     background: linear-gradient(160deg,#3a1508,#5a2510);
@@ -3358,6 +3359,8 @@
 <audio id="audSandWalk"       preload="auto" src="assets/audio/sand%20walk.mp3"></audio>
 <audio id="audSandstorm"      preload="auto" src="assets/audio/sandstorm.mp3"></audio>
 <audio id="audBoulderRumble"  preload="auto" src="assets/audio/boulder%20rumble.mp3"></audio>
+<!-- 2026-05-20 PM63g: Pharaoh's chariot horizon cameo (Scene 2 wow factor) -->
+<audio id="audPharaohEntry"   preload="auto" src="assets/audio/pharaoh%20entry%20announcement.mp3"></audio>
 <audio id="audHelloThere"     preload="auto" src="assets/audio/hello%20there.mp3"></audio>
 <audio id="audHint"           preload="auto" src="assets/audio/hint.mp3"></audio>
 <audio id="audReachedExit"    preload="auto" src="assets/audio/reached%20exit.mp3"></audio>
@@ -3592,6 +3595,7 @@ const audio = {
   cliffStep:     $('audCliffStep'),      // solving an east-edge gate
   mirageWoosh:   $('audMirageWoosh'),    // mirage trigger in Zone C
   fire:          $('audFire'),           // campfire hazard flicker
+  pharaohEntry:  $('audPharaohEntry'),   // PM63g chariot horizon cameo
   fox:           $('audFox'),            // desert fox crossing the path
   sandWalk:      $('audSandWalk'),       // footstep on sand tile
   sandstormSfx:  $('audSandstorm'),      // sandstorm random event
@@ -3851,6 +3855,11 @@ const IMG_SRC = {
   scoutBack:   'assets/images/scout%20back%20facing.png',
   scoutLeft:   'assets/images/scout%20left%20facing.png',
   scoutRight:  'assets/images/scout%20right%20facing.png',
+  // 2026-05-20 PM63g (Jane: "like pharaoh chariot cameo in scene1, we
+  // need some thrill in scene 2"). Re-use Scene 1's chariot art for
+  // a horizon "Pharaoh's chariots are gaining" cameo every ~60-90 s.
+  pharaohChariotRight: 'assets/images/pharaoh%20in%20chariot%20right.png',
+  pharaohChariotLeft:  'assets/images/pharaoh%20in%20chariot%20left.png',
   // Egyptian guard directional sprites (Scene 1 legacy + possible Scene 2 use)
   guardFront: 'assets/images/egyptian%20guard%20front%20facing.png',
   guardBack:  'assets/images/egyptian%20guard%20back%20facing.png',
@@ -4032,7 +4041,8 @@ const SPRITE_BLEED = new Set([
   'guardFront','guardBack','guardLeft','guardRight','guard','guardSide',
   'scout','scoutBack','scoutLeft','scoutRight',
   'caravan','caravanBack','caravanLeft','caravanRight',
-  'camelFriendly','merchant','servant','foxLeft','foxRight'
+  'camelFriendly','merchant','servant','foxLeft','foxRight',
+  'pharaohChariotRight','pharaohChariotLeft'
 ]);
 function _alphaBleed(srcImg) {
   try {
@@ -4137,7 +4147,8 @@ const SKIP_PRERENDER = new Set([
   'guardFront','guardBack','guardLeft','guardRight','guard','guardSide',
   'scout','scoutBack','scoutLeft','scoutRight',
   'caravan','caravanBack','caravanLeft','caravanRight',
-  'camelFriendly','merchant','servant','foxLeft','foxRight'
+  'camelFriendly','merchant','servant','foxLeft','foxRight',
+  'pharaohChariotRight','pharaohChariotLeft'
 ]);
 // v3.26 Jane 2026-04-26: large STATIC sprites (oasis, exit, midian, etc.)
 // drawn at ~14× downscale every frame from a 1024×1024 source look smeared
@@ -5549,7 +5560,15 @@ const challengeGates = [];  // populated once difficulty is chosen (legacy name 
 // CHALLENGE_POSITIONS for any region that fails to seed (e.g. all-wall).
 function _generateRandomChallengePositions(){
   const out = [];
-  const colBands = [[1, 13], [14, 26], [27, 38]];
+  // 2026-05-20 PM63g (Jane: "the word checkpoint is getting cut"). The
+  // 1.65× TILE checkpoint sprite has a CHECKPOINT banner baked into the
+  // PNG that extends 0.6 × TILE LEFT of the tile center. At col 1, the
+  // banner's left edge bleeds past the canvas left edge. Bumped the
+  // west col band from [1,13] → [3,12] so no checkpoint can seed in
+  // cols 1-2 where the baked banner gets clipped. Right band stays
+  // [27,38] (no banner cut on the right because the banner is
+  // left-aligned in the PNG).
+  const colBands = [[3, 12], [14, 26], [27, 38]];
   const rowBands = [[1,  8], [9,  16], [17, 23]];
   const tooNear = (tx, ty) => {
     if (Math.abs(tx - 1) + Math.abs(ty - 12) < 3) return true;  // near START
@@ -6243,7 +6262,11 @@ function attemptMove(dir) {
   // optional and shouldn't pop without a tap. truthchest IS auto-opened
   // because it's the special mid-scene reveal moment.
   try {
-    const _autoPickKinds = { bread:1, dates:1, crown:1, jug:1, scroll:1, tablet:1, waterskin:1, water:1, coin:1, treasure:1, truthchest:1 };
+    // 2026-05-20 PM63g (Jane: "i don't have to press interact to collect
+    // these map clues"). Added `mapFragment` to the auto-pick list so
+    // walking onto / next to a map piece collects it without an
+    // Interact tap (parity with bread/scroll/crown).
+    const _autoPickKinds = { bread:1, dates:1, crown:1, jug:1, scroll:1, tablet:1, waterskin:1, water:1, coin:1, treasure:1, truthchest:1, mapFragment:1 };
     for (const obj of interactables) {
       if (obj.used) continue;
       if (!_autoPickKinds[obj.kind]) continue;
@@ -6671,15 +6694,34 @@ function _stopCinNarration(){
     }
   } catch(e){}
 }
+// 2026-05-20 PM63g (Jane: "section 5 audio is just one file. the text
+// has to be a slideshow. the images have to a slideshow. right now
+// the audio is a continuous file so it keeps going. but one has to
+// click Next to see the complete text and visuals"). Section 5 IS
+// one continuous narration mp3, so the panels can't be click-paced
+// (Next out of sync with audio). New behaviour: panels AUTO-ADVANCE
+// every PANEL_DWELL_MS (or sooner if Next is tapped, slower if Skip
+// is tapped). The Next button is now hidden during Section 5; only
+// Skip remains so the kid can bail. When the last panel's dwell
+// completes, the cinematic auto-closes and startScene1() fires.
+let _cinAutoTimer = 0;
+const CIN_PANEL_DWELL_MS = 5200; // ~5s per panel = matches mp3 cadence
+function _clearCinAutoTimer(){
+  if (_cinAutoTimer) { try { clearTimeout(_cinAutoTimer); } catch(e){} _cinAutoTimer = 0; }
+}
 function showCinPanel() {
   const p = CIN_PANELS[game.cinStep];
   $('cinText').textContent = p.text;
   $('cinCaption').textContent = p.cap;
   $('cinProgress').textContent = (game.cinStep+1) + ' of ' + CIN_PANELS.length;
-  $('cinNextBtn').textContent = (game.cinStep === CIN_PANELS.length-1) ? 'Begin Scene 2' : 'Next';
-  // 2026-05-19 PM63f: per-panel image swap so each Section-5 beat shows
-  // its own art (intro scene 2.png / _1.png / _2.png). The shell <img>
-  // in the HTML is the default; we just replace its src here.
+  // Hide Next entirely on multi-panel auto-advance decks (Section 5);
+  // single-panel decks still get the Next/Begin label as before.
+  const _nextBtn = $('cinNextBtn');
+  if (_nextBtn) {
+    _nextBtn.style.display = (CIN_PANELS.length > 1) ? 'none' : '';
+    _nextBtn.textContent = (game.cinStep === CIN_PANELS.length-1) ? 'Begin Scene 2' : 'Next';
+  }
+  // Per-panel image swap (Jane's intro scene 2.png / _1.png / _2.png / _3.png).
   try {
     const imgEl = document.querySelector('#openingCinematic .cin-scene-img');
     if (imgEl && p.image) {
@@ -6687,9 +6729,25 @@ function showCinPanel() {
       imgEl.style.display = '';
     }
   } catch(e){}
+  // Auto-advance: schedule the next panel or auto-close on the last.
+  _clearCinAutoTimer();
+  _cinAutoTimer = setTimeout(() => {
+    _cinAutoTimer = 0;
+    if (game.cinStep < CIN_PANELS.length - 1) {
+      game.cinStep++;
+      showCinPanel();
+    } else {
+      try { $('openingCinematic').classList.remove('active'); } catch(e){}
+      try { _stopCinNarration(); } catch(e){}
+      try { startScene1(); } catch(e){}
+    }
+  }, CIN_PANEL_DWELL_MS);
 }
 $('cinNextBtn').addEventListener('click', () => {
   play('click');
+  // Manual advance — tear down the auto-timer so the kid doesn't get
+  // a double-step a moment later.
+  _clearCinAutoTimer();
   game.cinStep++;
   if (game.cinStep >= CIN_PANELS.length) {
     $('openingCinematic').classList.remove('active');
@@ -6701,6 +6759,7 @@ $('cinNextBtn').addEventListener('click', () => {
 });
 $('cinSkipBtn').addEventListener('click', () => {
   play('click');
+  _clearCinAutoTimer();
   $('openingCinematic').classList.remove('active');
   _stopCinNarration();
   startScene1();
@@ -6918,6 +6977,10 @@ function startScene1() {
   // bonus re-arms on each fresh play.
   try { _treasureColorCount.blue = 0; _treasureColorCount.green = 0; _treasureColorCount.red = 0;
         _treasureColorBonus.blue = false; _treasureColorBonus.green = false; _treasureColorBonus.red = false; } catch(e){}
+  // 2026-05-20 PM63g (Jane: "number of map pieces collected are not
+  // resetting when game is restarted"). Wipe mapFragments + jigsawSolved
+  // so a fresh replay starts at 0/3 and the jigsaw modal re-arms.
+  try { game.mapFragments = {}; game.jigsawSolved = false; updateHudMapFragments(); } catch(e){}
   game.perfectRun = true;
   // v1.2 FIX (§3.8): full scene reset on Start so picking a new difficulty
   // after playing actually re-spawns Moses at the start cell and clears
@@ -7065,6 +7128,10 @@ function restartScene() {
   // bonus re-arms on each fresh play.
   try { _treasureColorCount.blue = 0; _treasureColorCount.green = 0; _treasureColorCount.red = 0;
         _treasureColorBonus.blue = false; _treasureColorBonus.green = false; _treasureColorBonus.red = false; } catch(e){}
+  // 2026-05-20 PM63g (Jane: "number of map pieces collected are not
+  // resetting when game is restarted"). Wipe mapFragments + jigsawSolved
+  // so a fresh replay starts at 0/3 and the jigsaw modal re-arms.
+  try { game.mapFragments = {}; game.jigsawSolved = false; updateHudMapFragments(); } catch(e){}
   game.perfectRun = true;
   game.timeLeft = game.timeLimit; game.startedAt = performance.now();
   game.guardAlertActive = false;
@@ -11127,6 +11194,9 @@ function startTimers(){
     scheduleVulture();
     // v2.2.9: desert fox ambient crossings (all difficulties)
     try { scheduleFox(); } catch(e){}
+    // 2026-05-20 PM63g: Pharaoh's-chariot horizon cameo (the Scene 2
+    // wow-factor parity with Scene 1's chariot moment Jane requested).
+    try { schedulePharaohCameo(); } catch(e){}
   }
 }
 // v4.2 Jane: scoped to Exodus 2:11-25 (Scene 2's boundary).
@@ -11145,6 +11215,11 @@ const VERSE_DRIFT_LINES = [
 ];
 let _lastVerseDriftIdx = -1;
 function showVerseDrift(){
+  // 2026-05-20 PM63g (Jane: "all the overhead verses can be removed").
+  // Verse-drift overlay disabled entirely — kept as a no-op so existing
+  // callers (gate-clear celebration, ambient scheduler) don't throw.
+  return;
+  /* eslint-disable */
   try {
     let idx;
     do { idx = Math.floor(Math.random() * VERSE_DRIFT_LINES.length); }
@@ -11176,6 +11251,74 @@ function scheduleSandstorm(){
     }
     scheduleSandstorm();
   }, ms);
+}
+
+/* 2026-05-20 PM63g (Jane: "like pharaoh chariot cameo in scene1, we need
+   some thrill in scene 2 to bring in the wow factor"). HORIZON CAMEO:
+   every 60-90 s of active play, a Pharaoh chariot silhouette gallops
+   east-to-west across the TOP STRIP of the canvas with a dust trail
+   and the `pharaohEntry` announcement sfx. Pure atmosphere — no
+   collision, no hazard. Tells the kid "Pharaoh's hunting you, keep
+   moving" without bumping difficulty. */
+let _pharaohCameoTimeout = null;
+const _pharaohCameo = { active: false, startMs: 0, dirRight: false };
+function schedulePharaohCameo(){
+  if (game.scene !== 2) return;
+  if (_pharaohCameoTimeout) clearTimeout(_pharaohCameoTimeout);
+  const ms = 60000 + Math.random() * 30000;
+  _pharaohCameoTimeout = setTimeout(() => {
+    if (game && game.state === 'playing' && game.scene === 2 && !_pharaohCameo.active) {
+      _pharaohCameo.active  = true;
+      _pharaohCameo.startMs = performance.now();
+      _pharaohCameo.dirRight = Math.random() < 0.5; // alternate direction
+      try { if (audio.pharaohEntry) { audio.pharaohEntry.currentTime = 0; audio.pharaohEntry.volume = 0.6; audio.pharaohEntry.play().catch(()=>{}); } } catch(e){}
+      try {
+        const _ban = document.createElement('div');
+        _ban.className = 'sandstorm-banner';
+        _ban.textContent = "Pharaoh's chariot on the horizon!";
+        document.body.appendChild(_ban);
+        setTimeout(() => { try { _ban.remove(); } catch(e){} }, 2200);
+      } catch(e){}
+      // Auto-end after the gallop traverses canvas (~5 s)
+      setTimeout(() => { _pharaohCameo.active = false; }, 5400);
+    }
+    schedulePharaohCameo();
+  }, ms);
+}
+// Render the cameo each frame from the main render loop.
+function drawPharaohCameo(){
+  if (!_pharaohCameo.active) return;
+  const _img = _pharaohCameo.dirRight
+    ? (IMG.pharaohChariotRight && IMG.pharaohChariotRight.complete && IMG.pharaohChariotRight.naturalWidth ? IMG.pharaohChariotRight : null)
+    : (IMG.pharaohChariotLeft  && IMG.pharaohChariotLeft.complete  && IMG.pharaohChariotLeft.naturalWidth  ? IMG.pharaohChariotLeft  : null);
+  const _t = (performance.now() - _pharaohCameo.startMs) / 5000; // 0→1
+  if (_t < 0 || _t > 1) return;
+  const _h = Math.min(TILE * 2.4, CANVAS_H * 0.25);
+  const _w = _h * 1.6;
+  const _y = TILE * 0.4;
+  // dust trail behind the chariot
+  const _x = _pharaohCameo.dirRight
+    ? (-_w + (CANVAS_W + _w * 1.4) * _t)
+    : (CANVAS_W - (CANVAS_W + _w * 1.4) * _t);
+  ctx.save();
+  // dust trail (gold haze) — behind the chariot
+  const _dustX = _pharaohCameo.dirRight ? _x - _w * 0.5 : _x + _w * 0.5;
+  const _dustG = ctx.createRadialGradient(_dustX, _y + _h * 0.7, 4, _dustX, _y + _h * 0.7, _w * 0.7);
+  _dustG.addColorStop(0, 'rgba(255,210,140,0.45)');
+  _dustG.addColorStop(1, 'rgba(200,150,80,0)');
+  ctx.fillStyle = _dustG;
+  ctx.beginPath(); ctx.arc(_dustX, _y + _h * 0.7, _w * 0.7, 0, Math.PI*2); ctx.fill();
+  // chariot sprite (or red-rect fallback)
+  if (_img) {
+    ctx.drawImage(_img, _x, _y, _w, _h);
+  } else {
+    ctx.fillStyle = '#8a2a2a';
+    ctx.fillRect(_x, _y, _w, _h);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px Georgia';
+    ctx.fillText("PHARAOH'S CHARIOT", _x + 10, _y + _h/2);
+  }
+  ctx.restore();
 }
 function startSandstorm(){
   try {
@@ -11685,6 +11828,7 @@ function spawnOneBoulder(){
   try { play('boulderRumble'); } catch(e){}  // v2.2.7 rolling-boulder rumble
 }
 function updateRollingBoulders(dt){
+  if (window._introPanActive) return; // PM63g: freeze during intro pan
   if (game.scene !== 2 || game.state !== 'playing') return;
   const d = (game.difficulty || 'easy');
   if (d !== 'hard') return;
@@ -11884,12 +12028,19 @@ function drawRollingBoulders(ctx){
 }
 
 function updateGuards(dt){
+  // 2026-05-20 PM63g (Jane: "i see sprites moving during camera pan").
+  // Guards were not gated on _introPanActive — they patrolled while
+  // the intro camera pan owned the screen. Freeze them too.
+  if (window._introPanActive) return;
   // v3.9 Jane 2026-04-24: apply the same 15-second grace window to
   // Scene 2 guards that pursuitScouts already have. Previously guards
   // would keep patrolling during the grace window and could catch Moses
   // before he had time to orient. Scene 1 (palace) guards are still
   // allowed to patrol normally since Scene 1 has its own tutorial flow.
-  if (game.scene === 2 && game.startedAt && (performance.now() - game.startedAt) < 15000) return;
+  // PM63g: use scoutsArmedAt (set at pan-end) instead of startedAt so
+  // the 15 s grace counts from the moment gameplay actually starts.
+  const _armed = game.scoutsArmedAt || game.startedAt || 0;
+  if (game.scene === 2 && _armed && (performance.now() - _armed) < 15000) return;
   // 2026-05-19 PM54: Foe Freeze power-up — skip ALL guard logic for 5 s
   // when armed. Mirrors Scene 1's guardFreeze gate.
   if (performance.now() < (window._guardFreezeUntil || 0)) {
@@ -12367,6 +12518,7 @@ function spawnActiveVulture(){
   try { play('vulture') || play('friendlyAlert') || play('click'); } catch(e){}  // v2.2.7 vulture dive cry
 }
 function updateActiveVultures(dt){
+  if (window._introPanActive) return; // PM63g
   if (game.scene !== 2) return;
   for (let i = activeVultures.length - 1; i >= 0; i--) {
     const v = activeVultures[i];
@@ -12514,6 +12666,7 @@ function spawnActiveFox(){
   });
 }
 function updateActiveFoxes(dt){
+  if (window._introPanActive) return; // PM63g
   if (game.scene !== 2) return;
   for (let i = activeFoxes.length - 1; i >= 0; i--){
     const f = activeFoxes[i];
@@ -12985,6 +13138,9 @@ function render(){
   drawHidingBadge();
   // ambient: warm light rays + dust motes
   drawAmbient();
+  // 2026-05-20 PM63g: pharaoh chariot horizon cameo — wow-factor event
+  // that gallops across the top strip every 60-90 s.
+  try { drawPharaohCameo(); } catch(e){}
   // v3.8 PASS A VISUAL FEEL: zone-entry banner (screen-space, on top of everything)
   try { drawZoneBanner(); } catch(e){}
   // v3.5 LANE 2+ Jane 2026-04-24: cool-tone atmospheric overlay to break
@@ -13857,6 +14013,28 @@ function drawTile(t, dx, dy, tx, ty){
                   :               'rgba(255,230,170,0.03)';
       ctx.fillStyle = tintA;
       ctx.fillRect(dx, dy, TILE, TILE);
+      // 2026-05-20 PM63g (Jane: "your four zones need to feel distinct
+      // — color grade, hazard, music, landmark silhouette"). Per-zone
+      // colour grade applied as a soft tint overlay so each zone reads
+      // as a different chapter of the desert crossing.
+      //   Wadi  (cols 0-9):  warm RUST / sandstone red
+      //   Dunes (cols 10-19): pale GOLDEN yellow (existing baseline)
+      //   Oasis (cols 20-28): cool GREEN-grey (vegetation hint)
+      //   Mesa  (cols 29-38): deep PURPLE-brown (cool shadow rock)
+      try {
+        const _zg = zoneOf(tx);
+        const _zTint = _zg === 'wadi'  ? 'rgba(200, 90, 40, 0.10)'
+                    : _zg === 'oasis' ? 'rgba(80, 160, 90, 0.10)'
+                    : _zg === 'mesa'  ? 'rgba(80, 50, 110, 0.12)'
+                    : null; // dunes = no extra tint (baseline)
+        if (_zTint) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'multiply';
+          ctx.fillStyle = _zTint;
+          ctx.fillRect(dx, dy, TILE, TILE);
+          ctx.restore();
+        }
+      } catch(e){}
       // v3.4.1 LANE 2+ Jane 2026-04-24: revised. 2.2x sprawled too far on
       // wide viewports. 1.5x is visibly larger than the original 1.0x but
       // doesn't crowd.
