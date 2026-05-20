@@ -8605,10 +8605,63 @@ $('dlgCloseBtn').addEventListener('click', () => {
 /* ---------- TREASURE ----------
    v3.6: uses its OWN "coin collect" sound so treasure pickup does not share
    the same chime as a correct Bible-answer. Different event, different cue. */
+// 2026-05-19 (Jane: "wire scene 3 into the unified game"). Scene 3 was not
+// feeding the cross-scene lifetime collectables / power-unlock progression at
+// all. Ported the DATA layer from scenes 1 & 2 so treasures collected here
+// now count toward the SAME lifetime totals + unlock thresholds (and the
+// "Your Journey" win panel). NOTE: the in-game power DOCK + effects are NOT
+// wired here yet — those are built alongside scene 3's rogue-shepherd
+// antagonist so the foe-powers target the right enemy (the temporary `guards`
+// here will be replaced by shepherds). Keep these tiers in sync with S1/S2.
+const _LIFETIME_TREASURES_KEY = 'bek.bundle1.totalTreasures';
+const _LIFETIME_CROWNS_KEY    = 'bek.bundle1.totalCrowns';
+const _LIFETIME_SCROLLS_KEY   = 'bek.bundle1.totalScrolls';
+const _UNLOCKS_KEY            = 'bek.bundle1.unlocks';
+const UNLOCK_TIERS = [
+  { threshold:  75, resource: 'treasures', key: 'speedBurst',    label: '⚡ Speed Burst' },
+  { threshold: 175, resource: 'treasures', key: 'guardFreeze',   label: '❄️ Foe Freeze' },
+  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '👁️ Royal Vision' },
+  { threshold: 350, resource: 'treasures', key: 'truthSeeker',   label: '📖 Truth Seeker' },
+  { threshold:  10, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom' },
+];
+function _loadLifetimeTreasures(){ try { return parseInt(localStorage.getItem(_LIFETIME_TREASURES_KEY) || '0', 10) || 0; } catch(e){ return 0; } }
+function _loadLifetimeCrowns(){    try { return parseInt(localStorage.getItem(_LIFETIME_CROWNS_KEY)    || '0', 10) || 0; } catch(e){ return 0; } }
+function _loadLifetimeScrolls(){   try { return parseInt(localStorage.getItem(_LIFETIME_SCROLLS_KEY)   || '0', 10) || 0; } catch(e){ return 0; } }
+function _loadUnlocks(){ try { return JSON.parse(localStorage.getItem(_UNLOCKS_KEY) || '[]'); } catch(e){ return []; } }
+function _hasUnlock(key){ return _loadUnlocks().includes(key); }
+function _addLifetimeResource(which, n){
+  const KEY = which === 'crowns'  ? _LIFETIME_CROWNS_KEY
+            : which === 'scrolls' ? _LIFETIME_SCROLLS_KEY
+            :                       _LIFETIME_TREASURES_KEY;
+  let cur = 0;
+  try { cur = parseInt(localStorage.getItem(KEY) || '0', 10) || 0; } catch(e){}
+  const next = cur + (n || 0);
+  try { localStorage.setItem(KEY, String(next)); } catch(e){}
+  const have = new Set(_loadUnlocks());
+  const granted = [];
+  for (const tier of UNLOCK_TIERS) {
+    if ((tier.resource || 'treasures') !== which) continue;
+    if (cur < tier.threshold && next >= tier.threshold && !have.has(tier.key)) { have.add(tier.key); granted.push(tier); }
+  }
+  if (granted.length) {
+    try { localStorage.setItem(_UNLOCKS_KEY, JSON.stringify([...have])); } catch(e){}
+    try { play('rankReveal') || play('success'); } catch(e){}
+    try { spawnGlitterBurstAtPlayer(28); } catch(e){}
+    // Scene 3 has no power dock yet, so don't tell the kid to "tap the button".
+    granted.forEach(g => { try { toast('✨ ' + g.label + ' power unlocked!'); } catch(e){} });
+  }
+  return next;
+}
+function _addLifetimeTreasures(n){ return _addLifetimeResource('treasures', n); }
+function _addLifetimeCrowns(n){    return _addLifetimeResource('crowns',    n); }
+function _addLifetimeScrolls(n){   return _addLifetimeResource('scrolls',   n); }
 function onTreasure(tx, ty){
   setTile(tx, ty, 0);
   game.treasureCount++;
   game.stars += 2;
+  // 2026-05-19 (Jane): feed the cross-scene lifetime total so scene-3
+  // treasures count toward the shared power unlocks + "Your Journey" panel.
+  try { _addLifetimeTreasures(1); } catch(e){}
   updateHudTreasure(); updateHudStars();
   play('coin');
   // v3.4: glitter sparkle burst at Moses's screen position on pickup
