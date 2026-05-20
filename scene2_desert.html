@@ -2851,40 +2851,44 @@
        thumb, ACTIONS stacked bottom-RIGHT for the right thumb, powerups in
        the middle — replacing the old flat row that strung the 4 arrows
        across the whole width (unreachable as a pad). */
-    /* 2026-05-19 (Jane: "use the whole screen — kids can't see oncoming
-       danger"). FLOAT the controls over the game so the canvas-wrapper
-       (flex:1) grows to fill the viewport — more rows + full width. The
-       container is click-through; only the D-pad / actions / powerups
-       capture taps, sitting in the bottom corners (two-thumb). */
+    /* 2026-05-19 (Jane: "dpad floating left, slim brown bar just for the
+       power-ups + 3 buttons, horizontal"). Controls FLOAT so the canvas is
+       full-screen (≈9 rows). D-pad = floating cross bottom-left (over the
+       game). Power rack + action buttons sit in a slim brown PILL bottom-
+       right. Nothing steals vertical space from the play area. */
     .controls {
       position: fixed !important;
-      left: 0; right: 0; bottom: 0;
+      bottom: 6px; right: 6px; left: auto; top: auto;
       z-index: 40;
       display: flex !important;
       flex-direction: row !important;
-      align-items: flex-end;
-      justify-content: space-between !important;
+      align-items: center;
+      justify-content: flex-end !important;
       gap: 8px;
-      padding: 0 max(10px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right)) !important;
-      max-height: none;
-      min-height: 0;
+      width: auto;
+      max-width: calc(100vw - 168px); /* keep the bottom-left clear for the dpad */
+      min-height: 0; max-height: none;
+      padding: 5px 10px !important;
       overflow: visible;
       flex-wrap: nowrap;
-      background: transparent !important;
-      border-top: none !important;
-      pointer-events: none;
+      background: linear-gradient(0deg, rgba(42,14,3,0.96) 0%, rgba(74,28,10,0.94) 100%) !important;
+      border: 2px solid #5a1d06 !important;
+      border-top: 2px solid #5a1d06 !important;
+      border-radius: 14px !important;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
+      pointer-events: auto;
     }
-    .dpad, .action-panel, .controls #hudPowerups { pointer-events: auto; }
-    /* LEFT thumb — D-pad cross (3 cols × 2 rows) */
+    /* D-pad floats as a cross bottom-left, OVER the full-screen game */
     .dpad {
+      position: fixed !important;
+      left: 10px; bottom: 10px; right: auto; top: auto;
+      z-index: 41;
       display: grid !important;
       grid-template-columns: repeat(3, 44px);
       grid-template-rows: repeat(2, 40px);
       gap: 4px;
       width: auto;
-      order: 1;
-      flex: 0 0 auto;
-      align-self: center;
+      pointer-events: auto;
     }
     .dpad-spacer { display: none !important; }
     .dpad-btn {
@@ -2911,52 +2915,52 @@
       display: block !important;
       font-size: 7px; letter-spacing: 0.2px; font-weight: 700; opacity: 0.8; margin-top: 0;
     }
-    /* RIGHT thumb — actions stacked at the right edge */
-    .action-panel {
-      order: 3;
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 5px;
-      flex: 0 0 auto;
-      max-width: 36%;
-      justify-content: center;
-      position: relative;
-      top: auto; right: auto; transform: none;
-    }
-    .action-btn {
-      height: 28px;
-      font-size: 11px;
-      padding: 0 14px;
-      width: 100%;
-      min-width: 86px;
-      white-space: nowrap;
-    }
-    /* Powerups in the middle, wrap into the available band */
+    /* Power rack — single horizontal row inside the pill */
     .game-page > #hudPowerups { display: none !important; }
     .controls #hudPowerups {
-      order: 2;
-      flex: 1 1 auto;
+      order: 1;
+      flex: 0 1 auto;
       display: flex !important;
       flex-direction: row !important;
-      flex-wrap: wrap !important;
+      flex-wrap: nowrap !important;
       gap: 5px !important;
       padding: 0 !important;
       background: transparent !important;
       border: none !important;
-      max-width: 40vw;
-      max-height: 90px;
-      overflow-y: auto;
-      overflow-x: hidden;
+      overflow-x: auto; overflow-y: hidden;
       scrollbar-width: none;
-      align-items: center;
-      align-content: center;
-      justify-content: center;
+      align-items: center; justify-content: flex-end;
+      max-width: 46vw;
     }
+    .controls #hudPowerups:empty { display: none !important; }
     .controls #hudPowerups::-webkit-scrollbar { display: none; }
     .controls #hudPowerups .hud-pu-btn {
-      width: 42px !important;
-      height: 42px !important;
-      font-size: 18px !important;
+      width: 42px !important; height: 42px !important; font-size: 18px !important;
+      flex: 0 0 auto;
+    }
+    /* Action buttons — horizontal row inside the pill. !important overrides
+       the max-width:700px portrait rules that otherwise wrap them. */
+    .action-panel {
+      order: 2;
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      gap: 6px;
+      flex: 0 0 auto;
+      align-self: center;
+      max-width: none !important;
+      position: relative;
+      top: auto; right: auto; transform: none;
+    }
+    .action-btn {
+      height: 40px;
+      font-size: 12px;
+      padding: 0 12px;
+      width: auto;
+      min-width: 0;
+      flex: 0 0 auto !important;
+      max-width: none !important;
+      white-space: nowrap;
     }
     .hud-group { flex-shrink: 0; gap: 4px; }
   }
