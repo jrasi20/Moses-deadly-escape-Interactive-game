@@ -444,18 +444,84 @@
     width: 100%;
     aspect-ratio: 5 / 3;
     margin: 8px auto 14px;
+    /* Unfurled ancient parchment — warm aged paper with scorched edges. */
     background:
-      radial-gradient(ellipse at 50% 50%, rgba(255,217,118,0.06) 0%, transparent 70%),
-      linear-gradient(180deg, rgba(60,40,90,0.4) 0%, rgba(30,15,50,0.5) 100%);
-    border: 2px dashed rgba(255,217,118,0.45);
-    border-radius: 12px;
+      radial-gradient(ellipse at 28% 22%, rgba(255,250,228,0.65) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 85%, rgba(150,95,40,0.35) 0%, transparent 60%),
+      linear-gradient(150deg, #efdcae 0%, #e3c688 45%, #d2ad66 100%);
+    border: 3px solid #a9803f;
+    border-radius: 10px;
+    box-shadow: inset 0 0 26px rgba(120,75,25,0.45), 0 6px 20px rgba(0,0,0,0.5);
     overflow: visible;
+  }
+  /* faint cartographer's grid + compass rose etched on the parchment */
+  .jigsaw-board::before {
+    content: ''; position: absolute; inset: 0; border-radius: 8px; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(120,80,30,0.10) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,80,30,0.10) 1px, transparent 1px);
+    background-size: 14% 18%;
+    opacity: 0.6;
   }
   .jigsaw-route {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     pointer-events: none;
+    z-index: 2;
   }
+  /* START / EXIT pins on the parchment */
+  .jigsaw-pin {
+    position: absolute; z-index: 3; transform: translate(-50%, -50%);
+    font-size: 11px; font-weight: 800; font-family: Georgia, serif;
+    color: #5a2d0c; text-shadow: 0 1px 0 rgba(255,250,220,0.6);
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    pointer-events: none;
+  }
+  .jigsaw-pin .pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #fff5d8;
+  }
+  .jigsaw-pin.start .pin-dot { background: #2e9e44; box-shadow: 0 0 8px rgba(60,200,90,0.8); }
+  .jigsaw-pin.exit  .pin-dot { background: #d33a28; box-shadow: 0 0 8px rgba(230,80,60,0.8); }
+  /* the animated golden caravan route drawn on reveal */
+  .jigsaw-goldroute {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 4; opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .jigsaw-board.revealed .jigsaw-goldroute { opacity: 1; }
+  .jigsaw-goldroute path {
+    fill: none; stroke: #ffcf4a; stroke-width: 4; stroke-linecap: round;
+    filter: drop-shadow(0 0 5px rgba(255,205,80,0.95));
+    stroke-dasharray: 600; stroke-dashoffset: 600;
+  }
+  .jigsaw-board.revealed .jigsaw-goldroute path {
+    animation: goldRouteDraw 1.8s ease-out forwards;
+  }
+  @keyframes goldRouteDraw { to { stroke-dashoffset: 0; } }
+  /* the little caravan footprint that travels the route on reveal */
+  .jigsaw-walker {
+    position: absolute; z-index: 5; font-size: 18px; opacity: 0;
+    transform: translate(-50%, -50%);
+  }
+  .jigsaw-board.revealed .jigsaw-walker { animation: walkerTravel 1.9s ease-out forwards; }
+  @keyframes walkerTravel {
+    0%   { opacity: 0; left: 6%;  top: 49%; }
+    12%  { opacity: 1; }
+    50%  { left: 50%; top: 61%; }
+    88%  { opacity: 1; }
+    100% { opacity: 0; left: 95%; top: 49%; }
+  }
+  /* verse banner that lands at the end of the reveal */
+  .jigsaw-verse {
+    margin: 6px auto 2px; max-width: 92%;
+    color: #fff2c4; font-family: Georgia, serif; font-style: italic;
+    font-size: clamp(12px, 3vw, 14.5px); line-height: 1.4;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.6s, transform 0.6s;
+  }
+  .jigsaw-verse.show { opacity: 1; transform: translateY(0); }
+  .jigsaw-verse small { display:block; color:#ffd976; font-style:normal; font-size:0.82em; margin-top:3px; letter-spacing:0.5px; }
   .jigsaw-slot {
     position: absolute;
     width: 18%;
@@ -506,34 +572,42 @@
      Triangle (piece 1), rounded square (piece 2), pentagon (piece 3) —
      three visually distinct silhouettes so kids see at a glance
      which slot each piece is for. */
+  /* 2026-05-19 (Jane: "make the jigsaw epic"). Pieces are now torn
+     PARCHMENT MAP fragments (not crystals). Each carries a hand-inked
+     route segment + a terrain glyph (canyon / dunes / oasis). At the
+     correct slot AND upright, the segments line up edge-to-edge so the
+     three fragments read as ONE continuous caravan route to Midian. */
   .jigsaw-piece .crystal-face {
     position: absolute; inset: 0;
-    border-radius: 10px;
+    border-radius: 6px;
+    /* torn-parchment silhouette — slightly irregular so it reads as a
+       ripped map scrap, not a clean tile */
+    clip-path: polygon(3% 6%, 28% 0%, 55% 5%, 82% 0%, 97% 8%, 100% 34%,
+                       96% 62%, 100% 90%, 74% 98%, 46% 94%, 20% 100%, 4% 92%,
+                       0% 64%, 4% 36%);
+    background:
+      radial-gradient(ellipse at 32% 28%, rgba(255,250,225,0.55) 0%, transparent 55%),
+      linear-gradient(150deg, #e9d3a0 0%, #d8b878 48%, #c39a52 100%);
     box-shadow:
-      0 0 14px rgba(255,255,255,0.4),
-      inset 0 0 18px rgba(255,255,255,0.25),
-      inset 0 -8px 16px rgba(0,0,0,0.35);
-    transition: transform 0.25s cubic-bezier(.2,1.4,.4,1);
+      0 3px 10px rgba(0,0,0,0.45),
+      inset 0 0 14px rgba(120,80,30,0.35),
+      inset 0 -6px 12px rgba(90,55,15,0.30);
+    transition: transform 0.25s cubic-bezier(.2,1.4,.4,1), filter 0.25s;
+    overflow: hidden;
   }
-  .jigsaw-piece[data-piece="1"] .crystal-face {
-    background: linear-gradient(135deg, #b54fff 0%, #6a1ec0 50%, #3a0a78 100%);
-    clip-path: polygon(50% 0%, 100% 60%, 75% 100%, 25% 100%, 0% 60%);
+  /* the inked map detail (terrain + route segment) lives in an inline SVG
+     injected per-piece by _openJigsawModal; it inherits the face rotation */
+  .jigsaw-piece .map-ink { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .jigsaw-piece .map-ink .route-seg {
+    stroke: #6b3f14; stroke-width: 7; fill: none; stroke-linecap: round;
+    stroke-dasharray: 5 7;
   }
-  .jigsaw-piece[data-piece="2"] .crystal-face {
-    background: linear-gradient(135deg, #4fffd0 0%, #1ec0b0 50%, #0a6a78 100%);
-    clip-path: polygon(20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%, 0% 50%);
-  }
-  .jigsaw-piece[data-piece="3"] .crystal-face {
-    background: linear-gradient(135deg, #b5ff4f 0%, #28b04a 50%, #0a6824 100%);
-    clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-  }
-  .jigsaw-piece .crystal-spark {
-    position: absolute;
-    inset: 18% 50% 50% 18%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.85), transparent);
-    border-radius: 60%;
-    pointer-events: none;
-    opacity: 0.7;
+  .jigsaw-piece.snapped .crystal-face { filter: drop-shadow(0 0 10px rgba(255,217,118,0.8)); }
+  /* when the whole route is revealed, every placed segment glows gold */
+  .jigsaw-board.revealed .jigsaw-piece .map-ink .route-seg {
+    stroke: #ffcf4a; stroke-dasharray: none;
+    filter: drop-shadow(0 0 4px rgba(255,210,90,0.95));
+    transition: stroke 0.5s;
   }
   .jigsaw-piece.snapped .crystal-face {
     animation: jigsawSnapPop 0.45s cubic-bezier(.2,1.4,.4,1);
@@ -3084,28 +3158,39 @@
 <div class="modal-overlay jigsaw-modal" id="jigsawModal" style="display:none;">
   <div class="modal-content jigsaw-content">
     <div class="jigsaw-header">
-      <div class="jigsaw-eyebrow">A CARAVAN MAP</div>
-      <h2 class="jigsaw-title">Read the path to Midian</h2>
-      <p class="jigsaw-sub">Drag each crystal piece onto its slot. Tap a piece to rotate it. All three fit a path that leads east.</p>
+      <div class="jigsaw-eyebrow">THE TORN CARAVAN MAP</div>
+      <h2 class="jigsaw-title">Piece the map back together</h2>
+      <p class="jigsaw-sub">Moses found 3 scraps of an old caravan map. Drag each onto its place and tap to turn it — line up the trail and it will reveal the hidden path to Midian.</p>
     </div>
     <div class="jigsaw-board" id="jigsawBoard">
-      <!-- Three slot drop-zones — JS sets piece1/piece2/piece3 fits -->
-      <div class="jigsaw-slot" data-slot="1" style="left:8%;top:30%;"></div>
-      <div class="jigsaw-slot" data-slot="2" style="left:40%;top:55%;"></div>
-      <div class="jigsaw-slot" data-slot="3" style="left:72%;top:30%;"></div>
-      <!-- Decorative dashed route line drawn behind slots -->
+      <!-- Three slot drop-zones — JS sets piece1/piece2/piece3 fits.
+           Laid out left→right as the journey: canyon → dunes → oasis. -->
+      <div class="jigsaw-slot" data-slot="1" style="left:6%;top:34%;"></div>
+      <div class="jigsaw-slot" data-slot="2" style="left:41%;top:46%;"></div>
+      <div class="jigsaw-slot" data-slot="3" style="left:76%;top:34%;"></div>
+      <!-- START / EXIT pins on the parchment -->
+      <div class="jigsaw-pin start" style="left:8%;top:49%;"><span class="pin-dot"></span>START</div>
+      <div class="jigsaw-pin exit"  style="left:90%;top:49%;"><span class="pin-dot"></span>MIDIAN</div>
+      <!-- Faint dashed guide showing roughly where the trail will run -->
       <svg class="jigsaw-route" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M 40 100 Q 130 30, 200 140 Q 270 250, 350 100"
-              fill="none" stroke="rgba(255,240,180,0.35)" stroke-width="3" stroke-dasharray="6 8"/>
+        <path d="M16,118 C60,110 130,150 200,146 C270,142 340,110 384,118"
+              fill="none" stroke="rgba(120,80,30,0.30)" stroke-width="3" stroke-dasharray="5 9"/>
       </svg>
+      <!-- Golden caravan route — drawn in on the reveal -->
+      <svg class="jigsaw-goldroute" id="jigsawGoldRoute" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M16,118 C60,110 130,150 200,146 C270,142 340,110 384,118"/>
+      </svg>
+      <!-- Traveling footprint on reveal -->
+      <div class="jigsaw-walker" id="jigsawWalker" aria-hidden="true">&#128099;</div>
     </div>
     <div class="jigsaw-tray" id="jigsawTray">
-      <!-- 3 piece divs — generated by _openJigsawModal so each game
-           gets fresh random rotation. Each tile is a CSS-painted
-           crystal (no PNG needed). -->
+      <!-- 3 piece divs — generated by _openJigsawModal. Each is a torn
+           parchment map fragment (colourful terrain + route segment),
+           CSS + inline SVG, no PNG needed. -->
     </div>
     <div class="jigsaw-footer">
       <div class="jigsaw-status" id="jigsawStatus">Place 3 pieces · Tap to rotate · Drag to slot</div>
+      <div class="jigsaw-verse" id="jigsawVerse">&#8220;Your word is a lamp for my feet, a light on my path.&#8221;<small>Psalm 119:105 (NIV)</small></div>
     </div>
   </div>
 </div>
@@ -7451,6 +7536,41 @@ function _maybeOpenJigsaw(){
   setTimeout(() => { try { _openJigsawModal(); } catch(e){} }, 800);
 }
 let _jigsawAssignments = null;  // randomized {slot: piece} mapping per play
+// 2026-05-19 (Jane: "make it epic + colorful — the desert is yellow and
+// redundant"). Each fragment is a hand-inked third of the caravan map with
+// its own COLOURFUL terrain so the three torn scraps read as a real journey:
+//   piece 1 = Wadi Canyon (warm ochre rock)
+//   piece 2 = Dune Sea (gold dunes + teal sky shimmer)
+//   piece 3 = Oasis of Midian (green palm, blue water, red destination tent)
+// The `.route-seg` line on each is positioned so that — at the correct slot
+// AND upright (rotation 0) — the three segments meet edge-to-edge and form
+// one continuous caravan trail, which then lights up gold on the reveal.
+function _mapPieceSVG(p){
+  if (p === 1) {
+    return '<svg class="map-ink" viewBox="0 0 100 100" preserveAspectRatio="none">'
+      + '<path d="M0,70 L18,38 L31,68 L47,28 L61,70 L79,42 L100,72 L100,100 L0,100 Z" fill="#cf6a2c" opacity="0.9"/>'
+      + '<path d="M0,80 L24,58 L45,82 L67,55 L100,84 L100,100 L0,100 Z" fill="#9c4216" opacity="0.92"/>'
+      + '<path class="route-seg" d="M1,50 C30,42 47,58 99,50"/>'
+      + '</svg>';
+  }
+  if (p === 2) {
+    return '<svg class="map-ink" viewBox="0 0 100 100" preserveAspectRatio="none">'
+      + '<path d="M0,0 L100,0 L100,30 Q50,40 0,30 Z" fill="#56c6d6" opacity="0.20"/>'
+      + '<path d="M0,68 Q25,50 50,66 T100,64 L100,100 L0,100 Z" fill="#e8b84e" opacity="0.92"/>'
+      + '<path d="M0,82 Q30,68 60,82 T100,80 L100,100 L0,100 Z" fill="#c89e38" opacity="0.95"/>'
+      + '<path class="route-seg" d="M1,50 C30,60 52,40 99,50"/>'
+      + '</svg>';
+  }
+  return '<svg class="map-ink" viewBox="0 0 100 100" preserveAspectRatio="none">'
+    + '<ellipse cx="33" cy="72" rx="24" ry="10" fill="#34a7cc" opacity="0.92"/>'
+    + '<ellipse cx="33" cy="70" rx="14" ry="5" fill="#9fe4f2" opacity="0.7"/>'
+    + '<rect x="31" y="40" width="4" height="28" fill="#7a4a1e"/>'
+    + '<path d="M33,41 q-17,-7 -23,1 M33,41 q17,-7 23,1 M33,41 q-9,-15 -2,-19 M33,41 q11,-13 4,-18" stroke="#2f9a3c" stroke-width="4.5" fill="none" stroke-linecap="round"/>'
+    + '<rect x="85" y="40" width="2.4" height="20" fill="#7a2018"/>'
+    + '<path d="M77,58 L86,39 L95,58 Z" fill="#d33a28"/>'
+    + '<path class="route-seg" d="M1,50 C30,55 55,46 86,52"/>'
+    + '</svg>';
+}
 function _openJigsawModal(){
   const modal = document.getElementById('jigsawModal');
   if (!modal || game.jigsawSolved) return;
@@ -7476,7 +7596,7 @@ function _openJigsawModal(){
     div.dataset.rotation = String(initRot);
     div.innerHTML =
       '<div class="crystal-face" style="transform: rotate(' + initRot + 'deg);">'
-        + '<div class="crystal-spark"></div>'
+        + _mapPieceSVG(p)
       + '</div>';
     _wireJigsawPiece(div);
     tray.appendChild(div);
@@ -7625,16 +7745,36 @@ function _wireJigsawPiece(pieceEl){
 function _onJigsawSolved(){
   game.jigsawSolved = true;
   try { _saveCheckpoint(); } catch(e){}
-  // Stop the puzzle bg music; play the solve sting.
-  try {
-    if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; }
-  } catch(e){}
+  // 2026-05-19 (Jane: "make it epic"). Don't snap the modal shut — play
+  // the REVEAL beat first: the three placed segments light gold, a golden
+  // caravan route draws itself START→MIDIAN, a footprint walks the trail,
+  // and the verse lands. THEN close + hand off to the world camera pan.
+  _playMapReveal();
+}
+function _playMapReveal(){
+  const board  = document.getElementById('jigsawBoard');
+  const status = document.getElementById('jigsawStatus');
+  const verse  = document.getElementById('jigsawVerse');
+  const title  = document.querySelector('#jigsawModal .jigsaw-title');
+  if (board) {
+    board.classList.remove('revealed');
+    void board.offsetWidth;            // reflow so the draw animation restarts
+    board.classList.add('revealed');
+  }
+  if (title)  title.textContent = 'The path is revealed!';
+  if (status) status.textContent = 'God lights the way to Midian ✨';
   try { play('puzzleComplete') || play('victoryChime') || play('success'); } catch(e){}
-  // Close the modal.
-  const modal = document.getElementById('jigsawModal');
-  if (modal) modal.classList.remove('active');
-  // Show the "Moses — keep going!" overlay, then camera pan to exit.
-  _showMosesKeepGoing();
+  // verse lands once the golden route has finished drawing
+  setTimeout(() => { try { if (verse) verse.classList.add('show'); } catch(_){} }, 1500);
+  // hold on the glowing map, then close and continue to the world pan
+  setTimeout(() => {
+    try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(_){}
+    const modal = document.getElementById('jigsawModal');
+    if (modal) modal.classList.remove('active');
+    if (board) board.classList.remove('revealed');
+    if (verse) verse.classList.remove('show');
+    _showMosesKeepGoing();
+  }, 3600);
 }
 function _showMosesKeepGoing(){
   let overlay = document.getElementById('mosesKeepGoing');
