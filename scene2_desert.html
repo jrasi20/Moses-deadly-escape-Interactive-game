@@ -1682,13 +1682,19 @@
      box-sizing: border-box so the borders don't push the container
      past the modal padding (Jane PM63: "spot the difference images
      are cut on portrait"). */
+  /* 2026-05-19 PM63d (Jane: "what did you do to spot the difference? i
+     asked you to refer to scene 1 dimensions. for desktop, portrait,
+     landscape etc, the dimensions used in scene 1 should be followed
+     for all challenges"). Container width now mirrors Scene 1 PM49
+     EXACTLY: 84vw (was 80vw) so the modal-padding offset matches. */
   .ch-spotdiff-container {
     position: relative; display: inline-block;
     box-sizing: border-box;
-    width: min(540px, 80vw);
+    width: min(540px, 84vw);
     max-width: 100%;
     overflow: hidden;
     border-radius: 8px;
+    cursor: pointer;
   }
   .ch-spotdiff-wrapper {
     box-sizing: border-box;
@@ -1777,6 +1783,17 @@
   .ch-count-scene-img {
     display:block; width:min(260px, 70vw); height:auto; object-fit:contain;
     margin:0 auto 8px; border:3px solid #ffd976; border-radius:10px;
+  }
+  /* 2026-05-19 PM63d (Jane: "what did you do to spot the difference?
+     i asked you to refer to scene 1 dimensions"). DESKTOP-landscape
+     parity with Scene 1: on any wide-enough viewport (min-width 720
+     px) put the two spot-diff images SIDE-BY-SIDE so the kid sees
+     both at once instead of stacked + scrolled. Caps each container
+     at 46vw / 600px so they always fit the modal with the centre gap. */
+  @media (min-width: 720px) {
+    .ch-spotdiff-wrapper   { flex-direction: row !important; gap: 10px; flex-wrap: nowrap; }
+    .ch-spotdiff-container { width: auto !important; max-width: min(46vw, 600px) !important; }
+    .ch-spotdiff-img       { max-height: 60vh !important; }
   }
   /* 2026-05-19 PM59 — Scene 2 PUZZLE LANDSCAPE SIZING (parity with
      Scene 1 PM48 / PM52 / PM55 / PM56). Without these rules the
@@ -2875,7 +2892,13 @@
 <div class="cinematic" id="openingCinematic">
   <div class="cin-panel">
     <div class="cin-art">
-      <img src="assets/images/scene1%20background.png" alt="" class="cin-scene-img" onerror="this.style.display='none'">
+      <!-- 2026-05-19 PM63d (Jane: "section 5 from narration doc is not
+           wired yet?"). Section 5 (Scene 2 opening narration) doc names
+           `intro scene 2.png` as the cinematic art. Switched from the
+           generic scene1 background.png to the dedicated Scene 2
+           opening illustration. -->
+      <img src="assets/images/intro%20scene%202.png" alt="" class="cin-scene-img"
+           onerror="this.onerror=null; this.src='assets/images/scene2_background.png';">
       <div class="cin-overlay"></div>
     </div>
     <div class="cin-text" id="cinText">Loading...</div>
@@ -6446,13 +6469,39 @@ try {
         } catch(e){}
         try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}
         try {
-          // Resume mid-scene if a checkpoint exists; else play the
-          // opening cinematic and start fresh.
-          const _savedGame = (typeof _loadCheckpoint === 'function') ? _loadCheckpoint() : null;
-          if (_savedGame && typeof showResumePrompt === 'function') {
-            showResumePrompt(_savedGame);
-          } else if (typeof openCinematic === 'function') {
-            openCinematic();
+          // 2026-05-19 PM63d (Jane: "its taking a few seconds for sprites
+          // to be loaded. so put a loading bar before game can open").
+          // The Scene-1 auto-launch path skipped the preload overlay and
+          // jumped straight to the cinematic — so the kid saw broken
+          // sprites for a few seconds while images finished decoding.
+          // Now: if assets aren't ready, show the preload overlay first
+          // and defer the cinematic launch until they are (or until the
+          // 12 s safety ceiling fires).
+          const _launchCin = () => {
+            try {
+              const _savedGame = (typeof _loadCheckpoint === 'function') ? _loadCheckpoint() : null;
+              if (_savedGame && typeof showResumePrompt === 'function') {
+                showResumePrompt(_savedGame);
+              } else if (typeof openCinematic === 'function') {
+                openCinematic();
+              }
+            } catch(e){}
+          };
+          if (typeof _preloadPct === 'function' && _preloadPct() < 100) {
+            const _overlay = document.getElementById('preloadOverlay');
+            if (_overlay) _overlay.classList.add('active');
+            _pendingBeginTap = () => {
+              try { if (_overlay) _overlay.classList.remove('active'); } catch(e){}
+              _launchCin();
+            };
+            // 12 s safety: never strand the kid on the preload screen.
+            setTimeout(() => {
+              if (_pendingBeginTap) {
+                const fn = _pendingBeginTap; _pendingBeginTap = null; fn();
+              }
+            }, 12000);
+          } else {
+            _launchCin();
           }
         } catch(e){}
       } catch(e){}
@@ -7217,6 +7266,16 @@ function showTutorial(step){
   $('tutProgress').textContent = (step+1)+' of '+TUT_STEPS.length;
   $('tutNextBtn').textContent = (step === TUT_STEPS.length-1) ? 'Start!' : 'Next';
   $('tutorialModal').classList.add('active');
+  // 2026-05-19 PM63d (Jane: "when the tutorial modal is open, the game
+  // timer is still running"). startTimers() freezes time whenever
+  // game.state !== 'playing', so flipping state to 'tutorial' here
+  // pauses the countdown until the kid taps Next/Start.
+  try {
+    if (game.state !== 'tutorial' && game.state !== 'cinematic') {
+      window._preTutorialState = game.state;
+      game.state = 'tutorial';
+    }
+  } catch(e){}
 }
 $('tutNextBtn').addEventListener('click', () => {
   play('click');
@@ -7241,10 +7300,15 @@ $('tutNextBtn').addEventListener('click', () => {
         game.state = 'paused';
         playIntroPan(() => {
           game.state = 'playing';
+          // 2026-05-19 PM63d: arm scouts ONLY after the pan callback
+          // fires, so the 15 s grace buffer starts from the moment the
+          // kid actually sees gameplay — not from page load.
+          game.scoutsArmedAt = performance.now();
           startTimers();
         });
       } catch(e) {
         game.state = 'playing';
+        game.scoutsArmedAt = performance.now();
         try { startTimers(); } catch(e2){}
       }
     }
@@ -8064,7 +8128,7 @@ function getHintForQuestion(q){
     count:      'Riddle: your eyes are a shepherd and the things on screen are a flock. Only count the sheep the question is asking for — leave the goats alone.',
     tf:         'Riddle: the Bible tells the true story. Read the sentence with a careful eye — is even ONE word a pebble in the shoe? If yes, it is False.',
     fill:       'Riddle: the blank is a missing stone in a wall. Which word makes the wall stand straight when you slot it in?',
-    trivia:     'Riddle: every answer sleeps inside the Bible story. Picture the scene in your head — the person, the place, the moment — and the right one will stand up.',
+    trivia:     'Tip: re-read the question and notice the names + places. The answer is in Exodus 2, Acts 7, or Hebrews 11 — those are Moses\'s three big chapters in Scene 2.',
     slider:     'Riddle: the picture is a jigsaw with mixed-up pieces. Look at the small picture above, then tap two tiles to swap them until the big picture matches.',
   };
   const typeHint = byType[q.type];
@@ -8189,6 +8253,31 @@ function getHintForQuestion(q){
     // and fall through to verseHint / typeHint instead.
     if (hasWord('moses') && hasWord('baby','infant','child','born','birth'))
       return 'Moses was a Hebrew baby adopted into Pharaoh\'s palace. God had big plans for him.';
+    // 2026-05-19 PM63d (Jane: "the clues in scene 2 are not at all helpful.
+    // i want you to work on this the same way you worked on for scene 1").
+    // High-frequency Scene 2 trivia patterns Jane saw fall through to the
+    // generic "every answer sleeps inside the Bible story" riddle.
+    // Adding specific routes for: NT verse cross-refs, Acts 7 (Stephen's
+    // sermon), Hebrews 11 (faith chapter), "wisdom of the Egyptians",
+    // "powerful in speech", "stranger", desert-life beats, and Jethro/well.
+    if (hasWord('speech','powerful') || (hasWord('wisdom') && hasWord('egyptian','egyptians')))
+      return 'Stephen\'s sermon in Acts 7:22 tells us Moses was educated in all the wisdom of the Egyptians and was powerful in speech and action.';
+    if (hasWord('acts','stephen'))
+      return 'In Acts 7, Stephen retells Moses\'s life from his birth to his flight to Midian. Look for the verse number that matches your question.';
+    if (hasWord('hebrews'))
+      return 'Hebrews 11 is the Bible\'s "faith chapter." Verses 23-29 walk through Moses\'s parents, his choice, his exit from Egypt, and the Passover.';
+    if (hasWord('stranger','foreigner','sojourner'))
+      return 'Moses called himself a stranger in Midian — that\'s why he named his son Gershom, meaning "a stranger there" (Exodus 2:22).';
+    if (hasWord('rescue','rescued','saved'))
+      return 'Moses rescued Jethro\'s seven daughters at the Midian well — drove off the rough shepherds and watered their flock (Exodus 2:17).';
+    if (hasWord('water','watered','flock'))
+      return 'At the well, Moses watered the daughters\' flock after rescuing them. That single act of kindness opened the door to his life in Midian (Exodus 2:17-21).';
+    if (hasWord('married','marry','wife'))
+      return 'Moses agreed to stay with Jethro, who gave his daughter Zipporah to be Moses\'s wife (Exodus 2:21).';
+    if (hasWord('horeb','mountain') && hasWord('god'))
+      return 'Mount Horeb is the "mountain of God" where Moses tended Jethro\'s flock and where God called him from the burning bush (Exodus 3:1-2).';
+    if (hasWord('moses'))
+      return 'Moses was a Hebrew raised in Pharaoh\'s palace who fled to Midian, married Zipporah, and shepherded Jethro\'s flock. Think about where the story is in Exodus 2 or Acts 7.';
     return null;
   })();
 
@@ -8345,12 +8434,14 @@ function openChallenge(gate) {
     headerText = 'CHECKPOINT  ·  Q ' + (idx + 1) + ' of ' + total;
     titleText  = 'Answer correctly to press on through the desert!';
   } else if (game.scene === 2 && gate && gate.kind === 'zone') {
-    const zn = (gate.label || 'Desert Checkpoint').replace(/\s*Checkpoint\s*/i,'').trim().toUpperCase() || 'DESERT';
-    headerText = zn + ' CHECKPOINT  ·  Q ' + (idx + 1) + ' of ' + total;
-    const zone = gate.zone || '';
-    titleText = zone
-      ? 'Answer to cross the ' + zone + '!'
-      : 'Answer to cross this checkpoint!';
+    // 2026-05-19 PM63d (Jane: "what is the 5 in the challenge modal
+    // header?"). Old regex `\s*Checkpoint\s*` consumed BOTH spaces
+    // around "Checkpoint" in the label, leaving "Bible5". Use the
+    // label as-is (already formatted "Bible Checkpoint N") so the
+    // spacing reads correctly.
+    const _label = (gate.label || 'Bible Checkpoint').toUpperCase();
+    headerText = _label + '  ·  Q ' + (idx + 1) + ' of ' + total;
+    titleText = 'Answer to cross this checkpoint!';
   }
   // v2.3.5 Jane bulletproof (challenge-trigger fix):
   // set every field defensively so ONE missing node never aborts the render.
@@ -11086,11 +11177,15 @@ function seedPursuitScouts(){
 let _scoutCloseWarnAt = 0;   // v2.2 hoofbeat/scout-alert cooldown (ms)
 function updatePursuitScouts(dt){
   if (game.scene !== 2 || game.state !== 'playing') return;
-  // v3.3 LANE 3 (Jane 2026-04-23): 15-second grace window. Kids need a
-  // moment to read the HUD, find the D-pad, and orient themselves before
-  // scouts start patrolling. Without this, first-time players are caught
-  // before they understand the controls. Grace ends 15s after game start.
-  if (game.startedAt && (performance.now() - game.startedAt) < 15000) return;
+  // 2026-05-19 PM63d (Jane: "as soon as we begin, the scouts are catching
+  // moses. give atleast 10 to 15 seconds after the camera pan to bring
+  // in the scouts"). game.startedAt was set BEFORE the intro pan, so by
+  // the time the pan (~7-10 s) finished the kid only had ~5 s of grace
+  // left. Replaced with game.scoutsArmedAt, set the moment the pan
+  // callback fires (see showTutorial close handler), and use a fresh
+  // 15-second buffer from THAT point.
+  const _armed = game.scoutsArmedAt || game.startedAt || 0;
+  if (_armed && (performance.now() - _armed) < 15000) return;
   // 2026-05-19 PM54: Foe Freeze power-up also freezes pursuit scouts
   // (Jane: "scouts are there in scene 2 in addition to the guards").
   // Scene 1's freeze only had to stop guards; Scene 2 has both.
@@ -16045,6 +16140,11 @@ function updateCenser(dt){
 // next to her (Chebyshev distance 1), she gasps and raises guard alarm.
 function updateServantNPC(dt){
   if (!servantNPC.active) return;
+  // 2026-05-19 PM63d (Jane: "sprites are moving during the initial pan").
+  // Freeze NPC motion whenever the intro camera pan owns the screen, or
+  // game state isn't actively playing (tutorial / paused / cinematic).
+  if (window._introPanActive) return;
+  if (game.state !== 'playing') return;
   servantNPC.tick += dt;
   servantNPC.alertCooldownMs = Math.max(0, servantNPC.alertCooldownMs - dt);
   if (servantNPC.tick >= servantNPC.speedMs) {
@@ -16078,6 +16178,8 @@ function updateServantNPC(dt){
 // but without any alert-check so kids can walk right up to her safely.
 function updateCaravanTrader(dt){
   if (!caravanTrader.active) return;
+  if (window._introPanActive) return; // PM63d: freeze during intro pan
+  if (game.state !== 'playing') return;
   caravanTrader.tick += dt;
   if (caravanTrader.tick >= caravanTrader.speedMs) {
     caravanTrader.tick = 0;
@@ -16293,6 +16395,30 @@ function loop(now){
       // Scan 3x3 tiles around Moses; if a campfire (tile 2) is adjacent,
       // gently crackle the fire.mp3 once per 2.5s so the scene feels alive.
       try { _updateCampfireProximityAudio(); } catch(e){}
+      // 2026-05-19 PM63d (Jane: "after i finish the 1st checkpoint, then
+      // the tutorial modal explains about stepping on the challenge modal
+      // tile. it should be shown before moses steps on the first
+      // checkpoint"). Fire the checkpoint tutorial when Moses first
+      // walks within 3 tiles of any unsolved checkpoint, BEFORE he
+      // actually steps on one. Anti-spam: _firstEventSeen.checkpoint
+      // gates it to a one-shot.
+      try {
+        if (!_firstEventSeen.checkpoint && typeof challengeGates !== 'undefined') {
+          for (const _g of challengeGates) {
+            if (_g.solved) continue;
+            const _gd = Math.max(Math.abs(player.tx - _g.tx), Math.abs(player.ty - _g.ty));
+            if (_gd <= 3) {
+              showTipPopup('checkpoint', {
+                icon: '🛡️',
+                title: 'A Desert Checkpoint',
+                body: 'Step on the glowing ? tile to start a Bible challenge. Answer all 3 questions correctly to clear it and continue toward Midian!',
+                pointAtTile: { tx: _g.tx, ty: _g.ty },
+              });
+              break;
+            }
+          }
+        }
+      } catch(e){}
     }
     // recompute hiding status each frame (guards move, so LoS changes)
     player.crouched = isHiddenFromAnyGuard();

@@ -2742,13 +2742,15 @@
     0%, 100% { transform: scale(1.0); }
     50%      { transform: scale(1.22); }
   }
-  /* Moses figurine + glow ring underneath */
+  /* Moses figurine + glow ring underneath. 2026-05-19 PM63d: coords
+     updated to match the new 4-pin layout (Palace at 130,250 →
+     Desert at 320,250 → Midian at 540,220 → Jethro at 690,220). */
   .wm-moses {
-    transform: translate(140px, 240px);
+    transform: translate(130px, 250px);
     transition: transform 2.6s cubic-bezier(0.4, 0.0, 0.2, 1.0);
   }
   .wm-moses.arrived {
-    transform: translate(540px, 240px);
+    transform: translate(320px, 250px);
   }
   .wm-moses-glow {
     animation: wm-moses-pulse 1.2s ease-in-out infinite;
@@ -4486,41 +4488,69 @@
     <h2 class="world-map-title" id="worldMapTitle">Moses's Journey</h2>
     <p class="world-map-sub">From Egypt to Midian — one step at a time.</p>
     <div class="world-map-canvas" aria-hidden="true">
-      <!-- 2026-05-19 PM62: bigger viewBox (700×380 vs 600×220), bigger
-           pins (32 radius vs 22), bigger Moses (8x area), curved
-           dashed route, region labels (EGYPT / DESERT / MIDIAN). -->
-      <svg class="world-map-svg" viewBox="0 0 700 380" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <!-- 2026-05-19 PM63d (Jane: "use moses sprite for figurine ... for
+           icon for palace use color palace.png. for midian use
+           newmidian.png. for jethro's tent, use jethro tent.png").
+           Pins now use the actual PNG art via SVG <image>. Layout:
+           EGYPT pin (color palace.png, COMPLETED check overlay) →
+           DESERT pin (running figure, ACTIVE — this is Scene 2) →
+           MIDIAN pin (newmidian.png, NEXT) → JETHRO TENT (locked,
+           Scene 3 final destination). Moses figurine is moses.png
+           travelling between Palace and Desert pin. -->
+      <svg class="world-map-svg" viewBox="0 0 760 380" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <!-- Region labels behind pins -->
         <text x="100" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(140,40,20,0.65)" letter-spacing="3">EGYPT</text>
-        <text x="380" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(180,100,30,0.7)" letter-spacing="3">DESERT</text>
+        <text x="320" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(180,100,30,0.7)" letter-spacing="3">DESERT</text>
         <text x="610" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(30,80,140,0.65)" letter-spacing="3">MIDIAN</text>
-        <!-- Dashed path Egypt → Desert → Midian (wider curve, thicker stroke) -->
-        <path d="M 140 240 Q 260 110, 380 240 Q 500 370, 610 200"
+        <!-- Dashed path Egypt → Desert → Midian → Jethro (4 waypoints) -->
+        <path d="M 130 250 Q 220 130, 320 250 Q 430 370, 540 220 Q 620 130, 690 220"
               fill="none" stroke="#5a2d05" stroke-width="5"
               stroke-dasharray="14 10" opacity="0.75" stroke-linecap="round"/>
-        <!-- Palace pin (left, COMPLETED) -->
-        <g class="wm-pin wm-pin-done" transform="translate(140, 240)">
-          <circle r="36" fill="#3a8a5e" stroke="#1a4830" stroke-width="4"/>
-          <text x="0" y="10" text-anchor="middle" font-size="34" fill="#fff" font-weight="900">✓</text>
-          <text x="0" y="-50" text-anchor="middle" font-size="18" fill="#3a1505" font-weight="800">Palace</text>
+        <!-- Palace pin (DONE) — color palace.png inside green ring -->
+        <g class="wm-pin wm-pin-done" transform="translate(130, 250)">
+          <circle r="40" fill="#fffbe6" stroke="#1a4830" stroke-width="5"/>
+          <image href="assets/images/color%20palace.png" x="-32" y="-32" width="64" height="64"
+                 preserveAspectRatio="xMidYMid slice" clip-path="circle(32px at 32px 32px)"
+                 onerror="this.style.display='none'"/>
+          <!-- Green completed badge in corner -->
+          <circle cx="26" cy="-26" r="13" fill="#3a8a5e" stroke="#1a4830" stroke-width="2"/>
+          <text x="26" y="-22" text-anchor="middle" font-size="16" fill="#fff" font-weight="900">✓</text>
+          <text x="0" y="-54" text-anchor="middle" font-size="17" fill="#3a1505" font-weight="800">Palace</text>
         </g>
-        <!-- Desert pin (middle, ACTIVE) -->
-        <g class="wm-pin wm-pin-active" transform="translate(380, 240)">
-          <circle r="40" fill="#e8a83a" stroke="#7a4509" stroke-width="4"/>
-          <text x="0" y="13" text-anchor="middle" font-size="36" fill="#3a1505" font-weight="900">▸</text>
-          <text x="0" y="-54" text-anchor="middle" font-size="18" fill="#3a1505" font-weight="800">Desert</text>
+        <!-- Desert pin (ACTIVE, current scene) -->
+        <g class="wm-pin wm-pin-active" transform="translate(320, 250)">
+          <circle r="42" fill="#e8a83a" stroke="#7a4509" stroke-width="5"/>
+          <text x="0" y="13" text-anchor="middle" font-size="38" fill="#3a1505" font-weight="900">▸</text>
+          <text x="0" y="-56" text-anchor="middle" font-size="17" fill="#3a1505" font-weight="800">Desert</text>
         </g>
-        <!-- Midian pin (right, LOCKED) -->
-        <g class="wm-pin wm-pin-lock" transform="translate(610, 200)">
-          <circle r="34" fill="#bbb" stroke="#555" stroke-width="4"/>
-          <text x="0" y="9" text-anchor="middle" font-size="28" fill="#fff">🔒</text>
-          <text x="0" y="-48" text-anchor="middle" font-size="18" fill="#3a1505" font-weight="800" opacity="0.65">Midian</text>
+        <!-- Midian pin (NEXT, scene 3 entry) — newmidian.png primary,
+             midian 1.png fallback if Jane hasn't dropped the new file. -->
+        <g class="wm-pin wm-pin-lock" transform="translate(540, 220)">
+          <circle r="38" fill="#fffbe6" stroke="#555" stroke-width="4"/>
+          <image href="assets/images/newmidian.png" x="-30" y="-30" width="60" height="60"
+                 preserveAspectRatio="xMidYMid slice" clip-path="circle(30px at 30px 30px)"
+                 opacity="0.85" onerror="this.setAttribute('href','assets/images/midian%201.png'); this.onerror=null;"/>
+          <!-- Lock badge -->
+          <circle cx="24" cy="-24" r="12" fill="#888" stroke="#444" stroke-width="2"/>
+          <text x="24" y="-19" text-anchor="middle" font-size="14" fill="#fff">🔒</text>
+          <text x="0" y="-50" text-anchor="middle" font-size="17" fill="#3a1505" font-weight="800" opacity="0.75">Midian</text>
         </g>
-        <!-- Moses figurine — bigger, with a soft amber glow underneath -->
+        <!-- Jethro's tent (scene 3 destination) — jethro tent.png -->
+        <g class="wm-pin wm-pin-lock" transform="translate(690, 220)">
+          <circle r="36" fill="#fffbe6" stroke="#555" stroke-width="4"/>
+          <image href="assets/images/jethro%20tent.png" x="-28" y="-28" width="56" height="56"
+                 preserveAspectRatio="xMidYMid slice" clip-path="circle(28px at 28px 28px)"
+                 opacity="0.85" onerror="this.style.display='none'"/>
+          <text x="0" y="-48" text-anchor="middle" font-size="14" fill="#3a1505" font-weight="800" opacity="0.7">Jethro's Tent</text>
+        </g>
+        <!-- Moses figurine — actual moses.png sprite, larger than the
+             pins so kids can spot him; amber glow underneath. -->
         <g id="wmMoses" class="wm-moses">
-          <circle class="wm-moses-glow" r="28" fill="rgba(255,217,118,0.6)"/>
-          <circle r="22" fill="#5a2510" stroke="#ffd976" stroke-width="3"/>
-          <text x="0" y="9" text-anchor="middle" font-size="28">🚶</text>
+          <circle class="wm-moses-glow" r="32" fill="rgba(255,217,118,0.65)"/>
+          <circle r="26" fill="#5a2510" stroke="#ffd976" stroke-width="3"/>
+          <image href="assets/images/moses.png" x="-22" y="-22" width="44" height="44"
+                 preserveAspectRatio="xMidYMid meet"
+                 onerror="this.style.display='none'"/>
         </g>
       </svg>
     </div>
@@ -16418,6 +16448,21 @@ function _playTransitionToScene2(){
     game.cinStep = 0;
     showCinPanel();
     $('openingCinematic').classList.add('active');
+    // 2026-05-19 PM63d (Jane: "in the test link, i don't hear any
+    // background music for the narration part before scene 2"). The
+    // section-4 cinematic was reusing the modal but bypassing
+    // openCinematic() — which is the function that kicks off the
+    // narration BGM bed. Replicate that bgm start here so the kid
+    // hears soft narration music under all 5 transition panels.
+    try { if (audio.bgm) { audio.bgm.pause(); audio.bgm.currentTime = 0; } } catch(e){}
+    try {
+      if (audio.narration) {
+        audio.narration.currentTime = 0;
+        audio.narration.loop = true; // keep playing if a panel is held
+        audio.narration.volume = 0.45;
+        audio.narration.play().catch(()=>{});
+      }
+    } catch(e){}
     // After the 5 panels: restore the original cinematic deck (so a
     // future Replay-Scene-1 still works), close the cinematic overlay,
     // and reveal the world-map screen which holds the Continue button.
@@ -16426,6 +16471,12 @@ function _playTransitionToScene2(){
         CIN_PANELS.length = 0;
         (window._cinDeckBackup || []).forEach(p => CIN_PANELS.push(p));
         window._cinDeckBackup = null;
+      } catch(e){}
+      // PM63d: stop the narration BGM bed before the world-map opens
+      // (the world-map starts egyptianCover; we don't want the two
+      // tracks to layer).
+      try {
+        if (audio.narration) { audio.narration.pause(); audio.narration.loop = false; audio.narration.currentTime = 0; }
       } catch(e){}
       $('openingCinematic').classList.remove('active');
       $('gamePage').classList.remove('active');
@@ -16494,13 +16545,19 @@ function _showWorldMap(){
   // plays as the world-map opens. PM62: explicit teardown of every
   // other audio loop above first so this track doesn't layer.
   try {
+    // 2026-05-19 PM63d (Jane: "loop the music for journey tracker").
+    // egyptianCover plays once by default; the kid can sit on the
+    // journey-tracker overlay reading captions for a while. Set
+    // loop=true so the ambience never goes silent under the modal.
     if (audio.egyptianCover) {
       audio.egyptianCover.currentTime = 0;
       audio.egyptianCover.volume = 0.6;
+      audio.egyptianCover.loop = true;
       audio.egyptianCover.play().catch(()=>{});
     } else if (audio.coverMusic) {
       audio.coverMusic.currentTime = 0;
       audio.coverMusic.volume = 0.45;
+      audio.coverMusic.loop = true;
       audio.coverMusic.play().catch(()=>{});
     }
   } catch(e){}
@@ -16514,6 +16571,13 @@ function _showWorldMap(){
     btn._wired = true;
     btn.addEventListener('click', () => {
       try { play('click'); } catch(e){}
+      // 2026-05-19 PM63d: now that the journey-tracker music is set to
+      // loop:true, explicitly stop it when the kid hits Continue so it
+      // doesn't double-up with Scene 2's bgm after the redirect.
+      try {
+        if (audio.egyptianCover) { audio.egyptianCover.pause(); audio.egyptianCover.loop = false; audio.egyptianCover.currentTime = 0; }
+        if (audio.coverMusic)    { audio.coverMusic.pause();    audio.coverMusic.loop    = false; audio.coverMusic.currentTime    = 0; }
+      } catch(e){}
       // Fade the overlay (CSS animation will reverse-ish) then hop.
       try {
         const overlay = document.getElementById('worldMapOverlay');
@@ -22398,7 +22462,7 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     //   Midian), compass-rose corner, dramatic kid-friendly copy.
     // * World-map audio leak: tear down every other loop track
     //   BEFORE egyptianCover plays so it doesn't layer.
-    const SW_VERSION = 'bek-moses1-v37';
+    const SW_VERSION = 'bek-moses1-v38';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",
