@@ -1796,6 +1796,13 @@
     box-sizing: border-box;
     width: min(540px, 84vw);
     max-width: 100%;
+    /* 2026-05-19 (Jane: "spot the difference images are cropped"). The
+       flex-column wrapper has max-height:52vh; without flex-shrink:0 the
+       two image containers get SQUISHED on small/short screens and, with
+       overflow:hidden, the bottom of each picture is clipped off — hiding
+       (and making untappable) any differences in the lower half. Keep the
+       container at its natural (image) height and let the wrapper scroll. */
+    flex-shrink: 0;
     overflow: hidden;
     border-radius: 8px;
     cursor: pointer;
