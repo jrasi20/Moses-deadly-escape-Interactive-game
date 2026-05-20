@@ -4209,6 +4209,18 @@
       <button class="cover-quickdiff-btn" data-quickdiff="hard">Hard</button>
     </div>
     <button class="start-btn cover-quickstart-btn" id="quickStartBtn" type="button" aria-label="Begin Adventure">Begin Adventure</button>
+    <!-- 2026-05-19 PM63b (Jane: "how to test the continuation from scene
+         1 win modal to scene 2 transition?"). Adds a hidden test button
+         that opens the Win modal directly so Jane (or a tester) can
+         verify the Section-4 cinematic + Scene-2 redirect without
+         playing through the full palace. The button is hidden by
+         default and revealed via the `?dev=1` URL param OR by setting
+         `localStorage.setItem('bek.dev','1')` in the console. -->
+    <button id="devTestSceneTransitionBtn" type="button"
+            style="display:none;margin-top:8px;padding:6px 12px;font-size:11px;border-radius:8px;background:#3a1508;color:#ffd976;border:1.5px solid #ffd976;cursor:pointer;letter-spacing:0.5px;"
+            aria-label="DEV: Open Win Modal to test Scene 1 to Scene 2 transition">
+      🧪 DEV: Test Scene 1 → Scene 2 transition
+    </button>
     <!-- 2026-05-18 (Jane audit): Truth Library + Power Unlocks are CONTENT
          (libraries the kid earns into) — they don't belong under a
          ⚙ Settings gear next to "Sound on/off". Promoted to their own
@@ -9462,6 +9474,36 @@ window._beginAdventure = _beginAdventure;
   if (qb) qb.addEventListener('click', () => {
     try { _beginAdventure(); } catch(e){ console.error('begin failed', e); }
   });
+  // 2026-05-19 PM63b: hidden DEV test button → fires the win modal
+  // directly so the Section-4 cinematic + Scene-2 redirect can be
+  // verified without playing through all 5 gates. Revealed by
+  // `?dev=1` OR by `localStorage.setItem('bek.dev','1')`.
+  try {
+    const _devOn = (location.search && location.search.indexOf('dev=1') !== -1)
+                || localStorage.getItem('bek.dev') === '1';
+    const _devBtn = document.getElementById('devTestSceneTransitionBtn');
+    if (_devOn && _devBtn) {
+      _devBtn.style.display = '';
+      _devBtn.addEventListener('click', () => {
+        try {
+          // Hide cover so the modal isn't behind the cover page
+          const _cov = document.getElementById('coverPage');
+          if (_cov) _cov.style.display = 'none';
+          // Make sure the game-page is in a sane state for the modal
+          // close handlers + transition to fire. Stars + treasure totals
+          // get sensible values for the win-modal score display.
+          if (typeof game !== 'undefined') {
+            game.stars = 30;
+            game.hearts = 3;
+            game.treasureCount = 3;
+            game.treasuresTotal = 3;
+          }
+          const _wm = document.getElementById('winModal');
+          if (_wm) _wm.classList.add('active');
+        } catch(e){ console.error('dev test fired', e); }
+      });
+    }
+  } catch(e){}
   // Continue Adventure chip — shows whenever a valid checkpoint exists.
   // Same _validResume predicate as the bottom-Begin handler, just surfaced.
   function _refreshContinueChip(){
@@ -22356,7 +22398,7 @@ console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
     //   Midian), compass-rose corner, dramatic kid-friendly copy.
     // * World-map audio leak: tear down every other loop track
     //   BEFORE egyptianCover plays so it doesn't layer.
-    const SW_VERSION = 'bek-moses1-v36';
+    const SW_VERSION = 'bek-moses1-v37';
     const swSource = [
       "const CACHE = '" + SW_VERSION + "';",
       "const SHELL = [self.registration.scope];",

@@ -1694,9 +1694,16 @@
     box-sizing: border-box;
     max-width: 100%;
   }
+  /* 2026-05-19 PM63b (Jane: "portrait spot the difference is still
+     getting cut"). The img has a 2 px gold border but was content-box —
+     so width:100% + 2 px border = container width + 4 px, bleeding past
+     the container's right edge AND the modal padding. box-sizing:
+     border-box folds the border into the 100% width so the image fits. */
   .ch-spotdiff-img {
     width:100%; height:auto; display:block; object-fit:contain;
     border:2px solid #ffd976; border-radius:8px;
+    box-sizing: border-box;
+    max-width: 100%;
     user-select:none; -webkit-user-select:none;
     -webkit-touch-callout:none;
   }
@@ -2909,6 +2916,11 @@
     <div class="hud-group">
       <span class="hud-chip"><img src="assets/images/star%207.png" onerror="this.style.display='none'" alt=""><span id="hudStars">0</span></span>
       <span class="hud-chip"><img src="assets/images/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span>/<span id="hudTreasureTotal">0</span></span>
+      <!-- 2026-05-19 PM63b (Jane: "where are the 3 colored circles for each
+           bag color?"). Ported from Scene 1 PM15 — three per-color counters
+           so kids see how close they are to the +1-heart "all of one
+           color" bonus. Populated by updateHudTreasure(). -->
+      <span class="hud-chip" id="hudColorBags" title="Collect ALL bags of one color = +1 heart"></span>
       <!-- v2.1 Scene 2: altitude chip (shown only on scene 2, updated by updateHudAltitude) -->
       <!-- 2026-05-19 PM54: chip denominator now updated by updateHudAltitude from the actual seeded count (was hardcoded /9). -->
       <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/<span id="hudAltitudeTotal">6</span></span>
@@ -2972,7 +2984,20 @@
     </div>
     <canvas id="gameCanvas" width="448" height="320"></canvas>
   </div>
+  <!-- 2026-05-19 PM63b (Jane: "on desktop, the placement of dpad and the
+       3 buttons should follow how it is for scene 1. dpad on right and
+       interact, hint and main menu on the left"). Swapped DOM order:
+       action-panel FIRST, dpad SECOND — same as Scene 1 line ~4665. With
+       `.controls { justify-content: space-between }` this puts actions
+       on the LEFT and the dpad on the RIGHT on desktop. The landscape
+       single-row CSS (PM63) reorders via CSS `order:` so this swap
+       doesn't break mobile. -->
   <div class="controls" role="group" aria-label="Game controls">
+    <div class="action-panel" role="group" aria-label="Actions">
+      <button class="action-btn" id="actionBtn" aria-label="Interact with nearby tile">Interact</button>
+      <button class="action-btn" id="hintBtn" aria-label="Show a hint about where to go next">Hint</button>
+      <button class="action-btn" id="menuBtn" aria-label="Open pause menu">Menu</button>
+    </div>
     <div class="dpad" role="group" aria-label="Movement">
       <span class="dpad-spacer"></span>
       <button class="dpad-btn" data-dir="up" aria-label="Move up"><span class="dpad-glyph">&#9650;</span><span class="dpad-text">UP</span></button>
@@ -2983,11 +3008,6 @@
       <span class="dpad-spacer"></span>
       <button class="dpad-btn" data-dir="down" aria-label="Move down"><span class="dpad-glyph">&#9660;</span><span class="dpad-text">DOWN</span></button>
       <span class="dpad-spacer"></span>
-    </div>
-    <div class="action-panel" role="group" aria-label="Actions">
-      <button class="action-btn" id="actionBtn" aria-label="Interact with nearby tile">Interact</button>
-      <button class="action-btn" id="hintBtn" aria-label="Show a hint about where to go next">Hint</button>
-      <button class="action-btn" id="menuBtn" aria-label="Open pause menu">Menu</button>
     </div>
   </div>
 </div>
@@ -5516,45 +5536,53 @@ function _generateRandomChallengePositions(){
   // that irrelevant info"). Generic "Bible Checkpoint N" labels —
   // no more Wadi/Dunes/Oasis/Mesa zone names. Same approach as
   // Scene 1's plain checkpoint labels.
-  for (let ri = 0; ri < 3; ri++) {
-    for (let ci = 0; ci < 3; ci++) {
-      const [cMin, cMax] = colBands[ci];
-      const [rMin, rMax] = rowBands[ri];
-      let pick = null;
-      for (let attempt = 0; attempt < 80 && !pick; attempt++) {
-        const tx = cMin + Math.floor(Math.random() * (cMax - cMin + 1));
-        const ty = rMin + Math.floor(Math.random() * (rMax - rMin + 1));
-        // Only place on plain sand (tile 0) — avoid walls, hazards,
-        // treasure tiles, oases, climb-steps, start, quicksand.
-        if (typeof MAP === 'undefined' || !MAP[ty]) continue;
-        if (MAP[ty][tx] !== 0) continue;
-        if (tooNear(tx, ty)) continue;
-        pick = { tx, ty };
-      }
-      if (pick) {
-        out.push({
-          tx: pick.tx, ty: pick.ty,
-          kind: 'zone',
-          zone: 'desert',
-          label: 'Bible Checkpoint ' + (out.length + 1),
-        });
-      }
+  // 2026-05-19 PM63b (Jane: "checkpoints need to be spread across. this
+  // needs to be modified"). Previously we iterated rows×cols left-to-right
+  // top-to-bottom and trimmed to the first 6 — which always dropped the
+  // bottom row, clustering picks in the top-2 thirds of the map.
+  // New order picks 6 cells of the 3×3 grid that GUARANTEE wide coverage:
+  //   top-left, top-right, mid-center, bottom-left, bottom-right, mid-left.
+  // (Two corners + two opposite corners + the center + one mid edge.)
+  // If a cell fails to seed, fall back to the next cell in priority order
+  // before pulling from CHALLENGE_POSITIONS.
+  const target = (typeof game !== 'undefined' && game.gateCount) ? game.gateCount : 6;
+  const priorityCells = [
+    [0,0], [0,2],   // top corners
+    [2,0], [2,2],   // bottom corners
+    [1,1],          // center
+    [1,0], [1,2],   // mid-left + mid-right
+    [0,1], [2,1],   // top-mid + bottom-mid
+  ];
+  for (const [ri, ci] of priorityCells) {
+    if (out.length >= target) break;
+    const [cMin, cMax] = colBands[ci];
+    const [rMin, rMax] = rowBands[ri];
+    let pick = null;
+    for (let attempt = 0; attempt < 80 && !pick; attempt++) {
+      const tx = cMin + Math.floor(Math.random() * (cMax - cMin + 1));
+      const ty = rMin + Math.floor(Math.random() * (rMax - rMin + 1));
+      if (typeof MAP === 'undefined' || !MAP[ty]) continue;
+      if (MAP[ty][tx] !== 0) continue;
+      if (tooNear(tx, ty)) continue;
+      pick = { tx, ty };
+    }
+    if (pick) {
+      out.push({
+        tx: pick.tx, ty: pick.ty,
+        kind: 'zone',
+        zone: 'desert',
+        label: 'Bible Checkpoint ' + (out.length + 1),
+      });
     }
   }
   // Fallback: pad from CHALLENGE_POSITIONS if any region failed
   let fbIdx = 0;
-  while (out.length < 6 && fbIdx < CHALLENGE_POSITIONS.length) {
+  while (out.length < target && fbIdx < CHALLENGE_POSITIONS.length) {
     const fb = CHALLENGE_POSITIONS[fbIdx++];
     if (out.some(p => p.tx === fb.tx && p.ty === fb.ty)) continue;
     out.push({ ...fb, label: 'Bible Checkpoint ' + (out.length + 1), kind: 'zone', zone: 'desert' });
   }
-  // 2026-05-19 PM63 (Jane: "i see HUD showing 0/9 gates"). The 3×3
-  // grid produced up to 9 positions; the function returned all of
-  // them. TRIM to game.gateCount (6 in current config) so HUD math
-  // matches the seeded count.
-  const target = (typeof game !== 'undefined' && game.gateCount) ? game.gateCount : 6;
   out.length = Math.min(out.length, target);
-  // Renumber labels after trim so they read 1..N sequentially.
   out.forEach((p, i) => { p.label = 'Bible Checkpoint ' + (i + 1); });
   return out;
 }
@@ -5785,6 +5813,48 @@ function seedTreasures(){
           MAP[d.ty][d.tx] = 5;
         }
       }
+    }
+  } catch(e){}
+  // 2026-05-19 PM63b (Jane: "there are only 7 treasure bags in scene 2?
+  // why the contrast between scene 1 and 2?"). Scene 1 has ~30 bags via
+  // banner overlay; Scene 2 only had the 7 painted into MAP_STR. Seed
+  // ~12 EXTRA bags on plain sand tiles spread across the map so each
+  // color (red/green/blue) has 5+ bags and the "collect-all-of-one-
+  // color +1 heart" reward actually gives kids something to chase.
+  // Uses _treasureColor() so we can balance distribution per color.
+  try {
+    // _treasureColor is defined later in the file (next to the HUD updater
+    // for code locality), but seedTreasures runs early — inline the same
+    // hash here so this block doesn't ReferenceError on first paint.
+    const _color = (x, y) => {
+      const h = ((x | 0) * 73856093) ^ ((y | 0) * 19349663);
+      const p = Math.abs(h) % 3;
+      return p === 0 ? 'red' : p === 1 ? 'green' : 'blue';
+    };
+    const goal = { red: 6, green: 6, blue: 6 }; // 18 bags total target
+    const have = { red: 0, green: 0, blue: 0 };
+    for (let y=0;y<MAP_H;y++) for (let x=0;x<MAP_W;x++) {
+      if (MAP[y][x] === 5) have[_color(x, y)]++;
+    }
+    // candidate plain-sand tiles, ~1 tile away from start/exit/walls
+    const candidates = [];
+    for (let y=1;y<MAP_H-1;y++) for (let x=2;x<MAP_W-2;x++) {
+      if (MAP[y][x] !== 0) continue;
+      if (Math.abs(x-1) + Math.abs(y-12) < 3) continue;  // near start
+      if (x >= 38) continue;                              // exit column
+      candidates.push({x, y});
+    }
+    candidates.sort((a, b) => {
+      const ha = ((a.x * 73856093) ^ (a.y * 19349663)) >>> 0;
+      const hb = ((b.x * 73856093) ^ (b.y * 19349663)) >>> 0;
+      return ha - hb;
+    });
+    for (const c of candidates) {
+      const col = _color(c.x, c.y);
+      if (have[col] >= goal[col]) continue;
+      MAP[c.y][c.x] = 5;
+      have[col]++;
+      if (have.red >= goal.red && have.green >= goal.green && have.blue >= goal.blue) break;
     }
   } catch(e){}
   const spots = [];
@@ -6720,6 +6790,10 @@ function startScene1() {
   applyDifficultyConfig(game.difficulty || 'easy');
   game.timeLeft = game.timeLimit;
   game.hearts = 3; game.stars = 0; game.treasureCount = 0; game.altitudeCleared = 0; _lastAltitudeShown = -1;
+  // 2026-05-19 PM63b: reset per-color bag counters so the +1-heart
+  // bonus re-arms on each fresh play.
+  try { _treasureColorCount.blue = 0; _treasureColorCount.green = 0; _treasureColorCount.red = 0;
+        _treasureColorBonus.blue = false; _treasureColorBonus.green = false; _treasureColorBonus.red = false; } catch(e){}
   game.perfectRun = true;
   // v1.2 FIX (§3.8): full scene reset on Start so picking a new difficulty
   // after playing actually re-spawns Moses at the start cell and clears
@@ -6847,6 +6921,10 @@ function restartScene() {
   seedTreasures();
   // reset game stats
   game.hearts = 3; game.stars = 0; game.treasureCount = 0; game.altitudeCleared = 0; _lastAltitudeShown = -1;
+  // 2026-05-19 PM63b: reset per-color bag counters so the +1-heart
+  // bonus re-arms on each fresh play.
+  try { _treasureColorCount.blue = 0; _treasureColorCount.green = 0; _treasureColorCount.red = 0;
+        _treasureColorBonus.blue = false; _treasureColorBonus.green = false; _treasureColorBonus.red = false; } catch(e){}
   game.perfectRun = true;
   game.timeLeft = game.timeLimit; game.startedAt = performance.now();
   game.guardAlertActive = false;
@@ -6919,9 +6997,21 @@ const SCENE_TUT_STEPS = [
   // v3.28 Jane 2026-04-27: scene-specific mechanics. The two control-intro
   // steps were moved into CONTROLS_TUT_STEPS above (bundle-shared).
   // (movement + Interact steps moved into CONTROLS_TUT_STEPS above)
-  { icon:'?',  title:'Solve every checkpoint', body:'Nine glowing checkpoints (?) are scattered across the desert. Walk near one and Moses pauses for 3 Bible questions. Solve ALL nine to open the EXIT — you cannot walk around them.' },
+  // 2026-05-19 PM63b (Jane: hardcoded "9 checkpoints" + "EXIT" mention is
+  // wrong now that gateCount is dynamic AND the jigsaw covers the exit
+  // until all gates are solved). Body is a function — composed at tutorial
+  // launch from live game.gateCount so the copy never drifts from reality.
+  { icon:'?',  title:'Solve every checkpoint',
+    body: () => {
+      const n = (typeof game !== 'undefined' && game.gateCount) ? game.gateCount : 6;
+      return n + ' glowing checkpoints (?) are scattered across the desert. Walk near one and Moses pauses for 3 Bible questions. Solve ALL ' + n + ' to open the path to Midian — you cannot walk around them.';
+    } },
   { icon:'⚠',  title:'Avoid Pharaoh\'s scouts', body:'Red guards and orange scouts patrol the desert. Stay near dunes, boulders, and caves to break line-of-sight. Caves are sanctuary; enemies cannot enter.' },
-  { icon:'\u2605',  title:'Reach Midian!', body:'After clearing all 9 checkpoints, the EXIT tile glows BRIGHT GREEN. Walk into it and Moses crosses into Midian. Tap Start to begin!' },
+  { icon:'\u2605',  title:'Reach Midian!',
+    body: () => {
+      const n = (typeof game !== 'undefined' && game.gateCount) ? game.gateCount : 6;
+      return 'After clearing all ' + n + ' checkpoints, the path glows BRIGHT GREEN. Walk east and Moses crosses into Midian. Tap Start to begin!';
+    } },
 ];
 // v3.28: Two flags. The bundle flag travels across all 3 scenes; the
 // scene flag is per-scene. Either being missing → show that block.
@@ -7120,7 +7210,10 @@ function showTutorial(step){
   const t = TUT_STEPS[step];
   $('tutIcon').textContent = t.icon;
   $('tutTitle').textContent = t.title;
-  $('tutBody').textContent = t.body;
+  // 2026-05-19 PM63b: tutorial body can now be a string OR a 0-arg function
+  // (so the checkpoint-count copy reads from live game.gateCount instead
+  // of a hardcoded "9").
+  $('tutBody').textContent = (typeof t.body === 'function') ? t.body() : t.body;
   $('tutProgress').textContent = (step+1)+' of '+TUT_STEPS.length;
   $('tutNextBtn').textContent = (step === TUT_STEPS.length-1) ? 'Start!' : 'Next';
   $('tutorialModal').classList.add('active');
@@ -7170,6 +7263,19 @@ function updateHudHearts(){
   else el.classList.remove('hud-hearts-low');
 }
 function updateHudStars(){ $('hudStars').textContent = game.stars; }
+
+// 2026-05-19 PM63b (Jane: "where are the 3 colored circles for each bag
+// color?"). Ported from Scene 1 PM15. Use the EXACT same hash that
+// drawTile uses for the bag PNG pick at line ~14012 so the color the kid
+// SEES on the tile matches the color counted on pickup.
+function _treasureColor(tx, ty){
+  const hash = ((tx | 0) * 73856093) ^ ((ty | 0) * 19349663);
+  const pick = Math.abs(hash) % 3;
+  return pick === 0 ? 'red' : pick === 1 ? 'green' : 'blue';
+}
+const _treasureColorCount = { blue: 0, green: 0, red: 0 };
+const _treasureColorBonus = { blue: false, green: false, red: false };
+
 function updateHudTreasure(){
   // 2026-05-19 PM60 (parity with Scene 1 PM45): clamp numerator at
   // denominator so a stale resume can never show "33/30" — HUD must
@@ -7177,6 +7283,23 @@ function updateHudTreasure(){
   $('hudTreasure').textContent = Math.min(game.treasureCount || 0, game.treasuresTotal || 0);
   const tot = $('hudTreasureTotal');
   if (tot) tot.textContent = game.treasuresTotal || 0;
+  // 2026-05-19 PM63b: 3-color chip row (parity with Scene 1 PM15).
+  try {
+    const chip = document.getElementById('hudColorBags');
+    if (!chip) return;
+    const dot = (color) => {
+      const ic = color === 'blue' ? '🔵' : color === 'green' ? '🟢' : '🔴';
+      const n  = _treasureColorCount[color] || 0;
+      const won = !!_treasureColorBonus[color];
+      const style = won
+        ? 'color:#ffd976;text-shadow:0 0 6px rgba(255,217,118,0.85);font-weight:800;'
+        : '';
+      return '<span style="margin:0 4px;' + style + '">' + ic + ' ' + n + (won ? ' ✓' : '') + '</span>';
+    };
+    chip.innerHTML = dot('blue') + dot('green') + dot('red');
+    chip.style.display = '';
+    chip.title = 'Collect ALL bags of one color = +1 heart';
+  } catch(e){}
 }
 // 2026-05-19 PM61: caravan-map fragment counter in HUD. Chip hidden
 // until kid collects the first piece; updates each pickup.
@@ -9588,10 +9711,39 @@ $('dlgCloseBtn').addEventListener('click', () => {
    v3.6: uses its OWN "coin collect" sound so treasure pickup does not share
    the same chime as a correct Bible-answer. Different event, different cue. */
 function onTreasure(tx, ty){
+  // 2026-05-19 PM63b: capture color BEFORE clearing the tile so the
+  // per-color counter increments. Then check if THIS color is now
+  // fully collected → +1 heart bonus (parity with Scene 1 PM15).
+  const _color = _treasureColor(tx, ty);
   setTile(tx, ty, 0);
   game.treasureCount++;
   game.stars += 2;
+  _treasureColorCount[_color] = (_treasureColorCount[_color] || 0) + 1;
   updateHudTreasure(); updateHudStars();
+  // Color-complete heart bonus
+  try {
+    if (!_treasureColorBonus[_color]) {
+      let remaining = 0;
+      for (let y = 0; y < MAP_H; y++) {
+        for (let x = 0; x < MAP_W; x++) {
+          if (MAP[y] && MAP[y][x] === 5 && _treasureColor(x, y) === _color) remaining++;
+        }
+      }
+      if (remaining === 0) {
+        _treasureColorBonus[_color] = true;
+        if (game.hearts < 3) {
+          game.hearts++;
+          updateHudHearts();
+        }
+        setTimeout(() => {
+          try {
+            toast('💖 All ' + _color + ' bags collected! +1 heart for Moses!');
+            play('clearCombo') || play('rankReveal') || play('chime');
+          } catch(e){}
+        }, 700);
+      }
+    }
+  } catch(e){}
   // 2026-05-19 PM53: ported Scene 1's distinct treasure-chime; falls
   // back to coin if file missing. Toast removed — the chime + glitter
   // burst + HUD counter ticking is enough feedback (parity with the
@@ -9918,7 +10070,7 @@ function onOasisStep(tx, ty){
     showTipPopup('oasis', {
       icon: '💧',
       title: 'An Oasis!',
-      body: 'Oases in the desert restore Moses\'s heart. Step on the palm-and-pool tiles when your hearts are low. Each oasis can only be used once!',
+      body: 'An oasis in the desert restores Moses\'s heart. Step on a palm-and-pool tile when your hearts are low. Each oasis can only be used once!',
       pointAtTile: { tx: tx, ty: ty },
     });
   } catch(e){}
@@ -11069,7 +11221,7 @@ function updatePursuitScouts(dt){
       const _scoutOpts = {
         icon: '🏹',
         title: 'Pharaoh\'s Scout!',
-        body: 'Pharaoh\'s scouts hunt Moses across the desert. Get behind a boulder or into a cave to break their line of sight. They lose interest if you stay hidden long enough.',
+        body: 'Pharaoh\'s scouts hunt Moses across the desert. Get behind a boulder or into a cave to break their line of sight.',
       };
       if (closestScout) _scoutOpts.pointAtTile = { tx: closestScout.tx, ty: closestScout.ty };
       showTipPopup('scout', _scoutOpts);
@@ -13317,9 +13469,17 @@ function _clampSpriteY(rawY, spriteH){
 function _safeAnchorX(dx, dw){
   const raw = Math.round(dx + (TILE - dw) / 2);
   if (window._introPanActive) return raw;
-  // tile partially off-canvas → leave raw so sprite tracks tile
-  if (dx < 0 || dx + TILE > CANVAS_W) return raw;
-  // tile fully on-canvas: keep sprite within viewport with 4-px guard
+  // 2026-05-19 PM63b (Jane: "circled sprites are still cut on the right.
+  // remove compression and rework and fix it. i am going on saying").
+  // PM63's original "tile partially off-canvas → return raw" clause
+  // silently passed RIGHT-EDGE tiles through unclamped, so wide sprites
+  // still bled past the canvas border. New rule: clamp whenever the
+  // TILE CENTER is on-canvas (covers fully-visible + half-visible tiles
+  // at either edge). Only fully off-canvas tile centers skip the clamp
+  // — that's exactly the PM55 "intro-pan jump" case we still need to
+  // avoid.
+  const tileCenterX = dx + TILE / 2;
+  if (tileCenterX < 0 || tileCenterX > CANVAS_W) return raw;
   if (raw + dw > CANVAS_W - 4) return Math.max(2, CANVAS_W - 4 - dw);
   if (raw < 2) return 2;
   return raw;
@@ -13374,13 +13534,11 @@ function drawTile(t, dx, dy, tx, ty){
       // v3.4.1 LANE 2+ Jane 2026-04-24: revised. 2.2x sprawled too far on
       // wide viewports. 1.5x is visibly larger than the original 1.0x but
       // doesn't crowd.
-      // 2026-05-19 PM63 (Jane: "scene looks sparse, sprites not clear").
-      // Density bumped 1/48 → 1/20 so palm shadows accent the play zone
-      // instead of feeling like rare blips. Still under cactus density
-      // (1/14) so the desert reads as cactus-dominant with shade pools.
+      // 2026-05-19 PM63b: same Wang-hash randomization as the cactus
+      // sprinkle so palm shadows don't form diagonal stripes either.
       if (tx > 2 && tx < 37) {
-        const decorHash = (tx*31 + ty*53) % 20;
-        if (decorHash === 0 && IMG.palmShadow && IMG.palmShadow.complete && IMG.palmShadow.naturalWidth) {
+        const _ph1 = ((tx * 2246822519) ^ (ty * 3266489917)) >>> 0;
+        if ((_ph1 % 100) < 5 && IMG.palmShadow && IMG.palmShadow.complete && IMG.palmShadow.naturalWidth) {
           ctx.save();
           ctx.globalAlpha = 0.70;
           const psSize = TILE * 1.7;
@@ -13393,28 +13551,35 @@ function drawTile(t, dx, dy, tx, ty){
           );
           ctx.restore();
         }
-        // v3.13 Jane 2026-04-25: desert cactus decor sprinkle. Different hash
-        // bucket from palm shadow so they don't co-occupy.
-        // 2026-05-19 PM63 (Jane: "cactus not seen ... scene looks sparse,
-        // sprites not clear"). Density bumped 1/36 → 1/14 (~2.5×) and
-        // scale 1.15 → 1.45 × TILE so the desert reads as a LIVING
-        // landscape, not empty sand. Restricted to cols 5-34 (was 5-32)
-        // for a touch more coverage near the eastern oasis cluster.
-        const cactusHash = (tx*37 + ty*47) % 14;
-        if (cactusHash === 0 && tx >= 5 && tx <= 34 && IMG.desertCactus && IMG.desertCactus.complete && IMG.desertCactus.naturalWidth) {
+        // v3.13 Jane 2026-04-25: desert cactus decor sprinkle.
+        // 2026-05-19 PM63b (Jane: "the cacti are in a line"). The old
+        // hash `(tx*37 + ty*47) % N` produces visible diagonal STRIPES
+        // because both multipliers are small primes — when N is small,
+        // the modular set forms a near-linear lattice. Replaced with a
+        // Wang-style hash that mixes 32-bit constants + XOR so the cactus
+        // positions look genuinely scattered. Also added per-tile X/Y
+        // jitter (±0.18 × TILE) so neighbouring cacti don't line up on
+        // the grid even when they do co-occur.
+        const _h1 = ((tx * 2654435761) ^ (ty * 40503)) >>> 0;
+        const _h2 = ((tx * 374761393) ^ (ty * 668265263)) >>> 0;
+        const cactusBucket = _h1 % 100;
+        if (cactusBucket < 7 && tx >= 5 && tx <= 34 && IMG.desertCactus && IMG.desertCactus.complete && IMG.desertCactus.naturalWidth) {
           ctx.save();
           ctx.globalAlpha = 0.95;
           const cSz = TILE * 1.45;
           const cAR = (IMG.desertCactus.naturalWidth || 1) / (IMG.desertCactus.naturalHeight || 1);
           const cH = Math.round(cSz);
           const cW = Math.round(cSz * cAR);
+          // per-tile jitter so cacti don't snap to grid centerlines
+          const _jx = (((_h2 & 0xff) / 255) - 0.5) * TILE * 0.36;
+          const _jy = ((((_h2 >> 8) & 0xff) / 255) - 0.5) * TILE * 0.16;
           ctx.shadowColor = 'rgba(20,30,10,0.35)';
           ctx.shadowBlur = 4;
           ctx.shadowOffsetY = 2;
           ctx.drawImage(
             IMG.desertCactus,
-            _safeAnchorX(dx, cW),
-            Math.round(dy + TILE - cH + 2),
+            _safeAnchorX(dx + _jx, cW),
+            Math.round(dy + TILE - cH + 2 + _jy),
             cW,
             cH
           );
@@ -14102,9 +14267,52 @@ function drawTile(t, dx, dy, tx, ty){
       halo.addColorStop(1, 'rgba(200,140,60,0)');
       ctx.fillStyle = halo;
       ctx.beginPath(); ctx.arc(ecx, ecy, TILE, 0, Math.PI*2); ctx.fill();
-      // bail before painting the exit sprite if the gate is still unsolved —
-      // checkpoint tablet renders on top via drawChallengeGate.
-      if (!_showExitArt) return;
+      // 2026-05-19 PM63b (Jane: "where is the jigsaw"). When the exit
+      // art is hidden (jigsaw not yet solved), draw a CARAVAN-MAP-PIECE
+      // sigil on the exit tile so the kid sees something is hidden
+      // there. Three small puzzle pieces float in a circle with a
+      // pulsing amber glow — visual promise of the jigsaw modal that
+      // unlocks once they collect all 3 map fragments + clear gates.
+      if (!_showExitArt) {
+        ctx.save();
+        const _jPulse = 0.6 + 0.4 * Math.sin(now / 280);
+        const _jR = TILE * 0.32;
+        const _jG = ctx.createRadialGradient(ecx, ecy, 2, ecx, ecy, _jR * 2);
+        _jG.addColorStop(0, 'rgba(255,225,140,' + (0.55 * _jPulse).toFixed(2) + ')');
+        _jG.addColorStop(1, 'rgba(255,180,80,0)');
+        ctx.fillStyle = _jG;
+        ctx.beginPath(); ctx.arc(ecx, ecy, _jR * 2, 0, Math.PI*2); ctx.fill();
+        // three puzzle-piece dots arranged around exit center
+        const _jColors = ['#a865e0', '#5fc8d2', '#6cd28a']; // amethyst, turquoise, emerald
+        for (let i = 0; i < 3; i++) {
+          const ang = (i / 3) * Math.PI * 2 - Math.PI / 2 + now / 1400;
+          const px = ecx + Math.cos(ang) * _jR * 0.85;
+          const py = ecy + Math.sin(ang) * _jR * 0.85;
+          ctx.fillStyle = _jColors[i];
+          ctx.strokeStyle = 'rgba(60,30,5,0.8)';
+          ctx.lineWidth = 1.5;
+          // rounded square (puzzle-piece-ish)
+          const _sz = TILE * 0.20;
+          ctx.beginPath();
+          if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(px - _sz/2, py - _sz/2, _sz, _sz, 4);
+          } else {
+            ctx.rect(px - _sz/2, py - _sz/2, _sz, _sz);
+          }
+          ctx.fill(); ctx.stroke();
+        }
+        // small "?" badge at center
+        ctx.fillStyle = '#fff8c8';
+        ctx.strokeStyle = '#5a2a06';
+        ctx.lineWidth = 2.5;
+        ctx.font = 'bold ' + Math.max(13, Math.floor(TILE * 0.42)) + 'px Georgia';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.strokeText('?', ecx, ecy);
+        ctx.fillText('?', ecx, ecy);
+        ctx.restore();
+        return;
+      }
       // v3.19 Jane 2026-04-25: ALL east-edge tile-7 tiles use
       // `new desert exit.png` (per Jane: "the exit needs to be new desert
       // exit.png. not midian one"). midian.png is reserved exclusively
