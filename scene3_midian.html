@@ -2824,6 +2824,9 @@ const IMG_SRC = {
   shepherdRight: 'assets/images/rude%20shepherd%20right%20facing.png',
   shepherdBack:  'assets/images/rude%20shepherd%20back%20facing.png',
   shepherdLeftAlt: 'assets/images/rude%20shepherd%20left%20facing%202.png',
+  // Well-race "heaving on the rope" poses (Moses faces right, shepherd faces left — a mirrored pair):
+  mosesPull: 'assets/images/moses%20right%20facing%20with%20rope.png',
+  shepPull:  'assets/images/orange%20shepherd%20heave%203%20with%20rope.png',
   // SHEPHERD 2 — front view only (used at 2nd patrol post for visual variety):
   shepherd2Front: 'assets/images/shepherd%202%20front.png',
   // SHEPHERD 3 — front view only (used at 3rd patrol post):
@@ -7199,9 +7202,9 @@ const _pulley = {
   stealActive: false, stealTimer: 0, nextSteal: 5, shepStun: 0, shepLunge: 0,
   // aim / projectile
   aiming: false, aimX: 0, aimY: 0, proj: null, curWind: 0,
-  L: { x: 64, y: 158 },                       // Moses' toss point (his hands)
-  TR: { x: 118, y: 252, w: 150, h: 36 },      // Moses' trough (the target)
-  SR: { x: 312, y: 252, w: 150, h: 36 },      // rude shepherd's trough
+  L: { x: 120, y: 214 },                      // Moses' toss point (bucket at his well)
+  TR: { x: 178, y: 252, w: 122, h: 36 },      // Moses' trough (the target)
+  SR: { x: 336, y: 252, w: 134, h: 36 },      // rude shepherd's trough
   GROUND: 252, MAXDRAG: 150, GRAV: 900,
 };
 function _pulleyCfg() {
@@ -7372,6 +7375,31 @@ function _pTrough(c, x, y, w, h, fill, mine, now) {
   c.fillStyle = '#fff'; c.font = 'bold 15px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillText(Math.round(fill) + '%', x + w / 2, y + h / 2);
 }
+// A small stone well with a pulley wheel + a bobbing bucket — the rope from the
+// character's hands runs down into its mouth. Returns the bucket's screen point.
+function _pWell(c, cx, baseY, bob) {
+  bob = bob || 0;
+  // stone body + dark mouth
+  c.fillStyle = '#7c5d3c'; c.fillRect(cx - 30, baseY - 20, 60, 26);
+  c.fillStyle = '#8a6a45'; c.beginPath(); c.ellipse(cx, baseY + 6, 32, 9, 0, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = '#5a4128'; c.lineWidth = 1; for (let i = -30; i < 30; i += 12) c.strokeRect(cx + i, baseY - 20, 12, 26);
+  c.fillStyle = '#3a2c1c'; c.beginPath(); c.ellipse(cx, baseY - 20, 28, 8, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(60,150,210,0.55)'; c.beginPath(); c.ellipse(cx, baseY - 19, 20, 5, 0, 0, Math.PI * 2); c.fill();
+  // posts + cross-beam + pulley wheel
+  c.strokeStyle = '#5a3f24'; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(cx - 25, baseY - 18); c.lineTo(cx - 21, baseY - 50);
+  c.moveTo(cx + 25, baseY - 18); c.lineTo(cx + 21, baseY - 50);
+  c.moveTo(cx - 24, baseY - 50); c.lineTo(cx + 24, baseY - 50); c.stroke();
+  c.fillStyle = '#7a5a30'; c.beginPath(); c.arc(cx, baseY - 50, 5, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#caa46a'; c.beginPath(); c.arc(cx, baseY - 50, 2.4, 0, Math.PI * 2); c.fill();
+  // rope from wheel down to the bucket + the bucket itself (bobs on a heave)
+  const by = baseY - 30 - bob;
+  c.strokeStyle = '#caa46a'; c.lineWidth = 2; c.beginPath(); c.moveTo(cx, baseY - 50); c.lineTo(cx, by); c.stroke();
+  if (!_pDraw(c, 'wellBucket', cx - 12, by, 24, 22)) {
+    c.fillStyle = '#8a4a1a'; c.fillRect(cx - 11, by, 22, 18);
+  }
+  return { x: cx, y: by + 4 };
+}
 function _pulleyFrame(now) {
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
   const canvas = document.getElementById('pulleyCanvas');
@@ -7448,30 +7476,27 @@ function _pulleyFrame(now) {
     c.fillStyle = '#cda866'; c.fillRect(-4, 196, W + 8, H - 192);
   }
   c.fillStyle = 'rgba(255,240,180,0.5)'; c.beginPath(); c.arc(W - 54, 44, 30, 0, Math.PI * 2); c.fill();
-  // background well + daughters (Moses' supporters)
-  _pDraw(c, ['midianWell', 'wellMouth', 'color well'], 198, 70, 86, 110);
-  _pDraw(c, 'daughter1', 300, 96, 34, 52);
-  _pDraw(c, 'daughter2', 334, 100, 32, 48);
+  // daughters cheering in the far background (Moses' supporters)
+  _pDraw(c, 'daughter1', 214, 96, 30, 48);
+  _pDraw(c, 'daughter2', 244, 100, 28, 44);
 
-  // ---- Moses side (left) ----
-  _pDraw(c, ['sheep', 'sheepRight'], 196, 208, 54, 44);
-  _pDraw(c, ['lamb', 'lambAlt'], 232, 226, 30, 24);
-  _pDraw(c, ['mosesFront', 'moses', 'mosesRight'], 6, 150, 76, 100);
-  // bobbing bucket in Moses' hands (the launch point)
-  if (!_pDraw(c, 'wellBucket', _pulley.L.x - 14, _pulley.L.y - 12 + _pulley.bucketBob, 28, 28)) {
-    c.fillStyle = '#8a4a1a'; c.beginPath(); c.arc(_pulley.L.x, _pulley.L.y + _pulley.bucketBob, 12, 0, Math.PI * 2); c.fill();
-  }
+  // ---- Moses side (left): he heaves the rope; water is drawn at his well ----
+  _pDraw(c, ['sheep', 'sheepRight'], 150, 214, 48, 40);
+  _pDraw(c, ['lamb', 'lambAlt'], 184, 228, 26, 22);
+  _pDraw(c, ['mosesPull', 'mosesRight', 'mosesFront', 'moses'], 0, 138, 132, 132);
+  _pWell(c, _pulley.L.x, _pulley.L.y + 18, _pulley.bucketBob);   // well + pulley + bucket at the launch point
   _pTrough(c, _pulley.TR.x, _pulley.TR.y, _pulley.TR.w, _pulley.TR.h, _pulley.mosesFill, true, now);
   c.fillStyle = '#cfeaff'; c.font = 'bold 12px Georgia'; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
-  c.fillText('MOSES (YOU)', 8, 148);
+  c.fillText('MOSES (YOU)', 8, 132);
 
-  // ---- Rude shepherd side (right) ----
-  _pDraw(c, ['goat'], 392, 208, 50, 44);
-  const lunge = _pulley.shepLunge * 22;
-  _pDraw(c, ['shepherdLeft', 'shepherdFront'], 396 - lunge, 150, 76, 100, _pImg('shepherdLeft') ? false : true);
+  // ---- Rude shepherd side (right): mirror — heaving his own rope ----
+  _pDraw(c, ['goat'], 300, 214, 48, 40);
+  const lunge = _pulley.shepLunge * 20;
+  _pDraw(c, ['shepPull', 'shepherdLeft', 'shepherdFront'], 348 + lunge, 138, 132, 132, _pImg('shepPull') ? false : (_pImg('shepherdLeft') ? false : true));
+  _pWell(c, 410, 232, _pulley.shepLunge * 8);
   _pTrough(c, _pulley.SR.x, _pulley.SR.y, _pulley.SR.w, _pulley.SR.h, _pulley.shepFill, false, now);
   c.fillStyle = '#ffd0b0'; c.font = 'bold 12px Georgia'; c.textAlign = 'right'; c.textBaseline = 'alphabetic';
-  c.fillText('RUDE SHEPHERD', W - 8, 148);
+  c.fillText('RUDE SHEPHERD', W - 8, 132);
 
   // target glow on Moses' trough opening
   if (!_pulley.over && !_pulley.proj) {
