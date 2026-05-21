@@ -13597,7 +13597,15 @@ function render(){
   // version bump (which deletes the asset cache and re-fetches all
   // images). img.onerror also bumps imagesReady, so this can never hang
   // on a missing file. Once ready, normal rendering resumes.
-  if (game.scene === 2 && game.state === 'playing' && imagesReady < imagesTotal) {
+  // 2026-05-21 PM63l (Jane: still spriteless — caught DURING the intro
+  // camera pan, where game.state === 'paused', so the PM63k gate (which
+  // only checked 'playing') never fired). Broadened: gate whenever the
+  // gameplay canvas is the visible view — playing, paused, peek, OR the
+  // intro pan — and sprites aren't ready. (Cinematic/cover states have
+  // their own overlay covering the canvas, so they don't need the gate.)
+  const _gameplayVisible = (game.state === 'playing' || game.state === 'paused'
+                            || game.state === 'peek' || !!window._introPanActive);
+  if (game.scene === 2 && _gameplayVisible && imagesReady < imagesTotal) {
     try {
       ctx.fillStyle = '#2a1606';
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
