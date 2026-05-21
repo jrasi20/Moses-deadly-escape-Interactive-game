@@ -8708,7 +8708,7 @@ const UNLOCK_TIERS = [
   { threshold: 175, resource: 'treasures', key: 'guardFreeze',   label: '❄️ Foe Freeze' },
   { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '👁️ Royal Vision' },
   { threshold: 350, resource: 'treasures', key: 'truthSeeker',   label: '📖 Truth Seeker' },
-  { threshold:  10, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom' },
+  { threshold:   5, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom' },
 ];
 function _loadLifetimeTreasures(){ try { return parseInt(localStorage.getItem(_LIFETIME_TREASURES_KEY) || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadLifetimeCrowns(){    try { return parseInt(localStorage.getItem(_LIFETIME_CROWNS_KEY)    || '0', 10) || 0; } catch(e){ return 0; } }
@@ -8903,7 +8903,7 @@ function _renderJourneyPanel(){
     { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
     { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
-    { th:10,  res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
+    { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
   const resVal = { treasures: t, crowns: c, scrolls: s };
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'

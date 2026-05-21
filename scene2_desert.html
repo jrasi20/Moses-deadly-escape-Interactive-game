@@ -551,6 +551,33 @@
   }
   .jigsaw-verse.show { opacity: 1; transform: translateY(0); }
   .jigsaw-verse small { display:block; color:#ffd976; font-style:normal; font-size:0.82em; margin-top:3px; letter-spacing:0.5px; }
+  /* 2026-05-21 PM64 (Jane: "show confetti blast there for a cheer ... the
+     'thy word is a lamp unto my feet' part is very quick and hardly
+     noticeable"). The verse now lands with a golden pop so it reads as a
+     celebration, and a confetti layer rains over the solved board. */
+  .jigsaw-verse.celebrate {
+    animation: jigsawVersePop 0.8s cubic-bezier(.2,1.4,.4,1) both;
+    color:#fff7d6; font-size: clamp(13px, 3.4vw, 16.5px);
+    text-shadow: 0 0 12px rgba(255,215,0,0.55);
+  }
+  @keyframes jigsawVersePop {
+    0%   { opacity:0; transform: translateY(8px) scale(0.7); }
+    55%  { opacity:1; transform: translateY(0) scale(1.12); }
+    100% { opacity:1; transform: translateY(0) scale(1); }
+  }
+  .jigsaw-confetti {
+    position:absolute; inset:0; overflow:hidden; pointer-events:none;
+    z-index: 40; border-radius: inherit;
+  }
+  .confetti-bit {
+    position:absolute; top:-14px; width:9px; height:14px; border-radius:2px;
+    opacity:0.95; will-change: transform, opacity;
+    animation: confettiFall var(--cdur,2.4s) ease-in var(--cdelay,0s) forwards;
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(-10px) translateX(0) rotate(0deg); opacity:1; }
+    100% { transform: translateY(var(--cfall,420px)) translateX(var(--cdrift,0px)) rotate(var(--crot,540deg)); opacity:0; }
+  }
   /* 2026-05-21 PM63i (Jane: "the colors on the midian square are blending
      against the background. make these squares larger"). Slots widened
      18%→23% and the dashed outline darkened + thickened with a soft
@@ -1746,6 +1773,11 @@
   }
   .ch-spot-tile:hover { background:#fff1c2; transform:translateY(-2px); }
   .ch-spot-tile:active { transform:scale(0.97); }
+  /* 2026-05-21 Jane: tapped spot tiles showed no selected state (only
+     .ch-option had .correct/.wrong styling). Green = right, red = wrong,
+     with a bright ring so the kid clearly sees which tile they picked. */
+  .ch-spot-tile.correct { background:#2e8b3e; border-color:#FFD700; color:#fff6cc; box-shadow:0 0 0 3px rgba(255,215,0,0.55); }
+  .ch-spot-tile.wrong   { background:#b71c1c; border-color:#ff8a80; color:#fff; box-shadow:0 0 0 3px rgba(255,138,128,0.5); }
   /* -- PAIR: flex-wrap grid of emoji tiles -- */
   .ch-pair-grid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:8px auto; max-width:360px; }
   .ch-pair-tile {
@@ -1759,6 +1791,8 @@
   .ch-pair-tile img { max-width:100%; max-height:100%; object-fit:contain; }
   .ch-pair-tile:hover { transform:translateY(-3px); background:#fff1c2; }
   .ch-pair-tile:active { transform:scale(0.96); }
+  .ch-pair-tile.correct { background:#2e8b3e; border-color:#FFD700; color:#fff6cc; box-shadow:0 0 0 3px rgba(255,215,0,0.55); }
+  .ch-pair-tile.wrong   { background:#b71c1c; border-color:#ff8a80; color:#fff; box-shadow:0 0 0 3px rgba(255,138,128,0.5); }
   /* -- COUNT: scene grid above, number buttons below -- */
   .ch-count-scene {
     display:flex; flex-wrap:wrap; gap:4px; justify-content:center;
@@ -3415,7 +3449,7 @@
 <div class="scene-banner" id="sceneBanner">
   <div class="scene-banner-box">
     <h1>SCENE 2 COMPLETE</h1>
-    <p>Moses has reached the Midian well!</p>
+    <p>Moses has reached Midian!</p>
     <p style="color:#ffd700;font-weight:700;">A Truth Card has been added to your collection!</p>
   </div>
 </div>
@@ -3525,6 +3559,9 @@
      Alerts route to 'danger alert.mp3'; gameplay hints route to 'friendly
      alert.mp3'. Challenge modal gets a quiet bed via audNarration. -->
 <audio id="audBgm" loop preload="auto" src="assets/audio/desert%20tension.mp3"></audio>
+<!-- 2026-05-21 PM64 (Jane: "while staying on the win modal, play some music").
+     Calm Midian theme loops under the victory modal. -->
+<audio id="audWinMusic" loop preload="auto" src="assets/audio/midian%20calm.mp3"></audio>
 <audio id="audFootstep" preload="auto" src="assets/audio/guard%20footsteps.mp3"></audio>
 <audio id="audSword" preload="auto" src="assets/audio/sword%20clink.mp3"></audio>
 <audio id="audDog" preload="auto" src="assets/audio/dog%20bark.mp3"></audio>
@@ -3541,6 +3578,10 @@
 <audio id="audGate" preload="auto" src="assets/audio/gate%20unlock.mp3"></audio>
 <audio id="audWin" preload="auto" src="assets/audio/win%20sound.mp3"></audio>
 <audio id="audClick" preload="auto" src="assets/audio/magic%20button%20click%202.mp3"></audio>
+<!-- 2026-05-21 PM64 (Jane: "the sfx while rotating the puzzle pieces are not
+     heard. use click sound.mp3"). Dedicated element so the jigsaw rotate has
+     its own tactile click without changing the general UI button click. -->
+<audio id="audClickSound" preload="auto" src="assets/audio/click%20sound.mp3"></audio>
 <!-- v3.4: character-input click (letter taps, match/unscramble/sequence) -->
 <audio id="audTap" preload="auto" src="assets/audio/click.mp3"></audio>
 <!-- v3.4: fast tension music that kicks in when guards become 'alerted' -->
@@ -3795,7 +3836,9 @@ const audio = {
   uhoh:      $('audUhOh'),
   gate:      $('audGate'),
   win:       $('audWin'),
+  winMusic:  $('audWinMusic'),      // looping calm theme under the win modal (PM64)
   click:     $('audClick'),
+  clickSound: $('audClickSound'),  // jigsaw piece rotate (PM64)
   tap:       $('audTap'),       // v3.4: character-input clicks
   alerted:   $('audAlerted'),   // v3.4: fast tension when a guard is alerted
   narration:    $('audNarration'),   // v3.6: cinematic / story-panel narration bed
@@ -3865,6 +3908,7 @@ audio.uhoh.volume = 0.7;
 audio.gate.volume = 0.7;
 audio.win.volume = 0.85;
 audio.click.volume = 0.5;
+if (audio.clickSound) audio.clickSound.volume = 0.7;  // jigsaw rotate — clearly audible over puzzle bed
 if (audio.tap)       audio.tap.volume = 0.4;
 if (audio.alerted)   audio.alerted.volume = 0.42;
 if (audio.narration) audio.narration.volume = 0.32;  // v3.6: soft bed under story text
@@ -5141,10 +5185,11 @@ const CHALLENGE_BANK = {
       answer:'Dinosaur',
       verse:'Dinosaurs are not named in the Moses story.' },
     { id:'eSp3', type:'spot',
-      q:'Which is NOT a river creature from the Nile story?',
-      options:['Crocodile','Fish','Frog','Penguin'],
+      q:'Which animal is NOT in the Bible\'s Moses story?',
+      options:['Frog','Sheep','Snake','Penguin'],
       answer:'Penguin',
-      verse:'Penguins live in cold places, not the Nile.' },
+      clue:'Frogs filled Egypt in a plague, Moses kept sheep in Midian, and his staff turned into a snake. One cold-weather bird never appears -- that is the odd one out.',
+      verse:'Penguins live in icy lands, far from Egypt and Midian.' },
     // --- Count ---
     { id:'eC1', type:'count',
       q:'Count the water pots at the well (Moses helped Jethro\'s daughters draw water):',
@@ -7143,8 +7188,11 @@ function _beginGameplayWhenReady(){
     const overlay = document.getElementById('preloadOverlay');
     if (overlay) overlay.classList.add('active');
     _pendingBeginTap = () => { try { if (overlay) overlay.classList.remove('active'); } catch(e){} _go(); };
-    // 12 s safety ceiling so a stuck asset never strands the kid.
-    setTimeout(() => { if (_pendingBeginTap) { const fn = _pendingBeginTap; _pendingBeginTap = null; fn(); } }, 12000);
+    // Safety ceiling so a stuck asset never strands the kid. 2026-05-21 PM64:
+    // bumped 12s -> 16s so it fires AFTER the 15s sprite watchdog (which
+    // re-fetches a stuck sprite) — that way a forced start never lands on a
+    // spriteless map; the watchdog gets first chance to recover.
+    setTimeout(() => { if (_pendingBeginTap) { const fn = _pendingBeginTap; _pendingBeginTap = null; fn(); } }, 16000);
   } else {
     _go();
   }
@@ -8129,6 +8177,9 @@ function _wireJigsawPiece(pieceEl){
     try { pieceEl.releasePointerCapture(e.pointerId); } catch(_){}
     if (!moved) {
       // Tap (no drag) → rotate 90°.
+      // 2026-05-21 PM64 (Jane: "the sfx while rotating the puzzle pieces are
+      // not heard. use click sound.mp3"). Tactile click on every turn.
+      try { play('clickSound') || play('click'); } catch(_){}
       const cur = parseInt(pieceEl.dataset.rotation, 10) || 0;
       const next = (cur + 90) % 360;
       pieceEl.dataset.rotation = String(next);
@@ -8234,17 +8285,55 @@ function _playMapReveal(){
   if (title)  title.textContent = 'The path is revealed!';
   if (status) status.textContent = 'God lights the way to Midian ✨';
   try { play('puzzleComplete') || play('victoryChime') || play('success'); } catch(e){}
-  // verse lands once the golden route has finished drawing
-  setTimeout(() => { try { if (verse) verse.classList.add('show'); } catch(_){} }, 1500);
-  // hold on the glowing map, then close and continue to the world pan
+  // 2026-05-21 PM64 (Jane: "show confetti blast there for a cheer ... the
+  // verse is very quick and hardly noticeable. linger that celebration").
+  // verse lands once the golden route has finished drawing — now with a
+  // golden pop, a confetti rain, and the win-sparkle sfx.
+  setTimeout(() => {
+    try { if (verse) { verse.classList.add('show'); verse.classList.add('celebrate'); } } catch(_){}
+    try { play('confetti'); } catch(_){}
+    try { _burstJigsawConfetti(); } catch(_){}
+  }, 1500);
+  // Second confetti pop so the cheer keeps going while kids read the verse.
+  setTimeout(() => { try { _burstJigsawConfetti(); } catch(_){} }, 3000);
+  // hold on the glowing map + verse much longer (was 3600ms — the verse only
+  // got ~2.1s of screen time), then close and continue to the world pan.
   setTimeout(() => {
     try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(_){}
     const modal = document.getElementById('jigsawModal');
     if (modal) modal.classList.remove('active');
     if (board) board.classList.remove('revealed');
-    if (verse) verse.classList.remove('show');
+    if (verse) { verse.classList.remove('show'); verse.classList.remove('celebrate'); }
     _showMosesKeepGoing();
-  }, 3600);
+  }, 6200);
+}
+// 2026-05-21 PM64: DOM confetti rain over the jigsaw modal (canvas glitter
+// can't show over a DOM overlay). Appends to the full-screen #jigsawModal so
+// bits fall across the whole screen without clipping the draggable pieces.
+function _burstJigsawConfetti(){
+  try {
+    const host = document.getElementById('jigsawModal');
+    if (!host) return;
+    const layer = document.createElement('div');
+    layer.className = 'jigsaw-confetti';
+    const colors = ['#FFD700','#ff6b9d','#5ad1ff','#7CFC8A','#ffae42','#c792ff','#fff2c4'];
+    const H = window.innerHeight || 640;
+    for (let i = 0; i < 46; i++){
+      const bit = document.createElement('div');
+      bit.className = 'confetti-bit';
+      bit.style.left = (Math.random()*100) + '%';
+      bit.style.background = colors[i % colors.length];
+      bit.style.setProperty('--cdur',  (1.8 + Math.random()*1.8).toFixed(2) + 's');
+      bit.style.setProperty('--cdelay',(Math.random()*0.5).toFixed(2) + 's');
+      bit.style.setProperty('--cfall', Math.round(H * (0.7 + Math.random()*0.35)) + 'px');
+      bit.style.setProperty('--cdrift',Math.round((Math.random()-0.5)*160) + 'px');
+      bit.style.setProperty('--crot',  Math.round((Math.random()-0.5)*900) + 'deg');
+      if (Math.random() < 0.4) bit.style.borderRadius = '50%';
+      layer.appendChild(bit);
+    }
+    host.appendChild(layer);
+    setTimeout(() => { try { layer.remove(); } catch(_){} }, 4500);
+  } catch(_){}
 }
 function _showMosesKeepGoing(){
   let overlay = document.getElementById('mosesKeepGoing');
@@ -8477,6 +8566,13 @@ function triggerInteractable(obj){
     spawnGlitterBurstAtPlayer(20);
     try { play('chimeChomp') || play('coin'); } catch(e){}
     const have = (game.mapFragments[1]?1:0) + (game.mapFragments[2]?1:0) + (game.mapFragments[3]?1:0);
+    // 2026-05-21 PM64 (Jane: "we don't have any scrolls ... the 3 torn
+    // parchments will be the scroll in desert scene"). The desert has no
+    // scroll collectable, so the scroll-gated power (Scribe's Wisdom) was
+    // unreachable here. Treat each torn caravan-map parchment as one scroll
+    // toward the cross-scene lifetime scroll counter + power unlock.
+    try { _addLifetimeScrolls(1); } catch(e){}
+    try { _refreshUnlockButtons(); } catch(e){}
     try { updateHudMapFragments(); } catch(e){}
     try {
       toast(have === 3
@@ -8520,6 +8616,12 @@ function triggerInteractable(obj){
   } else if (obj.reward === 'stars50') {
     game.stars += 50;
     game.crownFound = true;
+    // 2026-05-21 PM64 (Jane: "i collected a crown in scene 2 but win modal
+    // says 0 crowns"). The hidden crown set game.crownFound (which lights the
+    // badge) but never bumped the cross-scene lifetime crown counter, so the
+    // win-modal tally + the 4-crown Royal Vision unlock both stayed at 0.
+    try { _addLifetimeCrowns(1); } catch(e){}
+    try { _refreshUnlockButtons(); } catch(e){}
     updateHudStars();
     try { play('collectCrown'); } catch(e){}  // v2.2.7 crown-specific fanfare
     try { play('win') || play('success'); } catch(e){}
@@ -8979,6 +9081,11 @@ function getHintForQuestion(q){
 // images (text clue stands alone). Add new image triggers here as new
 // scenes drop in their backstory art.
 function getHintImagesForQuestion(q){
+  // 2026-05-21 Jane ("what is this? remove irrelevant ones"): scenario art was
+  // leaking into puzzle questions — e.g. a baby-Moses image appeared under an
+  // odd-one-out question only because the prompt mentioned the "Nile". Backstory
+  // imagery only makes sense for knowledge questions, so restrict it to those.
+  if (!(q.type === 'trivia' || q.type === 'fill' || q.type === 'tf')) return [];
   const text = ((q.q || q.prompt || '') + ' ' + (q.clue || '')).toLowerCase();
   const has = (...words) => words.some(w => new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i').test(text));
   const out = [];
@@ -10589,7 +10696,7 @@ const UNLOCK_TIERS = [
   { threshold: 350, resource: 'treasures', key: 'truthSeeker',
     label: '📖 Truth Seeker',    cooldownMs: 60000,
     desc: 'On the next Bible Gate: clue is free + 2 wrong options greyed out.' },
-  { threshold:  10, resource: 'scrolls',   key: 'scribesWisdom',
+  { threshold:   5, resource: 'scrolls',   key: 'scribesWisdom',
     label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000,
     desc: 'Skip the next Bible Gate (counts as solved). Recharges every 90 s.' },
 ];
@@ -11004,6 +11111,7 @@ function showWin(){
       try { play('levelUp'); } catch(e){}  // v2.2.7 victory-modal fanfare
       try { play('confetti'); } catch(e){}  // PM60: parity with Scene 1 win sparkle
       $('winModal').classList.add('active');
+      try { _startWinMusic(); } catch(e){}  // PM64: calm theme under the modal
       try { _personalizeWinModal(); } catch(e){}
       // v3.4: no chest animation here -- chest plays mid-scene only so the
       // finish modal is compact and never cut off by small screens.
@@ -11013,8 +11121,27 @@ function showWin(){
     try { play('levelUp'); } catch(e){}  // v2.2.7 victory-modal fanfare
     try { play('confetti'); } catch(e){}
     $('winModal').classList.add('active');
+    try { _startWinMusic(); } catch(e){}  // PM64: calm theme under the modal
     try { _personalizeWinModal(); } catch(e){}
   }
+}
+// 2026-05-21 PM64: win-modal background music. The fanfares (win/levelUp/
+// confetti) are one-shot, so the modal sat in silence after ~2s. Loop a calm
+// Midian theme softly under it; _stopWinMusic() is called whenever the modal
+// is dismissed (Replay / Continue / Menu).
+function _startWinMusic(){
+  try {
+    if (audio.winMusic) {
+      audio.winMusic.currentTime = 0;
+      audio.winMusic.volume = 0.42;
+      audio.winMusic.loop = true;
+      // let the win fanfare ring first, then fade the bed in
+      setTimeout(() => { try { audio.winMusic.play().catch(()=>{}); } catch(e){} }, 900);
+    }
+  } catch(e){}
+}
+function _stopWinMusic(){
+  try { if (audio.winMusic) { audio.winMusic.pause(); audio.winMusic.currentTime = 0; } } catch(e){}
 }
 // 2026-05-19 PM59 (parity with Scene 1 PM51): personalized win-modal
 // block. Reads bek.kidName from localStorage (set by Scene 1's first-
@@ -11047,7 +11174,7 @@ function _personalizeWinModal(){
     verseBody = '"Moses fled from Pharaoh and went to live in Midian."';
     verseRef = '— Exodus 2:15';
   } else {
-    tag = 'You helped Moses escape the desert! God smiles on every brave step you took.';
+    tag = 'You helped Moses escape the desert!';
     verseBody = '"By faith he left Egypt, not fearing the king\'s anger; he persevered because he saw him who is invisible."';
     verseRef = '— Hebrews 11:27';
   }
@@ -11081,7 +11208,7 @@ function _renderJourneyPanel(){
     { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
     { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
-    { th:10,  res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
+    { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
   const resVal = { treasures: t, crowns: c, scrolls: s };
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
@@ -11159,6 +11286,7 @@ function openTransCinematic2() {
 })();
 $('winNextBtn').addEventListener('click', () => {
   play('click');
+  try { _stopWinMusic(); } catch(e){}
   $('winModal').classList.remove('active');
   openTransCinematic2();
 });
@@ -11186,11 +11314,13 @@ if (_midChestBtn) _midChestBtn.addEventListener('click', () => {
 });
 $('winReplayBtn').addEventListener('click', () => {
   play('click');
+  try { _stopWinMusic(); } catch(e){}
   restartScene();
 });
 const _winMenuBtn = $('winMenuBtn');
 if (_winMenuBtn) _winMenuBtn.addEventListener('click', () => {
   play('click');
+  try { _stopWinMusic(); } catch(e){}
   // Return to the cover page without a full reload (keeps access unlock intact)
   $('winModal').classList.remove('active');
   $('gamePage').classList.remove('active');
@@ -11722,8 +11852,11 @@ function togglePause(){
     // We fade it in at a gentle volume so it reads like a menu/cover theme.
     try {
       if (audio.narration) {
-        audio.narration.volume = 0.30;
+        // PM64 (Jane: "while on pause play some music") — was 0.30, too quiet
+        // to notice; bumped to 0.42 so the cover bed is clearly audible.
+        audio.narration.volume = 0.42;
         audio.narration.currentTime = 0;
+        audio.narration.loop = true;
         audio.narration.play().catch(()=>{});
       }
     } catch(e){}
@@ -14305,12 +14438,35 @@ function drawInteractable(obj){
     // no alpha change — servant stays solid both visually and in walk-check
   }
   // pedestal glow
-  const pulse = 0.35 + 0.25 * Math.sin(performance.now()/400 + obj.tx*3 + obj.ty);
+  // 2026-05-21 PM64 (Jane: "does it really glow on the tiles to interact? i
+  // have not seen it"). The old glow was a tiny 12px amber disc hidden behind
+  // the sprite. Now: a clearly visible pulsing halo on every active
+  // interactable that brightens into a bold green-gold ring the moment Moses
+  // is close enough — so kids see WHERE and WHEN to tap Interact.
   if (!obj.used) {
-    ctx.fillStyle = 'rgba(255,215,118,' + pulse.toFixed(2) + ')';
-    ctx.beginPath();
-    ctx.arc(dx+TILE/2, dy+TILE/2+4, 12, 0, Math.PI*2);
-    ctx.fill();
+    const _now = performance.now();
+    const cdCheb   = Math.max(Math.abs(obj.tx - player.tx), Math.abs(obj.ty - player.ty));
+    const orthoAdj = (Math.abs(obj.tx - player.tx) + Math.abs(obj.ty - player.ty)) <= 1;
+    const _wideGlow = { crown:1, truthchest:1, bread:1, jug:1, scroll:1, mapFragment:1 };
+    const canInteract = orthoAdj || (_wideGlow[obj.kind] && cdCheb <= 2);
+    const gcx = dx + TILE/2, gcy = dy + TILE/2 + 2;
+    const pulse = 0.5 + 0.35 * Math.sin(_now/360 + obj.tx*3 + obj.ty);
+    const baseR = TILE * (canInteract ? 0.78 : 0.55);
+    const halo = ctx.createRadialGradient(gcx, gcy, 2, gcx, gcy, baseR);
+    const ha = (canInteract ? 0.60 : 0.32) * pulse;
+    halo.addColorStop(0,   (canInteract ? 'rgba(150,255,170,' : 'rgba(255,215,118,') + ha.toFixed(2) + ')');
+    halo.addColorStop(0.6, (canInteract ? 'rgba(120,230,140,' : 'rgba(255,190,90,')  + (ha*0.4).toFixed(2) + ')');
+    halo.addColorStop(1,   'rgba(255,200,100,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(gcx, gcy, baseR, 0, Math.PI*2); ctx.fill();
+    if (canInteract) {
+      ctx.save();
+      const ringR = TILE * (0.52 + 0.10 * Math.sin(_now/200));
+      ctx.strokeStyle = 'rgba(140,255,160,' + (0.70 + 0.25*Math.sin(_now/180)).toFixed(2) + ')';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(gcx, gcy, ringR, 0, Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
   }
   // icon box
   if (obj.kind === 'servant') {
@@ -15782,10 +15938,14 @@ function drawTile(t, dx, dy, tx, ty){
         // working scale at ~1.85× TILE. PM54 reintroduced both
         // regressions for "richness"; this restores the known-good
         // pre-PM54 values.
-        const esH = TILE * 1.85;
+        // 2026-05-21 PM64 (Jane: "make the exit sprite larger"). Bumped
+        // 1.85× -> 2.2×. Safe: the sprite is RIGHT-anchored (right edge =
+        // tile right edge = canvas edge), so the extra size grows LEFT/UP
+        // into open sand (col 38), never past the canvas right edge.
+        const esH = TILE * 2.2;
         const esAR = (exitPNG.naturalWidth || 1) / (exitPNG.naturalHeight || 1);
         let esW = Math.round(esH * esAR);
-        const esWMax = Math.round(TILE * 1.8);
+        const esWMax = Math.round(TILE * 2.2);
         let esHInt = Math.round(esH);
         if (esW > esWMax) {
           esHInt = Math.round(esWMax / esAR);
@@ -15858,22 +16018,29 @@ function drawTile(t, dx, dy, tx, ty){
         // it's always readable against any tile background.
         ctx.save();
         const exitLabel = _allGatesSolved ? 'GO! EXIT' : 'EXIT';
-        ctx.font = 'bold 14px Georgia';
+        // 2026-05-21 PM64 (Jane: "GO EXIT is very small and is getting cut").
+        // Bigger font, and CLAMP the pill within the canvas: the exit tile is
+        // the far-right column, so a tile-centred pill spilled past the right
+        // edge and got clipped. Now the pill (and its centred text) are kept
+        // fully on-screen.
+        ctx.font = 'bold 17px Georgia';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const labelY = dy + TILE + 12;
+        const labelY = dy + TILE + 14;
         const lblTextW = ctx.measureText(exitLabel).width;
-        const pillW = lblTextW + 14, pillH = 18;
-        const pillX = dx + TILE/2 - pillW/2;
+        const pillW = lblTextW + 18, pillH = 22;
+        let pillX = dx + TILE/2 - pillW/2;
+        pillX = Math.max(4, Math.min(pillX, CANVAS_W - pillW - 4));
+        const pillCX = pillX + pillW/2;
         const pillY = labelY - pillH/2;
-        ctx.fillStyle = 'rgba(20,10,40,0.78)';
+        ctx.fillStyle = 'rgba(20,10,40,0.82)';
         if (typeof ctx.roundRect === 'function') {
-          ctx.beginPath(); ctx.roundRect(pillX, pillY, pillW, pillH, 9); ctx.fill();
+          ctx.beginPath(); ctx.roundRect(pillX, pillY, pillW, pillH, 10); ctx.fill();
         } else {
           ctx.fillRect(pillX, pillY, pillW, pillH);
         }
         ctx.fillStyle = _allGatesSolved ? '#7fff8a' : '#ffd976';
-        ctx.fillText(exitLabel, dx + TILE/2, labelY);
+        ctx.fillText(exitLabel, pillCX, labelY);
         ctx.restore();
         // v3.25 Jane 2026-04-26: GIANT pulsing arrow during the intro pan
         // HOLD — points HORIZONTALLY at the EXIT from the LEFT side so it
