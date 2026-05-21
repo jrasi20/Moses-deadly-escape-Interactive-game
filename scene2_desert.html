@@ -3285,8 +3285,15 @@
       <!-- START / EXIT pins on the parchment. PM63i: nudged inward
            (8%→12%, 90%→86%) so the wider label pills never clip the
            board edge, and wrapped text in a .pin-label pill. -->
-      <div class="jigsaw-pin start" style="left:12%;top:50%;"><span class="pin-dot"></span><span class="pin-label">START</span></div>
-      <div class="jigsaw-pin exit"  style="left:86%;top:50%;"><span class="pin-dot"></span><span class="pin-label">MIDIAN</span></div>
+      <!-- 2026-05-21 PM63n (Jane: "the start and midian labels should be
+           above the squares ... so kids can see the pattern present").
+           Moved the START/MIDIAN markers ABOVE slot 1 (centre 17.5%) and
+           slot 3 (centre 87.5%) — at top:15%, clear of the slots (top:34%)
+           — so each slot's ghost-hint pattern is fully visible. Label
+           sits ABOVE the dot now (flex column-reverse) so the pill never
+           dips back onto the square. -->
+      <div class="jigsaw-pin start label-above" style="left:17.5%;top:15%;"><span class="pin-label">START</span><span class="pin-dot"></span></div>
+      <div class="jigsaw-pin exit label-above"  style="left:87.5%;top:15%;"><span class="pin-label">MIDIAN</span><span class="pin-dot"></span></div>
       <!-- Faint dashed guide showing roughly where the trail will run -->
       <svg class="jigsaw-route" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
         <path d="M16,118 C60,110 130,150 200,146 C270,142 340,110 384,118"
@@ -8020,7 +8027,11 @@ function _openJigsawModal(){
   try {
     if (audio.puzzleBg) {
       audio.puzzleBg.currentTime = 0;
-      audio.puzzleBg.volume = 0.45;
+      // 2026-05-21 PM63n (Jane: "the sfx is too loud for that torn caravan
+      // map ... the sfx while rotating the pieces are all not heard.
+      // reduce the volume on that track"). Dropped 0.45 -> 0.16 so the
+      // rotate / snap / chime-chomp piece SFX sit clearly on top.
+      audio.puzzleBg.volume = 0.16;
       audio.puzzleBg.play().catch(()=>{});
     }
   } catch(e){}
@@ -10462,17 +10473,16 @@ function onTreasure(tx, ty){
   // can earn power-up unlocks by collecting bags in EITHER scene.
   try { _addLifetimeTreasures(1); } catch(e){}
   try { _refreshUnlockButtons(); } catch(e){}
-  // 2026-05-19 PM57: first-treasure tutorial popup.
-  // 2026-05-19 PM58: point at Moses's current tile (where the bag
-  // just was) so the halo + finger reinforce what the kid just did.
-  try {
-    showTipPopup('treasure', {
-      icon: '💎',
-      title: 'A Desert Treasure',
-      body: 'Treasures hidden in the sand give you +2 stars. Look out for more as you cross the dunes!',
-      pointAtTile: { tx: tx, ty: ty },
-    });
-  } catch(e){}
+  // 2026-05-21 PM63n (Jane: "there is no treasure bag around the area when
+  // treasure bag tutorial is shown ... after the treasure bag tutorial,
+  // the hand sign is shown"). The tutorial used to fire HERE — AFTER the
+  // bag was already collected — so the popup + halo pointed at empty sand
+  // (the bag was gone) and the kid heard the pickup sfx with nothing to
+  // see. Moved to a PROXIMITY trigger in loop() that fires when Moses
+  // first walks NEAR an uncollected bag, pointing at the real bag (same
+  // pattern as the checkpoint tutorial). Marked seen here as a safety
+  // net so it never double-fires post-pickup.
+  try { _firstEventSeen.treasure = true; } catch(e){}
 }
 
 /* ============================================================
@@ -17635,6 +17645,35 @@ function loop(now){
               });
               break;
             }
+          }
+        }
+      } catch(e){}
+      // 2026-05-21 PM63n (Jane: "there is no treasure bag around the area
+      // when treasure bag tutorial is shown"). Fire the treasure tutorial
+      // when Moses first walks within 3 tiles of an UNCOLLECTED bag
+      // (MAP tile === 5), pointing at the real bag — BEFORE he steps on
+      // it. (Was firing in onTreasure AFTER pickup, so the bag + halo
+      // pointed at empty sand.)
+      try {
+        if (!_firstEventSeen.treasure && typeof MAP !== 'undefined' && MAP) {
+          let _bx = -1, _by = -1, _bestD = 99;
+          const _y0 = Math.max(0, player.ty - 3), _y1 = Math.min(MAP_H - 1, player.ty + 3);
+          const _x0 = Math.max(0, player.tx - 3), _x1 = Math.min(MAP_W - 1, player.tx + 3);
+          for (let yy = _y0; yy <= _y1; yy++) {
+            for (let xx = _x0; xx <= _x1; xx++) {
+              if (MAP[yy][xx] === 5) {
+                const d = Math.max(Math.abs(player.tx - xx), Math.abs(player.ty - yy));
+                if (d <= 3 && d < _bestD) { _bestD = d; _bx = xx; _by = yy; }
+              }
+            }
+          }
+          if (_bx >= 0) {
+            showTipPopup('treasure', {
+              icon: '💎',
+              title: 'A Desert Treasure',
+              body: 'Walk over a treasure bag to pick it up — each one gives +2 stars. Collect every bag of one colour for a bonus heart!',
+              pointAtTile: { tx: _bx, ty: _by },
+            });
           }
         }
       } catch(e){}
