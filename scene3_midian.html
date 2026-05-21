@@ -7700,6 +7700,50 @@ function _pulleyFrame(now) {
   }
 })();
 
+// 2026-05-21 PM65 (Jane: "give me a link to play the [well] game alone since
+// other parts of scene 3 are still underdeveloped"). Standalone harness:
+//   scene3_midian.html?welltest=1   (optional &diff=easy|medium|hard)
+// boots STRAIGHT into "Race to Water the Flock" and auto-relaunches it after
+// each round so it can be played on its own. Fully gated behind the URL flag —
+// it does nothing on a normal load.
+function _makeWellTestGate(){ return { tx: 0, ty: 0, solved: false, _welltest: true }; }
+(function _wellTestHarness(){
+  try {
+    const wq = new URLSearchParams(location.search);
+    if (wq.get('welltest') !== '1' && wq.get('minigame') !== 'well') return;
+    const wd = wq.get('diff');
+    const boot = () => {
+      try {
+        if (wd === 'easy' || wd === 'medium' || wd === 'hard') { try { game.difficulty = wd; } catch(e){} }
+        window._wellTestMode = true;
+        const ag = document.getElementById('accessGate');   if (ag) ag.classList.add('hidden');
+        const cp = document.getElementById('coverPage');    if (cp) cp.style.display = 'none';
+        const gp = document.getElementById('gamePage');     if (gp) gp.classList.add('active');
+        try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}
+        try { game.state = 'playing'; } catch(e){}
+        if (!window._wellTestWatch) {
+          window._wellTestWatch = setInterval(() => {
+            try {
+              if (!window._wellTestMode) return;
+              const m = document.getElementById('wellPulleyModal');
+              if (m && !m.classList.contains('active') && !_pulley.gate) {
+                game.state = 'playing';
+                openWellPulleyGame(_makeWellTestGate());
+              }
+            } catch(e){}
+          }, 1200);
+        }
+      } catch(e){ try { console.error('welltest boot failed', e); } catch(_){} }
+    };
+    const waitReady = (tries) => {
+      if ((typeof imagesReady !== 'undefined' && imagesReady >= imagesTotal) || tries <= 0) boot();
+      else setTimeout(() => waitReady(tries - 1), 300);
+    };
+    if (document.readyState === 'complete') waitReady(50);
+    else window.addEventListener('load', () => waitReady(50));
+  } catch(e){}
+})();
+
 function openChallenge(gate) {
   // Phase C Step 7: Well gate → pulley mini-game instead of trivia
   if (gate && gate.zone === 'well') { openWellPulleyGame(gate); return; }
