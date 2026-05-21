@@ -473,20 +473,32 @@
     pointer-events: none;
     z-index: 2;
   }
-  /* START / EXIT pins on the parchment */
+  /* START / EXIT pins on the parchment.
+     2026-05-21 PM63i (Jane: "the text start and midian are getting hidden.
+     can you make these larger"). Bumped font 11→15px, z-index 3→8 (above
+     the placed pieces at z-index 5), and wrapped the label text in an
+     opaque dark pill so it stays readable over any parchment / piece. */
   .jigsaw-pin {
-    position: absolute; z-index: 3; transform: translate(-50%, -50%);
-    font-size: 11px; font-weight: 800; font-family: Georgia, serif;
-    color: #5a2d0c; text-shadow: 0 1px 0 rgba(255,250,220,0.6);
-    display: flex; flex-direction: column; align-items: center; gap: 1px;
-    pointer-events: none;
+    position: absolute; z-index: 8; transform: translate(-50%, -50%);
+    font-size: 15px; font-weight: 800; font-family: Georgia, serif;
+    color: #fff3cf; text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    pointer-events: none; white-space: nowrap;
+  }
+  /* the readable label pill */
+  .jigsaw-pin > span.pin-label {
+    background: rgba(40,18,4,0.82);
+    border: 1.5px solid rgba(255,217,118,0.7);
+    border-radius: 9px;
+    padding: 2px 9px;
+    letter-spacing: 0.5px;
   }
   .jigsaw-pin .pin-dot {
-    width: 14px; height: 14px; border-radius: 50%;
-    border: 2px solid #fff5d8;
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2.5px solid #fff5d8;
   }
-  .jigsaw-pin.start .pin-dot { background: #2e9e44; box-shadow: 0 0 8px rgba(60,200,90,0.8); }
-  .jigsaw-pin.exit  .pin-dot { background: #d33a28; box-shadow: 0 0 8px rgba(230,80,60,0.8); }
+  .jigsaw-pin.start .pin-dot { background: #2e9e44; box-shadow: 0 0 10px rgba(60,200,90,0.9); }
+  .jigsaw-pin.exit  .pin-dot { background: #d33a28; box-shadow: 0 0 10px rgba(230,80,60,0.9); }
   /* the animated golden caravan route drawn on reveal */
   .jigsaw-goldroute {
     position: absolute; inset: 0; width: 100%; height: 100%;
@@ -503,18 +515,25 @@
     animation: goldRouteDraw 1.8s ease-out forwards;
   }
   @keyframes goldRouteDraw { to { stroke-dashoffset: 0; } }
-  /* the little caravan footprint that travels the route on reveal */
+  /* the little caravan footprint that travels the route on reveal.
+     2026-05-21 PM63i (Jane: "the animation of feet ... is too tiny and
+     it is getting hidden behind the squares"). Bumped font 18→34px,
+     z-index 5→14 (above pieces at 5 and slots) and added a soft amber
+     glow halo so the footprints read clearly as they travel. Travel
+     path widened (12%→88%) to span the full board edge-to-edge. */
   .jigsaw-walker {
-    position: absolute; z-index: 5; font-size: 18px; opacity: 0;
+    position: absolute; z-index: 14; font-size: 34px; opacity: 0;
     transform: translate(-50%, -50%);
+    text-shadow: 0 0 10px rgba(255,210,90,0.95), 0 2px 4px rgba(0,0,0,0.6);
+    filter: drop-shadow(0 0 6px rgba(255,217,118,0.9));
   }
-  .jigsaw-board.revealed .jigsaw-walker { animation: walkerTravel 1.9s ease-out forwards; }
+  .jigsaw-board.revealed .jigsaw-walker { animation: walkerTravel 2.2s ease-out forwards; }
   @keyframes walkerTravel {
-    0%   { opacity: 0; left: 6%;  top: 49%; }
+    0%   { opacity: 0; left: 12%; top: 50%; }
     12%  { opacity: 1; }
-    50%  { left: 50%; top: 61%; }
+    50%  { left: 50%; top: 60%; }
     88%  { opacity: 1; }
-    100% { opacity: 0; left: 95%; top: 49%; }
+    100% { opacity: 0; left: 86%; top: 50%; }
   }
   /* verse banner that lands at the end of the reveal */
   .jigsaw-verse {
@@ -526,13 +545,18 @@
   }
   .jigsaw-verse.show { opacity: 1; transform: translateY(0); }
   .jigsaw-verse small { display:block; color:#ffd976; font-style:normal; font-size:0.82em; margin-top:3px; letter-spacing:0.5px; }
+  /* 2026-05-21 PM63i (Jane: "the colors on the midian square are blending
+     against the background. make these squares larger"). Slots widened
+     18%→23% and the dashed outline darkened + thickened with a soft
+     cream halo so empty slots POP against the tan parchment. */
   .jigsaw-slot {
     position: absolute;
-    width: 18%;
+    width: 23%;
     aspect-ratio: 1;
-    border: 2.5px dashed rgba(120,80,30,0.6);
+    border: 3px dashed rgba(70,42,12,0.92);
     border-radius: 10px;
-    background: rgba(120,80,30,0.06);
+    background: rgba(60,38,12,0.14);
+    box-shadow: 0 0 0 2px rgba(255,248,220,0.55), inset 0 0 10px rgba(90,55,15,0.25);
     transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
     z-index: 1;
     overflow: hidden;
@@ -563,7 +587,8 @@
   }
   .jigsaw-piece {
     position: relative;
-    width: 64px; height: 64px;
+    /* PM63i: tray pieces enlarged 64→78 px to match the bigger slots. */
+    width: 78px; height: 78px;
     cursor: grab;
     touch-action: none;
     transition: transform 0.2s cubic-bezier(.2,1.4,.4,1), box-shadow 0.2s;
@@ -652,8 +677,8 @@
   @media (orientation: landscape) and (max-height: 600px) {
     .jigsaw-content { padding: 10px 14px 14px !important; max-height: 96svh; }
     .jigsaw-board { aspect-ratio: 5 / 2; margin: 4px auto 8px; }
-    .jigsaw-tray { min-height: 70px; padding: 8px; }
-    .jigsaw-piece { width: 52px; height: 52px; }
+    .jigsaw-tray { min-height: 78px; padding: 8px; }
+    .jigsaw-piece { width: 64px; height: 64px; }
     .jigsaw-title { font-size: 18px !important; margin-bottom: 2px !important; }
     .jigsaw-sub { font-size: 12px; margin-bottom: 4px; }
   }
@@ -3251,9 +3276,11 @@
       <div class="jigsaw-slot" data-slot="1" style="left:6%;top:34%;"></div>
       <div class="jigsaw-slot" data-slot="2" style="left:41%;top:46%;"></div>
       <div class="jigsaw-slot" data-slot="3" style="left:76%;top:34%;"></div>
-      <!-- START / EXIT pins on the parchment -->
-      <div class="jigsaw-pin start" style="left:8%;top:49%;"><span class="pin-dot"></span>START</div>
-      <div class="jigsaw-pin exit"  style="left:90%;top:49%;"><span class="pin-dot"></span>MIDIAN</div>
+      <!-- START / EXIT pins on the parchment. PM63i: nudged inward
+           (8%→12%, 90%→86%) so the wider label pills never clip the
+           board edge, and wrapped text in a .pin-label pill. -->
+      <div class="jigsaw-pin start" style="left:12%;top:50%;"><span class="pin-dot"></span><span class="pin-label">START</span></div>
+      <div class="jigsaw-pin exit"  style="left:86%;top:50%;"><span class="pin-dot"></span><span class="pin-label">MIDIAN</span></div>
       <!-- Faint dashed guide showing roughly where the trail will run -->
       <svg class="jigsaw-route" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
         <path d="M16,118 C60,110 130,150 200,146 C270,142 340,110 384,118"
@@ -6917,6 +6944,19 @@ function openCinematic() {
       audio.cinNarrate.currentTime = 0;
       audio.cinNarrate.volume = 0.95;
       audio.cinNarrate.play().catch(()=>{});
+      // PM63i: sync the panel dwell to the narration's real length so the
+      // text/image slideshow finishes about when the voice-over does.
+      // Spread the audio across all panels; the LAST panel still waits
+      // for Continue so reserve its share by dividing by panel count.
+      const _applyDwell = () => {
+        const d = audio.cinNarrate.duration;
+        if (d && isFinite(d) && d > 1) {
+          const per = (d * 1000) / Math.max(1, CIN_PANELS.length);
+          _cinDwellMs = Math.max(2500, Math.min(5500, Math.round(per)));
+        }
+      };
+      if (audio.cinNarrate.readyState >= 1) _applyDwell();
+      else audio.cinNarrate.addEventListener('loadedmetadata', _applyDwell, { once: true });
     }
   } catch(e){}
 }
@@ -6946,7 +6986,12 @@ function _stopCinNarration(){
 // Skip remains so the kid can bail. When the last panel's dwell
 // completes, the cinematic auto-closes and startScene1() fires.
 let _cinAutoTimer = 0;
-const CIN_PANEL_DWELL_MS = 5200; // ~5s per panel = matches mp3 cadence
+// 2026-05-21 PM63i (Jane: "section 5 text display is slower than the audio
+// narration"). Dwell is no longer a fixed 5.2 s — openCinematic measures
+// the narration mp3's real duration and divides it across the panels so
+// the slideshow keeps pace with the voice-over. Falls back to 4200 ms if
+// the audio duration isn't known yet (metadata not loaded / file missing).
+let _cinDwellMs = 4200;
 function _clearCinAutoTimer(){
   if (_cinAutoTimer) { try { clearTimeout(_cinAutoTimer); } catch(e){} _cinAutoTimer = 0; }
 }
@@ -6962,14 +7007,17 @@ function showCinPanel() {
   const _isLastPanel = (game.cinStep === CIN_PANELS.length - 1);
   const _nextBtn = $('cinNextBtn');
   if (_nextBtn) {
-    if (CIN_PANELS.length > 1 && !_isLastPanel) {
-      // mid-deck auto-advance: hide Next button entirely
-      _nextBtn.style.display = 'none';
-      _nextBtn.textContent = 'Next';
-    } else {
-      _nextBtn.style.display = '';
-      _nextBtn.textContent = _isLastPanel ? 'Continue →' : 'Next';
-    }
+    // 2026-05-21 PM63i (Jane: "from the game, when i go to main menu and
+    // arrive at the narration panel, continue button is no longer
+    // there"). The PM63h logic HID the Next button on mid-deck panels
+    // (auto-advance only) — so re-entering the narration via Main Menu
+    // left the kid with only Skip until ~20 s of auto-advance reached
+    // the last panel. Now the forward button is ALWAYS visible: it
+    // reads "Next →" mid-deck and "Continue →" on the last panel. The
+    // auto-advance slideshow still runs as the hands-free default; the
+    // button is just an always-available manual path forward.
+    _nextBtn.style.display = '';
+    _nextBtn.textContent = _isLastPanel ? 'Continue →' : 'Next →';
   }
   // Per-panel image swap (Jane's intro scene 2.png / _1.png / _2.png / _3.png).
   try {
@@ -6987,7 +7035,30 @@ function showCinPanel() {
       _cinAutoTimer = 0;
       game.cinStep++;
       showCinPanel();
-    }, CIN_PANEL_DWELL_MS);
+    }, _cinDwellMs);
+  }
+}
+// 2026-05-21 PM63i (Jane: "the continue button is not taking me to scene 2
+// game immediately.. there is a 10 delay. but the music track for scene 2
+// is already playing. put a loading bar and let the game audio and game
+// start together"). _beginGameplayWhenReady gates startScene1() behind the
+// asset-preload bar so the desert music + game canvas appear TOGETHER —
+// no more "music with a blank 10 s wait." startScene1() starts the bgm at
+// its top, so deferring the whole call until assets are decoded keeps the
+// two in lockstep.
+function _beginGameplayWhenReady(){
+  _clearCinAutoTimer();
+  $('openingCinematic').classList.remove('active');
+  _stopCinNarration();
+  const _go = () => { try { startScene1(); } catch(e){ console.error('startScene1 failed', e); } };
+  if (typeof _preloadPct === 'function' && _preloadPct() < 100) {
+    const overlay = document.getElementById('preloadOverlay');
+    if (overlay) overlay.classList.add('active');
+    _pendingBeginTap = () => { try { if (overlay) overlay.classList.remove('active'); } catch(e){} _go(); };
+    // 12 s safety ceiling so a stuck asset never strands the kid.
+    setTimeout(() => { if (_pendingBeginTap) { const fn = _pendingBeginTap; _pendingBeginTap = null; fn(); } }, 12000);
+  } else {
+    _go();
   }
 }
 $('cinNextBtn').addEventListener('click', () => {
@@ -6997,19 +7068,14 @@ $('cinNextBtn').addEventListener('click', () => {
   _clearCinAutoTimer();
   game.cinStep++;
   if (game.cinStep >= CIN_PANELS.length) {
-    $('openingCinematic').classList.remove('active');
-    _stopCinNarration();
-    startScene1();
+    _beginGameplayWhenReady();
   } else {
     showCinPanel();
   }
 });
 $('cinSkipBtn').addEventListener('click', () => {
   play('click');
-  _clearCinAutoTimer();
-  $('openingCinematic').classList.remove('active');
-  _stopCinNarration();
-  startScene1();
+  _beginGameplayWhenReady();
 });
 
 /* ---------- START SCENE ---------- */
@@ -7471,13 +7537,18 @@ const SCENE_TUT_STEPS = [
   { icon:'?',  title:'Solve every checkpoint',
     body: () => {
       const n = (typeof game !== 'undefined' && game.gateCount) ? game.gateCount : 6;
-      return n + ' glowing checkpoints (?) are scattered across the desert. Walk near one and Moses pauses for 3 Bible questions. Solve ALL ' + n + ' to open the path to Midian — you cannot walk around them.';
+      return n + ' glowing checkpoints (?) are scattered across the desert. Walk near one and Moses pauses for 3 Bible questions. Solve ALL ' + n + ' — you cannot walk around them.';
     } },
+  // 2026-05-21 PM63i (Jane: "this needs to be modified since we have
+  // updated the game play for the path getting uncovered now"). The 3 map
+  // pieces + jigsaw now gate the path to Midian — added a step for them.
+  { icon:'\u{1F5FA}\u{FE0F}',  title:'Find the 3 caravan map pieces',
+    body:'Three torn map scraps are hidden across the desert. Walk over each one to pick it up — no button needed. Collect all 3 AND clear every checkpoint to unlock the caravan map.' },
   { icon:'⚠',  title:'Avoid Pharaoh\'s scouts', body:'Red guards and orange scouts patrol the desert. Stay near dunes, boulders, and caves to break line-of-sight. Caves are sanctuary; enemies cannot enter.' },
   { icon:'\u2605',  title:'Reach Midian!',
     body: () => {
       const n = (typeof game !== 'undefined' && game.gateCount) ? game.gateCount : 6;
-      return 'After clearing all ' + n + ' checkpoints, the path glows BRIGHT GREEN. Walk east and Moses crosses into Midian. Tap Start to begin!';
+      return 'Clear all ' + n + ' checkpoints AND find the 3 map pieces, then piece the caravan map together. The map reveals the hidden path — walk east and Moses crosses into Midian. Tap Start to begin!';
     } },
 ];
 // v3.28: Two flags. The bundle flag travels across all 3 scenes; the
@@ -9772,7 +9843,11 @@ function renderSpotDiff(gate, q, container){
 
   var hint = document.createElement('div');
   hint.className = 'ch-slider-hint';
-  hint.textContent = 'Compare the two pictures and tap on the differences!';
+  // 2026-05-21 PM63i (Jane: "kids may not know that they have to
+  // scroll/swipe. so mention that in the question"). Spell out the
+  // swipe/scroll interaction since the two pictures sit side-by-side
+  // and the second one can be off-screen on small displays.
+  hint.textContent = 'Swipe or scroll to see BOTH pictures, then tap the differences!';
   container.appendChild(hint);
 
   var wrapper = document.createElement('div');
@@ -10106,14 +10181,12 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
           if (isClimb) toast('Desert Checkpoint ' + (gate.step || '') + ' cleared - Moses presses on!');
           else toast('Checkpoint cleared!');
         }
-        // 2026-05-19 PM63f (Jane: "when a checkpoint is over, which audio
-        // do you play in scene 1? play the same. is it chime and
-        // chomp.mp3"). Scene 1 (line ~15121, 15601) layers `challengeModal`
-        // + `gateClear` + `chimeChomp` on full gate clear. Mirror that
-        // exact stack so every Scene 2 checkpoint clear sounds identical.
-        try { play('challengeModal'); } catch(e){}
-        try { play('gateClear') || play('victoryChime') || play('success'); } catch(e){}
-        try { play('chimeChomp'); } catch(e){}
+        // 2026-05-21 PM63i (Jane: "i asked you to change the music after
+        // clearing each checkpoint to use chime and chomp.mp3"). Dropped
+        // the layered challengeModal + gateClear stack — those drowned
+        // out chime+chomp. Now ONLY chime and chomp.mp3 plays on a full
+        // checkpoint clear, so the cue is clean and consistent.
+        try { play('chimeChomp') || play('chime') || play('success'); } catch(e){}
         // v3.3 LANE 3 (Jane 2026-04-23): celebration on every gate clear —
         // particle burst + verse drift across the top so kids feel rewarded.
         // Particles + showVerseDrift are both safe to no-op if undefined.
