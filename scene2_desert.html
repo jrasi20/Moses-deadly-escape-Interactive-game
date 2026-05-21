@@ -13589,6 +13589,33 @@ function drawSandstorm(ctx){
 
 /* ---------- RENDER ---------- */
 function render(){
+  // 2026-05-21 PM63k (Jane: "scene 2 loads first without sprites. is it
+  // because i am directly opening scene 2"). HARD SAFETY NET: never paint
+  // the gameplay map until EVERY sprite has downloaded + decoded. This
+  // covers any entry path the preload gate might miss — direct URL open,
+  // resume-from-save, or a cold service-worker cache right after a
+  // version bump (which deletes the asset cache and re-fetches all
+  // images). img.onerror also bumps imagesReady, so this can never hang
+  // on a missing file. Once ready, normal rendering resumes.
+  if (game.scene === 2 && game.state === 'playing' && imagesReady < imagesTotal) {
+    try {
+      ctx.fillStyle = '#2a1606';
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+      const pct = Math.round((imagesReady / Math.max(1, imagesTotal)) * 100);
+      ctx.fillStyle = '#ffd976';
+      ctx.font = 'bold 18px Georgia';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Loading the desert… ' + pct + '%', CANVAS_W / 2, CANVAS_H / 2 - 12);
+      const bw = Math.min(CANVAS_W * 0.6, 320), bh = 12;
+      const bx = (CANVAS_W - bw) / 2, by = CANVAS_H / 2 + 12;
+      ctx.fillStyle = 'rgba(255,217,118,0.22)';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = '#ffd976';
+      ctx.fillRect(bx, by, bw * (pct / 100), bh);
+    } catch(e){}
+    return;
+  }
   // v3.10 EPIC VISUAL: apply camera shake at the start of every render
   // and undo it at the end. The flag latches so save/restore stay paired
   // even if magnitude decays past threshold mid-frame.
