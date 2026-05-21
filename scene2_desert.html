@@ -3612,6 +3612,7 @@
 <audio id="audFox"            preload="auto" src="assets/audio/fox.mp3"></audio>
 <audio id="audSandWalk"       preload="auto" src="assets/audio/sand%20walk.mp3"></audio>
 <audio id="audSandstorm"      preload="auto" src="assets/audio/sandstorm.mp3"></audio>
+<audio id="audSandstormRumble" preload="auto" src="assets/audio/sandstorm%20rumble.mp3"></audio>
 <audio id="audBoulderRumble"  preload="auto" src="assets/audio/boulder%20rumble.mp3"></audio>
 <!-- 2026-05-20 PM63g: Pharaoh's chariot horizon cameo (Scene 2 wow factor) -->
 <audio id="audPharaohEntry"   preload="auto" src="assets/audio/pharaoh%20entry%20announcement.mp3"></audio>
@@ -3861,7 +3862,8 @@ const audio = {
   pharaohEntry:  $('audPharaohEntry'),   // PM63g chariot horizon cameo
   fox:           $('audFox'),            // desert fox crossing the path
   sandWalk:      $('audSandWalk'),       // footstep on sand tile
-  sandstormSfx:  $('audSandstorm'),      // sandstorm random event
+  sandstormSfx:  $('audSandstorm'),      // sandstorm random event (short swell)
+  sandstormRumble: $('audSandstormRumble'), // deep epic rumble bed (finale + random event)
   boulderRumble: $('audBoulderRumble'),  // rolling boulder passes
   helloThere:    $('audHelloThere'),     // caravan trader greeting
   hint:          $('audHint'),           // Show Clue button reveal
@@ -7452,6 +7454,7 @@ function startScene1() {
   // fresh start so a replay doesn't open mid-sandstorm or with stale
   // guiding lights.
   try { _sandstormOn = false; _sandstormLevel = 0; _sandStreaks = []; _guideMotes = []; } catch(e){}
+  try { if (audio.sandstormRumble) { audio.sandstormRumble.pause(); audio.sandstormRumble.currentTime = 0; } } catch(e){}
   // v1.2 FIX (§3.8): full scene reset on Start so picking a new difficulty
   // after playing actually re-spawns Moses at the start cell and clears
   // footprints / sand puffs / collected pickups / used NPC dialog.
@@ -13779,34 +13782,37 @@ function drawGuidingLights(){
   const ux = dx / dist, uy = dy / dist;
   // spawn fresh motes at Moses heading toward the exit — a steady,
   // readable ribbon of light (catchy on a small phone screen).
-  if (now - _lastGuideSpawn > 120) {
+  // 2026-05-21 (Jane: "the path lighting is very light — make it more
+  // prominent and epic"). Spawn a DENSER ribbon, with bigger/brighter motes
+  // and a longer trail so the pillar-of-fire path clearly leads to Midian.
+  if (now - _lastGuideSpawn > 70) {
     _lastGuideSpawn = now;
     _guideMotes.push({ x: psx + ux * TILE * 0.4, y: psy + uy * TILE * 0.4 - TILE * 0.25,
                        ux, uy, t: 0, ph: Math.random() * 6.28,
-                       off: (Math.random() - 0.5) * TILE * 0.5 });
+                       off: (Math.random() - 0.5) * TILE * 0.6 });
   }
   ctx.save();
   for (let i = _guideMotes.length - 1; i >= 0; i--) {
     const m = _guideMotes[i];
     m.t++;
-    if (m.t > 64) { _guideMotes.splice(i, 1); continue; }
-    const p = m.t / 64;
+    if (m.t > 96) { _guideMotes.splice(i, 1); continue; }
+    const p = m.t / 96;
     m.x += m.ux * TILE * 0.10;
     m.y += m.uy * TILE * 0.10;
     const wob = Math.sin(now / 160 + m.ph) * 4 + m.off;
     const px = m.x + (-m.uy) * wob;
     const py = m.y + (m.ux) * wob;
-    const a = Math.sin(p * Math.PI) * 0.95;          // fade in then out
-    const r = 3.6 + 2.2 * Math.sin(now / 130 + m.ph);
-    const g = ctx.createRadialGradient(px, py, 0.5, px, py, r * 2.6);
-    g.addColorStop(0,   'rgba(255,248,200,' + a.toFixed(2) + ')');
-    g.addColorStop(0.45,'rgba(255,210,95,'  + (a * 0.6).toFixed(2) + ')');
+    const a = Math.min(1, Math.sin(p * Math.PI) * 1.15);   // brighter (was *0.95)
+    const r = 5.6 + 3.0 * Math.sin(now / 130 + m.ph);      // bigger (was 3.6 + 2.2)
+    const g = ctx.createRadialGradient(px, py, 0.6, px, py, r * 3.2);
+    g.addColorStop(0,   'rgba(255,250,214,' + a.toFixed(2) + ')');
+    g.addColorStop(0.4, 'rgba(255,214,104,' + (a * 0.7).toFixed(2) + ')');
     g.addColorStop(1,   'rgba(255,170,50,0)');
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(px, py, r * 2.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(px, py, r * 3.2, 0, Math.PI * 2); ctx.fill();
     // bright core sparkle
-    ctx.fillStyle = 'rgba(255,255,238,' + (a * 0.9).toFixed(2) + ')';
-    ctx.beginPath(); ctx.arc(px, py, Math.max(0.8, r * 0.4), 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,242,' + a.toFixed(2) + ')';
+    ctx.beginPath(); ctx.arc(px, py, Math.max(1.2, r * 0.5), 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }
@@ -13822,31 +13828,52 @@ let _sandStreaks = [];
 function _triggerSandstorm(){
   if (_sandstormOn) return;
   _sandstormOn = true;
-  try { play('wind') || play('vulture') || play('uhoh'); } catch(e){}
+  // 2026-05-21 (Jane: "the sandstorm is not very epic; sound effects are not
+  // there"). Wire the REAL audio — a deep LOOPING rumble bed + the short
+  // sandstorm swell + a danger sting — so the finale actually roars. The old
+  // code only tried generic wind/vulture/uhoh keys (none of which is the
+  // dedicated sandstorm audio), so it was effectively silent.
+  try {
+    if (audio.sandstormRumble) {
+      audio.sandstormRumble.loop = true;
+      audio.sandstormRumble.currentTime = 0;
+      audio.sandstormRumble.volume = 0.6;
+      audio.sandstormRumble.play().catch(()=>{});
+    }
+  } catch(e){}
+  try { play('sandstormSfx'); } catch(e){}
+  try { play('dangerAlert'); } catch(e){}
   try { toast('🌪️ A sandstorm sweeps in — follow the lights to Midian!'); } catch(e){}
   _sandStreaks = [];
-  for (let i = 0; i < 48; i++) {
+  for (let i = 0; i < 90; i++) {
     _sandStreaks.push({ x: Math.random() * CANVAS_W, y: Math.random() * CANVAS_H,
-                        len: 28 + Math.random() * 64, spd: 4 + Math.random() * 7,
-                        a: 0.08 + Math.random() * 0.18 });
+                        len: 34 + Math.random() * 90, spd: 5 + Math.random() * 9,
+                        a: 0.10 + Math.random() * 0.22 });
   }
 }
-function _stopSandstorm(){ _sandstormOn = false; }
+function _stopSandstorm(){
+  _sandstormOn = false;
+  try { if (audio.sandstormRumble) { audio.sandstormRumble.pause(); audio.sandstormRumble.currentTime = 0; } } catch(e){}
+}
 function drawSandstorm(ctx){
   if (game.scene !== 2) return;
   const target = _sandstormOn ? 1 : 0;
   _sandstormLevel += (target - _sandstormLevel) * 0.04;   // smooth ramp in/out
   if (_sandstormLevel < 0.01) { _sandstormLevel = 0; return; }
   const L = _sandstormLevel, now = performance.now();
+  // 2026-05-21 (Jane: "make it more epic"). A gust pulse so the storm
+  // "breathes" + a heavier warm wash for real drama (Moses stays readable
+  // via the vignette below).
+  const gust = 1 + 0.14 * Math.sin(now / 360);
   ctx.save();
   // warm haze wash
-  ctx.fillStyle = 'rgba(214,150,80,' + (0.34 * L).toFixed(3) + ')';
+  ctx.fillStyle = 'rgba(214,150,80,' + (0.42 * L * gust).toFixed(3) + ')';
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
   // drifting tonal band for depth/movement
   const drift = (now / 40) % (CANVAS_W || 1);
   const hg = ctx.createLinearGradient(-drift, 0, CANVAS_W - drift, 0);
   hg.addColorStop(0,   'rgba(190,120,60,0)');
-  hg.addColorStop(0.5, 'rgba(205,140,72,' + (0.16 * L).toFixed(3) + ')');
+  hg.addColorStop(0.5, 'rgba(205,140,72,' + (0.22 * L * gust).toFixed(3) + ')');
   hg.addColorStop(1,   'rgba(190,120,60,0)');
   ctx.fillStyle = hg; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
   // wind streaks blowing across
@@ -13857,7 +13884,7 @@ function drawSandstorm(ctx){
     if (s.x < -s.len) { s.x = CANVAS_W + Math.random() * 60; s.y = Math.random() * CANVAS_H; }
     if (s.y > CANVAS_H) s.y = -10;
     ctx.strokeStyle = 'rgba(255,235,200,' + (s.a * L).toFixed(3) + ')';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = s.len > 80 ? 2.4 : 1.4;   // nearer streaks read thicker = depth
     ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x + s.len, s.y - s.len * 0.12); ctx.stroke();
   }
   // vignette focused on Moses so he (and the guiding lights) stay readable

@@ -2288,22 +2288,34 @@
 
 <!-- ================ WELL PULLEY MINI-GAME ================ -->
 <div class="modal-overlay" id="wellPulleyModal" style="z-index:50;display:none;">
-  <div class="modal-content" style="background:linear-gradient(155deg,#1a3a5a,#2a5a8a);border:3px solid #7ab8d8;max-width:380px;padding:18px 20px;">
-    <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:6px;">~ DRAW WATER FROM THE WELL ~</div>
-    <h2 style="color:#ffe0a0;text-align:center;margin:0 0 10px;font-size:18px;">Help water Jethro's flock!</h2>
-    <canvas id="pulleyCanvas" width="320" height="190" style="display:block;margin:0 auto;border-radius:8px;border:2px solid #3a6a8a;"></canvas>
-    <div style="margin:8px 0 4px;background:rgba(0,0,0,0.3);border-radius:6px;height:10px;overflow:hidden;">
-      <div id="pulleyProgress" style="height:100%;width:0%;background:linear-gradient(90deg,#60b8f0,#ffe0a0);border-radius:6px;transition:width 0.08s;"></div>
+  <div class="modal-content" style="background:linear-gradient(155deg,#1a3a5a,#2a5a8a);border:3px solid #7ab8d8;max-width:880px;width:min(96vw,880px);padding:16px 20px;">
+    <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;">~ RACE TO WATER THE FLOCK ~</div>
+    <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;">Beat the rude shepherd to fill your trough!</h2>
+    <!-- 2026-05-21 (Jane: puzzles felt too simple/kiddish — wanted a head-to-head,
+         Angry-Birds-style contest with real art + a bigger responsive modal).
+         "Race to Water the Flock": Moses vs a rude shepherd, side-by-side troughs
+         drawn from the illustrated sprites. You fill yours via the timing bar
+         (tap PULL in the GREEN); the rival fills his automatically AND tries to
+         STEAL your water — tap SHOO! in time to block him. First trough full wins. -->
+    <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:100%;height:auto;max-height:66vh;margin:0 auto;border-radius:8px;border:2px solid #3a6a8a;background:#bfe3f0;"></canvas>
+    <div style="display:flex;justify-content:space-between;color:#cfe9ff;font-size:12px;font-weight:bold;margin:7px 2px 3px;">
+      <span id="pulleyTaps">🪣 You: 0%</span>
+      <span id="pulleyTimer">Rival: 0% 🐐</span>
     </div>
-    <div style="display:flex;justify-content:space-between;color:#a0d0f0;font-size:11px;margin-bottom:8px;">
-      <span id="pulleyTaps">Taps: 0 / 15</span>
-      <span id="pulleyTimer">10s</span>
+    <div id="pulleyBar" style="position:relative;margin:2px 0 8px;height:24px;background:rgba(0,0,0,0.38);border-radius:12px;overflow:hidden;border:2px solid #3a6a8a;">
+      <div id="pulleyZone" style="position:absolute;top:0;bottom:0;left:38%;width:24%;background:linear-gradient(90deg,#2f9a4d,#86ebab);box-shadow:0 0 10px #86ebab;"></div>
+      <div id="pulleyMarker" style="position:absolute;top:-3px;bottom:-3px;left:0;width:6px;background:#fff;border-radius:3px;box-shadow:0 0 10px #fff,0 0 4px #ffe0a0;"></div>
     </div>
-    <button class="btn" id="pulleyPullBtn" style="width:100%;font-size:22px;padding:12px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #7ab8d8;letter-spacing:2px;">PULL! 💧</button>
-    <div id="pulleyFeedback" style="color:#ffe0a0;text-align:center;min-height:20px;margin-top:6px;font-size:13px;">Tap PULL to draw water for the sheep!</div>
-    <div style="color:#7ab8d8;font-size:10px;text-align:center;margin-top:4px;font-style:italic;">"He watered Jethro's flock." — Exodus 2:17</div>
+    <div style="display:flex;gap:10px;align-items:stretch;">
+      <button class="btn" id="pulleyPullBtn" style="flex:1;font-size:22px;padding:12px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #7ab8d8;letter-spacing:2px;">PULL! 💧</button>
+      <button class="btn" id="pulleyShooBtn" style="display:none;flex:1;font-size:22px;padding:12px;background:linear-gradient(135deg,#c0432a,#e07a3a);border:2px solid #ffb070;letter-spacing:2px;animation:pulleyShooFlash 0.4s steps(2) infinite;">SHOO! ✋</button>
+    </div>
+    <div id="pulleyFeedback" style="color:#ffe0a0;text-align:center;min-height:20px;margin-top:6px;font-size:13px;">Tap PULL when the rope is in the GREEN!</div>
+    <div style="color:#7ab8d8;font-size:10px;text-align:center;margin-top:4px;font-style:italic;">"Moses got up and came to their rescue and watered their flock." — Exodus 2:17</div>
   </div>
 </div>
+
+<style>@keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}</style>
 
 <!-- ================ TOAST ================ -->
 <div class="toast" id="toast">Toast</div>
@@ -2812,6 +2824,9 @@ const IMG_SRC = {
   shepherdRight: 'assets/images/rude%20shepherd%20right%20facing.png',
   shepherdBack:  'assets/images/rude%20shepherd%20back%20facing.png',
   shepherdLeftAlt: 'assets/images/rude%20shepherd%20left%20facing%202.png',
+  // Well-race "heaving on the rope" poses (Moses faces right, shepherd faces left — a mirrored pair):
+  mosesPull: 'assets/images/moses%20right%20facing%20with%20rope.png',
+  shepPull:  'assets/images/orange%20shepherd%20heave%203%20with%20rope.png',
   // SHEPHERD 2 — front view only (used at 2nd patrol post for visual variety):
   shepherd2Front: 'assets/images/shepherd%202%20front.png',
   // SHEPHERD 3 — front view only (used at 3rd patrol post):
@@ -7167,79 +7182,153 @@ function getHintForQuestion(q){
 }
 
 /* ============================================================================
-   PHASE C STEP 7 — WELL-BUCKET PULLEY MINI-GAME
-   Replaces the WELL zone gate trivia with a 10-second tap-rhythm game.
-   Kid taps PULL to raise the bucket; 15 taps in 10s = success. Rope slips
-   on fail with no heart loss — pure skill loop. Gates solved on success.
+   SCENE 3 WELL MINI-GAME — "RACE TO WATER THE FLOCK" (angle/power shot edition)
+   2026-05-21 (Jane): "should it angle the pull and release water into the trough?
+   angle-based shot — more fun + kids learn angle/power/elevation." So the fill
+   input is now an Angry-Birds-style projectile: drag from Moses to set ANGLE +
+   POWER (live dotted trajectory + angle/power readout), release to fling a water
+   glob that arcs under gravity into YOUR trough. Centre hits pour more; short/long
+   shots splash and miss. Medium/Hard add WIND so kids learn to compensate.
+   Still a head-to-head race: a rude shepherd auto-fills his trough and lunges to
+   STEAL your water (tap SHOO! to block + stun him). First trough to 100% wins.
+   Loss is gentle (auto-retry); win awards +5 stars and solves the gate.
    ========================================================================== */
 const _pulley = {
-  gate: null,
-  taps: 0, timeLeft: 10, timerHandle: null, rafId: null,
-  bucketY: 155, targetY: 155,
-  ropeSlipping: false, succeeded: false,
-  lastFrame: 0,
-  TAPS_NEEDED: 15, BUCKET_TOP: 22, BUCKET_BOT: 155,
+  gate: null, rafId: null, lastFrame: 0,
+  mosesFill: 0, shepFill: 0,
+  baseGain: 18, shepRate: 5, stealAmt: 11, stealEvery: 5, stealWindow: 1.6, wind: 0,
+  over: false, win: false, celebrate: 0,
+  shake: 0, drops: [], bucketBob: 0,
+  stealActive: false, stealTimer: 0, nextSteal: 5, shepStun: 0, shepLunge: 0,
+  // aim / projectile
+  aiming: false, aimX: 0, aimY: 0, proj: null, curWind: 0,
+  L: { x: 130, y: 178 },                      // Moses' toss point (bucket at his well)
+  TR: { x: 168, y: 290, w: 124, h: 40 },      // Moses' trough (the target)
+  SR: { x: 308, y: 290, w: 124, h: 40 },      // rude shepherd's trough
+  GROUND: 290, MAXDRAG: 170, GRAV: 900,
 };
+function _pulleyCfg() {
+  const d = (typeof game !== 'undefined' && game.difficulty) || 'easy';
+  // Pace is deliberately unhurried so kids can experiment with angle/power across
+  // many shots. shepRate is %/sec → a full rival trough takes ~(100/shepRate)s.
+  if (d === 'hard')   return { baseGain: 14, shepRate: 4.6, stealAmt: 13, stealEvery: 4.5, stealWindow: 1.5, wind: 120 }; // ~22s
+  if (d === 'medium') return { baseGain: 15, shepRate: 3.4, stealAmt: 9,  stealEvery: 5.5, stealWindow: 1.8, wind: 60 };  // ~29s
+  return { baseGain: 16, shepRate: 2.4, stealAmt: 6, stealEvery: 7.0, stealWindow: 2.3, wind: 0 }; // easy ~42s
+}
+function _pulleySpawnDrops(n, x, y, spread) {
+  const sp = spread || 26;
+  for (let i = 0; i < n; i++) {
+    _pulley.drops.push({ x: x + (Math.random() - 0.5) * sp, y: y,
+      vx: (Math.random() - 0.5) * 2.0, vy: -1.6 - Math.random() * 2.0,
+      t: 0, life: 26 + Math.random() * 22 });
+  }
+}
+function _pulleyReset() {
+  const cfg = _pulleyCfg();
+  _pulley.mosesFill = 0; _pulley.shepFill = 0;
+  _pulley.baseGain = cfg.baseGain; _pulley.shepRate = cfg.shepRate; _pulley.stealAmt = cfg.stealAmt;
+  _pulley.stealEvery = cfg.stealEvery; _pulley.stealWindow = cfg.stealWindow; _pulley.nextSteal = cfg.stealEvery;
+  _pulley.wind = cfg.wind;
+  _pulley.over = false; _pulley.win = false; _pulley.celebrate = 0;
+  _pulley.shake = 0; _pulley.drops = []; _pulley.bucketBob = 0;
+  _pulley.stealActive = false; _pulley.stealTimer = 0; _pulley.shepStun = 0; _pulley.shepLunge = 0;
+  _pulley.aiming = false; _pulley.proj = null; _pulley.curWind = 0;
+  const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
+  const bar = document.getElementById('pulleyBar'); if (bar) bar.style.display = 'none';        // timing bar retired
+  const pull = document.getElementById('pulleyPullBtn'); if (pull) pull.style.display = 'none'; // aim is on the canvas
+}
 function openWellPulleyGame(gate) {
-  _pulley.gate = gate;
-  _pulley.taps = 0; _pulley.timeLeft = 10;
-  _pulley.bucketY = _pulley.BUCKET_BOT; _pulley.targetY = _pulley.BUCKET_BOT;
-  _pulley.ropeSlipping = false; _pulley.succeeded = false;
+  _pulley.gate = gate; _pulley.lastFrame = 0;
+  _pulleyReset();
   game.state = 'dialog';
   try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.volume = Math.max(0.08, audio.bgm.volume * 0.35); } } catch(e){}
   const modal = document.getElementById('wellPulleyModal');
   modal.style.display = 'flex'; modal.classList.add('active');
-  document.getElementById('pulleyTaps').textContent = 'Taps: 0 / ' + _pulley.TAPS_NEEDED;
-  document.getElementById('pulleyTimer').textContent = '10s';
-  document.getElementById('pulleyProgress').style.width = '0%';
-  document.getElementById('pulleyFeedback').textContent = 'Tap PULL to draw water for the sheep!';
-  document.getElementById('pulleyPullBtn').disabled = false;
-  document.getElementById('pulleyPullBtn').textContent = 'PULL! 💧';
+  document.getElementById('pulleyTaps').textContent = '\u{1FAA3} You: 0%';
+  document.getElementById('pulleyTimer').textContent = 'Rival: 0% \u{1F410}';
+  document.getElementById('pulleyFeedback').textContent = 'Drag from Moses to aim — release to pour water into your trough!';
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
-  _pulley.timerHandle = setInterval(_pulleyTick, 1000);
 }
-function _pulleyTick() {
-  _pulley.timeLeft = Math.max(0, _pulley.timeLeft - 1);
-  document.getElementById('pulleyTimer').textContent = _pulley.timeLeft + 's';
-  if (_pulley.timeLeft <= 0 && !_pulley.succeeded) {
-    clearInterval(_pulley.timerHandle); _pulleyFail();
+// ---- aim input (pointer/touch on the canvas) ----
+function _pulleyCanvasPos(e) {
+  const c = document.getElementById('pulleyCanvas'); if (!c) return { x: 0, y: 0 };
+  const r = c.getBoundingClientRect();
+  const cx = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+  const cy = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY;
+  return { x: (cx - r.left) * (c.width / r.width), y: (cy - r.top) * (c.height / r.height) };
+}
+function _pulleyAimStart(e) {
+  if (_pulley.over || _pulley.proj || !_pulley.gate) return;
+  if (e.cancelable) e.preventDefault();
+  const p = _pulleyCanvasPos(e);
+  _pulley.aiming = true; _pulley.aimX = p.x; _pulley.aimY = p.y;
+  _pulley.curWind = _pulley.wind ? _pulley.wind * (Math.random() < 0.5 ? -1 : 1) : 0;  // fixed per shot, shown in preview
+}
+function _pulleyAimMove(e) {
+  if (!_pulley.aiming) return;
+  if (e.cancelable) e.preventDefault();
+  const p = _pulleyCanvasPos(e); _pulley.aimX = p.x; _pulley.aimY = p.y;
+}
+function _pulleyAimEnd(e) {
+  if (!_pulley.aiming) return;
+  if (e && e.cancelable) e.preventDefault();
+  _pulley.aiming = false;
+  _pulleyFire();
+}
+function _pulleyFire() {
+  const ax = _pulley.aimX - _pulley.L.x, ay = _pulley.aimY - _pulley.L.y;
+  const len = Math.hypot(ax, ay);
+  if (len < 10) { return; } // too small a drag to count
+  const power01 = Math.min(1, len / _pulley.MAXDRAG);
+  const dir = { x: ax / len, y: ay / len };
+  const speed = 120 + power01 * 360;
+  _pulley.proj = { x: _pulley.L.x, y: _pulley.L.y, vx: dir.x * speed, vy: dir.y * speed, trail: [] };
+  _pulley.bucketBob = 14;
+  try { play('waterSkin') || play('pop'); } catch(e){}
+}
+function _pulleyStartSteal() {
+  _pulley.stealActive = true; _pulley.stealTimer = _pulley.stealWindow; _pulley.shepLunge = 0;
+  const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = '';
+  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '⚠️ The rude shepherd grabs for your water — SHOO him!';
+  try { play('error'); } catch(e){}
+}
+function _pulleyEndSteal(blocked) {
+  _pulley.stealActive = false; _pulley.nextSteal = _pulley.stealEvery;
+  const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
+  const fb = document.getElementById('pulleyFeedback');
+  if (blocked) {
+    _pulley.shepStun = 1.7; _pulley.shake = 6;
+    if (fb) fb.textContent = 'Shooed him off! \u{1F4AA} He has to wait now.';
+    try { play('chime'); } catch(e){}
+  } else {
+    _pulley.mosesFill = Math.max(0, _pulley.mosesFill - _pulley.stealAmt);
+    _pulley.shake = 13; _pulleySpawnDrops(8, _pulley.TR.x + _pulley.TR.w / 2, 250, 50);
+    if (fb) fb.textContent = 'He stole some water! \u{1F62C} Tap SHOO faster next time.';
+    try { play('error'); } catch(e){}
   }
 }
-function _pulleyPull() {
-  if (_pulley.ropeSlipping || _pulley.succeeded || _pulley.timeLeft <= 0) return;
-  _pulley.taps++;
-  const progress = Math.min(1, _pulley.taps / _pulley.TAPS_NEEDED);
-  _pulley.targetY = _pulley.BUCKET_BOT - (_pulley.BUCKET_BOT - _pulley.BUCKET_TOP) * progress;
-  document.getElementById('pulleyTaps').textContent = 'Taps: ' + _pulley.taps + ' / ' + _pulley.TAPS_NEEDED;
-  document.getElementById('pulleyProgress').style.width = (progress * 100).toFixed(0) + '%';
-  try { play('pop'); } catch(e){}
-  if (progress >= 1) _pulleySucceed();
+function _pulleyShoo() {
+  if (_pulley.stealActive && !_pulley.over) _pulleyEndSteal(true);
 }
-function _pulleySucceed() {
-  _pulley.succeeded = true;
-  clearInterval(_pulley.timerHandle);
-  document.getElementById('pulleyFeedback').textContent = '🎉 Water for the flock! Well done!';
-  document.getElementById('pulleyPullBtn').disabled = true;
-  document.getElementById('pulleyPullBtn').textContent = '✨ Done!';
-  try { play('chime'); } catch(e){}
-  setTimeout(_closePulleyGame, 1800);
+function _pulleyWin() {
+  if (_pulley.over) return;
+  _pulley.over = true; _pulley.win = true; _pulley.celebrate = 0; _pulley.stealActive = false; _pulley.proj = null;
+  const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
+  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F389} You watered the flock first! Well done!';
+  try { play('success') || play('chime'); } catch(e){}
+  setTimeout(_closePulleyGame, 1900);
 }
-function _pulleyFail() {
-  _pulley.ropeSlipping = true;
-  document.getElementById('pulleyFeedback').textContent = '😅 The rope slipped! Try again!';
-  document.getElementById('pulleyPullBtn').disabled = true;
+function _pulleyLose() {
+  if (_pulley.over) return;
+  _pulley.over = true; _pulley.win = false; _pulley.stealActive = false; _pulley.proj = null;
+  const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
+  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F605} The rude shepherd filled his first — try again!';
+  try { play('error'); } catch(e){}
   setTimeout(() => {
-    if (!_pulley.gate) return; // modal was closed
-    _pulley.taps = 0; _pulley.timeLeft = 10;
-    _pulley.targetY = _pulley.BUCKET_BOT; _pulley.ropeSlipping = false;
-    document.getElementById('pulleyTaps').textContent = 'Taps: 0 / ' + _pulley.TAPS_NEEDED;
-    document.getElementById('pulleyTimer').textContent = '10s';
-    document.getElementById('pulleyProgress').style.width = '0%';
-    document.getElementById('pulleyFeedback').textContent = 'Tap PULL to draw water for the sheep!';
-    document.getElementById('pulleyPullBtn').disabled = false;
-    document.getElementById('pulleyPullBtn').textContent = 'PULL! 💧';
-    _pulley.timerHandle = setInterval(_pulleyTick, 1000);
-  }, 1500);
+    if (!_pulley.gate) return;
+    _pulleyReset();
+    document.getElementById('pulleyFeedback').textContent = 'Go again — drag from Moses to aim, then release!';
+  }, 1800);
 }
 function _closePulleyGame() {
   cancelAnimationFrame(_pulley.rafId);
@@ -7250,10 +7339,43 @@ function _closePulleyGame() {
   if (!gate) return;
   gate.solved = true; game.state = 'playing';
   try { spawnGlitterBurstAtPlayer(22); } catch(e){}
-  try { toast('Well drawn! Jethro\'s flock is watered. +5 stars! ✨'); } catch(e){}
+  try { toast('You beat the rude shepherd! Jethro\'s flock is watered. +5 stars! ✨'); } catch(e){}
   game.stars += 5; try { updateHudStars(); } catch(e){}
   try { if (typeof showVerseDrift === 'function') setTimeout(showVerseDrift, 600); } catch(e){}
   try { _saveCheckpoint(); } catch(e){}
+}
+// ---- drawing helpers ----
+function _pImg(key) {
+  const im = (typeof IMG !== 'undefined' && IMG) ? IMG[key] : null;
+  return (im && (im.width || im.naturalWidth)) ? im : null;
+}
+function _pDraw(c, keys, x, y, w, h, flip) {
+  let im = null;
+  const list = Array.isArray(keys) ? keys : [keys];
+  for (const k of list) { im = _pImg(k); if (im) break; }
+  if (!im) return false;
+  if (flip) { c.save(); c.translate(x + w, y); c.scale(-1, 1); c.drawImage(im, 0, 0, w, h); c.restore(); }
+  else c.drawImage(im, x, y, w, h);
+  return true;
+}
+function _pTrough(c, x, y, w, h, fill, mine, now) {
+  c.fillStyle = '#6a4326'; c.fillRect(x, y, w, h);
+  c.fillStyle = '#7d5430'; c.fillRect(x + 3, y + 3, w - 6, h - 6);
+  c.strokeStyle = '#3c2410'; c.lineWidth = 2; c.strokeRect(x, y, w, h);
+  const innerH = h - 8, innerW = w - 8;
+  const wh = Math.round(innerH * Math.max(0, Math.min(1, fill / 100)));
+  if (wh > 0) {
+    const wx = x + 4, wy = y + 4 + (innerH - wh);
+    const g = c.createLinearGradient(wx, wy, wx, wy + wh);
+    g.addColorStop(0, mine ? 'rgba(120,200,255,0.95)' : 'rgba(150,210,160,0.9)');
+    g.addColorStop(1, mine ? 'rgba(40,120,210,0.95)' : 'rgba(80,150,90,0.92)');
+    c.fillStyle = g; c.fillRect(wx, wy, innerW, wh);
+    c.strokeStyle = 'rgba(255,255,255,0.5)'; c.lineWidth = 1.5; c.beginPath();
+    for (let i = 0; i <= innerW; i += 6) c.lineTo(wx + i, wy + Math.sin(now / 220 + i / 14) * 1.6);
+    c.stroke();
+  }
+  c.fillStyle = '#fff'; c.font = 'bold 15px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(Math.round(fill) + '%', x + w / 2, y + h / 2);
 }
 function _pulleyFrame(now) {
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
@@ -7263,94 +7385,184 @@ function _pulleyFrame(now) {
   const W = canvas.width, H = canvas.height;
   const dt = Math.min(60, now - (_pulley.lastFrame || now));
   _pulley.lastFrame = now;
-  // Smooth bucket position
-  if (_pulley.ropeSlipping) {
-    _pulley.bucketY = Math.min(_pulley.BUCKET_BOT, _pulley.bucketY + 0.22 * dt);
-  } else {
-    _pulley.bucketY += (_pulley.targetY - _pulley.bucketY) * 0.12;
+  const dts = dt / 1000;
+  const fb = document.getElementById('pulleyFeedback');
+
+  // ---- update ----
+  if (!_pulley.over) {
+    // rival fills (unless stunned)
+    if (_pulley.shepStun > 0) _pulley.shepStun -= dts;
+    else _pulley.shepFill = Math.min(100, _pulley.shepFill + _pulley.shepRate * dts);
+    // steal scheduling
+    if (_pulley.stealActive) {
+      _pulley.shepLunge = Math.min(1, _pulley.shepLunge + dts * 3);
+      _pulley.stealTimer -= dts;
+      if (_pulley.stealTimer <= 0) _pulleyEndSteal(false);
+    } else {
+      _pulley.shepLunge = Math.max(0, _pulley.shepLunge - dts * 3);
+      _pulley.nextSteal -= dts;
+      if (_pulley.nextSteal <= 0 && _pulley.mosesFill > 6 && _pulley.mosesFill < 96 && _pulley.shepFill < 92 && _pulley.shepStun <= 0) _pulleyStartSteal();
+    }
+    // projectile integration
+    if (_pulley.proj) {
+      const pr = _pulley.proj;
+      pr.vy += _pulley.GRAV * dts; pr.vx += _pulley.curWind * dts;
+      pr.x += pr.vx * dts; pr.y += pr.vy * dts;
+      pr.trail.push({ x: pr.x, y: pr.y }); if (pr.trail.length > 16) pr.trail.shift();
+      if (pr.vy > 0 && pr.y >= _pulley.GROUND) {
+        const x = pr.x, T = _pulley.TR, inX0 = T.x + 6, inX1 = T.x + T.w - 6, cx = T.x + T.w / 2;
+        if (x >= inX0 && x <= inX1) {
+          const acc = Math.max(0, 1 - Math.abs(x - cx) / ((T.w - 12) / 2));
+          const add = _pulley.baseGain * (0.45 + 0.55 * acc);
+          _pulley.mosesFill = Math.min(100, _pulley.mosesFill + add);
+          _pulleySpawnDrops(10, x, _pulley.GROUND, 28);
+          try { play('oasisWater') || play('chime'); } catch(e){}
+          if (fb) fb.textContent = acc > 0.7 ? ('\u{1F3AF} Bullseye! +' + Math.round(add) + '%') : ('Splash — in the trough! +' + Math.round(add) + '%');
+        } else {
+          _pulleySpawnDrops(6, Math.max(8, Math.min(W - 8, x)), _pulley.GROUND + 2, 22);
+          try { play('pop'); } catch(e){}
+          if (fb) fb.textContent = (x < inX0) ? 'Too short — more power or a flatter angle!' : 'Too far — ease the power!';
+        }
+        _pulley.proj = null;
+        if (_pulley.mosesFill >= 100) _pulleyWin();
+      } else if (pr.x < -30 || pr.x > W + 30 || pr.y > H + 60) {
+        _pulley.proj = null; if (fb) fb.textContent = 'Missed! Aim again.';
+      }
+    }
+    if (_pulley.shepFill >= 100) _pulleyLose();
+    else if (_pulley.mosesFill >= 100) _pulleyWin();
+  } else if (_pulley.win) {
+    _pulley.celebrate += dts;
+    if (Math.random() < 0.4) _pulley.drops.push({ x: 50 + Math.random() * 220, y: 250, vx: (Math.random() - 0.5) * 2, vy: -2 - Math.random() * 2, t: 0, life: 26, conf: true });
   }
-  // Sky/well background
-  const bg = c.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0d2a45'); bg.addColorStop(1, '#1a4060');
-  c.fillStyle = bg; c.fillRect(0, 0, W, H);
-  // Well shaft walls (stone)
-  c.fillStyle = '#5a4030'; c.fillRect(136, 0, 8, H);
-  c.fillStyle = '#4a3020'; c.fillRect(176, 0, 8, H);
-  // Stone blocks on walls
-  c.strokeStyle = '#3a2010'; c.lineWidth = 1;
-  for (let wy = 0; wy < H; wy += 20) {
-    c.strokeRect(136, wy, 8, 20); c.strokeRect(176, wy, 8, 20);
+  // readouts
+  const youEl = document.getElementById('pulleyTaps'); if (youEl) youEl.textContent = '\u{1FAA3} You: ' + Math.round(_pulley.mosesFill) + '%';
+  const rivEl = document.getElementById('pulleyTimer'); if (rivEl) rivEl.textContent = 'Rival: ' + Math.round(_pulley.shepFill) + '% \u{1F410}';
+  _pulley.bucketBob *= 0.9;
+  const sx = _pulley.shake > 0.2 ? Math.sin(now / 26) * _pulley.shake : 0;
+  if (_pulley.shake > 0) _pulley.shake *= 0.84;
+
+  // ---- draw ----
+  c.save();
+  c.translate(sx, 0);
+  // sky + ground
+  if (!_pDraw(c, ['scene3Bg', 'midian'], -4, -4, W + 8, H + 8)) {
+    const sky = c.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#bfe6f2'); sky.addColorStop(0.55, '#e8d9a8'); sky.addColorStop(1, '#d8b878');
+    c.fillStyle = sky; c.fillRect(-4, -4, W + 8, H + 8);
+    c.fillStyle = '#cda866'; c.fillRect(-4, 226, W + 8, H - 222);
   }
-  // Water at bottom of well (deep blue)
-  const waterG = c.createLinearGradient(136, H - 28, 136, H);
-  waterG.addColorStop(0, 'rgba(30,90,180,0.6)'); waterG.addColorStop(1, 'rgba(20,60,130,0.8)');
-  c.fillStyle = waterG; c.fillRect(136, H - 28, 48, 28);
-  // Water ripple
-  c.strokeStyle = 'rgba(100,180,255,0.4)'; c.lineWidth = 1;
-  c.beginPath(); const rw = (now / 400) % 24;
-  c.ellipse(160, H - 14, 8 + rw, 3, 0, 0, Math.PI * 2); c.stroke();
-  // Pulley wheel at top
-  c.fillStyle = '#7a5a30'; c.beginPath(); c.arc(160, 12, 9, 0, Math.PI * 2); c.fill();
-  c.fillStyle = '#c09060'; c.beginPath(); c.arc(160, 12, 5, 0, Math.PI * 2); c.fill();
-  c.fillStyle = '#e0b070'; c.beginPath(); c.arc(160, 12, 2, 0, Math.PI * 2); c.fill();
-  // Stone rim at top
-  const rim = c.createLinearGradient(120, 0, 200, 0);
-  rim.addColorStop(0, '#7a6050'); rim.addColorStop(0.5, '#c0a070'); rim.addColorStop(1, '#7a6050');
-  c.fillStyle = rim; c.fillRect(116, 0, 88, 16);
-  // Rope from pulley to bucket
-  const bcy = Math.round(_pulley.bucketY);
-  const wobble = _pulley.ropeSlipping ? Math.sin(now / 55) * 3 : 0;
-  c.strokeStyle = '#c09050'; c.lineWidth = 2.5;
-  c.beginPath(); c.moveTo(160, 21); c.lineTo(160 + wobble, bcy); c.stroke();
-  // Bucket
-  const bw = 26, bh = 16, bx = 160 - bw/2 + wobble, by = bcy;
-  const bkg = c.createLinearGradient(bx, by, bx, by + bh);
-  bkg.addColorStop(0, '#c07030'); bkg.addColorStop(1, '#7a3a10');
-  c.fillStyle = bkg;
-  c.beginPath();
-  c.moveTo(bx + 2, by); c.lineTo(bx + bw - 2, by);
-  c.lineTo(bx + bw, by + bh); c.lineTo(bx, by + bh); c.closePath(); c.fill();
-  c.strokeStyle = '#3a1a00'; c.lineWidth = 1; c.stroke();
-  // Water fill inside bucket
-  if (_pulley.taps > 0 && !_pulley.ropeSlipping) {
-    const wl = Math.min(1, _pulley.taps / _pulley.TAPS_NEEDED);
-    c.fillStyle = 'rgba(50,130,220,0.75)';
-    c.fillRect(bx + 2, by + bh - Math.round(bh * 0.7 * wl), bw - 4, Math.round(bh * 0.7 * wl));
+  c.fillStyle = 'rgba(255,240,180,0.5)'; c.beginPath(); c.arc(W - 60, 46, 32, 0, Math.PI * 2); c.fill();
+
+  // ---- Moses side (left): he heaves his rope at his well, pours into his trough ----
+  _pDraw(c, ['midianWell', 'wellMouth'], 64, 86, 132, 150);                 // his well (rope+bucket built in)
+  _pDraw(c, ['mosesPull', 'mosesRight', 'mosesFront', 'moses'], 0, 150, 130, 140);
+  _pDraw(c, ['sheep', 'sheepRight'], 196, 250, 50, 40);
+  _pDraw(c, ['lamb', 'lambAlt'], 232, 264, 28, 22);
+  _pTrough(c, _pulley.TR.x, _pulley.TR.y, _pulley.TR.w, _pulley.TR.h, _pulley.mosesFill, true, now);
+
+  // ---- Rude shepherd side (right): mirror — his own well + trough ----
+  const lunge = _pulley.shepLunge * 16;
+  _pDraw(c, ['midianWell', 'wellMouth'], 404, 86, 132, 150, true);          // flipped so its bucket faces him
+  _pDraw(c, ['shepPull', 'shepherdLeft', 'shepherdFront'], 470 - lunge, 150, 130, 140, _pImg('shepPull') ? false : (_pImg('shepherdLeft') ? false : true));
+  _pDraw(c, ['goat'], 354, 250, 50, 40);
+  _pTrough(c, _pulley.SR.x, _pulley.SR.y, _pulley.SR.w, _pulley.SR.h, _pulley.shepFill, false, now);
+
+  // small corner name tags (kept clear of the characters)
+  c.font = 'bold 12px Georgia'; c.textBaseline = 'alphabetic';
+  c.fillStyle = '#cfeaff'; c.textAlign = 'left';  c.fillText('MOSES (YOU)', 8, 332);
+  c.fillStyle = '#ffd0b0'; c.textAlign = 'right'; c.fillText('RUDE SHEPHERD', W - 8, 332);
+
+  // target glow on Moses' trough opening
+  if (!_pulley.over && !_pulley.proj) {
+    c.fillStyle = 'rgba(120,220,255,' + (0.18 + 0.12 * Math.sin(now / 300)).toFixed(2) + ')';
+    c.fillRect(_pulley.TR.x + 6, _pulley.TR.y - 3, _pulley.TR.w - 12, 5);
   }
-  // Rope handle across bucket top
-  c.strokeStyle = '#c09050'; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(bx, by); c.lineTo(bx + bw, by); c.stroke();
-  // Sheep (3 silhouettes at the trough)
-  const sheep = [{x:28,y:166},{x:258,y:162},{x:288,y:170}];
-  const sheepBob = _pulley.succeeded ? Math.sin(now / 120) * 3 : 0;
-  for (const sp of sheep) {
-    c.fillStyle = '#d0c8b8';
-    c.beginPath(); c.ellipse(sp.x, sp.y + sheepBob, 13, 8, 0, 0, Math.PI*2); c.fill();
-    c.fillStyle = '#9a9090';
-    c.beginPath(); c.ellipse(sp.x + 11, sp.y - 4 + sheepBob, 5, 5, 0, 0, Math.PI*2); c.fill();
-    c.strokeStyle = '#9a9090'; c.lineWidth = 2;
-    c.beginPath(); c.moveTo(sp.x - 4, sp.y + 8 + sheepBob); c.lineTo(sp.x - 4, sp.y + 14 + sheepBob);
-    c.moveTo(sp.x + 4, sp.y + 8 + sheepBob); c.lineTo(sp.x + 4, sp.y + 14 + sheepBob); c.stroke();
+
+  // ---- aim preview (dotted trajectory + angle/power + wind) ----
+  if (_pulley.aiming) {
+    const ax = _pulley.aimX - _pulley.L.x, ay = _pulley.aimY - _pulley.L.y;
+    const len = Math.hypot(ax, ay);
+    if (len > 8) {
+      const power01 = Math.min(1, len / _pulley.MAXDRAG);
+      const dir = { x: ax / len, y: ay / len };
+      const speed = 120 + power01 * 360;
+      let px = _pulley.L.x, py = _pulley.L.y, pvx = dir.x * speed, pvy = dir.y * speed;
+      const step = 1 / 60;
+      c.fillStyle = 'rgba(255,255,255,0.9)';
+      for (let t = 0; t < 80; t++) {
+        pvy += _pulley.GRAV * step; pvx += _pulley.curWind * step;
+        px += pvx * step; py += pvy * step;
+        if (py > _pulley.GROUND + 4 || px > W + 20 || px < -20) break;
+        if (t % 3 === 0) { c.beginPath(); c.arc(px, py, 2.1, 0, Math.PI * 2); c.fill(); }
+      }
+      // launch arrow
+      c.strokeStyle = '#ffe06a'; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(_pulley.L.x, _pulley.L.y); c.lineTo(_pulley.L.x + dir.x * 42, _pulley.L.y + dir.y * 42); c.stroke();
+      // angle + power readout
+      // angle + power readout — top-centre strip, clear of the characters
+      const ang = Math.round(Math.atan2(-ay, ax) * 180 / Math.PI);
+      c.fillStyle = 'rgba(20,40,70,0.82)'; c.fillRect(W / 2 - 108, 8, 216, 26);
+      c.strokeStyle = 'rgba(255,224,106,0.7)'; c.lineWidth = 1.5; c.strokeRect(W / 2 - 108, 8, 216, 26);
+      c.fillStyle = '#fff'; c.font = 'bold 15px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('Angle ' + ang + '°    Power ' + Math.round(power01 * 100) + '%', W / 2, 21);
+    }
   }
-  // Trough
-  c.fillStyle = '#5a3a20'; c.fillRect(6, 180, 308, 8);
-  // Water in trough fills as bucket rises
-  const tf = Math.max(0, 1 - (_pulley.bucketY - _pulley.BUCKET_TOP) / (_pulley.BUCKET_BOT - _pulley.BUCKET_TOP));
-  if (tf > 0) { c.fillStyle = `rgba(50,130,220,${(tf * 0.65).toFixed(2)})`; c.fillRect(8, 180, Math.round(304 * tf), 8); }
-  // Success glow overlay
-  if (_pulley.succeeded) {
-    c.fillStyle = 'rgba(255,230,100,0.22)'; c.fillRect(0, 0, W, H);
-    c.fillStyle = 'rgba(255,240,160,0.92)'; c.font = 'bold 18px Georgia';
-    c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText('🎉 Water for the flock!', W/2, H/2 - 10);
+  // wind indicator — top-centre, just under the stats strip
+  if (_pulley.wind && !_pulley.over) {
+    const wdir = _pulley.curWind || (_pulley.wind);
+    c.fillStyle = 'rgba(20,40,70,0.6)'; c.fillRect(W / 2 - 46, 38, 92, 20);
+    c.fillStyle = '#ffe0a0'; c.font = 'bold 13px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('Wind ' + (wdir < 0 ? '←' : '→'), W / 2, 48);
   }
+
+  // projectile water glob + trail
+  if (_pulley.proj) {
+    for (const tp of _pulley.proj.trail) { c.fillStyle = 'rgba(120,200,255,0.45)'; c.beginPath(); c.arc(tp.x, tp.y, 2.2, 0, Math.PI * 2); c.fill(); }
+    c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(_pulley.proj.x, _pulley.proj.y, 6.5, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.8)'; c.beginPath(); c.arc(_pulley.proj.x - 2, _pulley.proj.y - 2, 2.2, 0, Math.PI * 2); c.fill();
+  }
+
+  // droplet / confetti particles
+  for (let i = _pulley.drops.length - 1; i >= 0; i--) {
+    const d = _pulley.drops[i]; d.t++; d.x += d.vx; d.y += d.vy; d.vy += 0.18;
+    if (d.t > d.life) { _pulley.drops.splice(i, 1); continue; }
+    const a = Math.max(0, 1 - d.t / d.life);
+    if (d.conf) { c.fillStyle = ['#ffd86a', '#7fd0ff', '#ff8aa0', '#9affb0'][i % 4]; c.globalAlpha = a; c.fillRect(d.x, d.y, 4, 4); c.globalAlpha = 1; }
+    else { c.fillStyle = 'rgba(120,200,255,' + a.toFixed(2) + ')'; c.beginPath(); c.arc(d.x, d.y, 2.4, 0, Math.PI * 2); c.fill(); }
+  }
+
+  // win overlay
+  if (_pulley.over && _pulley.win) {
+    c.fillStyle = 'rgba(255,230,120,' + (0.12 + 0.06 * Math.sin(now / 120)).toFixed(2) + ')'; c.fillRect(0, 0, W, H);
+    c.fillStyle = 'rgba(20,50,30,0.78)'; c.fillRect(W / 2 - 150, H / 2 - 26, 300, 52);
+    c.fillStyle = '#fff'; c.font = 'bold 22px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('\u{1F389} You watered the flock!', W / 2, H / 2);
+  }
+  c.restore();
 }
-// Wire up PULL button + reset helper
+// Wire up the SHOO button + the canvas aim (drag to set angle/power, release to fire)
 (function() {
-  const btn = document.getElementById('pulleyPullBtn');
-  if (btn) {
-    btn.addEventListener('click', _pulleyPull);
-    btn.addEventListener('touchend', (e) => { e.preventDefault(); _pulleyPull(); });
+  const shoo = document.getElementById('pulleyShooBtn');
+  if (shoo) {
+    shoo.addEventListener('click', _pulleyShoo);
+    shoo.addEventListener('touchend', (e) => { e.preventDefault(); _pulleyShoo(); });
+  }
+  const cv = document.getElementById('pulleyCanvas');
+  if (cv) {
+    if (window.PointerEvent) {
+      cv.addEventListener('pointerdown', _pulleyAimStart);
+      window.addEventListener('pointermove', _pulleyAimMove);
+      window.addEventListener('pointerup', _pulleyAimEnd);
+      cv.style.touchAction = 'none';
+    } else {
+      cv.addEventListener('mousedown', _pulleyAimStart);
+      window.addEventListener('mousemove', _pulleyAimMove);
+      window.addEventListener('mouseup', _pulleyAimEnd);
+      cv.addEventListener('touchstart', _pulleyAimStart, { passive: false });
+      cv.addEventListener('touchmove', _pulleyAimMove, { passive: false });
+      cv.addEventListener('touchend', _pulleyAimEnd, { passive: false });
+    }
   }
 })();
 
