@@ -7216,15 +7216,15 @@ function _pulleyCfg() {
 // ---- pot layout: 3 per side, varied distance + elevation, re-rolled each round ----
 function _pulleyLayoutPots() {
   const rnd = (a, b) => a + Math.random() * (b - a);
+  // All MY pots stay left of the centre divider (x<300); all the rival's stay
+  // right of it — so it always reads as "your side" vs "his side".
   _pulley.pots = [
-    // Moses' pots (mine) — left-centre lane
-    { mine: true,  x: rnd(196, 212), y: 292,            onRock: false },
-    { mine: true,  x: rnd(258, 276), y: rnd(244, 256),  onRock: true  },
-    { mine: true,  x: rnd(312, 330), y: rnd(286, 294),  onRock: false },
-    // Rude shepherd's pots — right-centre lane
-    { mine: false, x: rnd(350, 366), y: 292,            onRock: false },
-    { mine: false, x: rnd(398, 416), y: rnd(244, 256),  onRock: true  },
-    { mine: false, x: rnd(452, 466), y: rnd(286, 294),  onRock: false },
+    { mine: true,  x: rnd(192, 204), y: 292,            onRock: false },
+    { mine: true,  x: rnd(238, 256), y: rnd(244, 256),  onRock: true  },
+    { mine: true,  x: rnd(280, 294), y: rnd(286, 294),  onRock: false },
+    { mine: false, x: rnd(316, 330), y: rnd(286, 294),  onRock: false },
+    { mine: false, x: rnd(356, 374), y: rnd(244, 256),  onRock: true  },
+    { mine: false, x: rnd(398, 412), y: 292,            onRock: false },
   ];
   _pulley.pots.forEach(p => { p.fill = 0; p.done = false; p.pop = 0; });
 }
@@ -7560,9 +7560,21 @@ function _pulleyFrame(now) {
   }
   c.fillStyle = 'rgba(255,240,180,0.5)'; c.beginPath(); c.arc(W - 60, 46, 32, 0, Math.PI * 2); c.fill();
 
+  // side zones + centre divider so it's obvious which pots are whose
+  c.fillStyle = 'rgba(80,150,220,0.10)'; c.beginPath(); c.ellipse(245, 302, 118, 30, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(170,130,70,0.12)'; c.beginPath(); c.ellipse(360, 302, 118, 30, 0, 0, Math.PI * 2); c.fill();
+  // small cairn divider at centre
+  c.fillStyle = '#9a8a66'; c.beginPath(); c.ellipse(302, 300, 12, 6, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#867655'; c.beginPath(); c.ellipse(302, 293, 9, 5, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#9a8a66'; c.beginPath(); c.ellipse(302, 287, 6, 4, 0, 0, Math.PI * 2); c.fill();
+  // tiny side captions above each cluster
+  c.font = 'bold 11px Georgia'; c.textBaseline = 'alphabetic'; c.textAlign = 'center';
+  c.fillStyle = 'rgba(190,228,255,0.92)'; c.fillText('YOUR POTS', 150, 318);
+  c.fillStyle = 'rgba(255,214,184,0.92)'; c.fillText("SHEPHERD'S", 452, 318);
+
   // wells (real art); shepherd's is mirrored so its bucket faces him
-  _pDraw(c, ['midianWell', 'wellMouth'], 56, 86, 132, 150);
-  _pDraw(c, ['midianWell', 'wellMouth'], 412, 86, 132, 150, true);
+  _pDraw(c, ['midianWell', 'wellMouth'], 52, 86, 132, 150);
+  _pDraw(c, ['midianWell', 'wellMouth'], 426, 86, 132, 150, true);
 
   // characters
   const mBob = Math.sin(now / 430) * 2.4, heave = _pulley.bucketBob;
