@@ -8,6 +8,12 @@
   For personal use only. Distribution prohibited.
 -->
 <meta charset="UTF-8">
+<!-- Cache hygiene: HTML must always revalidate so deploys show up immediately.
+     The service worker (sw.js) bypasses the HTTP cache for HTML; these tags are
+     the fallback for first loads / when no SW is active. Bump bek-build on deploy. -->
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="bek-build" content="2026-05-21-cachebust-v5">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <!-- 2026-05-15 PM25 (audit #1: safe-area-insets). viewport-fit=cover
      opts the page into iPhone notch / Dynamic Island / home-indicator

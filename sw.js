@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v4';
+const CACHE_VERSION = 'bek-bundle-v5';
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
@@ -37,9 +37,13 @@ self.addEventListener('fetch', (e) => {
 
   if (isHTML) {
     // Network-FIRST for HTML so code/content updates always come through;
-    // fall back to cache only when offline.
+    // fall back to cache only when offline. `cache: 'reload'` makes the
+    // network fetch BYPASS the browser HTTP cache — without it, GitHub Pages'
+    // `Cache-Control: max-age=600` on the HTML means a plain fetch() can hand
+    // back a stale page for up to ~10 min after a deploy (the cache bug kids
+    // kept hitting). With reload we always revalidate against the server.
     e.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'reload' })
         .then((res) => {
           if (res && res.status === 200) {
             const copy = res.clone();

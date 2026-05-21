@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Cache hygiene: HTML must always revalidate so deploys show up immediately.
+     The service worker (sw.js) bypasses the HTTP cache for HTML; these tags are
+     the fallback for first loads / when no SW is active. Bump bek-build on deploy. -->
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="bek-build" content="2026-05-21-cachebust-v5">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="copyright" content="copyright 2025 Bible Explorer Kids. All rights reserved.">
 <meta name="author" content="Bible Explorer Kids">
