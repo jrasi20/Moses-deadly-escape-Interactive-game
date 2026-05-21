@@ -4385,31 +4385,45 @@ const SPRITE_QUALITY_DOWNSCALE = new Set([
 ]);
 for (const k in IMG_SRC) {
   const img = new Image();
+  // 2026-05-21 (Jane: "when I go to main menu and come back, the sprites
+  // don't load the first time; a refresh fixes it"). imagesReady gates the
+  // whole render (PM63k loading screen). If a sprite's load/decode never
+  // settles — a stale or half-written service-worker cache entry can leave
+  // BOTH onload and onerror silent — imagesReady never reaches imagesTotal
+  // and the map stays on "Loading the desert…" until a manual refresh.
+  // Make every increment idempotent (_bump) and add a watchdog that
+  // re-fetches a stuck sprite cache-busted, then counts it no matter what.
+  let _counted = false;
+  const _bump = () => {
+    if (_counted) return;
+    _counted = true;
+    imagesReady++;
+    if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+  };
+  const _store = (src) => {
+    try {
+      // v3.19: Bleed RGB into transparent edge pixels FIRST to kill white halos
+      const bled = SPRITE_BLEED.has(k) ? _alphaBleed(src) : src;
+      // v3.26 Jane 2026-04-26: load-time multi-step downscale ONLY for the
+      // explicit SPRITE_QUALITY_DOWNSCALE set. Everything else keeps the
+      // safer SKIP_PRERENDER path (fixes Jane's "oasis is so distorted /
+      // blurred" without re-breaking guard / Moses-back / Moses-right).
+      if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
+        IMG[k] = _preRender(bled, 256);
+      } else if (SKIP_PRERENDER.has(k)) {
+        IMG[k] = bled;
+      } else {
+        IMG[k] = _preRender(bled);
+      }
+    } catch(e) { IMG[k] = src; }
+  };
   img.onload = () => {
     // 2026-05-19 (Jane: "sprites don't all load on the first pass; a reload
     // fixes it"). onload fires when the PNG is downloaded but NOT yet
     // decoded — so the first draw decodes on the main thread and the sprite
     // can flash missing. Force a full decode() before counting the image as
     // ready, so the game only starts once every sprite is render-instant.
-    const _finalize = () => {
-      try {
-        // v3.19: Bleed RGB into transparent edge pixels FIRST to kill white halos
-        const bled = SPRITE_BLEED.has(k) ? _alphaBleed(img) : img;
-        // v3.26 Jane 2026-04-26: load-time multi-step downscale ONLY for the
-        // explicit SPRITE_QUALITY_DOWNSCALE set. Everything else keeps the
-        // safer SKIP_PRERENDER path (fixes Jane's "oasis is so distorted /
-        // blurred" without re-breaking guard / Moses-back / Moses-right).
-        if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
-          IMG[k] = _preRender(bled, 256);
-        } else if (SKIP_PRERENDER.has(k)) {
-          IMG[k] = bled;
-        } else {
-          IMG[k] = _preRender(bled);
-        }
-      } catch(e) { IMG[k] = img; }
-      imagesReady++;
-      if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
-    };
+    const _finalize = () => { _store(img); _bump(); };
     if (typeof img.decode === 'function') img.decode().then(_finalize).catch(_finalize);
     else _finalize();
   };
@@ -4418,11 +4432,29 @@ for (const k in IMG_SRC) {
       window._imgFailures.push({ key: k, src: IMG_SRC[k] });
       console.warn('[IMG load FAILED]', k, '->', IMG_SRC[k]);
     } catch(e){}
-    imagesReady++;
-    if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    _bump();
   };
   img.src = IMG_SRC[k];
   IMG[k] = img;
+  // Watchdog: only fires if this sprite never settled (15 s is well clear of
+  // a legitimately slow load). Re-fetch cache-busted so a corrupt SW-cache
+  // entry is actually replaced with a working sprite; backstop-count after
+  // so the render gate can never hang the whole map.
+  ((srcUrl) => {
+    setTimeout(() => {
+      if (_counted) return;
+      try { window._imgFailures.push({ key: k, src: srcUrl, stalled: true }); } catch(e){}
+      const retry = new Image();
+      retry.onload = () => {
+        const fin = () => { _store(retry); _bump(); };
+        if (typeof retry.decode === 'function') retry.decode().then(fin).catch(fin);
+        else fin();
+      };
+      retry.onerror = _bump;
+      retry.src = srcUrl + (srcUrl.indexOf('?') >= 0 ? '&' : '?') + '_swretry=' + Date.now();
+      setTimeout(_bump, 6000);
+    }, 15000);
+  })(IMG_SRC[k]);
 }
 
 /* ---------- v3.28: PRELOAD PROGRESS TRACKING ----------
