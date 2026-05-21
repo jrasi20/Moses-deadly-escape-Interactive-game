@@ -6353,7 +6353,7 @@ function playIntroPan(onDone){
     const lbl = document.createElement('div');
     lbl.id = '_introPanLabel';
     lbl.style.cssText = 'position:fixed;top:12%;left:50%;transform:translateX(-50%);z-index:55;background:linear-gradient(180deg,#3a1708,#5a2510);color:#ffd976;border:3px solid #ffd976;padding:10px 22px;border-radius:14px;font-family:Georgia,serif;font-weight:900;font-size:18px;letter-spacing:1px;box-shadow:0 6px 20px rgba(0,0,0,0.55);text-shadow:0 0 8px rgba(255,217,118,0.55);pointer-events:none;opacity:0;transition:opacity 0.35s, background 0.35s;text-align:center;line-height:1.35;';
-    lbl.innerHTML = 'Help Moses reach the well at Midian!';
+    lbl.innerHTML = 'Help Moses cross to Midian!';
     document.body.appendChild(lbl);
     _introPanLabel = lbl;
     setTimeout(() => { try { lbl.style.opacity = '1'; } catch(e){} }, 30);
@@ -6382,7 +6382,12 @@ function playIntroPan(onDone){
           // Rewrote the banner to describe what the kid is actually
           // doing: find checkpoints + caravan map pieces. No mention
           // of the exit until the kid earns it.
-          _introPanLabel.innerHTML = 'Cross the desert, Moses!<br><span style="font-size:13px;font-weight:600;letter-spacing:0.3px;">Clear every checkpoint and find the 3 caravan map pieces.</span>';
+          // 2026-05-21 PM64 (Jane: "turn off overhead messages for events we
+          // have tutorials for"). Dropped the "clear every checkpoint / find
+          // the 3 map pieces" objective subtext — both now have their own
+          // proximity tip-popup tutorials, so the overhead banner stays a
+          // brief atmospheric line only.
+          _introPanLabel.innerHTML = 'Cross the desert, Moses!';
           _introPanLabel.style.background = 'linear-gradient(180deg,#0f3a1a,#1f6b2e)';
           _introPanLabel.style.color = '#ffeaa3';
           _introPanLabel.style.borderColor = '#ffeaa3';
@@ -7730,6 +7735,7 @@ const _firstEventSeen = {
   quicksand: false,
   cave: false,
   caravan: false,
+  mapPiece: false,   // 2026-05-21 PM64: first caravan-map scrap proximity tip
 };
 function _resetFirstEventSeen(){
   for (const k in _firstEventSeen) _firstEventSeen[k] = false;
@@ -17944,6 +17950,29 @@ function loop(now){
               title: 'A Desert Treasure',
               body: 'Walk over a treasure bag to pick it up — each one gives +2 stars. Collect every bag of one colour for a bonus heart!',
               pointAtTile: { tx: _bx, ty: _by },
+            });
+          }
+        }
+      } catch(e){}
+      // 2026-05-21 PM64 (Jane: "turn off overhead messages for events we have
+      // tutorials for"). Map pieces were the one objective with NO proximity
+      // tutorial — only the overhead intro banner mentioned them. Give the
+      // first uncollected caravan-map scrap its own tip popup so the overhead
+      // banner can drop the objective text entirely.
+      try {
+        if (!_firstEventSeen.mapPiece && window._mosesMoved && typeof interactables !== 'undefined') {
+          let _mp = null, _mpD = 99;
+          for (const _o of interactables) {
+            if (!_o || _o.kind !== 'mapFragment' || _o.used) continue;
+            const d = Math.max(Math.abs(player.tx - _o.tx), Math.abs(player.ty - _o.ty));
+            if (d <= 3 && d < _mpD) { _mpD = d; _mp = _o; }
+          }
+          if (_mp) {
+            showTipPopup('mapPiece', {
+              icon: '🗺️',
+              title: 'A Caravan Map Scrap',
+              body: 'Walk over this torn map scrap to pick it up — no button needed. Find all 3 and clear every checkpoint to reveal the hidden path to Midian.',
+              pointAtTile: { tx: _mp.tx, ty: _mp.ty },
             });
           }
         }
