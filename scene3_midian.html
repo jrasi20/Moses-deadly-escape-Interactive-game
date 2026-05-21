@@ -7198,7 +7198,7 @@ const _pulley = {
   mosesFill: 0, shepFill: 0,
   baseGain: 18, shepRate: 5, stealAmt: 11, stealEvery: 5, stealWindow: 1.6, wind: 0,
   over: false, win: false, celebrate: 0,
-  shake: 0, drops: [], bucketBob: 0,
+  shake: 0, drops: [], cues: [], bucketBob: 0,
   stealActive: false, stealTimer: 0, nextSteal: 5, shepStun: 0, shepLunge: 0,
   // aim / projectile
   aiming: false, aimX: 0, aimY: 0, proj: null, curWind: 0,
@@ -7215,13 +7215,17 @@ function _pulleyCfg() {
   if (d === 'medium') return { baseGain: 15, shepRate: 3.4, stealAmt: 9,  stealEvery: 5.5, stealWindow: 1.8, wind: 60 };  // ~29s
   return { baseGain: 16, shepRate: 2.4, stealAmt: 6, stealEvery: 7.0, stealWindow: 2.3, wind: 0 }; // easy ~42s
 }
-function _pulleySpawnDrops(n, x, y, spread) {
+function _pulleySpawnDrops(n, x, y, spread, sand) {
   const sp = spread || 26;
   for (let i = 0; i < n; i++) {
     _pulley.drops.push({ x: x + (Math.random() - 0.5) * sp, y: y,
       vx: (Math.random() - 0.5) * 2.0, vy: -1.6 - Math.random() * 2.0,
-      t: 0, life: 26 + Math.random() * 22 });
+      t: 0, life: 26 + Math.random() * 22, sand: !!sand });
   }
+}
+// A floating text cue that rises and fades — used so a miss/score is never silent.
+function _pulleyCue(text, x, y, color) {
+  _pulley.cues.push({ text: text, x: x, y: y, color: color || '#fff', t: 0, life: 70 });
 }
 function _pulleyReset() {
   const cfg = _pulleyCfg();
@@ -7230,7 +7234,8 @@ function _pulleyReset() {
   _pulley.stealEvery = cfg.stealEvery; _pulley.stealWindow = cfg.stealWindow; _pulley.nextSteal = cfg.stealEvery;
   _pulley.wind = cfg.wind;
   _pulley.over = false; _pulley.win = false; _pulley.celebrate = 0;
-  _pulley.shake = 0; _pulley.drops = []; _pulley.bucketBob = 0;
+  _pulley.shake = 0; _pulley.drops = []; _pulley.cues = []; _pulley.bucketBob = 0;
+  _pulley.mosesSay = null; _pulley.shepSay = null;
   _pulley.stealActive = false; _pulley.stealTimer = 0; _pulley.shepStun = 0; _pulley.shepLunge = 0;
   _pulley.aiming = false; _pulley.proj = null; _pulley.curWind = 0;
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
@@ -7241,12 +7246,15 @@ function openWellPulleyGame(gate) {
   _pulley.gate = gate; _pulley.lastFrame = 0;
   _pulleyReset();
   game.state = 'dialog';
-  try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.volume = Math.max(0.08, audio.bgm.volume * 0.35); } } catch(e){}
+  try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.volume = Math.max(0.18, audio.bgm.volume * 0.62); } } catch(e){}
   const modal = document.getElementById('wellPulleyModal');
   modal.style.display = 'flex'; modal.classList.add('active');
   document.getElementById('pulleyTaps').textContent = '\u{1FAA3} You: 0%';
   document.getElementById('pulleyTimer').textContent = 'Rival: 0% \u{1F410}';
   document.getElementById('pulleyFeedback').textContent = 'Drag from Moses to aim — release to pour water into your trough!';
+  // opening banter to set the rivalry
+  _pulley.mosesSay = { text: 'This water is for Jethro’s flock!', t: 0 };
+  setTimeout(() => { if (_pulley.gate) _pulley.shepSay = { text: 'We’ll see about that!', t: 0 }; }, 1400);
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
 }
 // ---- aim input (pointer/touch on the canvas) ----
@@ -7290,7 +7298,8 @@ function _pulleyStartSteal() {
   _pulley.stealActive = true; _pulley.stealTimer = _pulley.stealWindow; _pulley.shepLunge = 0;
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = '';
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '⚠️ The rude shepherd grabs for your water — SHOO him!';
-  try { play('error'); } catch(e){}
+  _pulley.shepSay = { text: 'That water is mine!', t: 0 };
+  try { play('mirageWoosh') || play('pop'); } catch(e){}
 }
 function _pulleyEndSteal(blocked) {
   _pulley.stealActive = false; _pulley.nextSteal = _pulley.stealEvery;
@@ -7299,12 +7308,15 @@ function _pulleyEndSteal(blocked) {
   if (blocked) {
     _pulley.shepStun = 1.7; _pulley.shake = 6;
     if (fb) fb.textContent = 'Shooed him off! \u{1F4AA} He has to wait now.';
-    try { play('chime'); } catch(e){}
+    _pulley.mosesSay = { text: 'Back off!', t: 0 };
+    _pulleyCue('SHOOED! \u{1F4AA}', _pulley.SR.x + _pulley.SR.w / 2, 250, '#9affb0');
+    try { play('chime') || play('coin'); } catch(e){}
   } else {
     _pulley.mosesFill = Math.max(0, _pulley.mosesFill - _pulley.stealAmt);
-    _pulley.shake = 13; _pulleySpawnDrops(8, _pulley.TR.x + _pulley.TR.w / 2, 250, 50);
+    _pulley.shake = 13; _pulleySpawnDrops(8, _pulley.TR.x + _pulley.TR.w / 2, 264, 50);
     if (fb) fb.textContent = 'He stole some water! \u{1F62C} Tap SHOO faster next time.';
-    try { play('error'); } catch(e){}
+    _pulleyCue('-' + Math.round(_pulley.stealAmt) + '%', _pulley.TR.x + _pulley.TR.w / 2, 270, '#ff7a6a');
+    try { play('pop'); } catch(e){}
   }
 }
 function _pulleyShoo() {
@@ -7315,7 +7327,8 @@ function _pulleyWin() {
   _pulley.over = true; _pulley.win = true; _pulley.celebrate = 0; _pulley.stealActive = false; _pulley.proj = null;
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F389} You watered the flock first! Well done!';
-  try { play('success') || play('chime'); } catch(e){}
+  _pulley.mosesSay = { text: 'The flock is watered!', t: 0 };
+  try { play('levelUp') || play('success') || play('chime'); } catch(e){}
   setTimeout(_closePulleyGame, 1900);
 }
 function _pulleyLose() {
@@ -7323,7 +7336,8 @@ function _pulleyLose() {
   _pulley.over = true; _pulley.win = false; _pulley.stealActive = false; _pulley.proj = null;
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F605} The rude shepherd filled his first — try again!';
-  try { play('error'); } catch(e){}
+  _pulley.shepSay = { text: 'Too slow!', t: 0 };
+  try { play('pop'); } catch(e){}
   setTimeout(() => {
     if (!_pulley.gate) return;
     _pulleyReset();
@@ -7377,6 +7391,24 @@ function _pTrough(c, x, y, w, h, fill, mine, now) {
   c.fillStyle = '#fff'; c.font = 'bold 15px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillText(Math.round(fill) + '%', x + w / 2, y + h / 2);
 }
+// Comic speech bubble above a character's head (banter between Moses + shepherd).
+function _pulleySayBubble(c, tipX, tipY, text, alpha) {
+  c.save();
+  c.globalAlpha = (alpha == null) ? 1 : alpha;
+  c.font = 'bold 13px Georgia';
+  const w = Math.min(190, c.measureText(text).width + 20), h = 26;
+  let bx = Math.max(6, Math.min(c.canvas.width - w - 6, tipX - w / 2));
+  const ry = tipY - 14 - h;
+  c.beginPath();
+  if (c.roundRect) c.roundRect(bx, ry, w, h, 8); else c.rect(bx, ry, w, h);
+  c.fillStyle = 'rgba(255,255,255,0.95)'; c.fill();
+  c.strokeStyle = 'rgba(40,70,110,0.5)'; c.lineWidth = 1.5; c.stroke();
+  c.beginPath(); c.moveTo(tipX - 6, ry + h); c.lineTo(tipX + 6, ry + h); c.lineTo(tipX, tipY - 3); c.closePath();
+  c.fillStyle = 'rgba(255,255,255,0.95)'; c.fill();
+  c.fillStyle = '#1a3a5a'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(text, bx + w / 2, ry + h / 2);
+  c.restore();
+}
 function _pulleyFrame(now) {
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
   const canvas = document.getElementById('pulleyCanvas');
@@ -7415,18 +7447,23 @@ function _pulleyFrame(now) {
           const acc = Math.max(0, 1 - Math.abs(x - cx) / ((T.w - 12) / 2));
           const add = _pulley.baseGain * (0.45 + 0.55 * acc);
           _pulley.mosesFill = Math.min(100, _pulley.mosesFill + add);
-          _pulleySpawnDrops(10, x, _pulley.GROUND, 28);
-          try { play('oasisWater') || play('chime'); } catch(e){}
-          if (fb) fb.textContent = acc > 0.7 ? ('\u{1F3AF} Bullseye! +' + Math.round(add) + '%') : ('Splash — in the trough! +' + Math.round(add) + '%');
+          _pulleySpawnDrops(12, x, _pulley.GROUND, 28);
+          const bull = acc > 0.7;
+          _pulleyCue((bull ? '\u{1F3AF} +' : '+') + Math.round(add) + '%', x, _pulley.GROUND - 14, bull ? '#ffe06a' : '#9fe0ff');
+          try { play('oasisWater') || play('chime'); if (bull) play('coin'); } catch(e){}
+          if (fb) fb.textContent = bull ? '\u{1F3AF} Bullseye! Great angle!' : 'Splash — in the trough! +' + Math.round(add) + '%';
         } else {
-          _pulleySpawnDrops(6, Math.max(8, Math.min(W - 8, x)), _pulley.GROUND + 2, 22);
+          // miss → dust kick on the sand + an obvious floating cue (never silent)
+          const lx = Math.max(8, Math.min(W - 8, x));
+          _pulleySpawnDrops(9, lx, _pulley.GROUND + 4, 26, true);
+          _pulleyCue('Splash! ' + (x < inX0 ? 'too short →' : 'too far ←'), lx, _pulley.GROUND - 10, '#ffd0a0');
           try { play('pop'); } catch(e){}
-          if (fb) fb.textContent = (x < inX0) ? 'Too short — more power or a flatter angle!' : 'Too far — ease the power!';
+          if (fb) fb.textContent = (x < inX0) ? 'Too short — more power, or aim higher!' : 'Too far — ease the power a little!';
         }
         _pulley.proj = null;
         if (_pulley.mosesFill >= 100) _pulleyWin();
       } else if (pr.x < -30 || pr.x > W + 30 || pr.y > H + 60) {
-        _pulley.proj = null; if (fb) fb.textContent = 'Missed! Aim again.';
+        _pulley.proj = null; if (fb) fb.textContent = 'Aim for your trough — drag from Moses and release!';
       }
     }
     if (_pulley.shepFill >= 100) _pulleyLose();
@@ -7455,16 +7492,19 @@ function _pulleyFrame(now) {
   c.fillStyle = 'rgba(255,240,180,0.5)'; c.beginPath(); c.arc(W - 60, 46, 32, 0, Math.PI * 2); c.fill();
 
   // ---- Moses side (left): he heaves his rope at his well, pours into his trough ----
+  const mBob = Math.sin(now / 430) * 2.4;                 // gentle idle breathing
+  const heave = _pulley.bucketBob;                        // spikes on each shot, decays
   _pDraw(c, ['midianWell', 'wellMouth'], 64, 86, 132, 150);                 // his well (rope+bucket built in)
-  _pDraw(c, ['mosesPull', 'mosesRight', 'mosesFront', 'moses'], 0, 150, 130, 140);
+  _pDraw(c, ['mosesPull', 'mosesRight', 'mosesFront', 'moses'], 0 - heave * 0.6, 150 + mBob - heave * 0.2, 130, 140);
   _pDraw(c, ['sheep', 'sheepRight'], 196, 250, 50, 40);
   _pDraw(c, ['lamb', 'lambAlt'], 232, 264, 28, 22);
   _pTrough(c, _pulley.TR.x, _pulley.TR.y, _pulley.TR.w, _pulley.TR.h, _pulley.mosesFill, true, now);
 
   // ---- Rude shepherd side (right): mirror — his own well + trough ----
   const lunge = _pulley.shepLunge * 16;
+  const sBob = Math.sin(now / 360 + 1.6) * 2.2 + (_pulley.shepStun > 0 ? Math.sin(now / 70) * 1.6 : 0);
   _pDraw(c, ['midianWell', 'wellMouth'], 404, 86, 132, 150, true);          // flipped so its bucket faces him
-  _pDraw(c, ['shepPull', 'shepherdLeft', 'shepherdFront'], 470 - lunge, 150, 130, 140, _pImg('shepPull') ? false : (_pImg('shepherdLeft') ? false : true));
+  _pDraw(c, ['shepPull', 'shepherdLeft', 'shepherdFront'], 470 - lunge, 150 + sBob, 130, 140, _pImg('shepPull') ? false : (_pImg('shepherdLeft') ? false : true));
   _pDraw(c, ['goat'], 354, 250, 50, 40);
   _pTrough(c, _pulley.SR.x, _pulley.SR.y, _pulley.SR.w, _pulley.SR.h, _pulley.shepFill, false, now);
 
@@ -7472,6 +7512,21 @@ function _pulleyFrame(now) {
   c.font = 'bold 12px Georgia'; c.textBaseline = 'alphabetic';
   c.fillStyle = '#cfeaff'; c.textAlign = 'left';  c.fillText('MOSES (YOU)', 8, 332);
   c.fillStyle = '#ffd0b0'; c.textAlign = 'right'; c.fillText('RUDE SHEPHERD', W - 8, 332);
+
+  // banter speech bubbles (decay + draw)
+  if (_pulley.mosesSay) { _pulley.mosesSay.t += dt; if (_pulley.mosesSay.t > 2600) _pulley.mosesSay = null;
+    else { const s = _pulley.mosesSay, a = s.t < 200 ? s.t / 200 : (s.t > 2200 ? Math.max(0, (2600 - s.t) / 400) : 1); _pulleySayBubble(c, 96, 156, s.text, a); } }
+  if (_pulley.shepSay) { _pulley.shepSay.t += dt; if (_pulley.shepSay.t > 2600) _pulley.shepSay = null;
+    else { const s = _pulley.shepSay, a = s.t < 200 ? s.t / 200 : (s.t > 2200 ? Math.max(0, (2600 - s.t) / 400) : 1); _pulleySayBubble(c, 510, 156, s.text, a); } }
+
+  // floating score/miss cues (so a shot is never silent)
+  for (let i = _pulley.cues.length - 1; i >= 0; i--) {
+    const q = _pulley.cues[i]; q.t++;
+    if (q.t > q.life) { _pulley.cues.splice(i, 1); continue; }
+    const a = Math.max(0, 1 - q.t / q.life);
+    c.globalAlpha = a; c.fillStyle = q.color; c.font = 'bold 18px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(q.text, q.x, q.y - q.t * 0.55); c.globalAlpha = 1;
+  }
 
   // target glow on Moses' trough opening
   if (!_pulley.over && !_pulley.proj) {
@@ -7529,6 +7584,7 @@ function _pulleyFrame(now) {
     if (d.t > d.life) { _pulley.drops.splice(i, 1); continue; }
     const a = Math.max(0, 1 - d.t / d.life);
     if (d.conf) { c.fillStyle = ['#ffd86a', '#7fd0ff', '#ff8aa0', '#9affb0'][i % 4]; c.globalAlpha = a; c.fillRect(d.x, d.y, 4, 4); c.globalAlpha = 1; }
+    else if (d.sand) { c.fillStyle = 'rgba(214,180,120,' + (a * 0.9).toFixed(2) + ')'; c.beginPath(); c.arc(d.x, d.y, 2.8, 0, Math.PI * 2); c.fill(); }
     else { c.fillStyle = 'rgba(120,200,255,' + a.toFixed(2) + ')'; c.beginPath(); c.arc(d.x, d.y, 2.4, 0, Math.PI * 2); c.fill(); }
   }
 
