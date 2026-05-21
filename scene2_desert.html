@@ -6207,12 +6207,19 @@ function updateCamera() {
 // camera from Moses (col 1) east to the well/exit (col 39), pause briefly
 // at the well, then ease back to Moses.
 // v3.12: also fires on Restart Scene (not just first launch).
-let _introPanActive = false;
+// 2026-05-21 PM63l: this flag MUST live on `window` — ~9 call-sites
+// (sprite-freeze guards, _safeAnchorX, the loading-screen render gate)
+// check `window._introPanActive`. It was previously a module-scoped
+// `let`, so every one of those `window._introPanActive` checks read
+// `undefined` and silently no-op'd — that's why sprites kept moving
+// during the pan AND the loading gate never fired mid-pan. Now it's a
+// genuine window property so all the guards work.
+window._introPanActive = false;
 let _introPanLabel = null;
 function playIntroPan(onDone){
-  if (_introPanActive) { try { onDone && onDone(); } catch(e){} return; }
+  if (window._introPanActive) { try { onDone && onDone(); } catch(e){} return; }
   if (game.scene !== 2) { try { onDone && onDone(); } catch(e){} return; }
-  _introPanActive = true;
+  window._introPanActive = true;
   camera.locked = true;
   // v3.24 Jane 2026-04-26: pan now sweeps DIAGONALLY from Moses to the
   // topmost EXIT tile (col 39, row 2 in scene 2). Previous version only
@@ -6289,7 +6296,7 @@ function playIntroPan(onDone){
       window._introPanShowArrow = false;
     } else {
       camera.locked = false;
-      _introPanActive = false;
+      window._introPanActive = false;
       window._introPanShowArrow = false;
       try {
         if (_introPanLabel) {
@@ -17230,7 +17237,7 @@ function drawCompass(){
    readable long enough for younger kids to finish reading them. */
 let toastTimer = null;
 function toast(msg){
-  if (_introPanActive) return;
+  if (window._introPanActive) return;
   // 2026-05-19 PM63 (Jane: "i see tutorial modals. and then parallelly
   // overhead messages are running from right to left"). Suppress
   // toasts while a tutorial popup or any blocking modal is on
