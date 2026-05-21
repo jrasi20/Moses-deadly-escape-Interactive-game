@@ -3547,6 +3547,8 @@
      effect below is keyed to a concrete Scene 2 gameplay moment - see the
      play() call sites in the script for the triggers. -->
 <audio id="audWaterSkin"      preload="auto" src="assets/audio/water%20skin.mp3"></audio>
+<!-- 2026-05-21 PM63m (Jane: "when moses picks up a food, wire audio if eating"). -->
+<audio id="audEat"            preload="auto" src="assets/audio/eat.mp3"></audio>
 <audio id="audOasisWater"     preload="auto" src="assets/audio/oasis%20water.mp3"></audio>
 <audio id="audCliffStep"      preload="auto" src="assets/audio/cliff%20step.mp3"></audio>
 <audio id="audMirageWoosh"    preload="auto" src="assets/audio/mirage%20woosh.mp3"></audio>
@@ -3792,6 +3794,7 @@ const audio = {
   friendlyAlert: $('audFriendlyAlert'), // hints + tutorial chirps
   // v2.2.7 FULL SCENE 2 AUDIO WIRING (Jane asset brief 2026-04-22)
   waterSkin:     $('audWaterSkin'),      // picking up/drinking from waterskin
+  eat:           $('audEat'),            // PM63m: eating food (bread/dates)
   oasisWater:    $('audOasisWater'),     // stepping onto oasis tile
   cliffStep:     $('audCliffStep'),      // solving an east-edge gate
   mirageWoosh:   $('audMirageWoosh'),    // mirage trigger in Zone C
@@ -6298,6 +6301,16 @@ function playIntroPan(onDone){
       camera.locked = false;
       window._introPanActive = false;
       window._introPanShowArrow = false;
+      // 2026-05-21 PM63m (Jane: "as soon as camera pan is over the scouts
+      // are appearing and moses is caught. i thought you fixed this?").
+      // ROOT CAUSE: scoutsArmedAt was only set in the TUTORIAL-close path
+      // (PM63d). Returning players (tutorial already seen) take the
+      // else-branch caller, which never set it — so the 15 s grace fell
+      // back to game.startedAt (set BEFORE the pan), and the pan ate
+      // almost all of it. Setting scoutsArmedAt HERE, at the moment EVERY
+      // pan finishes, guarantees the full 15 s grace starts when gameplay
+      // actually begins, for every entry path.
+      try { game.scoutsArmedAt = performance.now(); } catch(e){}
       try {
         if (_introPanLabel) {
           _introPanLabel.style.opacity = '0';
@@ -8410,10 +8423,13 @@ function triggerInteractable(obj){
     // v3.3 LANE 3 (Jane 2026-04-23): heal pickups (waterskin) were the only
     // pickup kind with no particle burst. Adding parity so every pickup feels
     // rewarding. Also play coin sound for an extra "got it!" cue.
+    // 2026-05-21 PM63m (Jane: "when moses picks up water skin, wire the
+    // corresponding audio"). Waterskin/jug pickups play the gulp sfx.
+    const _isWater = (obj.kind === 'jug' || obj.kind === 'waterskin' || obj.kind === 'water');
     if (game.hearts < 3) {
       game.hearts++; updateHudHearts();
       try { spawnGlitterBurstAtPlayer(16); } catch(e){}
-      try { play('coin') || play('chime'); } catch(e){}
+      try { (_isWater && play('waterSkin')) || play('coin') || play('chime'); } catch(e){}
       try { toast((obj.name || 'Heart') + ' restored! +1 heart'); } catch(e){}
       _popupAt('+1 \u2665', '#ff8ab8');
     } else {
@@ -8422,6 +8438,9 @@ function triggerInteractable(obj){
   } else if (obj.reward === 'stars2') {
     game.stars += 2; updateHudStars();
     spawnGlitterBurstAtPlayer(12);
+    // 2026-05-21 PM63m (Jane: "when moses picks up a food, wire audio if
+    // eating"). Bread/dates play the eating sfx.
+    try { if (obj.kind === 'bread' || obj.kind === 'dates') play('eat'); } catch(e){}
     try { toast((obj.name || 'Item') + ' picked up! +2 stars'); } catch(e){}
     _popupAt('+2 \u2605', '#ffd976');
   } else if (obj.reward === 'stars3') {
@@ -8689,24 +8708,26 @@ function getHintForQuestion(q){
 
   // --- Layer 2: type-specific gameplay coaching ---
   const byType = {
-    match:      'Riddle: every name on the left has a friend on the right. People pair with what they DID; places pair with what HAPPENS there. Find the handshake.',
-    sequence:   'Riddle: a Bible story is like a rope — each knot comes after another. Which knot is tied FIRST? Which is LAST? Line them up like stepping-stones.',
-    seq:        'Riddle: a Bible story is like a rope — each knot comes after another. Which knot is tied FIRST? Which is LAST? Line them up like stepping-stones.',
-    unscramble: 'Riddle: the letters in front of you carry the answer inside them — like a treasure in a broken pot. Whisper the sounds out loud and the word hides less well.',
-    unscr:      'Riddle: the letters in front of you carry the answer inside them — like a treasure in a broken pot. Whisper the sounds out loud and the word hides less well.',
-    memory:     'Riddle: twins wear the same face. Turn two cards; if they do not smile the same, remember where they hid, and keep hunting their twin.',
-    maze:       'Riddle: walls say NO; open floor says YES. Trace a path with your eyes BEFORE your finger — then walk the one the walls allow.',
+    match:      'Look at each word on the left. Which word on the right belongs with it? A person goes with what they did, a place goes with what is there.',
+    sequence:   'Think about what happened FIRST, then NEXT, then LAST. Drag or tap the arrows to put them in order.',
+    seq:        'Think about what happened FIRST, then NEXT, then LAST. Drag or tap the arrows to put them in order.',
+    unscramble: 'The letters are the same as the answer -- just mixed up. Try sounding out short pieces.',
+    unscr:      'The letters are the same as the answer -- just mixed up. Try sounding out short pieces.',
+    memory:     'Flip two cards at a time. If they match -- keep them! If not, remember where each one was and try again.',
+    maze:       'Use the arrow buttons to move. Walls will stop you. Find a path to the exit at the bottom-right.',
     // v3.11 Jane 2026-04-24: spot's old generic riddle ("three belong to one
     // family") was wrong for emoji-spot puzzles where the odd-one-out is a
     // CATEGORY mismatch (3 fires + 1 thermometer, etc.). New riddle directs
     // the kid to look for the icon that doesn\u2019t fit the pattern.
     spot:       'Riddle: four shapes look alike, one is a stranger. Look at every icon and ask, "Does this belong to the same family as the others?" The misfit is the answer.',
-    pair:       'Riddle: every icon has a twin — except one lonely face. Count in pairs; the one left without a partner is the answer.',
-    count:      'Riddle: your eyes are a shepherd and the things on screen are a flock. Only count the sheep the question is asking for — leave the goats alone.',
-    tf:         'Riddle: the Bible tells the true story. Read the sentence with a careful eye — is even ONE word a pebble in the shoe? If yes, it is False.',
-    fill:       'Riddle: the blank is a missing stone in a wall. Which word makes the wall stand straight when you slot it in?',
-    trivia:     'Tip: re-read the question and notice the names + places. The answer is in Exodus 2, Acts 7, or Hebrews 11 — those are Moses\'s three big chapters in Scene 2.',
-    slider:     'Riddle: the picture is a jigsaw with mixed-up pieces. Look at the small picture above, then tap two tiles to swap them until the big picture matches.',
+    pair:       'Most of the pictures appear TWO times. One appears only once. Find the lonely one.',
+    count:      'Count slowly and only the thing the question asks about. Skip anything else in the picture.',
+    tf:         'Read the sentence slowly. Is it exactly true to the Bible story, or is one piece wrong?',
+    fill:       'Read the whole sentence first, then pick the answer that finishes it best.',
+    trivia:     'Every answer is in the Bible. Think about the story of Moses and pick the one that fits.',
+    spotdiff:   'Compare the two pictures piece by piece -- sky, ground, people, animals. Tap each spot that is different.',
+    slider:     'Look at the small finished picture above, then tap two tiles at a time to swap them until the big picture matches.',
+    pictionary: 'Look closely at what the picture shows -- who is there, where they are, what is happening -- then pick the verse that matches.',
   };
   const typeHint = byType[q.type];
 
@@ -13811,7 +13832,7 @@ function render(){
     const _sky = (typeof _skyBandColorNow === 'function') ? _skyBandColorNow() : null;
     if (_sky) {
       const skyHaze = ctx.createLinearGradient(0, 0, 0, CANVAS_H * 0.26);
-      skyHaze.addColorStop(0, 'rgba(' + _sky[0] + ',' + _sky[1] + ',' + _sky[2] + ',0.30)');
+      skyHaze.addColorStop(0, 'rgba(' + _sky[0] + ',' + _sky[1] + ',' + _sky[2] + ',0.45)');
       skyHaze.addColorStop(1, 'rgba(' + _sky[0] + ',' + _sky[1] + ',' + _sky[2] + ',0)');
       ctx.fillStyle = skyHaze;
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H * 0.26);
@@ -14645,11 +14666,16 @@ function _safeAnchorX(dx, dw){
    =================================================================== */
 const _PALETTE_ON = true;
 // anchor stops: [progress 0..1 across map width, [r,g,b]]
+// 2026-05-21 PM63m (Jane: "i don't see the desert palette"). The earlier
+// light-tinted, 0.20-alpha multiply was invisible against the already-tan
+// sand. Pushed each anchor to a more SATURATED tint and raised the
+// multiply alpha (see _sandTintAt) so the journey now visibly shifts
+// dawn-peach → noon-gold → oasis-green → dusk-rust without popping.
 const _ZONE_SAND_STOPS = [
-  [0.06, [236, 206, 152]], // Wadi  — warm cream (dawn)
-  [0.40, [221, 183, 109]], // Dunes — bright gold (noon)
-  [0.66, [196, 172, 112]], // Oasis — cooler olive-tan
-  [0.95, [170, 112,  56]], // Mesa  — red rock (dusk)
+  [0.06, [255, 198, 150]], // Wadi  — warm peach (dawn)
+  [0.38, [255, 214, 120]], // Dunes — bright gold (noon)
+  [0.66, [150, 200, 130]], // Oasis — green (vegetation)
+  [0.95, [205,  95,  60]], // Mesa  — strong rust (dusk)
 ];
 const _ZONE_SKY_STOPS = [
   [0.06, [255, 207, 156]], // Wadi  — peach dawn
@@ -14680,7 +14706,9 @@ function _sandTintAt(tx){
   if (!_PALETTE_ON) return null;
   const p = tx / Math.max(1, (MAP_W - 1));
   const c = _lerpStops(_ZONE_SAND_STOPS, p);
-  return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0.20)';
+  // 0.34 alpha multiply: visible colour-grade while the sand texture
+  // still reads through. (PM63m bump from 0.20 — was invisible.)
+  return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0.34)';
 }
 // Sky-band gradient colour at the current camera centre (screen-space).
 function _skyBandColorNow(){
@@ -15554,16 +15582,42 @@ function drawTile(t, dx, dy, tx, ty){
           else ctx.rect(px - _sz/2, py - _sz/2, _sz, _sz);
           ctx.fill(); ctx.stroke();
         }
-        // "LOCKED" label below the lock so the meaning is unambiguous
-        ctx.fillStyle = '#fff';
-        ctx.strokeStyle = '#3a1a05';
-        ctx.lineWidth = 3;
-        ctx.font = 'bold 12px Georgia';
+        // 2026-05-21 PM63m (Jane: "this needs to be in a different color
+        // and larger. the text on that is also getting cut"). The label
+        // was centered on the exit tile (far-right edge), so it bled off
+        // the canvas. Now: TWO short lines on a dark pill, LARGER gold
+        // text, with the pill X CLAMPED so the whole thing always stays
+        // inside the canvas. "LOCKED" in red, the instruction in cream.
+        const _ll1 = 'LOCKED';
+        const _ll2 = 'Find 3 map pieces';
+        ctx.font = 'bold 16px Georgia';
+        const _w1 = ctx.measureText(_ll1).width;
+        ctx.font = 'bold 13px Georgia';
+        const _w2 = ctx.measureText(_ll2).width;
+        const _pillW = Math.max(_w1, _w2) + 20;
+        const _pillH = 42;
+        // clamp the pill fully inside the canvas (it would otherwise run
+        // off the right edge because the exit sits at the far east).
+        let _pillCx = ecx;
+        _pillCx = Math.max(_pillW / 2 + 4, Math.min(CANVAS_W - _pillW / 2 - 4, _pillCx));
+        const _pillX = _pillCx - _pillW / 2;
+        const _pillY = dy + TILE + 6;
+        ctx.fillStyle = 'rgba(30,14,4,0.88)';
+        ctx.strokeStyle = '#ffd976';
+        ctx.lineWidth = 1.5;
+        if (typeof ctx.roundRect === 'function') {
+          ctx.beginPath(); ctx.roundRect(_pillX, _pillY, _pillW, _pillH, 9); ctx.fill(); ctx.stroke();
+        } else {
+          ctx.fillRect(_pillX, _pillY, _pillW, _pillH);
+        }
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const _lockLblY = dy + TILE + 16;
-        ctx.strokeText('LOCKED · FIND 3 MAP PIECES', ecx, _lockLblY);
-        ctx.fillText('LOCKED · FIND 3 MAP PIECES',  ecx, _lockLblY);
+        ctx.font = 'bold 16px Georgia';
+        ctx.fillStyle = '#ff7a5c'; // LOCKED in alarm-red
+        ctx.fillText(_ll1, _pillCx, _pillY + 13);
+        ctx.font = 'bold 13px Georgia';
+        ctx.fillStyle = '#ffe9b0'; // instruction in cream
+        ctx.fillText(_ll2, _pillCx, _pillY + 30);
         ctx.restore();
         return;
       }
