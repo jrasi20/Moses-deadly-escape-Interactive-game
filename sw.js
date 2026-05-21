@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v2';
+const CACHE_VERSION = 'bek-bundle-v3';
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.

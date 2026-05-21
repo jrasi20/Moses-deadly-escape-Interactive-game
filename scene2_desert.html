@@ -13762,13 +13762,26 @@ function render(){
   // new assets needed.
   if (game.scene === 2) {
     ctx.save();
-    // cool blue horizon at the top 22% of canvas
-    const skyHaze = ctx.createLinearGradient(0, 0, 0, CANVAS_H * 0.22);
-    skyHaze.addColorStop(0, 'rgba(120,180,220,0.16)');
-    skyHaze.addColorStop(1, 'rgba(120,180,220,0)');
-    ctx.fillStyle = skyHaze;
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H * 0.22);
-    // dawn-purple shadow at the bottom 18%
+    // 2026-05-21 PM63j: SKY BAND now drifts with the journey — its colour
+    // is sampled from the per-zone sky palette at the camera centre, so
+    // the top strip shifts dawn-peach → noon-blue → oasis-teal → dusk-
+    // orange as the kid crosses west→east. Replaces the static blue haze.
+    const _sky = (typeof _skyBandColorNow === 'function') ? _skyBandColorNow() : null;
+    if (_sky) {
+      const skyHaze = ctx.createLinearGradient(0, 0, 0, CANVAS_H * 0.26);
+      skyHaze.addColorStop(0, 'rgba(' + _sky[0] + ',' + _sky[1] + ',' + _sky[2] + ',0.30)');
+      skyHaze.addColorStop(1, 'rgba(' + _sky[0] + ',' + _sky[1] + ',' + _sky[2] + ',0)');
+      ctx.fillStyle = skyHaze;
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H * 0.26);
+    } else {
+      // fallback: original cool-blue haze if palette is off
+      const skyHaze = ctx.createLinearGradient(0, 0, 0, CANVAS_H * 0.22);
+      skyHaze.addColorStop(0, 'rgba(120,180,220,0.16)');
+      skyHaze.addColorStop(1, 'rgba(120,180,220,0)');
+      ctx.fillStyle = skyHaze;
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H * 0.22);
+    }
+    // subtle dawn-purple shadow at the bottom 18% (unchanged — grounds the scene)
     const dawnHaze = ctx.createLinearGradient(0, CANVAS_H * 0.82, 0, CANVAS_H);
     dawnHaze.addColorStop(0, 'rgba(80,40,90,0)');
     dawnHaze.addColorStop(1, 'rgba(80,40,90,0.18)');
@@ -14577,6 +14590,65 @@ function _safeAnchorX(dx, dw){
   if (raw < 2) return 2;
   return raw;
 }
+/* ===================================================================
+   2026-05-21 PM63j — CONTINUOUS DESERT PALETTE (Jane-approved, isolated).
+   Replaces the old hard per-zone tint + the strong Mesa red band with ONE
+   smooth colour drift across the whole crossing, so the journey reads as
+   dawn → noon → afternoon → dusk WITHOUT popping at zone boundaries.
+   Jane's constraints honoured exactly: SAND COLOUR + SKY BAND only — no
+   per-zone music, no hazards, no zone-name labels, no dust devils.
+   EASY REVERT: set _PALETTE_ON = false (everything falls back to the
+   plain sand texture + no sky band). The 3 touch-points are: this block,
+   the floor-tint call in drawTile, and the sky-band call in render().
+   =================================================================== */
+const _PALETTE_ON = true;
+// anchor stops: [progress 0..1 across map width, [r,g,b]]
+const _ZONE_SAND_STOPS = [
+  [0.06, [236, 206, 152]], // Wadi  — warm cream (dawn)
+  [0.40, [221, 183, 109]], // Dunes — bright gold (noon)
+  [0.66, [196, 172, 112]], // Oasis — cooler olive-tan
+  [0.95, [170, 112,  56]], // Mesa  — red rock (dusk)
+];
+const _ZONE_SKY_STOPS = [
+  [0.06, [255, 207, 156]], // Wadi  — peach dawn
+  [0.40, [206, 229, 240]], // Dunes — bleached noon blue
+  [0.66, [182, 227, 224]], // Oasis — light teal
+  [0.95, [228, 142,  86]], // Mesa  — dusk orange
+];
+function _lerpStops(stops, t){
+  if (t <= stops[0][0]) return stops[0][1];
+  const last = stops[stops.length - 1];
+  if (t >= last[0]) return last[1];
+  for (let i = 0; i < stops.length - 1; i++){
+    const a = stops[i], b = stops[i + 1];
+    if (t >= a[0] && t <= b[0]){
+      const f = (t - a[0]) / (b[0] - a[0]);
+      return [
+        Math.round(a[1][0] + (b[1][0] - a[1][0]) * f),
+        Math.round(a[1][1] + (b[1][1] - a[1][1]) * f),
+        Math.round(a[1][2] + (b[1][2] - a[1][2]) * f),
+      ];
+    }
+  }
+  return last[1];
+}
+// Soft sand tint for a tile column (low alpha multiply so the sand
+// texture still shows through). Returns an rgba() string or null.
+function _sandTintAt(tx){
+  if (!_PALETTE_ON) return null;
+  const p = tx / Math.max(1, (MAP_W - 1));
+  const c = _lerpStops(_ZONE_SAND_STOPS, p);
+  return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0.20)';
+}
+// Sky-band gradient colour at the current camera centre (screen-space).
+function _skyBandColorNow(){
+  if (!_PALETTE_ON) return null;
+  let centerCol = 0;
+  try { centerCol = (camera.px + CANVAS_W / 2) / TILE; } catch(e){ return null; }
+  const p = centerCol / Math.max(1, (MAP_W - 1));
+  const c = _lerpStops(_ZONE_SKY_STOPS, Math.max(0, Math.min(1, p)));
+  return c;
+}
 function drawTile(t, dx, dy, tx, ty){
   // --- FLOOR LAYER ---
   // v1.2 FIX (§3.11): Scene 2 now draws warm desert sand (not palace floor)
@@ -14603,18 +14675,7 @@ function drawTile(t, dx, dy, tx, ty){
                       : _okFloor(IMG.sandTile1) ? IMG.sandTile1
                       : null;
       let floorImg = _baseSand;
-      const isRedBand = (tx >= 29 && tx <= 37);   // Mesa zone gets tint
       ctx.drawImage(floorImg, dx, dy, TILE, TILE);
-      // v3.16.4: red tint overlay on Mesa tiles. Multiply blend lets the
-      // sand texture show through while giving the zone a clear red color
-      // identity. No landscape chaos, no scrolling artifacts.
-      if (isRedBand) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'multiply';
-        ctx.fillStyle = 'rgba(220,110,60,0.55)';
-        ctx.fillRect(dx, dy, TILE, TILE);
-        ctx.restore();
-      }
       // tiny hue shift so no two adjacent tiles feel identical
       const sandVar = (tx*17 + ty*23) % 5;
       const tintA = sandVar===0 ? 'rgba(255,220,160,0.05)'
@@ -14624,24 +14685,17 @@ function drawTile(t, dx, dy, tx, ty){
                   :               'rgba(255,230,170,0.03)';
       ctx.fillStyle = tintA;
       ctx.fillRect(dx, dy, TILE, TILE);
-      // 2026-05-20 PM63g (Jane: "your four zones need to feel distinct
-      // — color grade, hazard, music, landmark silhouette"). Per-zone
-      // colour grade applied as a soft tint overlay so each zone reads
-      // as a different chapter of the desert crossing.
-      //   Wadi  (cols 0-9):  warm RUST / sandstone red
-      //   Dunes (cols 10-19): pale GOLDEN yellow (existing baseline)
-      //   Oasis (cols 20-28): cool GREEN-grey (vegetation hint)
-      //   Mesa  (cols 29-38): deep PURPLE-brown (cool shadow rock)
+      // 2026-05-21 PM63j: CONTINUOUS desert palette — one smooth sand
+      // colour drift across the whole crossing (dawn cream → noon gold →
+      // oasis olive → dusk red rock). Replaces the old hard per-zone
+      // tint + the strong Mesa red band, which popped at boundaries.
+      // Multiply blend keeps the sand texture readable underneath.
       try {
-        const _zg = zoneOf(tx);
-        const _zTint = _zg === 'wadi'  ? 'rgba(200, 90, 40, 0.10)'
-                    : _zg === 'oasis' ? 'rgba(80, 160, 90, 0.10)'
-                    : _zg === 'mesa'  ? 'rgba(80, 50, 110, 0.12)'
-                    : null; // dunes = no extra tint (baseline)
-        if (_zTint) {
+        const _st = _sandTintAt(tx);
+        if (_st) {
           ctx.save();
           ctx.globalCompositeOperation = 'multiply';
-          ctx.fillStyle = _zTint;
+          ctx.fillStyle = _st;
           ctx.fillRect(dx, dy, TILE, TILE);
           ctx.restore();
         }
@@ -14711,6 +14765,18 @@ function drawTile(t, dx, dy, tx, ty){
                  :               '#dcb372';
       ctx.fillStyle = base;
       ctx.fillRect(dx, dy, TILE, TILE);
+      // PM63j: same continuous palette tint on the vector-fallback sand
+      // so the journey colour drift holds even before the PNG decodes.
+      try {
+        const _stF = _sandTintAt(tx);
+        if (_stF) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'multiply';
+          ctx.fillStyle = _stF;
+          ctx.fillRect(dx, dy, TILE, TILE);
+          ctx.restore();
+        }
+      } catch(e){}
       // wind ripple arc on some tiles (not a grid — uses mixed hash)
       if ((tx + ty*2) % 3 === 0) {
         ctx.strokeStyle = 'rgba(160,110,50,0.22)';
