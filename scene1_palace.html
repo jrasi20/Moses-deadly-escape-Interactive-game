@@ -6374,27 +6374,39 @@ const SPRITE_QUALITY_DOWNSCALE = new Set([
 
 for (const k in IMG_SRC) {
   const img = new Image();
+  // 2026-05-21 (Jane: "when I go to main menu and come back, sprites don't
+  // load the first time; a refresh fixes it"). A stale/half-written SW cache
+  // entry can leave a sprite's onload AND onerror both silent, so imagesReady
+  // never reaches imagesTotal and the render gate stalls until refresh. Make
+  // counting idempotent (_bump) + add a watchdog that re-fetches a stuck
+  // sprite cache-busted, then counts it regardless. (Parity with scene 2.)
+  let _counted = false;
+  const _bump = () => {
+    if (_counted) return;
+    _counted = true;
+    imagesReady++;
+    if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+  };
+  const _store = (src) => {
+    try {
+      // Wave 3b polish: chariot PNGs ship with black backgrounds; chroma-key
+      // them BEFORE the standard alpha-bleed so the silhouette is clean.
+      const _chromaSrc = SPRITE_BLACK_CHROMA.has(k) ? _blackChromaKey(src) : src;
+      const bled = SPRITE_BLEED.has(k) ? _alphaBleed(_chromaSrc) : _chromaSrc;
+      if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
+        IMG[k] = _preRender(bled, 256);
+      } else if (SKIP_PRERENDER.has(k)) {
+        IMG[k] = bled;
+      } else {
+        IMG[k] = _preRender(bled);
+      }
+    } catch(e) { IMG[k] = src; }
+  };
   img.onload = () => {
     // 2026-05-19 (Jane: "sprites don't all load on the first pass; a reload
     // fixes it"). Force a full decode() before counting the image ready so
     // the game starts only once every sprite is render-instant.
-    const _finalize = () => {
-      try {
-        // Wave 3b polish: chariot PNGs ship with black backgrounds; chroma-key
-        // them BEFORE the standard alpha-bleed so the silhouette is clean.
-        const _chromaSrc = SPRITE_BLACK_CHROMA.has(k) ? _blackChromaKey(img) : img;
-        const bled = SPRITE_BLEED.has(k) ? _alphaBleed(_chromaSrc) : _chromaSrc;
-        if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
-          IMG[k] = _preRender(bled, 256);
-        } else if (SKIP_PRERENDER.has(k)) {
-          IMG[k] = bled;
-        } else {
-          IMG[k] = _preRender(bled);
-        }
-      } catch(e) { IMG[k] = img; }
-      imagesReady++;
-      if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
-    };
+    const _finalize = () => { _store(img); _bump(); };
     if (typeof img.decode === 'function') img.decode().then(_finalize).catch(_finalize);
     else _finalize();
   };
@@ -6403,11 +6415,25 @@ for (const k in IMG_SRC) {
       window._imgFailures.push({ key: k, src: IMG_SRC[k] });
       console.warn('[IMG load FAILED]', k, '->', IMG_SRC[k]);
     } catch(e){}
-    imagesReady++;
-    if (imagesReady >= imagesTotal && imagesLoadedCallback) imagesLoadedCallback();
+    _bump();
   };
   img.src = IMG_SRC[k];
   IMG[k] = img;
+  ((srcUrl) => {
+    setTimeout(() => {
+      if (_counted) return;
+      try { window._imgFailures.push({ key: k, src: srcUrl, stalled: true }); } catch(e){}
+      const retry = new Image();
+      retry.onload = () => {
+        const fin = () => { _store(retry); _bump(); };
+        if (typeof retry.decode === 'function') retry.decode().then(fin).catch(fin);
+        else fin();
+      };
+      retry.onerror = _bump;
+      retry.src = srcUrl + (srcUrl.indexOf('?') >= 0 ? '&' : '?') + '_swretry=' + Date.now();
+      setTimeout(_bump, 6000);
+    }, 15000);
+  })(IMG_SRC[k]);
 }
 
 /* ---------- PRELOAD PROGRESS TRACKING ----------
