@@ -2338,6 +2338,52 @@
   </div>
 </div>
 
+<!-- ================ RESCUE THE DAUGHTERS MINI-GAME (lane-defense action) ================ -->
+<div class="modal-overlay" id="rescueModal" style="z-index:50;display:none;">
+  <div class="modal-content" style="background:linear-gradient(155deg,#3a2a1a,#5a3a22);border:3px solid #d8a86a;max-width:880px;width:min(96vw,880px);padding:16px 20px;position:relative;">
+    <button id="rescuePauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:38px;height:38px;border-radius:10px;border:2px solid #d8a86a;background:rgba(40,24,10,0.7);color:#ffe0a0;font-size:18px;cursor:pointer;line-height:1;">⏸</button>
+    <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;">~ RESCUE THE DAUGHTERS ~</div>
+    <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;">Drive off the rude shepherds!</h2>
+    <canvas id="rescueCanvas" width="760" height="470" style="display:block;width:100%;height:auto;max-height:60vh;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#e8c890;"></canvas>
+    <div style="display:flex;justify-content:space-between;align-items:center;color:#ffe2b0;font-size:13px;font-weight:bold;margin:7px 2px 4px;">
+      <span id="rescueDaughters">👧 Daughters: 7</span>
+      <span id="rescueWave">🐏 0%</span>
+      <span id="rescueFoes">Driven off: 0</span>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+      <button class="btn rwpn" id="rescueWpnPot" style="flex:1;min-width:78px;font-size:15px;padding:9px 4px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #ffe9a8;">🏺 Pot</button>
+      <button class="btn rwpn" id="rescueWpnSling" style="flex:1;min-width:78px;font-size:15px;padding:9px 4px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #2a6a9a;">🎯 Sling</button>
+      <button class="btn rwpn" id="rescueWpnStaff" style="flex:1;min-width:78px;font-size:15px;padding:9px 4px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #2a6a9a;">🦯 Staff</button>
+      <button class="btn" id="rescueSheepBtn" disabled style="flex:1;min-width:78px;font-size:15px;padding:9px 4px;background:linear-gradient(135deg,#7a7a6a,#9a9a86);border:2px solid #cfcfb8;opacity:0.6;">🐏 Sheep</button>
+      <button class="btn" id="rescueBoulderBtn" disabled style="flex:1;min-width:78px;font-size:15px;padding:9px 4px;background:linear-gradient(135deg,#7a7a6a,#9a9a86);border:2px solid #cfcfb8;opacity:0.6;">🪨 Boulder</button>
+    </div>
+    <div id="rescueFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:16px;font-weight:bold;">Tap a lane to send Moses there — he throws to drive the shepherds back!</div>
+    <div style="color:#d8b890;font-size:12px;text-align:center;margin-top:4px;font-style:italic;">"Moses got up and came to their rescue." — Exodus 2:17</div>
+    <div id="rescuePausedOverlay" style="display:none;position:absolute;inset:0;z-index:4;background:rgba(20,12,4,0.84);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+      <div style="color:#ffe0a0;font-size:30px;font-weight:bold;letter-spacing:2px;">PAUSED</div>
+      <button class="btn btn-gold" id="rescueResumeBtn" style="font-size:20px;padding:12px 30px;">▶ Resume</button>
+      <button class="btn" id="rescueQuitBtn" style="font-size:14px;padding:8px 20px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit mini-game</button>
+    </div>
+    <div id="rescueLoseOverlay" style="display:none;position:absolute;inset:0;z-index:5;background:rgba(28,8,8,0.88);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:0 16px;">
+      <div style="color:#ff8a6a;font-size:26px;font-weight:bold;">The shepherds drove them off!</div>
+      <div id="rescueLoseMsg" style="color:#ffe0c0;font-size:16px;line-height:1.5;">They carried the daughters away.</div>
+      <button class="btn btn-gold" id="rescueRetryBtn" style="font-size:20px;padding:12px 34px;">🔁 Retry</button>
+      <button class="btn" id="rescueLoseQuitBtn" style="font-size:14px;padding:8px 20px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit to map</button>
+    </div>
+    <div id="rescueWinOverlay" style="display:none;position:absolute;inset:0;z-index:5;background:radial-gradient(circle at 50% 40%,rgba(60,44,20,0.5),rgba(24,14,4,0.88));border-radius:16px;align-items:center;justify-content:center;text-align:center;padding:0 16px;">
+      <div class="pWinCard">
+        <div class="pWinTitle">🎉 The daughters are safe!</div>
+        <div id="rescueStarRow" class="pStarRow"></div>
+        <div id="rescueWinMsg" style="color:#fff3df;font-size:17px;font-family:Georgia,serif;font-style:italic;">Heroic!</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:6px;">
+          <button class="btn btn-goldline" id="rescueWinReplayBtn" style="font-size:15px;padding:10px 20px;">🔁 Replay for ⭐⭐⭐</button>
+          <button class="btn btn-gold" id="rescueWinContinueBtn" style="font-size:19px;padding:12px 34px;letter-spacing:.5px;">Continue ▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
 @keyframes pulleyWinPop{0%{transform:scale(.82);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
@@ -2855,6 +2901,7 @@ const IMG_SRC = {
   // Midian ground + landscape
   grassTile:    'assets/images/midian%20grass%20tile.png',
   scene3Bg:     'assets/images/scene3_background.png',
+  rescueBg:     'assets/images/rescue%20background.png',   // lane-defense backdrop (Jane to generate; falls back to scene3Bg)
   wildflowers:  'assets/images/midian%20wildflowers.png',
   sunbeam:      'assets/images/golden%20sunbeam.png',
   // Midian landmarks
@@ -8112,6 +8159,331 @@ function _makeWellTestGate(){ return { tx: 0, ty: 0, solved: false, _welltest: t
     if (document.readyState === 'complete') waitReady(50);
     else window.addEventListener('load', () => waitReady(50));
   } catch(e){}
+})();
+
+
+/* ===== RESCUE THE DAUGHTERS (lane-defense) ===== */
+/* ============================================================================
+   SCENE 3 MINI-GAME #2 — "RESCUE THE DAUGHTERS" (Plants-vs-Zombies-style lane defence)
+   2026-05-21 (Jane): 7 LANES (one daughter per lane). Waves of rude shepherds march
+   down each lane toward the daughters; a MOBILE Moses taps to the threatened lane and
+   throws his chosen weapon to drive them back. Weapon roster: Pot (balanced), Sling
+   (rapid), Staff (melee, strong) + chargeable SHEEP-RAM and BOULDER that clear a lane.
+   Scarier enemy tiers (fast scout, big brute). Lose a daughter when a shepherd reaches
+   her lane's end; save them to win. 3 stars = none taken. Standalone: ?rescuetest=1
+   ========================================================================== */
+const _RES_W = {
+  pot:   { cd: 0.70, speed: 540, dmg: 1, melee: false, sprite: ['waterPot', 'waterJar'] },
+  sling: { cd: 0.34, speed: 760, dmg: 1, melee: false, sprite: null },
+  staff: { cd: 0.62, dmg: 3, melee: true, range: 86, sprite: ['shepherdStaff'] },
+};
+const _rescue = {
+  gate: null, rafId: null, last: 0, paused: false, over: false, win: false,
+  LANES: 7, laneY: [54, 114, 174, 234, 294, 354, 414], lane: 3, mosesY: 234, mosesX: 84, GRABX: 116,
+  weapon: 'pot', throwCd: 0, throwAnim: 0,
+  shots: [], foes: [], cues: [], fx: [], ram: null,
+  laneDaughter: [true, true, true, true, true, true, true], daughtersLost: 0,
+  foesDriven: 0, spawned: 0, total: 18, spawnEvery: 1.5, spawnT: 1.2,
+  foeSpeed: 42, bigChance: 0.18, fastChance: 0.3,
+  sheepC: 0, boulderC: 0, shake: 0, stars: 3, winPanelShown: false,
+};
+function _rescueCfg() {
+  const d = (typeof game !== 'undefined' && game.difficulty) || 'easy';
+  if (d === 'hard')   return { total: 30, spawnEvery: 1.0, foeSpeed: 56, bigChance: 0.26, fastChance: 0.36 };
+  if (d === 'medium') return { total: 24, spawnEvery: 1.25, foeSpeed: 48, bigChance: 0.22, fastChance: 0.32 };
+  return { total: 18, spawnEvery: 1.5, foeSpeed: 42, bigChance: 0.18, fastChance: 0.28 }; // easy
+}
+function _rescueCue(text, x, y, color, big) { _rescue.cues.push({ text: text, x: x, y: y, color: color || '#fff', t: 0, life: big ? 80 : 60, big: !!big }); }
+function _rescueFx(key, x, y, size, life) { _rescue.fx.push({ key: key, x: x, y: y, size: size || 38, t: 0, life: life || 20 }); }
+function _rescueReset() {
+  const cfg = _rescueCfg();
+  _rescue.total = cfg.total; _rescue.spawnEvery = cfg.spawnEvery; _rescue.foeSpeed = cfg.foeSpeed;
+  _rescue.bigChance = cfg.bigChance; _rescue.fastChance = cfg.fastChance;
+  _rescue.lane = 3; _rescue.mosesY = _rescue.laneY[3]; _rescue.weapon = 'pot'; _rescue.throwCd = 0; _rescue.throwAnim = 0;
+  _rescue.shots = []; _rescue.foes = []; _rescue.cues = []; _rescue.fx = []; _rescue.ram = null;
+  _rescue.laneDaughter = [true, true, true, true, true, true, true]; _rescue.daughtersLost = 0;
+  _rescue.foesDriven = 0; _rescue.spawned = 0; _rescue.spawnT = 1.2;
+  _rescue.sheepC = 0; _rescue.boulderC = 0; _rescue.shake = 0; _rescue.stars = 3;
+  _rescue.over = false; _rescue.win = false; _rescue.paused = false; _rescue.winPanelShown = false;
+  ['rescuePausedOverlay', 'rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  _rescueSelectWeapon('pot'); _rescueSpecialBtns();
+}
+function openRescueGame(gate) {
+  _rescue.gate = gate; _rescue.last = 0; _rescueReset();
+  game.state = 'dialog';
+  try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); } if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
+  const modal = document.getElementById('rescueModal'); modal.style.display = 'flex'; modal.classList.add('active');
+  _rescueHud();
+  document.getElementById('rescueFeedback').textContent = 'Tap the lane under attack — Moses runs there and throws!';
+  _rescue.rafId = requestAnimationFrame(_rescueFrame);
+}
+function _rescueHud() {
+  const d = document.getElementById('rescueDaughters'); if (d) d.textContent = '👧 Daughters: ' + (7 - _rescue.daughtersLost) + '/7';
+  const w = document.getElementById('rescueWave'); if (w) w.textContent = '🐏 ' + Math.round(_rescue.sheepC * 100) + '%  🪨 ' + Math.round(_rescue.boulderC * 100) + '%';
+  const f = document.getElementById('rescueFoes'); if (f) f.textContent = 'Driven off: ' + _rescue.foesDriven + '/' + _rescue.total;
+}
+function _rescueSelectWeapon(w) {
+  _rescue.weapon = w;
+  [['pot', 'rescueWpnPot'], ['sling', 'rescueWpnSling'], ['staff', 'rescueWpnStaff']].forEach(([k, id]) => {
+    const b = document.getElementById(id); if (!b) return;
+    b.style.borderColor = (k === w) ? '#ffe9a8' : '#2a6a9a';
+    b.style.filter = (k === w) ? 'brightness(1.15)' : 'brightness(0.82)';
+  });
+}
+function _rescueSpecialBtns() {
+  const sb = document.getElementById('rescueSheepBtn'); if (sb) { const r = _rescue.sheepC >= 1 && !_rescue.over; sb.disabled = !r; sb.style.opacity = r ? '1' : '0.55'; sb.style.background = r ? 'linear-gradient(135deg,#e0d070,#b89a3a)' : 'linear-gradient(135deg,#7a7a6a,#9a9a86)'; }
+  const bb = document.getElementById('rescueBoulderBtn'); if (bb) { const r = _rescue.boulderC >= 1 && !_rescue.over && !_rescue.ram; bb.disabled = !r; bb.style.opacity = r ? '1' : '0.55'; bb.style.background = r ? 'linear-gradient(135deg,#c0a878,#8a7048)' : 'linear-gradient(135deg,#7a7a6a,#9a9a86)'; }
+}
+// ---- input ----
+function _rescueCanvasLane(e) {
+  const c = document.getElementById('rescueCanvas'); if (!c) return _rescue.lane;
+  const r = c.getBoundingClientRect();
+  const cy = ((e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY);
+  const y = (cy - r.top) * (c.height / r.height);
+  let best = 0, bd = 1e9; for (let i = 0; i < _rescue.LANES; i++) { const d = Math.abs(y - _rescue.laneY[i]); if (d < bd) { bd = d; best = i; } }
+  return best;
+}
+function _rescueTap(e) {
+  if (_rescue.over || _rescue.paused || !_rescue.gate) return;
+  if (e.cancelable) e.preventDefault();
+  _rescue.lane = _rescueCanvasLane(e);
+  _rescueAct();
+}
+function _rescueDamage(foe, dmg) {
+  foe.hp -= dmg; foe.hitT = 0.16; foe.kb = foe.maxhp > 1 ? 10 : 18;
+  if (foe.hp <= 0) {
+    _rescue.foes = _rescue.foes.filter(f => f !== foe);
+    _rescue.foesDriven++; _rescue.sheepC = Math.min(1, _rescue.sheepC + 0.12); _rescue.boulderC = Math.min(1, _rescue.boulderC + 0.085);
+    _rescueCue('✓', foe.x, _rescue.laneY[foe.lane] - 32, '#9affb0');
+    _rescueSpecialBtns(); _rescueHud();
+  }
+}
+function _rescueAct() {
+  if (_rescue.over || _rescue.paused || _rescue.throwCd > 0) return;
+  const w = _RES_W[_rescue.weapon]; _rescue.throwCd = w.cd; _rescue.throwAnim = 0.2;
+  if (w.melee) {
+    let best = null, bd = 1e9;
+    for (const f of _rescue.foes) { if (f.lane === _rescue.lane && f.x > _rescue.mosesX) { const d = f.x - _rescue.mosesX; if (d < w.range && d < bd) { bd = d; best = f; } } }
+    if (best) { _rescueDamage(best, w.dmg); _rescueFx('dustPuff', best.x - 10, _rescue.laneY[best.lane], 40, 16); }
+    try { play('sword') || play('pop'); } catch(e){}
+  } else {
+    _rescue.shots.push({ lane: _rescue.lane, x: _rescue.mosesX + 26, y: _rescue.laneY[_rescue.lane] - 6, vx: w.speed, dmg: w.dmg, kind: _rescue.weapon });
+    try { play('waterSkin') || play('pop'); } catch(e){}
+  }
+}
+function _rescueSheep() { if (_rescue.over || _rescue.paused || _rescue.sheepC < 1 || _rescue.ram) return; _rescue.ram = { lane: _rescue.lane, x: _rescue.mosesX + 12, vx: 640, kind: 'sheep' }; _rescue.sheepC = 0; _rescueSpecialBtns(); _rescueCue('CHARGE! 🐏', _rescue.mosesX + 70, _rescue.laneY[_rescue.lane] - 32, '#fff0b0', true); try { play('camelGrunt') || play('pop'); } catch(e){} }
+function _rescueBoulder() { if (_rescue.over || _rescue.paused || _rescue.boulderC < 1 || _rescue.ram) return; _rescue.ram = { lane: _rescue.lane, x: _rescue.mosesX + 12, vx: 380, kind: 'boulder' }; _rescue.boulderC = 0; _rescueSpecialBtns(); _rescueCue('BOULDER! 🪨', _rescue.mosesX + 70, _rescue.laneY[_rescue.lane] - 32, '#ffd0a0', true); try { play('boulderRumble') || play('pop'); } catch(e){} }
+function _rescueSpawn() {
+  const r = Math.random(); let type = 'normal', hp = 1, spd = _rescue.foeSpeed, scale = 1;
+  if (r < _rescue.bigChance) { type = 'big'; hp = 4; spd = _rescue.foeSpeed * 0.55; scale = 1.34; }
+  else if (r < _rescue.bigChance + _rescue.fastChance) { type = 'fast'; hp = 1; spd = _rescue.foeSpeed * 1.7; scale = 0.86; }
+  const lane = Math.floor(Math.random() * _rescue.LANES);
+  _rescue.foes.push({ lane: lane, x: 778, hp: hp, maxhp: hp, spd: spd, scale: scale, type: type, hitT: 0, kb: 0 });
+  _rescue.spawned++;
+}
+function _rescueGrab(foe) {
+  if (_rescue.laneDaughter[foe.lane]) {
+    _rescue.laneDaughter[foe.lane] = false; _rescue.daughtersLost++; _rescue.shake = 14;
+    _rescueCue('A daughter taken!', 120, _rescue.laneY[foe.lane] - 20, '#ff7a6a', true);
+    try { play('oops') || play('error'); } catch(e){}
+    _rescueHud();
+    if (_rescue.daughtersLost >= 7) _rescueLose();
+  }
+}
+function _rescueWin() {
+  if (_rescue.over) return;
+  _rescue.over = true; _rescue.win = true;
+  _rescue.stars = _rescue.daughtersLost === 0 ? 3 : (_rescue.daughtersLost <= 2 ? 2 : 1);
+  const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = '🎉 The whole gang flees! The daughters are safe!';
+  try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
+  try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){}
+  setTimeout(() => { if (_rescue.over && _rescue.win) _rescueShowWinPanel(); }, 2200);
+}
+function _rescueShowWinPanel() {
+  _rescue.winPanelShown = true; const stars = _rescue.stars;
+  const row = document.getElementById('rescueStarRow');
+  if (row) { let h = ''; for (let i = 0; i < 3; i++) h += '<span class="pStar ' + (i < stars ? 'full' : 'empty') + '" style="animation-delay:' + (0.15 + i * 0.2).toFixed(2) + 's">★</span>'; row.innerHTML = h; }
+  const msg = document.getElementById('rescueWinMsg');
+  if (msg) msg.textContent = stars >= 3 ? 'Heroic! All seven daughters saved!' : (stars === 2 ? 'Well done! Try again to save them all.' : 'Rescued! Can you save every daughter?');
+  const rep = document.getElementById('rescueWinReplayBtn'); if (rep) rep.style.display = stars >= 3 ? 'none' : '';
+  try { setTimeout(() => play('coin'), 200); if (stars >= 2) setTimeout(() => play('coin'), 420); if (stars >= 3) setTimeout(() => play('chime'), 640); } catch(e){}
+  const ov = document.getElementById('rescueWinOverlay'); if (ov) ov.style.display = 'flex';
+}
+function _rescueLose() {
+  if (_rescue.over && !_rescue.win) return;
+  _rescue.over = true; _rescue.win = false; cancelAnimationFrame(_rescue.rafId);
+  try { if (audio.wellMusic) audio.wellMusic.pause(); } catch(e){}
+  try { game.hearts = Math.max(0, game.hearts - 1); updateHudHearts(); game.perfectRun = false; } catch(e){}
+  try { play('sandThud') || play('pop'); } catch(e){}
+  const out = (game && game.hearts <= 0);
+  const m = document.getElementById('rescueLoseMsg');
+  if (m) m.innerHTML = out ? '\u{1F494} The shepherds won — and that was your last heart!' : 'The shepherds carried the daughters off.<br>Moses lost a heart \u{2764}\u{FE0F}';
+  const ov = document.getElementById('rescueLoseOverlay'); if (ov) ov.style.display = 'flex';
+}
+function _rescueRetry() {
+  ['rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  if (!_rescue.gate) return;
+  cancelAnimationFrame(_rescue.rafId); _rescue.last = 0; _rescueReset(); _rescueHud();
+  document.getElementById('rescueFeedback').textContent = 'Here they come again — defend every lane!';
+  try { if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
+  _rescue.rafId = requestAnimationFrame(_rescueFrame);
+}
+function _rescuePause() { if (_rescue.over || _rescue.paused || !_rescue.gate) return; _rescue.paused = true; cancelAnimationFrame(_rescue.rafId); try { if (audio.wellMusic) audio.wellMusic.pause(); } catch(e){} const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'flex'; }
+function _rescueResume() { if (!_rescue.paused) return; _rescue.paused = false; const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'none'; try { if (audio.wellMusic) audio.wellMusic.play().catch(()=>{}); } catch(e){} _rescue.last = 0; _rescue.rafId = requestAnimationFrame(_rescueFrame); }
+function _rescueQuit() {
+  _rescue.paused = false; _rescue.over = true; cancelAnimationFrame(_rescue.rafId);
+  ['rescuePausedOverlay', 'rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  const modal = document.getElementById('rescueModal'); modal.style.display = 'none'; modal.classList.remove('active');
+  try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
+  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
+  _rescue.gate = null; try { game.state = 'playing'; } catch(e){}
+}
+function _rescueWinContinue() { const ov = document.getElementById('rescueWinOverlay'); if (ov) ov.style.display = 'none'; _closeRescue(); }
+function _closeRescue() {
+  cancelAnimationFrame(_rescue.rafId);
+  const modal = document.getElementById('rescueModal'); modal.style.display = 'none'; modal.classList.remove('active');
+  try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
+  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
+  const gate = _rescue.gate; _rescue.gate = null;
+  if (!gate) return;
+  gate.solved = true; game.state = 'playing';
+  const earned = _rescue.stars || 3;
+  try { spawnGlitterBurstAtPlayer(20); } catch(e){}
+  try { toast('You rescued Jethro\'s daughters! ' + '⭐'.repeat(earned) + ' +' + earned + ' stars!'); } catch(e){}
+  game.stars += earned; try { updateHudStars(); } catch(e){}
+  try { _saveCheckpoint(); } catch(e){}
+}
+function _rescueFrame(now) {
+  _rescue.rafId = requestAnimationFrame(_rescueFrame);
+  const canvas = document.getElementById('rescueCanvas'); if (!canvas) return;
+  const c = canvas.getContext('2d'); const W = canvas.width, H = canvas.height;
+  const dt = Math.min(60, now - (_rescue.last || now)); _rescue.last = now; const dts = dt / 1000;
+
+  if (!_rescue.over) {
+    _rescue.mosesY += (_rescue.laneY[_rescue.lane] - _rescue.mosesY) * Math.min(1, dts * 12);
+    if (_rescue.throwCd > 0) _rescue.throwCd -= dts;
+    if (_rescue.throwAnim > 0) _rescue.throwAnim -= dts;
+    if (_rescue.throwCd <= 0 && _rescue.foes.some(f => f.lane === _rescue.lane && f.x > _rescue.mosesX)) _rescueAct();
+    if (_rescue.spawned < _rescue.total) { _rescue.spawnT -= dts; if (_rescue.spawnT <= 0) { _rescueSpawn(); _rescue.spawnT = Math.max(0.55, _rescue.spawnEvery - _rescue.spawned * 0.03); } }
+    // shots
+    for (let i = _rescue.shots.length - 1; i >= 0; i--) {
+      const s = _rescue.shots[i]; s.x += s.vx * dts;
+      let hf = null; for (const f of _rescue.foes) { if (f.lane === s.lane && f.x > _rescue.mosesX && Math.abs(f.x - s.x) < 26) { hf = f; break; } }
+      if (hf) { _rescueFx('splashFx', s.x, s.y, 32, 16); _rescue.shots.splice(i, 1); _rescueDamage(hf, s.dmg); try { play('pop'); } catch(e){} }
+      else if (s.x > W + 20) _rescue.shots.splice(i, 1);
+    }
+    // ram (sheep/boulder)
+    if (_rescue.ram) {
+      _rescue.ram.x += _rescue.ram.vx * dts;
+      for (const f of _rescue.foes.slice()) { if (f.lane === _rescue.ram.lane && Math.abs(f.x - _rescue.ram.x) < 34) { _rescue.foes = _rescue.foes.filter(x => x !== f); _rescue.foesDriven++; _rescueFx('dustPuff', f.x, _rescue.laneY[f.lane], 46, 18); } }
+      if (_rescue.ram.x > W + 30) { _rescue.ram = null; _rescueHud(); }
+    }
+    // foes advance
+    for (let i = _rescue.foes.length - 1; i >= 0; i--) {
+      const f = _rescue.foes[i]; if (f.hitT > 0) f.hitT -= dts;
+      if (f.kb > 0) { f.x += Math.min(f.kb, 70 * dts); f.kb -= 70 * dts; } else f.x -= f.spd * dts;
+      if (f.x <= _rescue.GRABX) { _rescue.foes.splice(i, 1); _rescueGrab(f); }
+    }
+    if (!_rescue.over && _rescue.spawned >= _rescue.total && _rescue.foes.length === 0 && !_rescue.ram) _rescueWin();
+  }
+  const sx = _rescue.shake > 0.3 ? Math.sin(now / 26) * _rescue.shake : 0; if (_rescue.shake > 0) _rescue.shake *= 0.86;
+  _rescueHud();
+
+  // ---- draw ----
+  c.save(); c.translate(sx, 0);
+  if (!_pDraw(c, ['rescueBg', 'scene3Bg', 'midian'], -4, -4, W + 8, H + 8)) {
+    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#e0c088'); g.addColorStop(1, '#caa868'); c.fillStyle = g; c.fillRect(-4, -4, W + 8, H + 8);
+  }
+  // lane bands (clearer striping so the 7 lanes read) + the daughters' home strip
+  c.fillStyle = 'rgba(40,24,10,0.18)'; c.fillRect(0, 30, _rescue.GRABX, H - 60);  // protected "home" zone
+  for (let i = 0; i < _rescue.LANES; i++) {
+    c.fillStyle = (i % 2 === 0) ? 'rgba(70,45,20,0.22)' : 'rgba(255,240,210,0.10)';
+    c.fillRect(0, _rescue.laneY[i] - 29, W, 58);
+    c.strokeStyle = 'rgba(40,24,10,0.18)'; c.lineWidth = 1; c.strokeRect(0, _rescue.laneY[i] - 29, W, 58);
+    if (i === _rescue.lane) { c.fillStyle = 'rgba(120,200,255,0.12)'; c.fillRect(0, _rescue.laneY[i] - 28, W, 56); c.strokeStyle = 'rgba(120,200,255,0.6)'; c.lineWidth = 2; c.strokeRect(2, _rescue.laneY[i] - 28, W - 4, 56); }
+    if (_rescue.laneDaughter[i]) _pDrawFit(c, ['daughter' + ((i % 7) + 1), 'daughter1'], 36, _rescue.laneY[i] + 24, 30, 48);
+    else { c.globalAlpha = 0.22; _pDrawFit(c, ['daughter' + ((i % 7) + 1), 'daughter1'], 36, _rescue.laneY[i] + 24, 26, 42); c.globalAlpha = 1; }
+  }
+  // protected-zone line
+  c.strokeStyle = 'rgba(120,200,120,0.4)'; c.setLineDash([6, 6]); c.lineWidth = 2; c.beginPath(); c.moveTo(_rescue.GRABX, 8); c.lineTo(_rescue.GRABX, H - 8); c.stroke(); c.setLineDash([]);
+
+  // foes
+  for (const f of _rescue.foes) {
+    const yb = _rescue.laneY[f.lane] + 28;
+    if (f.type === 'big') { c.fillStyle = 'rgba(180,30,20,' + (0.18 + 0.1 * Math.sin(now / 160)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 40, 36 * f.scale, 50 * f.scale, 0, 0, Math.PI * 2); c.fill(); }
+    if (f.hitT > 0) { c.save(); c.globalAlpha = 0.55 + 0.45 * Math.sin(now / 28); }
+    const fk = f.type === 'big' ? ['shepHelpB', 'shepherd4', 'shepherdLeft'] : (f.type === 'fast' ? ['shepherdLeftAlt', 'shepherdLeft'] : ['shepherdLeft', 'shepPull']);
+    if (!_pDrawFit(c, fk, f.x, yb, 58 * f.scale, 76 * f.scale)) { c.fillStyle = '#c08040'; c.fillRect(f.x - 16, yb - 50, 32, 50); }
+    if (f.hitT > 0) c.restore();
+    if (f.maxhp > 1) { for (let h = 0; h < f.maxhp; h++) { c.fillStyle = h < f.hp ? '#ff6a4a' : 'rgba(0,0,0,0.3)'; c.fillRect(f.x - 16 + h * 9, yb - 88 * f.scale - 8, 7, 5); } }
+  }
+  // ram
+  if (_rescue.ram) {
+    if (_rescue.ram.kind === 'boulder') { if (!_pDraw(c, ['rollingBoulder', 'rock'], _rescue.ram.x - 26, _rescue.laneY[_rescue.ram.lane] - 26, 52, 52)) { c.fillStyle = '#8a7a5a'; c.beginPath(); c.arc(_rescue.ram.x, _rescue.laneY[_rescue.ram.lane], 24, 0, Math.PI * 2); c.fill(); } }
+    else _pDrawFit(c, ['sheepRight', 'sheep'], _rescue.ram.x, _rescue.laneY[_rescue.ram.lane] + 24, 56, 46, true);
+  }
+  // Moses
+  const throwing = _rescue.throwAnim > 0;
+  _pDrawFit(c, throwing ? ['mosesShove', 'mosesRight', 'moses'] : ['mosesRight', 'mosesPull', 'moses'], _rescue.mosesX, _rescue.mosesY + 46, 74, 100);
+
+  // shots
+  for (const s of _rescue.shots) {
+    if (s.kind === 'sling') { c.fillStyle = '#9a7a4a'; c.beginPath(); c.arc(s.x, s.y, 6, 0, Math.PI * 2); c.fill(); }
+    else if (!_pDrawFit(c, ['waterPot', 'waterJar'], s.x, s.y + 12, 24, 26)) { c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(s.x, s.y, 8, 0, Math.PI * 2); c.fill(); }
+  }
+  // fx
+  for (let i = _rescue.fx.length - 1; i >= 0; i--) { const x = _rescue.fx[i]; x.t++; if (x.t > x.life) { _rescue.fx.splice(i, 1); continue; } const k = x.t / x.life, a = Math.max(0, 1 - k), s = x.size * (0.7 + 0.5 * k); c.globalAlpha = a; if (!_pDraw(c, x.key, x.x - s / 2, x.y - s / 2, s, s)) { c.fillStyle = 'rgba(150,200,255,0.6)'; c.beginPath(); c.arc(x.x, x.y, s / 2, 0, Math.PI * 2); c.fill(); } c.globalAlpha = 1; }
+  // cues
+  for (let i = _rescue.cues.length - 1; i >= 0; i--) {
+    const q = _rescue.cues[i]; q.t++; if (q.t > q.life) { _rescue.cues.splice(i, 1); continue; }
+    const a = Math.max(0, 1 - q.t / q.life), cyy = q.y - q.t * (q.big ? 0.4 : 0.55);
+    c.globalAlpha = a; c.font = q.big ? 'bold 21px Georgia' : 'bold 17px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    let cxx = q.x; if (q.big) { const half = c.measureText(q.text).width / 2 + 12; cxx = Math.max(half + 2, Math.min(W - half - 2, q.x)); c.fillStyle = 'rgba(10,24,40,0.78)'; c.beginPath(); if (c.roundRect) c.roundRect(cxx - half, cyy - 15, half * 2, 30, 8); else c.rect(cxx - half, cyy - 15, half * 2, 30); c.fill(); }
+    c.fillStyle = q.color; c.fillText(q.text, cxx, cyy); c.globalAlpha = 1;
+  }
+  if (_rescue.over && _rescue.win) { c.fillStyle = 'rgba(255,230,120,' + (0.12 + 0.07 * Math.sin(now / 120)).toFixed(2) + ')'; c.fillRect(0, 0, W, H); }
+  c.restore();
+}
+function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: true }; }
+(function _rescueTestHarness(){
+  try {
+    const wq = new URLSearchParams(location.search);
+    if (wq.get('rescuetest') !== '1' && wq.get('minigame') !== 'rescue') return;
+    const wd = wq.get('diff');
+    const boot = () => {
+      try {
+        if (wd === 'easy' || wd === 'medium' || wd === 'hard') { try { game.difficulty = wd; } catch(e){} }
+        window._rescueTestMode = true;
+        const ag = document.getElementById('accessGate'); if (ag) ag.classList.add('hidden');
+        const cp = document.getElementById('coverPage'); if (cp) cp.style.display = 'none';
+        const gp = document.getElementById('gamePage'); if (gp) gp.classList.add('active');
+        try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}
+        try { game.state = 'playing'; } catch(e){}
+        if (!window._rescueTestWatch) {
+          window._rescueTestWatch = setInterval(() => { try { if (!window._rescueTestMode) return; const m = document.getElementById('rescueModal'); if (m && !m.classList.contains('active') && !_rescue.gate) { game.state = 'playing'; openRescueGame(_makeRescueGate()); } } catch(e){} }, 1200);
+        }
+      } catch(e){ try { console.error('rescuetest boot failed', e); } catch(_){} }
+    };
+    const waitReady = (tries) => { if ((typeof imagesReady !== 'undefined' && imagesReady >= imagesTotal) || tries <= 0) boot(); else setTimeout(() => waitReady(tries - 1), 300); };
+    if (document.readyState === 'complete') waitReady(50); else window.addEventListener('load', () => waitReady(50));
+  } catch(e){}
+})();
+(function() {
+  const tap = (el, fn) => { if (!el) return; el.addEventListener('click', fn); el.addEventListener('touchend', (e) => { e.preventDefault(); fn(); }); };
+  tap(document.getElementById('rescueWpnPot'), () => _rescueSelectWeapon('pot'));
+  tap(document.getElementById('rescueWpnSling'), () => _rescueSelectWeapon('sling'));
+  tap(document.getElementById('rescueWpnStaff'), () => _rescueSelectWeapon('staff'));
+  tap(document.getElementById('rescueSheepBtn'), _rescueSheep);
+  tap(document.getElementById('rescueBoulderBtn'), _rescueBoulder);
+  tap(document.getElementById('rescueResumeBtn'), _rescueResume);
+  tap(document.getElementById('rescueQuitBtn'), _rescueQuit);
+  tap(document.getElementById('rescueRetryBtn'), _rescueRetry);
+  tap(document.getElementById('rescueLoseQuitBtn'), _rescueQuit);
+  tap(document.getElementById('rescueWinContinueBtn'), _rescueWinContinue);
+  tap(document.getElementById('rescueWinReplayBtn'), _rescueRetry);
+  const pb = document.getElementById('rescuePauseBtn'); if (pb) pb.addEventListener('click', _rescuePause);
+  const cv = document.getElementById('rescueCanvas');
+  if (cv) { cv.addEventListener('pointerdown', _rescueTap); cv.addEventListener('touchstart', _rescueTap, { passive: false }); cv.style.touchAction = 'none'; }
 })();
 
 function openChallenge(gate) {
