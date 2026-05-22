@@ -19,6 +19,9 @@
 <meta name="author" content="Bible Explorer Kids">
 <meta name="description" content="Moses' Escape to Midian - Scene 3: The Well of Midian - Interactive Bible Adventure for Kids">
 <title>Moses' Escape to Midian - Scene 3: The Well of Midian</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body {
@@ -2122,6 +2125,7 @@
     <canvas id="gameCanvas" width="448" height="320"></canvas>
   </div>
   <div class="controls" role="group" aria-label="Game controls">
+    <div id="hudPowerups" aria-label="Power-ups"></div>
     <div class="dpad" role="group" aria-label="Movement">
       <span class="dpad-spacer"></span>
       <button class="dpad-btn" data-dir="up" aria-label="Move up"><span class="dpad-glyph">&#9650;</span><span class="dpad-text">UP</span></button>
@@ -2291,7 +2295,7 @@
   <div class="modal-content" style="background:linear-gradient(155deg,#1a3a5a,#2a5a8a);border:3px solid #7ab8d8;max-width:880px;width:min(96vw,880px);padding:16px 20px;position:relative;">
     <button id="pulleyPauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:38px;height:38px;border-radius:10px;border:2px solid #7ab8d8;background:rgba(10,30,50,0.7);color:#ffe0a0;font-size:18px;cursor:pointer;line-height:1;">⏸</button>
     <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;">~ RACE TO WATER THE FLOCK ~</div>
-    <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;">Beat the rude shepherd — fill all your pots!</h2>
+    <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;">Beat the Rude Shepherds — fill all your pots first!</h2>
     <div id="pulleyRotateHint" style="display:none;align-items:center;justify-content:center;gap:7px;background:rgba(255,210,90,0.14);border:1px solid rgba(255,210,90,0.45);color:#ffe8b8;font-size:12px;font-weight:bold;border-radius:10px;padding:5px 8px;margin:0 2px 6px;"><span style="font-size:16px;">📱↻</span> Turn your phone sideways for easier aiming</div>
     <!-- 2026-05-21 (Jane: puzzles felt too simple/kiddish — wanted a head-to-head,
          Angry-Birds-style contest with real art + a bigger responsive modal).
@@ -2314,15 +2318,45 @@
     </div>
     <div id="pulleyFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:17px;font-weight:bold;">Drag from Moses to aim — fill every pot!</div>
     <div style="color:#9fcbe0;font-size:12px;text-align:center;margin-top:5px;font-style:italic;">"Moses got up and came to their rescue and watered their flock." — Exodus 2:17</div>
-    <div id="pulleyIntroOverlay" style="display:none;position:absolute;inset:0;z-index:6;background:rgba(8,24,42,0.9);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:14px;font-family:'Baloo 2','Comic Sans MS','Trebuchet MS',Verdana,sans-serif;">
-      <div style="color:#ffe0a0;font-size:22px;font-weight:bold;letter-spacing:.5px;text-shadow:0 2px 6px rgba(0,0,0,.5);">💧 How to water the flock</div>
-      <div id="pulleyHowTo" style="display:flex;gap:9px;justify-content:center;flex-wrap:wrap;max-width:560px;">
-        <div class="ptStep"><span class="ptIco">👆</span><span class="ptTx"><b>1. Drag &amp; let go</b><br>aim water into a pot</span></div>
-        <div class="ptStep"><span class="ptIco">✋</span><span class="ptTx"><b>2. Tap SHOO!</b><br>when he grabs your pot</span></div>
-        <div class="ptStep"><span class="ptIco">🪣</span><span class="ptTx"><b>3. Fill them all</b><br>before the rude shepherd</span></div>
+    <div id="pulleyIntroOverlay" style="display:none;position:absolute;inset:0;z-index:6;background:radial-gradient(circle at 50% 30%,rgba(12,34,58,0.93),rgba(6,16,30,0.97));border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 18px;overflow:hidden;font-family:'Baloo 2','Fredoka','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
+      <!-- animated backdrop: Moses at the well, the rude shepherd on the other side -->
+      <div class="piScene" aria-hidden="true">
+        <img class="piImg piWell" src="assets/images/midian%20well.png" alt="">
+        <img class="piImg piMoses" src="assets/images/moses%20right%20facing.png" alt="">
+        <img class="piImg piShep" src="assets/images/rude%20shepherd%20left%20facing.png" alt="">
       </div>
-      <button class="btn btn-gold" id="pulleyStartBtn" style="font-size:20px;padding:12px 34px;letter-spacing:.5px;margin-top:4px;">Start watering ▶</button>
+      <div class="piContent" style="position:relative;z-index:2;text-align:center;">
+        <div class="piTitle" style="color:#ffe0a0;font-size:34px;font-weight:800;letter-spacing:.5px;line-height:1.1;">🏺 How to Water the Flock</div>
+        <div class="piSub" style="color:#dff0fa;font-size:18px;font-weight:600;margin-top:8px;text-shadow:0 2px 8px rgba(0,0,0,.8);">Fill all your water pots before the rude shepherds do!</div>
+      </div>
+      <div id="pulleyHowTo" style="position:relative;z-index:2;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;max-width:760px;">
+        <div class="ptStep"><span class="ptIco">👆</span><span class="ptTx"><b>1. Drag &amp; Let Go</b><br>Aim water into a pot</span></div>
+        <div class="ptStep"><span class="ptIco">✋</span><span class="ptTx"><b>2. Tap SHOO!</b><br>When a shepherd grabs your pot</span></div>
+        <div class="ptStep"><span class="ptIco">🏺</span><span class="ptTx"><b>3. Fill Them All</b><br>Beat the rude shepherds to it</span></div>
+      </div>
+      <button class="btn btn-gold piBtn" id="pulleyStartBtn" style="position:relative;z-index:2;font-size:24px;padding:15px 46px;letter-spacing:.5px;">Start Watering ▶</button>
     </div>
+    <style>
+      #pulleyIntroOverlay .piScene{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;}
+      #pulleyIntroOverlay .piImg{position:absolute;bottom:0;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));}
+      #pulleyIntroOverlay .piWell{left:50%;transform:translateX(-50%);width:min(34vw,260px);opacity:.45;bottom:-2%;animation:piWellRise 1s ease-out both;}
+      #pulleyIntroOverlay .piMoses{left:4%;height:min(40vh,260px);opacity:.95;animation:piMosesIn .7s ease-out both,piBob 2.8s ease-in-out infinite;}
+      #pulleyIntroOverlay .piShep{right:4%;height:min(38vh,250px);opacity:.92;transform:scaleX(-1);animation:piShepIn .7s ease-out both,piLean 2.2s ease-in-out infinite;}
+      @keyframes piMosesIn{from{transform:translateX(-70px);opacity:0;}to{opacity:.95;}}
+      @keyframes piShepIn{from{transform:scaleX(-1) translateX(-70px);opacity:0;}to{opacity:.92;}}
+      @keyframes piBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+      @keyframes piLean{0%,100%{transform:scaleX(-1) translateX(0);}50%{transform:scaleX(-1) translateX(-16px);}}
+      @keyframes piWellRise{from{transform:translateX(-50%) translateY(40px);opacity:0;}to{opacity:.45;}}
+      #pulleyIntroOverlay .piTitle{animation:piPop .6s .15s both;text-shadow:0 3px 8px rgba(0,0,0,.6),0 0 22px rgba(120,200,255,.4);}
+      #pulleyIntroOverlay .piSub{animation:piFade .6s .3s both;}
+      #pulleyIntroOverlay #pulleyHowTo{animation:piFade .6s .45s both;}
+      #pulleyIntroOverlay .piBtn{animation:piPop .6s .6s both,piPulse 1.8s 1.2s ease-in-out infinite;}
+      @keyframes piFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+      @keyframes piPop{0%{opacity:0;transform:scale(.8);}70%{transform:scale(1.05);}100%{opacity:1;transform:scale(1);}}
+      @keyframes piPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+      @media (max-width:560px){#pulleyIntroOverlay .piMoses{height:20vh;}#pulleyIntroOverlay .piShep{height:20vh;}#pulleyIntroOverlay .piWell{opacity:.3;}}
+      @media (prefers-reduced-motion:reduce){#pulleyIntroOverlay .piImg,#pulleyIntroOverlay .piContent *,#pulleyIntroOverlay .piBtn{animation:none !important;}}
+    </style>
     <div id="pulleyPausedOverlay" style="display:none;position:absolute;inset:0;z-index:4;background:rgba(8,20,36,0.82);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
       <div style="color:#ffe0a0;font-size:30px;font-weight:bold;letter-spacing:2px;">PAUSED</div>
       <button class="btn btn-gold" id="pulleyResumeBtn" style="font-size:20px;padding:12px 30px;">▶ Resume</button>
@@ -2355,6 +2389,11 @@
     <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;">~ RESCUE THE DAUGHTERS ~</div>
     <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;">Drive off the rude shepherds!</h2>
     <canvas id="rescueCanvas" width="760" height="470" style="display:block;width:100%;height:auto;max-height:60vh;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#e8c890;"></canvas>
+    <div id="rescueLaneCtl" style="display:flex;justify-content:center;align-items:center;gap:14px;margin:7px 0 1px;">
+      <button id="rescueLaneUp" class="rwLaneBtn" aria-label="Move Moses up a lane">▲</button>
+      <span style="color:#ffe2b0;font-size:12px;font-weight:bold;letter-spacing:.5px;">MOVE MOSES</span>
+      <button id="rescueLaneDown" class="rwLaneBtn" aria-label="Move Moses down a lane">▼</button>
+    </div>
     <div style="display:flex;justify-content:space-between;align-items:center;color:#ffe2b0;font-size:13px;font-weight:bold;margin:7px 2px 4px;">
       <span id="rescueDaughters">👧 7/7</span>
       <span id="rescueCoins" style="color:#ffe07a;">💰 0</span>
@@ -2365,16 +2404,16 @@
     <div style="color:#d8b890;font-size:12px;text-align:center;margin-top:4px;font-style:italic;">"Moses got up and came to their rescue." — Exodus 2:17</div>
     <!-- weapon-select / loadout screen (shown before each round) -->
     <style>
-      #rescueCardGrid .rwCard{background:linear-gradient(165deg,rgba(40,28,14,0.92),rgba(22,15,7,0.92));border:2.5px solid var(--tint,#6a4a2a);border-radius:14px;padding:0 0 9px;cursor:pointer;transition:transform .12s ease,box-shadow .15s;position:relative;text-align:center;color:#fff4e2;overflow:hidden;display:flex;flex-direction:column;}
+      #rescueCardGrid .rwCard{background:linear-gradient(165deg,rgba(40,28,14,0.92),rgba(22,15,7,0.92));border:2.5px solid var(--tint,#6a4a2a);border-radius:14px;padding:0 0 9px;cursor:pointer;transition:transform .12s ease,box-shadow .15s;position:relative;text-align:center;color:#fff4e2;display:flex;flex-direction:column;}
       #rescueCardGrid .rwCard:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 8px 20px rgba(0,0,0,.45);}
       #rescueCardGrid .rwCard.sel{box-shadow:0 0 0 3px #ffe07a inset,0 6px 18px rgba(255,200,80,0.45);}
       #rescueCardGrid .rwCard.sel .rwThumb{filter:brightness(1.12) saturate(1.15);}
       #rescueCardGrid .rwCard.locked{cursor:not-allowed;}
       #rescueCardGrid .rwCard.locked .rwThumb{filter:grayscale(0.85) brightness(0.6);}
       #rescueCardGrid .rwCard.locked .rwName,#rescueCardGrid .rwCard.locked .rwDesc,#rescueCardGrid .rwCard.locked .rwStats,#rescueCardGrid .rwCard.locked .rwCost{opacity:0.5;}
-      #rescueCardGrid .rwCard .rwThumb{height:74px;display:flex;align-items:center;justify-content:center;font-size:46px;background:radial-gradient(circle at 50% 38%,var(--tint,#6a4a2a),rgba(0,0,0,0.35));text-shadow:0 3px 8px rgba(0,0,0,.55);border-bottom:2px solid var(--tint,#6a4a2a);}
+      #rescueCardGrid .rwCard .rwThumb{height:62px;display:flex;align-items:center;justify-content:center;font-size:40px;background:radial-gradient(circle at 50% 38%,var(--tint,#6a4a2a),rgba(0,0,0,0.35));text-shadow:0 3px 8px rgba(0,0,0,.55);border-bottom:2px solid var(--tint,#6a4a2a);border-radius:11px 11px 0 0;}
       #rescueCardGrid .rwCard .rwName{font-weight:bold;font-size:14px;margin:7px 6px 0;line-height:1.1;}
-      #rescueCardGrid .rwCard .rwDesc{font-size:10.5px;line-height:1.3;color:#e8d2b0;margin:4px 8px 6px;min-height:40px;}
+      #rescueCardGrid .rwCard .rwDesc{font-size:10.5px;line-height:1.28;color:#e8d2b0;margin:4px 8px 6px;min-height:32px;}
       #rescueCardGrid .rwCard .rwStats{margin:0 9px;}
       #rescueCardGrid .rwCard .rwStat{font-size:10px;display:flex;justify-content:space-between;color:#cbb89c;}
       #rescueCardGrid .rwCard .rwStat b{color:#ffd23a;letter-spacing:1px;font-size:11px;}
@@ -2390,9 +2429,11 @@
       #rescueWeaponBar .rwBtn .rwLbl{font-size:10px;display:block;}
       #rescueWeaponBar .rwBtn .rwPrice{font-size:10px;font-weight:bold;color:#ffe07a;display:block;}
       #rescueWeaponBar .rwBtn .rwCd{position:absolute;left:0;bottom:0;width:100%;background:rgba(10,10,20,0.62);pointer-events:none;height:0;}
+      #rescueLaneCtl .rwLaneBtn{width:58px;height:42px;border-radius:11px;border:2px solid #c8902a;background:linear-gradient(135deg,#ffd86a,#e0a83a);color:#5a3a08;font-size:22px;font-weight:bold;cursor:pointer;line-height:1;box-shadow:0 3px 0 #a9690f,0 4px 9px rgba(0,0,0,.35);touch-action:manipulation;}
+      #rescueLaneCtl .rwLaneBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #a9690f;}
       /* kid-friendly font + clear directions */
-      #rescueModal{font-family:'Baloo 2','Comic Sans MS','Trebuchet MS',Verdana,sans-serif;}
-      #rescueCardGrid{grid-template-columns:repeat(4,1fr);}
+      #rescueModal,#rescueLoadout,#rescueIntro{font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;}
+      #rescueCardGrid{grid-template-columns:repeat(4,1fr);grid-auto-rows:max-content;}
       #rescueHowTo{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:4px 0 9px;}
       #rescueHowTo .htStep{flex:1;min-width:128px;max-width:240px;background:rgba(255,240,200,0.10);border:1.5px solid rgba(255,215,120,0.4);border-radius:12px;padding:7px 9px;display:flex;align-items:center;gap:8px;color:#ffeccb;}
       #rescueHowTo .htStep .htIco{font-size:24px;line-height:1;flex:0 0 auto;}
@@ -2401,8 +2442,8 @@
       /* tablet / small landscape */
       @media (max-width:640px){
         #rescueCardGrid{grid-template-columns:repeat(2,1fr);gap:7px;}
-        #rescueCardGrid .rwCard .rwThumb{height:58px;font-size:38px;}
-        #rescueCardGrid .rwCard .rwDesc{min-height:46px;}
+        #rescueCardGrid .rwCard .rwThumb{height:54px;font-size:36px;}
+        #rescueCardGrid .rwCard .rwDesc{min-height:34px;}
         #rescueHowTo .htStep{min-width:0;}
         #rescueWeaponBar .rwBtn .rwIco{font-size:18px;}
         #rescueWeaponBar .rwBtn .rwLbl,#rescueWeaponBar .rwBtn .rwPrice{font-size:9px;}
@@ -2412,8 +2453,19 @@
         #rescueModal .modal-content{padding:10px 9px !important;}
         #rescueLoadout{padding:10px 10px !important;}
         #rescueCardGrid .rwCard .rwName{font-size:12.5px;}
-        #rescueCardGrid .rwCard .rwDesc{font-size:9.5px;min-height:42px;}
+        #rescueCardGrid .rwCard .rwDesc{font-size:9.5px;min-height:30px;}
         #rescueCardGrid .rwCard .rwCost{font-size:11.5px;}
+      }
+      /* portrait: cards must never spill their text — let each card grow to its
+         content and the grid scroll, with comfortable wrapping */
+      @media (orientation:portrait){
+        #rescueCardGrid{grid-template-columns:repeat(2,1fr);gap:8px;align-content:start;}
+        #rescueCardGrid .rwCard{padding-bottom:10px;}
+        #rescueCardGrid .rwCard .rwThumb{height:56px;font-size:36px;}
+        #rescueCardGrid .rwCard .rwName{font-size:13px;margin-top:6px;}
+        #rescueCardGrid .rwCard .rwDesc{min-height:0;font-size:10px;margin:4px 7px 6px;}
+        #rescueCardGrid .rwCard .rwStat{font-size:10px;}
+        #rescueCardGrid .rwCard .rwCost{font-size:12px;margin-top:6px;}
       }
       /* short landscape: keep the playfield + controls on one screen, no scroll */
       @media (max-height:540px) and (orientation:landscape){
@@ -2452,10 +2504,10 @@
 </div>
 
 <style>
-#pulleyHowTo .ptStep{flex:1;min-width:150px;max-width:230px;background:rgba(255,240,200,0.10);border:1.5px solid rgba(255,215,120,0.4);border-radius:12px;padding:8px 10px;display:flex;align-items:center;gap:9px;color:#ffeccb;}
-#pulleyHowTo .ptStep .ptIco{font-size:26px;line-height:1;flex:0 0 auto;}
-#pulleyHowTo .ptStep .ptTx{font-size:13px;line-height:1.25;text-align:left;}
-#pulleyHowTo .ptStep .ptTx b{color:#ffd86a;}
+#pulleyHowTo .ptStep{flex:1;min-width:190px;max-width:240px;background:rgba(255,240,200,0.12);border:2px solid rgba(255,215,120,0.45);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;color:#ffeccb;text-align:center;}
+#pulleyHowTo .ptStep .ptIco{font-size:42px;line-height:1;flex:0 0 auto;}
+#pulleyHowTo .ptStep .ptTx{font-size:16px;line-height:1.35;text-align:center;}
+#pulleyHowTo .ptStep .ptTx b{color:#ffd86a;font-size:17px;display:block;margin-bottom:3px;}
 @media (max-width:560px){#pulleyHowTo{flex-direction:column;}#pulleyHowTo .ptStep{min-width:0;max-width:none;width:100%;}}
 @media (orientation:portrait) and (max-width:600px){
   #wellPulleyModal .modal-content{padding:10px 9px !important;width:99vw !important;max-width:99vw !important;}
@@ -2552,6 +2604,8 @@
 <audio id="audSandThud"         preload="auto" src="assets/audio/sand%20thud.mp3"></audio>
 <audio id="audStealWhoosh"      preload="auto" src="assets/audio/steal%20whoosh.mp3"></audio>
 <audio id="audWellCheer"        preload="auto" src="assets/audio/well%20win%20cheer.mp3"></audio>
+<audio id="audSheepBleat"       preload="auto" src="assets/audio/sheep%20bleat.mp3"></audio>
+<audio id="audGameOver"         preload="auto" src="assets/audio/game%20over.mp3"></audio>
 <audio id="audVoJethro"         preload="auto" src="assets/audio/this%20water%20is%20for%20jethro.mp3"></audio>
 <audio id="audVoSeeAbout"       preload="auto" src="assets/audio/we%20will%20see%20about%20that.mp3"></audio>
 <audio id="audVoMine"           preload="auto" src="assets/audio/that%20water%20is%20mine.mp3"></audio>
@@ -2717,6 +2771,8 @@ const audio = {
   voHaha:        $('audVoHaha'),         // shepherd: "Ha ha ha, got it!" (on a successful steal)
   voLeaveItBe:   $('audVoLeaveItBe'),    // Moses: "Leave it be!" (on a save)
   oops:          $('audOops'),           // played when a steal succeeds
+  sheepBleat:    $('audSheepBleat'),     // flock bleats when it trots in on a win
+  gameOver:      $('audGameOver'),       // failure sting on a loss (placeholder: game over.mp3)
 };
 // volumes
 audio.bgm.volume = 0.28;
@@ -2758,6 +2814,8 @@ if (audio.correct)       audio.correct.volume       = 0.75;
 if (audio.collectCrown)  audio.collectCrown.volume  = 0.75;
 if (audio.chestOpen)     audio.chestOpen.volume     = 0.75;
 if (audio.gameBonus)     audio.gameBonus.volume     = 0.78;
+if (audio.sheepBleat)    audio.sheepBleat.volume    = 0.70;
+if (audio.gameOver)      audio.gameOver.volume      = 0.80;
 if (audio.vulture)       audio.vulture.volume       = 0.70;
 if (audio.camelGrunt)    audio.camelGrunt.volume    = 0.65;
 if (audio.success3)      audio.success3.volume      = 0.80;
@@ -2849,13 +2907,16 @@ function _anyBlockingModalOpen(){
 }
 const _lastPlayAt = Object.create(null);
 function play(name) {
-  const a = audio[name]; if (!a) return;
-  if (PLAY_ONLY_WHILE_PLAYING[name] && (typeof game === 'undefined' || game.state !== 'playing')) return;
-  if (MODAL_AUDIO_DENY.has(name) && _anyBlockingModalOpen()) return;
+  // Returns TRUE when the request was handled so `play('a') || play('b')` works as a
+  // first-available FALLBACK (previously it always returned undefined, so every name in
+  // the chain played at once — e.g. 4 layered sounds on a loss).
+  const a = audio[name]; if (!a) return false;
+  if (PLAY_ONLY_WHILE_PLAYING[name] && (typeof game === 'undefined' || game.state !== 'playing')) return false;
+  if (MODAL_AUDIO_DENY.has(name) && _anyBlockingModalOpen()) return false;
   const now = performance.now();
-  if (_lastPlayAt[name] && (now - _lastPlayAt[name]) < 90) return;
+  if (_lastPlayAt[name] && (now - _lastPlayAt[name]) < 90) return true; // already sounding — counts as handled
   _lastPlayAt[name] = now;
-  try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){}
+  try { a.currentTime = 0; a.play().catch(()=>{}); return true; } catch(e){ return false; }
 }
 
 /* ---------- IMAGE ASSETS ---------- */
@@ -4079,6 +4140,18 @@ function drawScene3Stream(){
       ctx.beginPath();
       ctx.ellipse(dx + TILE/2 + wobX, dy + TILE*0.78 + wobY, TILE*0.42, TILE*0.10, 0, 0, Math.PI*2);
       ctx.stroke();
+      // Eagle Eye power: unmistakable safe (✓) / sinking (✗) marker above each stone
+      if (window._royalVisionUntil && now < window._royalVisionUntil) {
+        const pulse = 0.55 + 0.45 * Math.sin(now / 170);
+        ctx.font = 'bold ' + Math.round(TILE * 0.46) + 'px Georgia';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+        const mark = sinking ? '✗' : '✓';
+        const mx = dx + TILE / 2, my = dy + TILE * 0.14;
+        ctx.strokeText(mark, mx, my);
+        ctx.fillStyle = sinking ? 'rgba(255,70,50,' + pulse + ')' : 'rgba(70,235,100,' + pulse + ')';
+        ctx.fillText(mark, mx, my);
+      }
       ctx.restore();
     }
   }
@@ -4145,6 +4218,8 @@ const scene3Wolf = {
 function updateScene3Wolf(dt){
   if (game.scene !== 2) return;
   if (game.state !== 'playing') return;
+  if (window._guardFreezeUntil && performance.now() < window._guardFreezeUntil) return; // Foe Freeze power
+
   const now = performance.now();
   const dusk = _scene3DuskT();
   // Wolf only appears once dusk progress > 0.7 (twilight)
@@ -5759,7 +5834,8 @@ const MOVE_COOLDOWN_MS = 150;
 function handleDirInput(dir) {
   if (game.state !== 'playing') return;
   const now = performance.now();
-  if (now - lastMoveAt < MOVE_COOLDOWN_MS) return;
+  const cd = (window._speedBurstUntil && now < window._speedBurstUntil) ? MOVE_COOLDOWN_MS * 0.5 : MOVE_COOLDOWN_MS;
+  if (now - lastMoveAt < cd) return;
   lastMoveAt = now;
   attemptMove(dir);
 }
@@ -6666,7 +6742,7 @@ function _applyCheckpointAfterSeed(){
         }
       } catch(e){}
     }
-    try { updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); updateHudAltitude(); } catch(e){}
+    try { updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); updateHudAltitude(); } catch(e){} try { _refreshUnlockButtons(); } catch(e){}
     try { toast('Welcome back! Resumed from your last checkpoint.'); } catch(e){}
     return true;
   } catch(e) { return false; }
@@ -6725,7 +6801,7 @@ function startScene1() {
   // v2.1: arm mirage traps (Zone C) and rolling boulder schedule (Zone A hard)
   try { seedMirages(); } catch(e){}
   try { seedRollingBoulders(); } catch(e){}
-  updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){}
+  updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){} try { _refreshUnlockButtons(); } catch(e){}
   $('gamePage').classList.add('active');
   // now that the game page is visible, the canvas-wrapper has real dimensions
   resizeCanvas();
@@ -6832,7 +6908,7 @@ function restartScene() {
   try { seedPursuitScouts(); } catch(e){}
   try { seedMirages(); } catch(e){}
   try { seedRollingBoulders(); } catch(e){}
-  updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){}
+  updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){} try { _refreshUnlockButtons(); } catch(e){}
   updateCamera();
   game.state = 'playing';
   setMusic('bgm');
@@ -7412,14 +7488,14 @@ const _pulley = {
 };
 function _pulleyCfg() {
   const d = (typeof game !== 'undefined' && game.difficulty) || 'easy';
-  // gain = % a pot gains per accurate hit (lower = more shots per pot). The rival
-  // fills slowly on his own; his real weapon is STEALING — each unblocked steal
-  // empties one of your pots AND completes one of his, so you must SHOO to win.
-  // Tuned HARD on purpose: 3 stars require zero stolen pots and no overshoots,
-  // so kids have to both fill fast AND defend. The gang steals relentlessly.
-  if (d === 'hard')   return { gain: 26, shepRate: 4.0, stealEvery: 3.4, stealWindow: 1.2, wind: 130 };
-  if (d === 'medium') return { gain: 30, shepRate: 3.2, stealEvery: 4.2, stealWindow: 1.5, wind: 70 };
-  return { gain: 34, shepRate: 2.6, stealEvery: 5.0, stealWindow: 1.9, wind: 0 }; // easy
+  // gain = % a pot gains per accurate hit (lower = more shots per pot).
+  // The rival fills slowly on his own; his real weapon is STEALING — each unblocked
+  // steal empties one of your pots AND completes one of his, so you must SHOO to win.
+  // PACE is normal (Jane: "normal speed is good") — only the per-throw gain is kept
+  // modest so a pot always takes ~3-4 accurate throws (never fills in 2 taps).
+  if (d === 'hard')   return { gain: 24, shepRate: 4.0, stealEvery: 3.4, stealWindow: 1.2, wind: 130 };
+  if (d === 'medium') return { gain: 27, shepRate: 3.2, stealEvery: 4.2, stealWindow: 1.5, wind: 70 };
+  return { gain: 30, shepRate: 2.6, stealEvery: 5.0, stealWindow: 1.9, wind: 0 }; // easy
 }
 // ---- pot layout: 5 per side (2-row cluster), varied distance + elevation ----
 function _pulleyLayoutPots() {
@@ -7458,7 +7534,10 @@ function _pulleyConfetti(n) {
     vx: (Math.random() - 0.5) * 2, vy: 1 + Math.random() * 2, t: 0, life: 80, conf: true });
 }
 function _pulleyCue(text, x, y, color, big) {
-  _pulley.cues.push({ text: text, x: x, y: y, color: color || '#fff', t: 0, life: big ? 80 : 70, big: !!big });
+  // Big cues (SAVED!/stole it!/filled HIS pot) are the distracting ones — keep them
+  // short and never let two big cues linger/overlap (a fresh one clears the old).
+  if (big) _pulley.cues = _pulley.cues.filter(c => !c.big);
+  _pulley.cues.push({ text: text, x: x, y: y, color: color || '#fff', t: 0, life: big ? 38 : 42, big: !!big });
 }
 // one-shot sprite FX (splash on a hit, dust on a miss)
 function _pulleyFx(key, x, y, size, life) {
@@ -7492,6 +7571,7 @@ function _pulleyReset() {
   _pulley.shepHeave = 0; _pulley.shepPourT = 0; _pulley.paused = false; _pulley.intro = false;
   _pulley.matchPoint = false; _pulley.slowmo = 0; _pulley.flock = null; _pulley.zoom = 1; _pulley.zoomTarget = 1;
   _pulley.potsLostToSteal = 0; _pulley.ownGoals = 0; _pulley.earnedStars = 3; _pulley.winPanelShown = false;
+  _pulley.stealNo = 0;
   _pulley.shepX = _pulley.shepHomeX; _pulley.mosesX = _pulley.mosesHomeX;
   const lo = document.getElementById('pulleyLoseOverlay'); if (lo) lo.style.display = 'none';
   const wo = document.getElementById('pulleyWinOverlay'); if (wo) wo.style.display = 'none';
@@ -7533,7 +7613,8 @@ function _pulleyCanvasPos(e) {
   const r = c.getBoundingClientRect();
   const cx = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
   const cy = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY;
-  return { x: (cx - r.left) * (c.width / r.width), y: (cy - r.top) * (c.height / r.height) };
+  // map the pointer into the fixed 600×340 LOGICAL space (backing store may be larger)
+  return { x: (cx - r.left) * (600 / r.width), y: (cy - r.top) * (340 / r.height) };
 }
 function _pulleyAimStart(e) {
   if (_pulley.over || _pulley.intro || _pulley.proj || _pulley.mosesRun || _pulley.paused || !_pulley.gate) return;
@@ -7563,17 +7644,26 @@ function _pulleyFire() {
   _pulley.bucketBob = 14;
   try { play('waterSkin') || play('pop'); } catch(e){}
 }
-// ---- the steal: shepherd runs to a filled pot; SHOO → Moses dashes to save it ----
+// ---- the steal: a shepherd runs to a filled pot; SHOO → Moses dashes to save it ----
+// The whole rude-shepherd gang takes turns (one threat at a time, per Jane), and the
+// steals come thicker as the round wears on AND at higher difficulty — thrilling but doable.
+function _pulleyNextStealDelay() {
+  const base = _pulley.stealEvery || 5;
+  return Math.max(base * 0.55, base - (_pulley.stealNo || 0) * 0.18);
+}
 function _pulleyStartSteal() {
   // prefer a finished pot of yours; otherwise any partly-filled one
   const done = _pulley.pots.filter(p => p.mine && p.done);
   const targets = done.length ? done : _pulley.pots.filter(p => p.mine && p.fill > 0);
   if (!targets.length) { _pulley.nextSteal = 2.5; return; }
   const pot = targets[Math.floor(Math.random() * targets.length)];
-  _pulley.steal = { pot: pot, t: 0 };
+  _pulley.stealNo = (_pulley.stealNo || 0) + 1;
+  const who = (_pulley.stealNo - 1) % 3; // rotate through the gang so it's a different shepherd each time
+  _pulley.steal = { pot: pot, t: 0, who: who };
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = '';
-  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '⚠️ The rude shepherd is grabbing a pot — tap SHOO!';
-  _pulleySay('shepSay', 'That water is mine!', 'voMine');
+  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '⚠️ A rude shepherd is grabbing a pot — tap SHOO!';
+  const lines = [['That water is mine!', 'voMine'], ['Hand it over!', null], ['We\'ll take that one!', null]];
+  _pulleySay('shepSay', lines[who][0], lines[who][1] || undefined);
   try { play('stealWhoosh') || play('mirageWoosh') || play('pop'); } catch(e){}
 }
 function _pulleyShoo() {
@@ -7592,7 +7682,7 @@ function _pulleyResolveSteal(saved) {
     _pulleySay('mosesSay', 'Leave it be!', 'voLeaveItBe');
     if (fb) fb.textContent = 'Saved it! He has to wait now.';
     try { play('voLeaveItBe') || play('chime') || play('coin'); } catch(e){}
-    _pulley.steal = null; _pulley.nextSteal = _pulley.stealEvery;
+    _pulley.steal = null; _pulley.nextSteal = _pulleyNextStealDelay();
   } else if (pot) {
     pot.fill = 0; pot.done = false; pot.pop = 0;
     _pulley.shake = 12; _pulleySpawnDrops(8, pot.x, pot.y - 26, 40);
@@ -7609,7 +7699,7 @@ function _pulleyResolveSteal(saved) {
     _pulley.shepCarry = { t: 0, fromX: pot.x + 8 };
     _pulley.steal = null;
   } else {
-    _pulley.steal = null; _pulley.nextSteal = _pulley.stealEvery;
+    _pulley.steal = null; _pulley.nextSteal = _pulleyNextStealDelay();
   }
 }
 function _pulleyWin() {
@@ -7629,12 +7719,15 @@ function _pulleyWin() {
     const tp = mine[i % mine.length];
     _pulley.flock.push({ key: keys[i], x: -40 - i * 46, y: 326, tx: Math.max(70, Math.min(290, tp.x + (i % 2 ? 14 : -14))), vx: 1, drinking: false, ph: Math.random() * 6 });
   }
-  // star rating — hard to 3-star: ANY stolen pot or any overshoot into his pots costs you
+  // star rating — generous to keep kids motivated: a clean-ish run still earns 3,
+  // and you can never drop below 2 stars for finishing the race.
   const slip = (_pulley.potsLostToSteal || 0) + (_pulley.ownGoals || 0);
-  _pulley.earnedStars = slip === 0 ? 3 : (slip <= 2 ? 2 : 1);
+  _pulley.earnedStars = slip <= 3 ? 3 : 2;
   // stop the looping music so the victory cheer plays clean
   try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
   try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){}
+  // the flock bleats happily as it trots in to drink (asset: sheep bleat.mp3)
+  try { setTimeout(() => play('sheepBleat'), 650); setTimeout(() => play('sheepBleat'), 1500); } catch(e){}
   // linger: celebrate the win, then show the star panel (no auto-close)
   setTimeout(() => { if (_pulley.over && _pulley.win) _pulleyShowWinPanel(); }, 2600);
 }
@@ -7668,7 +7761,8 @@ function _pulleyLose() {
   // pause the music; lose a heart
   try { if (audio.wellMusic) audio.wellMusic.pause(); } catch(e){}
   try { game.hearts = Math.max(0, game.hearts - 1); updateHudHearts(); game.perfectRun = false; } catch(e){}
-  try { play('sandThud') || play('pop'); } catch(e){}
+  // failure sting — placeholder uses game over.mp3 until Jane drops a dedicated track.
+  try { play('gameOver') || play('captured') || play('timeUp') || play('sandThud'); } catch(e){}
   // show the lose overlay with the heart loss + a Retry option
   const out = (game && game.hearts <= 0);
   const msgEl = document.getElementById('pulleyLoseMsg');
@@ -7867,7 +7961,15 @@ function _pulleyFrame(now) {
   const canvas = document.getElementById('pulleyCanvas');
   if (!canvas) return;
   const c = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+  // Crisp rendering: keep a fixed 600×340 LOGICAL coordinate space (all draw coords
+  // below assume it), but size the backing store to the on-screen size × DPR so the
+  // canvas is never blurrily stretched. This sharpens every sprite, current + future.
+  const W = 600, H = 340;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const cssW = canvas.clientWidth || W;
+  const needW = Math.max(W, Math.round(cssW * dpr)), needH = Math.round(needW * (H / W));
+  if (canvas.width !== needW || canvas.height !== needH) { canvas.width = needW; canvas.height = needH; }
+  c.setTransform(needW / W, 0, 0, needH / H, 0, 0);
   const rawDt = Math.min(60, now - (_pulley.lastFrame || now));
   _pulley.lastFrame = now;
   if (_pulley.slowmo > 0) _pulley.slowmo -= rawDt / 1000;          // match-point slow-mo (real-time countdown)
@@ -7910,7 +8012,7 @@ function _pulleyFrame(now) {
     }
     if (_pulley.shoveT > 0) _pulley.shoveT -= dts;
     // shepherd carrying a stolen pot back to his side, then resets
-    if (_pulley.shepCarry) { _pulley.shepCarry.t += dts; if (_pulley.shepCarry.t > 1.2) { _pulley.shepCarry = null; _pulley.nextSteal = _pulley.stealEvery; } }
+    if (_pulley.shepCarry) { _pulley.shepCarry.t += dts; if (_pulley.shepCarry.t > 1.2) { _pulley.shepCarry = null; _pulley.nextSteal = _pulleyNextStealDelay(); } }
     // steal scheduling + progress
     if (_pulley.steal) {
       _pulley.steal.t += dts;
@@ -7941,7 +8043,7 @@ function _pulleyFrame(now) {
         _pulleyFx('splashFx', rivalHit.x, rivalHit.y - 30, 42, 22);
         _pulleyCue('You filled HIS pot!', rivalHit.x, rivalHit.y - 54, '#ff7a6a', true);
         _pulley.ownGoals = (_pulley.ownGoals || 0) + 1; _pulley.combo = 0;
-        try { play('oops') || play('pop'); } catch(e){}
+        try { play('uhoh') || play('oops') || play('pop'); } catch(e){}
         if (rivalHit.fill >= 100) { rivalHit.done = true; rivalHit.pop = 1; }
         _pulleyUpdateHud(); _pulley.proj = null;
         if (fb) fb.textContent = 'Careful — that overshot into the shepherd’s pot!';
@@ -8043,24 +8145,31 @@ function _pulleyFrame(now) {
              - (_pulley.shepHeave > 0 ? Math.sin((1 - _pulley.shepHeave / 0.35) * Math.PI) * 7 : 0);
   const sIdleX = (_pulley.shepX != null ? _pulley.shepX : 478), sIdleY = 150 + sBob;
 
-  // ropes drawn FROM each well's pulley down to the gripping hands (the sprites
-  // have no baked rope now, so this is the only rope — always well-connected)
-  c.strokeStyle = '#b9935f'; c.lineWidth = 4; c.lineCap = 'round';
-  if (!_pulley.mosesRun) {
-    const hx = mIdleX + 82, hy = mIdleY + 46;
-    c.beginPath(); c.moveTo(116, 146); c.quadraticCurveTo((116 + hx) / 2, Math.max(146, hy) - 6, hx, hy); c.stroke();
-  }
-  if (!_pulley.steal && !_pulley.shepCarry) {
-    const hx = sIdleX + 50, hy = sIdleY + 44;
-    c.beginPath(); c.moveTo(512, 146); c.quadraticCurveTo((512 + hx) / 2, Math.max(146, hy) - 6, hx, hy); c.stroke();
-  }
+  // ropes drawn FROM each well's pulley down to the gripping hands. The placeholder
+  // sprites have no baked-in rope, so this canvas rope is the visible link — anchor it
+  // into the upper-body/hand region and cap it with a small grip knot so it clearly
+  // reads as held. (Hand offsets may need a final nudge once the real art lands.)
+  c.lineCap = 'round';
+  const _rope = (px, py, hx, hy) => {
+    c.strokeStyle = '#8a6a3a'; c.lineWidth = 5;
+    c.beginPath(); c.moveTo(px, py); c.quadraticCurveTo((px + hx) / 2, Math.min(py, hy) + 16, hx, hy); c.stroke();
+    c.strokeStyle = '#c9a86a'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(px, py); c.quadraticCurveTo((px + hx) / 2, Math.min(py, hy) + 16, hx, hy); c.stroke();
+    c.fillStyle = '#6a4a26'; c.beginPath(); c.arc(hx, hy, 5, 0, Math.PI * 2); c.fill(); // grip knot at the hands
+  };
+  // top anchor = the well's pulley beam (well art spans y≈86..236, beam near the top);
+  // Moses heaves forward-and-down, the rude shepherd reaches up — so their hand anchors differ.
+  if (!_pulley.mosesRun) _rope(116, 108, mIdleX + 88, mIdleY + 34);
+  if (!_pulley.steal && !_pulley.shepCarry) _rope(512, 108, sIdleX + 46, sIdleY + 24);
   c.lineCap = 'butt';
 
   // helper rogue shepherds (the gang) — on the LEFT side of the shepherd's well so
-  // they stay fully on-canvas (placeholders for now)
+  // they stay fully on-canvas. When it's THEIR turn to steal, hide the static one so the
+  // same shepherd isn't drawn in two places at once.
   c.save(); c.globalAlpha = 0.9;
-  _pDrawFit(c, ['shepHelpA', 'shepherd2Front'], 432, 236, 70, 92);
-  _pDrawFit(c, ['shepHelpB', 'shepherd3Front'], 470, 230, 66, 88);
+  const _stealerWho = _pulley.steal ? _pulley.steal.who : -1;
+  if (_stealerWho !== 1) _pDrawFit(c, ['shepHelpA', 'shepherd2Front'], 432, 236, 70, 92);
+  if (_stealerWho !== 2) _pDrawFit(c, ['shepHelpB', 'shepherd3Front'], 470, 230, 66, 88);
   c.restore();
 
   // Jethro's daughters watching by Moses' well — bigger/clearer, and they jump for joy on a win
@@ -8084,20 +8193,27 @@ function _pulleyFrame(now) {
   if (_pulley.shepCarry) { shepKeys = ['shepPotRight', 'shepPull']; }
   else if (_pulley.steal) {
     const nearPot = Math.abs(sIdleX - (_pulley.steal.pot.x + 18)) < 28;
-    shepKeys = nearPot ? ['shepGrab', 'shepherdLeft', 'shepPull'] : ['shepherdLeft', 'shepPull'];
+    const who = _pulley.steal.who || 0; // which gang member is lunging this turn
+    const base = who === 1 ? ['shepHelpA', 'shepherd2Front', 'shepherdLeft', 'shepPull']
+               : who === 2 ? ['shepHelpB', 'shepherd3Front', 'shepherdLeft', 'shepPull']
+               :             ['shepherdLeft', 'shepPull'];
+    shepKeys = nearPot ? ['shepGrab'].concat(base) : base;
   } else { shepKeys = ['shepHeave', 'shepPull', 'shepherdLeft', 'shepherdFront']; }
   _pDraw(c, shepKeys, sIdleX, sIdleY, 130, 140, shepFlip);
 
   // pots — drawn back-to-front (by y) so raised pots never hide the front ones
   _pulley.pots.slice().sort((a, b) => a.y - b.y).forEach(p => _pPot(c, p, now));
 
-  // flock standing clear at the front edges (aspect-preserved so they aren't squished)
-  _pDrawFit(c, ['sheep', 'sheepRight'], 96, 326, 52, 44);
-  _pDrawFit(c, ['lamb', 'lambAlt'], 132, 324, 34, 30);
-  _pDrawFit(c, ['goat'], 506, 326, 52, 46);
-  // victory flock — real sheep run in to drink at the pots
+  // flock standing clear at the front edges (aspect-preserved so they aren't squished).
+  // On a win the whole front flock hops for joy (staggered phases so they don't sync).
+  const _hop = (ph) => _pulley.win ? -Math.abs(Math.sin(now / 150 + ph)) * 16 : 0;
+  _pDrawFit(c, ['sheep', 'sheepRight'], 96, 326 + _hop(0),   52, 44);
+  _pDrawFit(c, ['lamb', 'lambAlt'],     132, 324 + _hop(1.2), 34, 30);
+  _pDrawFit(c, ['goat'],                506, 326 + _hop(2.1), 52, 46);
+  // victory flock — real sheep run in, then hop for joy at the pots
   if (_pulley.flock) for (const s of _pulley.flock) {
-    _pDrawFit(c, s.key, s.x, s.y + Math.sin(now / 110 + s.ph) * (s.drinking ? 2.5 : 0), 50, 42, s.vx > 0);
+    const jy = s.drinking ? -Math.abs(Math.sin(now / 150 + s.ph)) * 14 : 0;
+    _pDrawFit(c, s.key, s.x, s.y + jy, 50, 42, s.vx > 0);
   }
 
   // subtle target ring on the nearest unfilled pot while idle (teaching aid)
@@ -8290,15 +8406,31 @@ const _rescue = {
 };
 function _rescueCfg() {
   const d = (typeof game !== 'undefined' && game.difficulty) || 'easy';
-  if (d === 'hard')   return { total: 28, spawnEvery: 1.05, foeSpeed: 54, bigChance: 0.26, fastChance: 0.34, coins: 90,  bossHp: 60 };
-  if (d === 'medium') return { total: 22, spawnEvery: 1.3,  foeSpeed: 47, bigChance: 0.22, fastChance: 0.32, coins: 110, bossHp: 45 };
-  return { total: 18, spawnEvery: 1.55, foeSpeed: 41, bigChance: 0.18, fastChance: 0.28, coins: 135, bossHp: 32 }; // easy
+  // Skewed HARDER for kid-challenge: more shepherds per round (longer fight), faster
+  // spawns, more brutes/runners and a tougher boss. Even EASY now runs 24 foes so the
+  // defense never feels over in a handful of throws.
+  if (d === 'hard')   return { total: 38, spawnEvery: 0.95, foeSpeed: 58, bigChance: 0.28, fastChance: 0.38, coins: 85,  bossHp: 72 };
+  if (d === 'medium') return { total: 30, spawnEvery: 1.15, foeSpeed: 50, bigChance: 0.24, fastChance: 0.34, coins: 105, bossHp: 55 };
+  return { total: 24, spawnEvery: 1.4,  foeSpeed: 44, bigChance: 0.20, fastChance: 0.30, coins: 130, bossHp: 40 }; // easy
 }
 function _resStars(n) { n = Math.max(0, Math.min(5, n | 0)); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
 function _resWealth() { return { stars: (typeof game !== 'undefined' && game.stars) || 0, bags: (typeof game !== 'undefined' && game.treasureBags) || 0 }; }
 function _resUnlocked(key) { const w = _RES_ROSTER[key], wl = _resWealth(); return wl.stars >= (w.starReq || 0) || wl.bags >= (w.bagReq || 1e9); }
 function _rescueCue(text, x, y, color, big) { _rescue.cues.push({ text: text, x: x, y: y, color: color || '#fff', t: 0, life: big ? 80 : 58, big: !!big }); }
 function _rescueFx(key, x, y, size, life) { _rescue.fx.push({ key: key, x: x, y: y, size: size || 38, t: 0, life: life || 20 }); }
+// wooden launch barrel the ram-sheep bursts from (sprite 'barrel' if Jane adds one, else drawn)
+function _rescueDrawBarrel(c, cx, baseY, w) {
+  if (_pDrawFit(c, ['barrel', 'sheepBarrel'], cx, baseY, w, w * 1.3)) return;
+  const h = w * 1.18, x = cx - w / 2, y = baseY - h;
+  c.save();
+  c.fillStyle = '#9a6a32'; c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, 7); else c.rect(x, y, w, h); c.fill();
+  c.fillStyle = 'rgba(255,225,180,0.16)'; c.fillRect(x + w * 0.16, y, w * 0.12, h);
+  c.fillStyle = 'rgba(0,0,0,0.16)'; c.fillRect(x, y, w * 0.1, h); c.fillRect(x + w * 0.9, y, w * 0.1, h);
+  c.strokeStyle = 'rgba(60,36,12,0.55)'; c.lineWidth = 1.4;
+  for (let i = 1; i < 5; i++) { const sx = x + w * i / 5; c.beginPath(); c.moveTo(sx, y + 3); c.lineTo(sx, y + h - 3); c.stroke(); }
+  c.fillStyle = '#5a3a18'; c.fillRect(x - 1, y + h * 0.16, w + 2, h * 0.11); c.fillRect(x - 1, y + h * 0.70, w + 2, h * 0.11);
+  c.restore();
+}
 // ---------- loadout / weapon-select screen ----------
 function _rescueBuildCards() {
   const grid = document.getElementById('rescueCardGrid'); if (!grid) return;
@@ -8341,6 +8473,14 @@ function _rescueAutoPick() {
   _rescue.loadout = picks.slice(0, 5);
   try { play('pop'); } catch(e){}
   _rescueBuildCards();
+}
+function _rescueShowIntro() {
+  const intro = document.getElementById('rescueIntro'); if (intro) intro.style.display = 'flex';
+}
+function _rescueIntroContinue() {
+  const intro = document.getElementById('rescueIntro'); if (intro) intro.style.display = 'none';
+  try { play('pop'); } catch(e){}
+  _rescueShowLoadout();
 }
 function _rescueShowLoadout() {
   if (!_rescue.loadout.length) _rescue.loadout = ['staff', 'sling', 'pot', 'sheep', 'net'].filter(_resUnlocked).slice(0, 5);
@@ -8393,10 +8533,11 @@ function openRescueGame(gate) {
   try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); } } catch(e){}
   const modal = document.getElementById('rescueModal'); modal.style.display = 'flex'; modal.classList.add('active');
   _rescueHud();
-  _rescueShowLoadout(); // pick weapons first
+  _rescueShowIntro(); // story + how-to, then weapon-select
 }
 function _rescueBegin() {
   const ov = document.getElementById('rescueLoadout'); if (ov) ov.style.display = 'none';
+  const intro = document.getElementById('rescueIntro'); if (intro) intro.style.display = 'none';
   _rescueBuildBar();
   _rescue.started = true; _rescue.last = 0;
   try { if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
@@ -8419,6 +8560,7 @@ function _rescueCanvasLane(e) {
   return best;
 }
 function _rescueTap(e) { if (_rescue.over || _rescue.paused || !_rescue.started) return; if (e.cancelable) e.preventDefault(); _rescue.lane = _rescueCanvasLane(e); }
+function _rescueMoveLane(delta) { if (_rescue.over || _rescue.paused || !_rescue.started) return; _rescue.lane = Math.max(0, Math.min(_rescue.LANES - 1, _rescue.lane + delta)); try { play('pop'); } catch(e){} }
 function _rescueAward(foe) {
   _rescue.foesDriven++; const b = foe.bounty || 18; _rescue.coins += b; _rescue.earned += b;
   _rescueCue('+💰' + b, foe.x, _rescue.laneY[foe.lane] - 34, '#ffe07a');
@@ -8458,8 +8600,9 @@ function _rescueSpawn() {
 function _rescueGrab(foe) {
   if (_rescue.laneDaughter[foe.lane]) {
     _rescue.laneDaughter[foe.lane] = false; _rescue.daughtersLost++; _rescue.shake = 14;
-    _rescue.kidnaps.push({ lane: foe.lane, x: _rescue.GRABX, idx: foe.lane, t: 0 });
-    _rescueCue('A daughter taken!', 130, _rescue.laneY[foe.lane] - 20, '#ff7a6a', true);
+    const fk = (foe.type === 'boss') ? ['shepherdBoss', 'shepHelpB', 'shepherd4'] : (foe.type === 'big' ? ['shepHelpB', 'shepherd4', 'shepherdLeft'] : ['shepherdLeft', 'shepPull']);
+    _rescue.kidnaps.push({ lane: foe.lane, x: _rescue.GRABX, idx: foe.lane, t: 0, scale: foe.scale || 1, fk: fk });
+    _rescueCue('Help! A daughter is taken!', 150, _rescue.laneY[foe.lane] - 22, '#ff7a6a', true);
     try { play('oops') || play('error'); } catch(e){}
     _rescueHud();
     if (_rescue.daughtersLost >= 7) _rescueLose();
@@ -8562,8 +8705,8 @@ function _rescueFrame(now) {
       else f.x -= f.spd * dts;
       if (f.x <= _rescue.GRABX) { _rescue.foes.splice(i, 1); _rescueGrab(f); }
     }
-    // kidnap anim
-    for (let i = _rescue.kidnaps.length - 1; i >= 0; i--) { _rescue.kidnaps[i].t += dts; _rescue.kidnaps[i].x += 120 * dts; if (_rescue.kidnaps[i].t > 1.6) _rescue.kidnaps.splice(i, 1); }
+    // kidnap anim — the shepherd hauls the daughter off to the right and exits
+    for (let i = _rescue.kidnaps.length - 1; i >= 0; i--) { const kd = _rescue.kidnaps[i]; kd.t += dts; kd.x += (kd.t < 0.35 ? 60 : 190) * dts; if (kd.x > W + 60) _rescue.kidnaps.splice(i, 1); }
     // treasure-bag flyers (cosmetic: bag flies to Moses's purse, then HUD coin pulses)
     for (let i = _rescue.flyers.length - 1; i >= 0; i--) { const fl = _rescue.flyers[i]; fl.t += dts; if (fl.t >= fl.life) { _rescue.flyers.splice(i, 1); const co = document.getElementById('rescueCoins'); if (co) { co.style.transition = 'transform .12s'; co.style.transform = 'scale(1.4)'; setTimeout(() => { co.style.transform = 'scale(1)'; }, 120); } try { play('coin'); } catch(e){} } }
     if (!_rescue.over && _rescue.spawned >= _rescue.total && _rescue.foes.length === 0 && !_rescue.ram) _rescueWin();
@@ -8580,8 +8723,8 @@ function _rescueFrame(now) {
     c.fillStyle = (i % 2 === 0) ? 'rgba(60,40,18,0.18)' : 'rgba(255,245,215,0.08)'; c.fillRect(0, _rescue.laneY[i] - 29, W, 58);
     c.strokeStyle = 'rgba(40,24,10,0.16)'; c.lineWidth = 1; c.strokeRect(0, _rescue.laneY[i] - 29, W, 58);
     if (_rescue.started && i === _rescue.lane) { c.fillStyle = 'rgba(120,200,255,0.12)'; c.fillRect(0, _rescue.laneY[i] - 28, W, 56); c.strokeStyle = 'rgba(120,200,255,0.6)'; c.lineWidth = 2; c.strokeRect(2, _rescue.laneY[i] - 28, W - 4, 56); }
-    if (_rescue.laneDaughter[i]) _pDrawFit(c, ['daughter' + ((i % 7) + 1), 'daughter1'], 36, _rescue.laneY[i] + 24, 30, 48);
-    else { c.globalAlpha = 0.18; _pDrawFit(c, ['daughter' + ((i % 7) + 1), 'daughter1'], 36, _rescue.laneY[i] + 24, 24, 40); c.globalAlpha = 1; }
+    if (_rescue.laneDaughter[i]) _pDrawFit(c, ['daughter' + ((i % 7) + 1), 'daughter1'], 44, _rescue.laneY[i] + 25, 46, 64);
+    else { c.globalAlpha = 0.16; _pDrawFit(c, ['daughter' + ((i % 7) + 1), 'daughter1'], 44, _rescue.laneY[i] + 25, 36, 52); c.globalAlpha = 1; }
   }
   c.strokeStyle = 'rgba(120,200,120,0.4)'; c.setLineDash([6, 6]); c.lineWidth = 2; c.beginPath(); c.moveTo(_rescue.GRABX, 8); c.lineTo(_rescue.GRABX, H - 8); c.stroke(); c.setLineDash([]);
   // lane fires
@@ -8606,9 +8749,25 @@ function _rescueFrame(now) {
     if (f.type === 'boss') { c.fillStyle = '#ffce4a'; c.font = 'bold 10px Georgia'; c.textAlign = 'center'; c.fillText('MIGHTY SHEPHERD', f.x, by - 5); }
   }
   // ram
-  if (_rescue.ram) { if (_rescue.ram.kind === 'boulder') { if (!_pDraw(c, ['rollingBoulder', 'rock'], _rescue.ram.x - 26, _rescue.laneY[_rescue.ram.lane] - 26, 52, 52)) { c.fillStyle = '#8a7a5a'; c.beginPath(); c.arc(_rescue.ram.x, _rescue.laneY[_rescue.ram.lane], 24, 0, Math.PI * 2); c.fill(); } } else _pDrawFit(c, ['sheepRight', 'sheep'], _rescue.ram.x, _rescue.laneY[_rescue.ram.lane] + 24, 56, 46, true); }
-  // kidnaps (daughter carried off)
-  for (const kd of _rescue.kidnaps) { c.save(); c.globalAlpha = Math.max(0, 1 - kd.t / 1.6); _pDrawFit(c, ['daughterKidnap', 'daughter' + ((kd.idx % 7) + 1), 'daughter1'], kd.x, _rescue.laneY[kd.lane] + 22, 26, 42); c.restore(); }
+  if (_rescue.ram) {
+    if (_rescue.ram.kind === 'boulder') { if (!_pDraw(c, ['rollingBoulder', 'rock'], _rescue.ram.x - 26, _rescue.laneY[_rescue.ram.lane] - 26, 52, 52)) { c.fillStyle = '#8a7a5a'; c.beginPath(); c.arc(_rescue.ram.x, _rescue.laneY[_rescue.ram.lane], 24, 0, Math.PI * 2); c.fill(); } }
+    else { _rescueDrawBarrel(c, _rescue.mosesX + 42, _rescue.laneY[_rescue.ram.lane] + 27, 36); _pDrawFit(c, ['sheepRight', 'sheep'], _rescue.ram.x, _rescue.laneY[_rescue.ram.lane] + 24, 56, 46, true); }
+  }
+  // kidnaps (a shepherd hauls a struggling daughter off to the right)
+  for (const kd of _rescue.kidnaps) {
+    const ly = _rescue.laneY[kd.lane], sc = kd.scale || 1;
+    const stride = Math.abs(Math.sin(kd.t * 9)) * 3;            // walking bounce
+    const wob = Math.sin(kd.t * 17) * 4;                        // daughter struggling
+    c.fillStyle = 'rgba(20,10,4,0.22)'; c.beginPath(); c.ellipse(kd.x, ly + 30, 22 * sc, 7 * sc, 0, 0, Math.PI * 2); c.fill();
+    // shepherd, facing right (flipped), carrying her away
+    _pDrawFit(c, kd.fk || ['shepherdLeft', 'shepPull'], kd.x, ly + 28 - stride, 58 * sc, 76 * sc, true);
+    // the daughter slung on his trailing arm, kicking
+    c.save(); c.translate(kd.x - 22 * sc, 0); c.rotate(0.35);
+    _pDrawFit(c, ['daughterKidnap', 'daughter' + ((kd.idx % 7) + 1), 'daughter1'], 0, ly + 16 + wob, 30 * sc, 46 * sc, true);
+    c.restore();
+    // little plea
+    if (kd.t < 1.1) { c.globalAlpha = Math.max(0, 1 - kd.t / 1.1); c.font = 'bold 13px Fredoka, Georgia'; c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText('Help!', kd.x - 22 * sc, ly - 28 + wob); c.globalAlpha = 1; }
+  }
   // Moses
   if (_rescue.started) { const throwing = _rescue.throwAnim > 0; const mbob = Math.sin(now / 320) * 2; c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _rescue.mosesY + 50, 26, 8, 0, 0, Math.PI * 2); c.fill(); _pDrawFit(c, throwing ? ['mosesShove', 'mosesRight', 'moses'] : ['mosesRight', 'mosesPull', 'moses'], _rescue.mosesX + (throwing ? 6 : 0), _rescue.mosesY + 46 + (throwing ? 0 : mbob), 74, 100); }
   // shots
@@ -8647,6 +8806,7 @@ function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: t
 (function() {
   function wire() {
     const tap = (el, fn) => { if (!el) return; el.addEventListener('click', fn); el.addEventListener('touchend', (e) => { e.preventDefault(); fn(); }); };
+    tap(document.getElementById('rescueIntroBtn'), _rescueIntroContinue);
     tap(document.getElementById('rescueStartBtn'), _rescueBegin);
     tap(document.getElementById('rescueAutoPickBtn'), _rescueAutoPick);
     tap(document.getElementById('rescueResumeBtn'), _rescueResume);
@@ -8655,6 +8815,8 @@ function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: t
     tap(document.getElementById('rescueLoseQuitBtn'), _rescueQuit);
     tap(document.getElementById('rescueWinContinueBtn'), _rescueWinContinue);
     tap(document.getElementById('rescueWinReplayBtn'), _rescueRetry);
+    tap(document.getElementById('rescueLaneUp'), () => _rescueMoveLane(-1));
+    tap(document.getElementById('rescueLaneDown'), () => _rescueMoveLane(1));
     const pb = document.getElementById('rescuePauseBtn'); if (pb) pb.addEventListener('click', _rescuePause);
     const cv = document.getElementById('rescueCanvas');
     if (cv) { cv.addEventListener('pointerdown', _rescueTap); cv.addEventListener('touchstart', _rescueTap, { passive: false }); cv.style.touchAction = 'none'; }
@@ -8665,6 +8827,15 @@ function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: t
 function openChallenge(gate) {
   // Phase C Step 7: Well gate → pulley mini-game instead of trivia
   if (gate && gate.zone === 'well') { openWellPulleyGame(gate); return; }
+  // Scribe's Wisdom power: skip a trivia checkpoint (never a mini-game gate).
+  if (window._scribesWisdomArmed && gate && gate.zone !== 'well') {
+    window._scribesWisdomArmed = false;
+    gate.solved = true; game.state = 'playing';
+    try { play('success') || play('chime'); } catch(e){}
+    try { spawnGlitterBurstAtPlayer(12); } catch(e){}
+    try { toast('🪶 Scribe\'s Wisdom — checkpoint skipped!'); } catch(e){}
+    return;
+  }
   // v2.3.1 (Jane) BULLETPROOF: if the gate or its questions are missing,
   // treat the gate as already-solved so Moses can walk past it instead of
   // getting stuck in a 'dialog' state with no modal. Fixes Jane's bug:
@@ -8791,6 +8962,16 @@ function openChallenge(gate) {
         b.addEventListener('click', () => handleChallengeAnswer(gate, i, b));
         opts.appendChild(b);
       });
+      // Truth Seeker power: free clue + grey out 2 wrong options on this MCQ.
+      if (window._truthSeekerArmed) {
+        window._truthSeekerArmed = false;
+        if (hintBox) hintBox.style.display = 'block';
+        if (hintBtn) hintBtn.style.display = 'none';
+        const wrong = Array.from(opts.querySelectorAll('.ch-option')).filter((_, i) => i !== q.correct);
+        for (let s = wrong.length - 1; s > 0; s--) { const j = Math.floor(Math.random() * (s + 1)); const t = wrong[s]; wrong[s] = wrong[j]; wrong[j] = t; }
+        wrong.slice(0, 2).forEach(b => { b.disabled = true; b.style.opacity = '0.35'; b.style.textDecoration = 'line-through'; });
+        try { toast('📖 Truth Seeker: clue revealed, 2 wrong answers removed!'); } catch(e){}
+      }
     }
   } catch(rErr) {
     /* v3.28 strip — renderer error falls through to feedback message below */
@@ -9999,30 +10180,102 @@ $('dlgCloseBtn').addEventListener('click', () => {
 /* ---------- TREASURE ----------
    v3.6: uses its OWN "coin collect" sound so treasure pickup does not share
    the same chime as a correct Bible-answer. Different event, different cue. */
-// 2026-05-19 (Jane: "wire scene 3 into the unified game"). Scene 3 was not
-// feeding the cross-scene lifetime collectables / power-unlock progression at
-// all. Ported the DATA layer from scenes 1 & 2 so treasures collected here
-// now count toward the SAME lifetime totals + unlock thresholds (and the
-// "Your Journey" win panel). NOTE: the in-game power DOCK + effects are NOT
-// wired here yet — those are built alongside scene 3's rogue-shepherd
-// antagonist so the foe-powers target the right enemy (the temporary `guards`
-// here will be replaced by shepherds). Keep these tiers in sync with S1/S2.
+// 2026-05-19 (Jane: "wire scene 3 into the unified game"). Scene 3 feeds the
+// cross-scene lifetime collectables / power-unlock progression: treasures
+// collected here count toward the SAME lifetime totals + unlock thresholds
+// (and the "Your Journey" win panel). The in-game power DOCK + effects ARE now
+// wired (see the power-dock block below): Speed Burst, Foe Freeze (shepherds +
+// wolf), Eagle Eye (river-stone reveal — was Royal Vision), Truth Seeker and
+// Scribe's Wisdom (checkpoint helpers). Keep these tiers in sync with S1/S2.
 const _LIFETIME_TREASURES_KEY = 'bek.bundle1.totalTreasures';
 const _LIFETIME_CROWNS_KEY    = 'bek.bundle1.totalCrowns';
 const _LIFETIME_SCROLLS_KEY   = 'bek.bundle1.totalScrolls';
 const _UNLOCKS_KEY            = 'bek.bundle1.unlocks';
 const UNLOCK_TIERS = [
-  { threshold:  75, resource: 'treasures', key: 'speedBurst',    label: '⚡ Speed Burst' },
-  { threshold: 175, resource: 'treasures', key: 'guardFreeze',   label: '❄️ Foe Freeze' },
-  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '👁️ Royal Vision' },
-  { threshold: 350, resource: 'treasures', key: 'truthSeeker',   label: '📖 Truth Seeker' },
-  { threshold:   5, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom' },
+  { threshold:  75, resource: 'treasures', key: 'speedBurst',    label: '⚡ Speed Burst',     cooldownMs: 25000, desc: 'Moses sprints 2× for 5 seconds. Tap any time — recharges every 25 s.' },
+  { threshold: 175, resource: 'treasures', key: 'guardFreeze',   label: '❄️ Foe Freeze',      cooldownMs: 35000, desc: 'Shepherds AND wolves freeze in place for 5 seconds. Recharges every 35 s.' },
+  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '🦅 Eagle Eye',       cooldownMs: 30000, desc: 'Marks every river stone safe (✓) or sinking (✗) so you cross without stumbling. Lasts 8 seconds.' },
+  { threshold: 350, resource: 'treasures', key: 'truthSeeker',   label: '📖 Truth Seeker',    cooldownMs: 60000, desc: 'On the next checkpoint: clue is free + 2 wrong options greyed out.' },
+  { threshold:   5, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000, desc: 'Skip the next checkpoint (counts as solved). Recharges every 90 s.' },
 ];
 function _loadLifetimeTreasures(){ try { return parseInt(localStorage.getItem(_LIFETIME_TREASURES_KEY) || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadLifetimeCrowns(){    try { return parseInt(localStorage.getItem(_LIFETIME_CROWNS_KEY)    || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadLifetimeScrolls(){   try { return parseInt(localStorage.getItem(_LIFETIME_SCROLLS_KEY)   || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadUnlocks(){ try { return JSON.parse(localStorage.getItem(_UNLOCKS_KEY) || '[]'); } catch(e){ return []; } }
 function _hasUnlock(key){ return _loadUnlocks().includes(key); }
+
+/* ---------- IN-GAME POWER DOCK (ported from scenes 1 & 2, wired to scene-3 systems) ----------
+   Same dock UI/cooldown framework as the other scenes; the EFFECTS target scene 3's
+   shepherds (`guards`), the dusk wolf, the river stones and the checkpoint gates. */
+window._puCooldownUntil = window._puCooldownUntil || {};
+window._puActiveUntil   = window._puActiveUntil   || {};
+function _puReady(key){ return performance.now() >= (window._puCooldownUntil[key] || 0); }
+function _puActive(key){ return performance.now() < (window._puActiveUntil[key] || 0); }
+function _activatePowerup(key){
+  const tier = UNLOCK_TIERS.find(t => t.key === key);
+  if (!tier) return;
+  if (!_hasUnlock(key)) return;
+  if (!_puReady(key)) {
+    const left = Math.max(0, Math.ceil(((window._puCooldownUntil[key] || 0) - performance.now()) / 1000));
+    try { toast('⏳ ' + tier.label + ' recharging — ' + left + 's left.'); } catch(e){}
+    return;
+  }
+  const now = performance.now();
+  if (key === 'speedBurst') {
+    window._speedBurstUntil = now + 5000;
+    window._puActiveUntil[key] = now + 5000;
+    try { toast('⚡ SPEED BURST! Run, Moses, run!'); } catch(e){}
+  } else if (key === 'guardFreeze') {
+    window._guardFreezeUntil = now + 5000;
+    try {
+      if (typeof guards !== 'undefined' && Array.isArray(guards)) {
+        for (const g of guards) { if (g.state === 'alerted' || g.state === 'suspicious') { g.state = 'patrol'; g.swordOut = false; g.swordAnim = 0; } }
+      }
+    } catch(e){}
+    window._puActiveUntil[key] = now + 5000;
+    try { play('frozen'); } catch(e){}
+    try { toast('❄️ FOE FREEZE! Shepherds and wolves are stuck — slip past!'); } catch(e){}
+  } else if (key === 'royalVision') {
+    window._royalVisionUntil = now + 8000;
+    window._puActiveUntil[key] = now + 8000;
+    try { toast('🦅 EAGLE EYE! Safe stones ✓ and sinking stones ✗ revealed.'); } catch(e){}
+  } else if (key === 'truthSeeker') {
+    window._truthSeekerArmed = true;
+    window._puActiveUntil[key] = now + 1500;
+    try { toast('📖 TRUTH SEEKER armed for the next checkpoint.'); } catch(e){}
+  } else if (key === 'scribesWisdom') {
+    window._scribesWisdomArmed = true;
+    window._puActiveUntil[key] = now + 1500;
+    try { toast('🪶 SCRIBE\'S WISDOM armed — next checkpoint skipped.'); } catch(e){}
+  }
+  if (tier.cooldownMs && tier.cooldownMs > 0) window._puCooldownUntil[key] = now + tier.cooldownMs;
+  try { play('powerSpell') || play('magicSfx') || play('chime') || play('success'); } catch(e){}
+  try { spawnGlitterBurstAtPlayer(20); } catch(e){}
+  _refreshUnlockButtons();
+  if (window._puActiveUntil[key]) setTimeout(_refreshUnlockButtons, Math.max(60, window._puActiveUntil[key] - performance.now() + 50));
+  if (tier.cooldownMs && tier.cooldownMs > 0) setTimeout(_refreshUnlockButtons, tier.cooldownMs + 100);
+}
+function _refreshUnlockButtons(){
+  try {
+    const dock = document.getElementById('hudPowerups');
+    if (!dock) return;
+    const have = _loadUnlocks();
+    let html = '';
+    for (const tier of UNLOCK_TIERS) {
+      if (!have.includes(tier.key)) continue;
+      const ready  = _puReady(tier.key);
+      const active = _puActive(tier.key);
+      const css = active ? 'background:linear-gradient(145deg,#7fff8a,#3aa54a);box-shadow:0 0 14px rgba(120,255,140,0.85);'
+                : ready  ? 'background:linear-gradient(145deg,#ffd976,#c38b28);'
+                :          'background:linear-gradient(145deg,#6a4a20,#3a2810);opacity:0.55;';
+      const cdLeft = ready ? '' : Math.max(0, Math.ceil(((window._puCooldownUntil[tier.key] || 0) - performance.now()) / 1000));
+      const cdBadge = cdLeft ? '<span style="position:absolute;right:-4px;top:-4px;background:#000;color:#ffd976;border-radius:50%;width:18px;height:18px;font-size:10px;display:flex;align-items:center;justify-content:center;border:1px solid #ffd976;">' + cdLeft + '</span>' : '';
+      html += '<button type="button" data-pu="' + tier.key + '" class="hud-pu-btn" aria-label="' + tier.label + '" title="' + tier.desc + '" style="position:relative;border:2px solid #ffd976;border-radius:10px;width:48px;height:48px;font-size:22px;cursor:pointer;color:#3a1505;font-weight:900;' + css + '">' + tier.label.split(' ')[0] + cdBadge + '</button>';
+    }
+    dock.innerHTML = html;
+    dock.querySelectorAll('button[data-pu]').forEach(b => { b.addEventListener('click', () => _activatePowerup(b.getAttribute('data-pu'))); });
+  } catch(e){}
+}
 function _addLifetimeResource(which, n){
   const KEY = which === 'crowns'  ? _LIFETIME_CROWNS_KEY
             : which === 'scrolls' ? _LIFETIME_SCROLLS_KEY
@@ -10041,8 +10294,8 @@ function _addLifetimeResource(which, n){
     try { localStorage.setItem(_UNLOCKS_KEY, JSON.stringify([...have])); } catch(e){}
     try { play('rankReveal') || play('success'); } catch(e){}
     try { spawnGlitterBurstAtPlayer(28); } catch(e){}
-    // Scene 3 has no power dock yet, so don't tell the kid to "tap the button".
-    granted.forEach(g => { try { toast('✨ ' + g.label + ' power unlocked!'); } catch(e){} });
+    granted.forEach(g => { try { toast('✨ ' + g.label + ' power unlocked — tap it in the dock!'); } catch(e){} });
+    try { _refreshUnlockButtons(); } catch(e){}
   }
   return next;
 }
@@ -12110,6 +12363,7 @@ function drawRollingBoulders(ctx){
 }
 
 function updateGuards(dt){
+  if (window._guardFreezeUntil && performance.now() < window._guardFreezeUntil) return; // Foe Freeze power
   for (const g of guards) {
     g.timer -= dt;
     if (g.swordOut) g.swordAnim = Math.min(g.swordAnim + dt*0.003, 1);
@@ -16630,7 +16884,66 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <!-- Rescue weapon-select (top-level so position:fixed escapes any transformed ancestor) -->
-<div id="rescueLoadout" style="display:none;position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:min(97vw,920px);max-height:100vh;z-index:80;background:linear-gradient(160deg,#2a1d10,#4a3320);box-shadow:0 0 0 100vmax rgba(0,0,0,0.6);border-radius:14px;flex-direction:column;padding:14px 16px;overflow:hidden;font-family:'Baloo 2','Comic Sans MS','Trebuchet MS',Verdana,sans-serif;">
+<!-- intro / story + how-to screen (shown once when the game opens, before weapon-select) -->
+<div id="rescueIntro" style="display:none;position:fixed;inset:0;z-index:85;background:radial-gradient(circle at 50% 26%,rgba(72,48,22,0.96),rgba(14,9,3,0.99));align-items:center;justify-content:center;padding:18px;overflow:hidden;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
+  <!-- animated sprite backdrop: Jethro's daughters (left) cornered by rude shepherds (right) -->
+  <div class="riScene" aria-hidden="true">
+    <img class="riImg riWell" src="assets/images/midian%20well.png" alt="">
+    <img class="riImg riGirl riGirl1" src="assets/images/daughter%201%20front%20facing.png" alt="">
+    <img class="riImg riGirl riGirl2" src="assets/images/daughter%202%20front%20facing.png" alt="">
+    <img class="riImg riGirl riGirl3" src="assets/images/daughter%203%20front%20facing.png" alt="">
+    <img class="riImg riFoe riFoe1" src="assets/images/rude%20shepherd%20left%20facing.png" alt="">
+    <img class="riImg riFoe riFoe2" src="assets/images/rude%20shepherd%20left%20facing%202.png" alt="">
+  </div>
+  <div class="riContent" style="position:relative;z-index:2;max-width:680px;width:100%;text-align:center;color:#fff4e2;">
+    <div class="riKicker" style="font-size:13px;letter-spacing:2px;color:#ffd28a;">~ MIDIAN · THE WELL ~</div>
+    <div class="riTitle" style="font-size:36px;font-weight:700;color:#ffe0a0;line-height:1.1;margin-top:4px;">🛡️ Rescue the Daughters</div>
+    <p class="riStory" style="font-size:16px;line-height:1.5;color:#fff1d6;margin:12px auto 4px;max-width:560px;text-shadow:0 2px 8px rgba(0,0,0,.8);">Rude shepherds have stormed the well and are driving Jethro's <b>seven daughters</b> away! Stand beside Moses and <b>hold the line</b> — don't let a single shepherd reach the girls.</p>
+    <div id="rescueIntroSteps" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:16px 0;">
+      <div class="riStep"><span class="riIco">👆</span><span class="riTx"><b>Move Moses</b>up &amp; down the lanes</span></div>
+      <div class="riStep"><span class="riIco">🏺</span><span class="riTx"><b>Throw weapons</b>to drive shepherds back</span></div>
+      <div class="riStep"><span class="riIco">👧</span><span class="riTx"><b>Save the girls</b>keep every lane safe</span></div>
+    </div>
+    <button class="btn btn-gold riBtn" id="rescueIntroBtn" style="font-size:21px;padding:13px 40px;letter-spacing:.5px;">Choose Weapons ▶</button>
+    <div style="color:#e6c79e;font-size:12px;margin-top:14px;font-style:italic;text-shadow:0 2px 6px rgba(0,0,0,.8);">"Moses got up and came to their rescue and watered their flock." — Exodus 2:17</div>
+  </div>
+</div>
+<style>
+  #rescueIntro .riStep{flex:1;min-width:150px;max-width:200px;background:rgba(30,20,8,0.55);border:1.5px solid rgba(255,215,120,0.45);border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:7px;color:#ffeccb;backdrop-filter:blur(2px);}
+  #rescueIntro .riStep .riIco{font-size:34px;line-height:1;}
+  #rescueIntro .riStep .riTx{font-size:13px;line-height:1.3;}
+  #rescueIntro .riStep .riTx b{display:block;color:#ffd86a;font-size:15px;margin-bottom:2px;}
+  /* animated character backdrop */
+  #rescueIntro .riScene{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;}
+  #rescueIntro .riImg{position:absolute;bottom:0;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));image-rendering:auto;}
+  #rescueIntro .riWell{left:50%;transform:translateX(-50%);width:min(40vw,300px);opacity:.5;bottom:-2%;animation:riWellRise 1s ease-out both;}
+  #rescueIntro .riGirl{height:min(38vh,260px);opacity:.95;animation:riGirlIn .7s ease-out both,riHuddle 2.6s ease-in-out infinite;}
+  #rescueIntro .riGirl1{left:3%;bottom:0;animation-delay:.05s,.7s;}
+  #rescueIntro .riGirl2{left:15%;bottom:-3%;height:min(34vh,230px);opacity:.9;animation-delay:.18s,.95s;}
+  #rescueIntro .riGirl3{left:27%;bottom:1%;height:min(30vh,200px);opacity:.82;animation-delay:.3s,1.2s;}
+  #rescueIntro .riFoe{right:3%;height:min(40vh,280px);opacity:.95;transform:scaleX(-1);animation:riFoeIn .7s ease-out both,riLunge 1.8s ease-in-out infinite;}
+  #rescueIntro .riFoe2{right:17%;bottom:-2%;height:min(34vh,235px);opacity:.85;animation-delay:.2s,.6s;}
+  @keyframes riGirlIn{from{transform:translateX(-60px);opacity:0;}to{opacity:.95;}}
+  @keyframes riFoeIn{from{transform:scaleX(-1) translateX(-80px);opacity:0;}to{opacity:.95;}}
+  @keyframes riHuddle{0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(-6px) rotate(1deg);}}
+  @keyframes riLunge{0%,100%{transform:scaleX(-1) translateX(0);}50%{transform:scaleX(-1) translateX(-22px);}}
+  @keyframes riWellRise{from{transform:translateX(-50%) translateY(40px);opacity:0;}to{opacity:.5;}}
+  #rescueIntro .riKicker{animation:riFade .6s .1s both;}
+  #rescueIntro .riTitle{animation:riPop .6s .15s both;text-shadow:0 3px 10px rgba(0,0,0,.7),0 0 22px rgba(255,180,60,.45);}
+  #rescueIntro .riStory{animation:riFade .6s .3s both;}
+  #rescueIntro #rescueIntroSteps{animation:riFade .6s .45s both;}
+  #rescueIntro .riBtn{animation:riPop .6s .6s both,riPulse 1.8s 1.2s ease-in-out infinite;}
+  @keyframes riFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  @keyframes riPop{0%{opacity:0;transform:scale(.8);}70%{transform:scale(1.05);}100%{opacity:1;transform:scale(1);}}
+  @keyframes riPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+  @media (max-width:560px){
+    #rescueIntro .riStep{min-width:0;flex-basis:100%;max-width:none;flex-direction:row;gap:12px;text-align:left;}
+    #rescueIntro .riStep .riTx b{margin-bottom:0;}
+    #rescueIntro .riGirl{height:20vh;}#rescueIntro .riFoe{height:21vh;}#rescueIntro .riWell{opacity:.35;}
+  }
+  @media (prefers-reduced-motion:reduce){#rescueIntro .riImg,#rescueIntro .riContent *{animation:none !important;}}
+</style>
+<div id="rescueLoadout" style="display:none;position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:min(97vw,920px);max-height:100vh;z-index:80;background:linear-gradient(160deg,#2a1d10,#4a3320);box-shadow:0 0 0 100vmax rgba(0,0,0,0.6);border-radius:14px;flex-direction:column;padding:14px 16px;overflow:hidden;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
   <div style="color:#ffe0a0;text-align:center;font-size:20px;font-weight:bold;letter-spacing:.5px;text-shadow:0 2px 6px rgba(0,0,0,.5);">⚔️ Choose your weapons</div>
   <div style="display:flex;justify-content:center;gap:10px;margin:5px 0 3px;flex-wrap:wrap;">
     <span style="background:linear-gradient(135deg,#ffd86a,#e0a83a);color:#3a2a08;font-weight:bold;font-size:13px;padding:4px 12px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);" id="rescueWalletStars">⭐ 0</span>
