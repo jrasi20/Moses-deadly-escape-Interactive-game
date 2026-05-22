@@ -2346,19 +2346,43 @@
     <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;">Drive off the rude shepherds!</h2>
     <canvas id="rescueCanvas" width="760" height="470" style="display:block;width:100%;height:auto;max-height:60vh;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#e8c890;"></canvas>
     <div style="display:flex;justify-content:space-between;align-items:center;color:#ffe2b0;font-size:13px;font-weight:bold;margin:7px 2px 4px;">
-      <span id="rescueDaughters">👧 Daughters: 7</span>
-      <span id="rescueWave">🐏 0%</span>
+      <span id="rescueDaughters">👧 7/7</span>
+      <span id="rescueCoins" style="color:#ffe07a;">💰 0</span>
       <span id="rescueFoes">Driven off: 0</span>
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
-      <button class="btn rwpn" id="rescueWpnPot" style="flex:1;min-width:78px;font-size:15px;padding:9px 4px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #ffe9a8;">🏺 Pot</button>
-      <button class="btn rwpn" id="rescueWpnSling" style="flex:1;min-width:78px;font-size:15px;padding:9px 4px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #2a6a9a;">🎯 Sling</button>
-      <button class="btn rwpn" id="rescueWpnStaff" style="flex:1;min-width:78px;font-size:15px;padding:9px 4px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #2a6a9a;">🦯 Staff</button>
-      <button class="btn" id="rescueSheepBtn" disabled style="flex:1;min-width:78px;font-size:15px;padding:9px 4px;background:linear-gradient(135deg,#7a7a6a,#9a9a86);border:2px solid #cfcfb8;opacity:0.6;">🐏 Sheep</button>
-      <button class="btn" id="rescueBoulderBtn" disabled style="flex:1;min-width:78px;font-size:15px;padding:9px 4px;background:linear-gradient(135deg,#7a7a6a,#9a9a86);border:2px solid #cfcfb8;opacity:0.6;">🪨 Boulder</button>
-    </div>
-    <div id="rescueFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:16px;font-weight:bold;">Tap a lane to send Moses there — he throws to drive the shepherds back!</div>
+    <div id="rescueWeaponBar" style="display:flex;gap:6px;flex-wrap:nowrap;justify-content:center;"></div>
+    <div id="rescueFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:16px;font-weight:bold;">Tap a lane to move Moses, tap a weapon to throw it!</div>
     <div style="color:#d8b890;font-size:12px;text-align:center;margin-top:4px;font-style:italic;">"Moses got up and came to their rescue." — Exodus 2:17</div>
+    <!-- weapon-select / loadout screen (shown before each round) -->
+    <div id="rescueLoadout" style="display:none;position:absolute;inset:0;z-index:6;background:linear-gradient(160deg,#2a1d10,#4a3320);border-radius:16px;flex-direction:column;padding:14px 16px;overflow:hidden;">
+      <div style="color:#ffe0a0;text-align:center;font-size:19px;font-weight:bold;letter-spacing:.5px;">Choose your weapons</div>
+      <div style="color:#d8b890;text-align:center;font-size:12.5px;margin:2px 0 8px;">Pick up to 5 — <span id="rescueLoadoutCount">0/5</span> chosen. Locked weapons need more ⭐ &amp; 💰.</div>
+      <div id="rescueCardGrid" style="flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;align-content:start;padding:2px;"></div>
+      <div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-top:10px;">
+        <button class="btn" id="rescueAutoPickBtn" style="font-size:13px;padding:8px 16px;background:rgba(80,60,40,0.8);border:2px solid #c8a86a;">✨ Auto-pick</button>
+        <button class="btn btn-gold" id="rescueStartBtn" disabled style="font-size:19px;padding:11px 32px;opacity:0.5;">Start Rescue ▶</button>
+      </div>
+    </div>
+    <style>
+      #rescueCardGrid .rwCard{background:rgba(20,12,4,0.5);border:2px solid #6a4a2a;border-radius:10px;padding:8px;cursor:pointer;transition:transform .1s,border-color .15s,box-shadow .15s;position:relative;text-align:left;color:#ffe8c8;}
+      #rescueCardGrid .rwCard:hover{transform:translateY(-2px);border-color:#d8a86a;}
+      #rescueCardGrid .rwCard.sel{border-color:#ffe07a;box-shadow:0 0 0 2px #ffe07a inset,0 4px 14px rgba(255,200,80,0.3);background:rgba(60,44,16,0.7);}
+      #rescueCardGrid .rwCard.locked{opacity:0.55;cursor:not-allowed;filter:grayscale(0.5);}
+      #rescueCardGrid .rwCard .rwName{font-weight:bold;font-size:14px;display:flex;align-items:center;gap:5px;}
+      #rescueCardGrid .rwCard .rwDesc{font-size:11px;line-height:1.3;color:#e8d2b0;margin:3px 0 5px;min-height:42px;}
+      #rescueCardGrid .rwCard .rwStat{font-size:10.5px;display:flex;justify-content:space-between;color:#d8c0a0;}
+      #rescueCardGrid .rwCard .rwStat b{color:#ffd98a;letter-spacing:1px;}
+      #rescueCardGrid .rwCard .rwCost{margin-top:5px;font-size:12px;font-weight:bold;color:#ffe07a;}
+      #rescueCardGrid .rwCard .rwBadge{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:#ffe07a;color:#3a2a10;font-weight:bold;font-size:13px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;}
+      #rescueCardGrid .rwCard .rwLock{position:absolute;top:6px;right:8px;font-size:14px;}
+      #rescueWeaponBar .rwBtn{flex:1;min-width:0;position:relative;overflow:hidden;border:2px solid #2a6a9a;border-radius:9px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);color:#fff;padding:7px 2px 6px;cursor:pointer;text-align:center;line-height:1.1;}
+      #rescueWeaponBar .rwBtn.sel{border-color:#ffe9a8;box-shadow:0 0 0 2px #ffe9a8 inset;}
+      #rescueWeaponBar .rwBtn.poor{filter:grayscale(0.6) brightness(0.7);}
+      #rescueWeaponBar .rwBtn .rwIco{font-size:21px;}
+      #rescueWeaponBar .rwBtn .rwLbl{font-size:10px;display:block;}
+      #rescueWeaponBar .rwBtn .rwPrice{font-size:10px;font-weight:bold;color:#ffe07a;display:block;}
+      #rescueWeaponBar .rwBtn .rwCd{position:absolute;left:0;bottom:0;width:100%;background:rgba(10,10,20,0.62);pointer-events:none;height:0;}
+    </style>
     <div id="rescuePausedOverlay" style="display:none;position:absolute;inset:0;z-index:4;background:rgba(20,12,4,0.84);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
       <div style="color:#ffe0a0;font-size:30px;font-weight:bold;letter-spacing:2px;">PAUSED</div>
       <button class="btn btn-gold" id="rescueResumeBtn" style="font-size:20px;padding:12px 30px;">▶ Resume</button>
@@ -8164,127 +8188,200 @@ function _makeWellTestGate(){ return { tx: 0, ty: 0, solved: false, _welltest: t
 
 /* ===== RESCUE THE DAUGHTERS (lane-defense) ===== */
 /* ============================================================================
-   SCENE 3 MINI-GAME #2 — "RESCUE THE DAUGHTERS" (Plants-vs-Zombies-style lane defence)
-   2026-05-21 (Jane): 7 LANES (one daughter per lane). Waves of rude shepherds march
-   down each lane toward the daughters; a MOBILE Moses taps to the threatened lane and
-   throws his chosen weapon to drive them back. Weapon roster: Pot (balanced), Sling
-   (rapid), Staff (melee, strong) + chargeable SHEEP-RAM and BOULDER that clear a lane.
-   Scarier enemy tiers (fast scout, big brute). Lose a daughter when a shepherd reaches
-   her lane's end; save them to win. 3 stars = none taken. Standalone: ?rescuetest=1
+   SCENE 3 MINI-GAME — "RESCUE THE DAUGHTERS" (Plants-vs-Zombies-grade lane defence)
+   2026-05-22 (Jane): 7 lanes (one daughter each). Pick up to 5 weapons on a loadout
+   screen (each shows image, description, ⭐ stats for Range / Damage / Load-speed, and
+   a 💰 price). In-round economy: Moses starts with treasure seeded from his journey
+   (stars + treasure bags), each crumbling shepherd drops more 💰, and every throw costs
+   coins (Staff is free so kids never stall). Locked weapons open as total ⭐/💰 grow.
+   Shepherds have a strength meter above their heads and crumble when downed. The final
+   wave brings the mightiest shepherd (BOSS); downing him wins the pass to the next game.
+   Standalone: ?rescuetest=1  (&diff=easy|medium|hard)
    ========================================================================== */
-const _RES_W = {
-  pot:   { cd: 0.70, speed: 540, dmg: 1, melee: false, sprite: ['waterPot', 'waterJar'] },
-  sling: { cd: 0.34, speed: 760, dmg: 1, melee: false, sprite: null },
-  staff: { cd: 0.62, dmg: 3, melee: true, range: 86, sprite: ['shepherdStaff'] },
+const _RES_ROSTER = {
+  staff:   { name: 'Shepherd Staff', icon: '🦯', desc: 'A close swing — strong, but only hits the shepherd right beside Moses. Always free.', rng: 1, dmg: 5, spd: 3, cost: 0,   cd: 0.6,  melee: true, mrange: 92, starReq: 0 },
+  sling:   { name: 'Sling',          icon: '🎯', desc: 'Quick stones flung far. Cheap, fast, low damage — your workhorse.',               rng: 5, dmg: 1, spd: 5, cost: 8,   cd: 0.36, projSpeed: 780, starReq: 0 },
+  pot:     { name: 'Water Pot',      icon: '🏺', desc: 'A heavy jar that splashes the shepherd it strikes.',                                rng: 3, dmg: 2, spd: 3, cost: 22,  cd: 0.7,  projSpeed: 540, starReq: 0 },
+  net:     { name: 'Throwing Net',   icon: '🕸️', desc: 'Tangles a shepherd so he is stuck in place for a few seconds.',                      rng: 3, dmg: 0, spd: 3, cost: 28,  cd: 1.1,  projSpeed: 520, snare: 3.5, starReq: 3 },
+  volley:  { name: 'Pebble Volley',  icon: '🌾', desc: 'Flings three stones at once down the lane.',                                        rng: 5, dmg: 1, spd: 2, cost: 42,  cd: 1.4,  projSpeed: 720, multi: 3, starReq: 6 },
+  torch:   { name: 'Torch',          icon: '🔥', desc: 'Sets the whole lane ablaze — burns every shepherd over time.',                      rng: 5, dmg: 3, spd: 1, cost: 55,  cd: 2.4,  laneBurn: 5, starReq: 9 },
+  sheep:   { name: 'Ram Sheep',      icon: '🐏', desc: 'A charging ram bowls over EVERY shepherd in the lane.',                             rng: 5, dmg: 5, spd: 1, cost: 95,  cd: 1.0,  ram: 'sheep', starReq: 5 },
+  boulder: { name: 'Boulder',        icon: '🪨', desc: 'A giant rock rolls down the lane, crushing all in its path.',                       rng: 5, dmg: 5, spd: 1, cost: 130, cd: 1.0,  ram: 'boulder', starReq: 12 },
 };
+const _RES_ORDER = ['staff', 'sling', 'pot', 'net', 'volley', 'torch', 'sheep', 'boulder'];
 const _rescue = {
-  gate: null, rafId: null, last: 0, paused: false, over: false, win: false,
+  gate: null, rafId: null, last: 0, paused: false, over: false, win: false, started: false,
   LANES: 7, laneY: [54, 114, 174, 234, 294, 354, 414], lane: 3, mosesY: 234, mosesX: 84, GRABX: 116,
-  weapon: 'pot', throwCd: 0, throwAnim: 0,
-  shots: [], foes: [], cues: [], fx: [], ram: null,
+  loadout: [], weapon: null, cd: {}, btns: {}, throwAnim: 0,
+  shots: [], foes: [], cues: [], fx: [], fires: [], ram: null, kidnaps: [],
   laneDaughter: [true, true, true, true, true, true, true], daughtersLost: 0,
-  foesDriven: 0, spawned: 0, total: 18, spawnEvery: 1.5, spawnT: 1.2,
-  foeSpeed: 42, bigChance: 0.18, fastChance: 0.3,
-  sheepC: 0, boulderC: 0, shake: 0, stars: 3, winPanelShown: false,
+  coins: 0, earned: 0, trickleT: 0, foesDriven: 0, spawned: 0, total: 18, spawnEvery: 1.5, spawnT: 1.6,
+  foeSpeed: 42, bigChance: 0.18, fastChance: 0.3, bossSpawned: false, bossDown: false,
+  shake: 0, stars: 3, winPanelShown: false,
 };
 function _rescueCfg() {
   const d = (typeof game !== 'undefined' && game.difficulty) || 'easy';
-  if (d === 'hard')   return { total: 30, spawnEvery: 1.0, foeSpeed: 56, bigChance: 0.26, fastChance: 0.36 };
-  if (d === 'medium') return { total: 24, spawnEvery: 1.25, foeSpeed: 48, bigChance: 0.22, fastChance: 0.32 };
-  return { total: 18, spawnEvery: 1.5, foeSpeed: 42, bigChance: 0.18, fastChance: 0.28 }; // easy
+  if (d === 'hard')   return { total: 28, spawnEvery: 1.05, foeSpeed: 54, bigChance: 0.26, fastChance: 0.34, coins: 90,  bossHp: 60 };
+  if (d === 'medium') return { total: 22, spawnEvery: 1.3,  foeSpeed: 47, bigChance: 0.22, fastChance: 0.32, coins: 110, bossHp: 45 };
+  return { total: 18, spawnEvery: 1.55, foeSpeed: 41, bigChance: 0.18, fastChance: 0.28, coins: 135, bossHp: 32 }; // easy
 }
-function _rescueCue(text, x, y, color, big) { _rescue.cues.push({ text: text, x: x, y: y, color: color || '#fff', t: 0, life: big ? 80 : 60, big: !!big }); }
+function _resStars(n) { n = Math.max(0, Math.min(5, n | 0)); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
+function _resWealth() { return { stars: (typeof game !== 'undefined' && game.stars) || 0, bags: (typeof game !== 'undefined' && game.treasureCount) || 0 }; }
+function _resUnlocked(key) { const w = _RES_ROSTER[key]; return _resWealth().stars >= (w.starReq || 0); }
+function _rescueCue(text, x, y, color, big) { _rescue.cues.push({ text: text, x: x, y: y, color: color || '#fff', t: 0, life: big ? 80 : 58, big: !!big }); }
 function _rescueFx(key, x, y, size, life) { _rescue.fx.push({ key: key, x: x, y: y, size: size || 38, t: 0, life: life || 20 }); }
+// ---------- loadout / weapon-select screen ----------
+function _rescueBuildCards() {
+  const grid = document.getElementById('rescueCardGrid'); if (!grid) return;
+  const wealth = _resWealth();
+  grid.innerHTML = '';
+  _RES_ORDER.forEach(key => {
+    const w = _RES_ROSTER[key]; const unlocked = _resUnlocked(key); const sel = _rescue.loadout.indexOf(key) >= 0;
+    const card = document.createElement('div');
+    card.className = 'rwCard' + (sel ? ' sel' : '') + (unlocked ? '' : ' locked');
+    card.innerHTML =
+      '<div class="rwName">' + w.icon + ' ' + w.name + '</div>' +
+      '<div class="rwDesc">' + w.desc + '</div>' +
+      '<div class="rwStat"><span>Range</span><b>' + _resStars(w.rng) + '</b></div>' +
+      '<div class="rwStat"><span>Damage</span><b>' + _resStars(w.dmg) + '</b></div>' +
+      '<div class="rwStat"><span>Load speed</span><b>' + _resStars(w.spd) + '</b></div>' +
+      '<div class="rwCost">' + (w.cost === 0 ? 'FREE' : '💰 ' + w.cost + ' / throw') + '</div>' +
+      (sel ? '<div class="rwBadge">' + (_rescue.loadout.indexOf(key) + 1) + '</div>' : '') +
+      (unlocked ? '' : '<div class="rwLock">🔒 ⭐' + w.starReq + '</div>');
+    if (unlocked) card.addEventListener('click', () => _rescueToggleCard(key));
+    grid.appendChild(card);
+  });
+  const cnt = document.getElementById('rescueLoadoutCount'); if (cnt) cnt.textContent = _rescue.loadout.length + '/5';
+  const sb = document.getElementById('rescueStartBtn'); if (sb) { const ok = _rescue.loadout.length >= 1; sb.disabled = !ok; sb.style.opacity = ok ? '1' : '0.5'; }
+}
+function _rescueToggleCard(key) {
+  const i = _rescue.loadout.indexOf(key);
+  if (i >= 0) _rescue.loadout.splice(i, 1);
+  else { if (_rescue.loadout.length >= 5) { try { play('error'); } catch(e){} return; } _rescue.loadout.push(key); }
+  try { play('pop'); } catch(e){}
+  _rescueBuildCards();
+}
+function _rescueAutoPick() {
+  const picks = ['staff', 'sling', 'pot', 'sheep', 'net', 'volley', 'torch', 'boulder'].filter(_resUnlocked);
+  _rescue.loadout = picks.slice(0, 5);
+  try { play('pop'); } catch(e){}
+  _rescueBuildCards();
+}
+function _rescueShowLoadout() {
+  if (!_rescue.loadout.length) _rescue.loadout = ['staff', 'sling', 'pot', 'sheep', 'net'].filter(_resUnlocked).slice(0, 5);
+  _rescueBuildCards();
+  const ov = document.getElementById('rescueLoadout'); if (ov) ov.style.display = 'flex';
+}
+// ---------- dynamic weapon bar ----------
+function _rescueBuildBar() {
+  const bar = document.getElementById('rescueWeaponBar'); if (!bar) return;
+  bar.innerHTML = ''; _rescue.btns = {};
+  _rescue.loadout.forEach(key => {
+    const w = _RES_ROSTER[key];
+    const b = document.createElement('div'); b.className = 'rwBtn';
+    b.innerHTML = '<div class="rwCd"></div><span class="rwIco">' + w.icon + '</span><span class="rwLbl">' + w.name.split(' ').slice(-1)[0] + '</span><span class="rwPrice">' + (w.cost === 0 ? 'free' : '💰' + w.cost) + '</span>';
+    const fire = (e) => { if (e) { if (e.cancelable) e.preventDefault(); e.stopPropagation(); } _rescueFire(key); };
+    b.addEventListener('click', fire); b.addEventListener('touchend', fire, { passive: false });
+    bar.appendChild(b);
+    _rescue.btns[key] = { el: b, cd: b.querySelector('.rwCd') };
+  });
+  if (!_rescue.weapon || _rescue.loadout.indexOf(_rescue.weapon) < 0) _rescue.weapon = _rescue.loadout[0] || null;
+}
+function _rescueUpdateBar() {
+  for (const key in _rescue.btns) {
+    const w = _RES_ROSTER[key], ref = _rescue.btns[key];
+    const rem = _rescue.cd[key] || 0; ref.cd.style.height = (100 * Math.max(0, Math.min(1, rem / w.cd))).toFixed(0) + '%';
+    const poor = _rescue.coins < w.cost; ref.el.classList.toggle('poor', poor);
+    ref.el.classList.toggle('sel', key === _rescue.weapon);
+  }
+}
+// ---------- round lifecycle ----------
 function _rescueReset() {
   const cfg = _rescueCfg();
   _rescue.total = cfg.total; _rescue.spawnEvery = cfg.spawnEvery; _rescue.foeSpeed = cfg.foeSpeed;
-  _rescue.bigChance = cfg.bigChance; _rescue.fastChance = cfg.fastChance;
-  _rescue.lane = 3; _rescue.mosesY = _rescue.laneY[3]; _rescue.weapon = 'pot'; _rescue.throwCd = 0; _rescue.throwAnim = 0;
-  _rescue.shots = []; _rescue.foes = []; _rescue.cues = []; _rescue.fx = []; _rescue.ram = null;
+  _rescue.bigChance = cfg.bigChance; _rescue.fastChance = cfg.fastChance; _rescue.bossHp = cfg.bossHp;
+  const wealth = _resWealth();
+  _rescue.coins = cfg.coins + Math.min(120, wealth.bags * 8 + wealth.stars * 2);
+  _rescue.earned = 0; _rescue.trickleT = 0;
+  _rescue.lane = 3; _rescue.mosesY = _rescue.laneY[3]; _rescue.throwAnim = 0; _rescue.cd = {};
+  _rescue.shots = []; _rescue.foes = []; _rescue.cues = []; _rescue.fx = []; _rescue.fires = []; _rescue.ram = null; _rescue.kidnaps = [];
   _rescue.laneDaughter = [true, true, true, true, true, true, true]; _rescue.daughtersLost = 0;
-  _rescue.foesDriven = 0; _rescue.spawned = 0; _rescue.spawnT = 1.2;
-  _rescue.sheepC = 0; _rescue.boulderC = 0; _rescue.shake = 0; _rescue.stars = 3;
-  _rescue.over = false; _rescue.win = false; _rescue.paused = false; _rescue.winPanelShown = false;
+  _rescue.foesDriven = 0; _rescue.spawned = 0; _rescue.spawnT = 1.6; _rescue.bossSpawned = false; _rescue.bossDown = false;
+  _rescue.shake = 0; _rescue.stars = 3; _rescue.over = false; _rescue.win = false; _rescue.paused = false; _rescue.winPanelShown = false; _rescue.started = false;
   ['rescuePausedOverlay', 'rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
-  _rescueSelectWeapon('pot'); _rescueSpecialBtns();
 }
 function openRescueGame(gate) {
-  _rescue.gate = gate; _rescue.last = 0; _rescueReset();
+  _rescue.gate = gate; _rescue.last = 0;
+  if (window._rescueTestMode) { try { game.stars = Math.max(game.stars || 0, 14); game.treasureCount = Math.max(game.treasureCount || 0, 5); } catch(e){} }
+  _rescueReset();
   game.state = 'dialog';
-  try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); } if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
+  try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); } } catch(e){}
   const modal = document.getElementById('rescueModal'); modal.style.display = 'flex'; modal.classList.add('active');
   _rescueHud();
-  document.getElementById('rescueFeedback').textContent = 'Tap the lane under attack — Moses runs there and throws!';
-  _rescue.rafId = requestAnimationFrame(_rescueFrame);
+  _rescueShowLoadout(); // pick weapons first
+}
+function _rescueBegin() {
+  const ov = document.getElementById('rescueLoadout'); if (ov) ov.style.display = 'none';
+  _rescueBuildBar();
+  _rescue.started = true; _rescue.last = 0;
+  try { if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
+  document.getElementById('rescueFeedback').textContent = 'Tap the lane under attack, then tap a weapon to throw!';
+  _rescueHud(); _rescueUpdateBar();
+  cancelAnimationFrame(_rescue.rafId); _rescue.rafId = requestAnimationFrame(_rescueFrame);
 }
 function _rescueHud() {
-  const d = document.getElementById('rescueDaughters'); if (d) d.textContent = '👧 Daughters: ' + (7 - _rescue.daughtersLost) + '/7';
-  const w = document.getElementById('rescueWave'); if (w) w.textContent = '🐏 ' + Math.round(_rescue.sheepC * 100) + '%  🪨 ' + Math.round(_rescue.boulderC * 100) + '%';
+  const d = document.getElementById('rescueDaughters'); if (d) d.textContent = '👧 ' + (7 - _rescue.daughtersLost) + '/7';
+  const co = document.getElementById('rescueCoins'); if (co) co.textContent = '💰 ' + Math.floor(_rescue.coins);
   const f = document.getElementById('rescueFoes'); if (f) f.textContent = 'Driven off: ' + _rescue.foesDriven + '/' + _rescue.total;
 }
-function _rescueSelectWeapon(w) {
-  _rescue.weapon = w;
-  [['pot', 'rescueWpnPot'], ['sling', 'rescueWpnSling'], ['staff', 'rescueWpnStaff']].forEach(([k, id]) => {
-    const b = document.getElementById(id); if (!b) return;
-    b.style.borderColor = (k === w) ? '#ffe9a8' : '#2a6a9a';
-    b.style.filter = (k === w) ? 'brightness(1.15)' : 'brightness(0.82)';
-  });
-}
-function _rescueSpecialBtns() {
-  const sb = document.getElementById('rescueSheepBtn'); if (sb) { const r = _rescue.sheepC >= 1 && !_rescue.over; sb.disabled = !r; sb.style.opacity = r ? '1' : '0.55'; sb.style.background = r ? 'linear-gradient(135deg,#e0d070,#b89a3a)' : 'linear-gradient(135deg,#7a7a6a,#9a9a86)'; }
-  const bb = document.getElementById('rescueBoulderBtn'); if (bb) { const r = _rescue.boulderC >= 1 && !_rescue.over && !_rescue.ram; bb.disabled = !r; bb.style.opacity = r ? '1' : '0.55'; bb.style.background = r ? 'linear-gradient(135deg,#c0a878,#8a7048)' : 'linear-gradient(135deg,#7a7a6a,#9a9a86)'; }
-}
-// ---- input ----
+// ---------- input ----------
 function _rescueCanvasLane(e) {
   const c = document.getElementById('rescueCanvas'); if (!c) return _rescue.lane;
   const r = c.getBoundingClientRect();
-  const cy = ((e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY);
+  const cy = ((e.touches && e.touches[0]) ? e.touches[0].clientY : (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : e.clientY);
   const y = (cy - r.top) * (c.height / r.height);
   let best = 0, bd = 1e9; for (let i = 0; i < _rescue.LANES; i++) { const d = Math.abs(y - _rescue.laneY[i]); if (d < bd) { bd = d; best = i; } }
   return best;
 }
-function _rescueTap(e) {
-  if (_rescue.over || _rescue.paused || !_rescue.gate) return;
-  if (e.cancelable) e.preventDefault();
-  _rescue.lane = _rescueCanvasLane(e);
-  _rescueAct();
+function _rescueTap(e) { if (_rescue.over || _rescue.paused || !_rescue.started) return; if (e.cancelable) e.preventDefault(); _rescue.lane = _rescueCanvasLane(e); }
+function _rescueAward(foe) {
+  _rescue.foesDriven++; const b = foe.bounty || 18; _rescue.coins += b; _rescue.earned += b;
+  _rescueCue('+💰' + b, foe.x, _rescue.laneY[foe.lane] - 34, '#ffe07a');
+  _rescueFx('treasureBag', foe.x, _rescue.laneY[foe.lane], 26, 20);
+  if (foe.type === 'boss') _rescue.bossDown = true;
+  _rescueHud();
 }
-function _rescueDamage(foe, dmg) {
-  foe.hp -= dmg; foe.hitT = 0.16; foe.kb = foe.maxhp > 1 ? 10 : 18;
-  if (foe.hp <= 0) {
-    _rescue.foes = _rescue.foes.filter(f => f !== foe);
-    _rescue.foesDriven++; _rescue.sheepC = Math.min(1, _rescue.sheepC + 0.12); _rescue.boulderC = Math.min(1, _rescue.boulderC + 0.085);
-    _rescueCue('✓', foe.x, _rescue.laneY[foe.lane] - 32, '#9affb0');
-    _rescueSpecialBtns(); _rescueHud();
-  }
+function _rescueHurt(foe, dmg) {
+  if (foe.dying) return; foe.hp -= dmg; foe.hitT = 0.16; foe.kb = foe.maxhp > 3 ? 6 : (foe.maxhp > 1 ? 10 : 18);
+  if (foe.hp <= 0) { foe.dying = 0.5; foe.kb = 0; _rescueAward(foe); }
 }
-function _rescueAct() {
-  if (_rescue.over || _rescue.paused || _rescue.throwCd > 0) return;
-  const w = _RES_W[_rescue.weapon]; _rescue.throwCd = w.cd; _rescue.throwAnim = 0.2;
-  if (w.melee) {
-    let best = null, bd = 1e9;
-    for (const f of _rescue.foes) { if (f.lane === _rescue.lane && f.x > _rescue.mosesX) { const d = f.x - _rescue.mosesX; if (d < w.range && d < bd) { bd = d; best = f; } } }
-    if (best) { _rescueDamage(best, w.dmg); _rescueFx('dustPuff', best.x - 10, _rescue.laneY[best.lane], 40, 16); }
-    try { play('sword') || play('pop'); } catch(e){}
-  } else {
-    _rescue.shots.push({ lane: _rescue.lane, x: _rescue.mosesX + 26, y: _rescue.laneY[_rescue.lane] - 6, vx: w.speed, dmg: w.dmg, kind: _rescue.weapon });
-    try { play('waterSkin') || play('pop'); } catch(e){}
-  }
+function _rescueFire(key) {
+  if (_rescue.over || _rescue.paused || !_rescue.started) return;
+  const w = _RES_ROSTER[key]; if (!w) return;
+  if ((_rescue.cd[key] || 0) > 0) return;
+  if (w.ram && _rescue.ram) return;
+  if (_rescue.coins < w.cost) { const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = 'Not enough 💰 — down more shepherds!'; try { play('error'); } catch(e){} return; }
+  _rescue.coins -= w.cost; _rescue.cd[key] = w.cd; _rescue.weapon = key; _rescue.throwAnim = 0.2;
+  const lane = _rescue.lane, ly = _rescue.laneY[lane];
+  if (w.ram) { _rescue.ram = { lane: lane, x: _rescue.mosesX + 12, vx: w.ram === 'boulder' ? 380 : 640, kind: w.ram }; _rescueCue((w.ram === 'boulder' ? 'BOULDER! 🪨' : 'CHARGE! 🐏'), _rescue.mosesX + 70, ly - 32, '#fff0b0', true); try { play(w.ram === 'boulder' ? 'boulderRumble' : 'camelGrunt') || play('pop'); } catch(e){} }
+  else if (w.melee) { let best = null, bd = 1e9; for (const f of _rescue.foes) { if (!f.dying && f.lane === lane && f.x > _rescue.mosesX) { const d = f.x - _rescue.mosesX; if (d < w.mrange && d < bd) { bd = d; best = f; } } } if (best) { _rescueHurt(best, w.dmg); _rescueFx('dustPuff', best.x - 10, ly, 40, 16); } try { play('sword') || play('pop'); } catch(e){} }
+  else if (w.laneBurn) { _rescue.fires.push({ lane: lane, t: w.laneBurn, dmgT: 0 }); try { play('fireWhoosh') || play('pop'); } catch(e){} }
+  else { const n = w.multi || 1; for (let k = 0; k < n; k++) _rescue.shots.push({ lane: lane, x: _rescue.mosesX + 26, y: ly - 6 + (k - (n - 1) / 2) * 12, vx: w.projSpeed, dmg: w.dmg, kind: key, snare: w.snare || 0 }); try { play('waterSkin') || play('pop'); } catch(e){} }
+  _rescueHud(); _rescueUpdateBar();
 }
-function _rescueSheep() { if (_rescue.over || _rescue.paused || _rescue.sheepC < 1 || _rescue.ram) return; _rescue.ram = { lane: _rescue.lane, x: _rescue.mosesX + 12, vx: 640, kind: 'sheep' }; _rescue.sheepC = 0; _rescueSpecialBtns(); _rescueCue('CHARGE! 🐏', _rescue.mosesX + 70, _rescue.laneY[_rescue.lane] - 32, '#fff0b0', true); try { play('camelGrunt') || play('pop'); } catch(e){} }
-function _rescueBoulder() { if (_rescue.over || _rescue.paused || _rescue.boulderC < 1 || _rescue.ram) return; _rescue.ram = { lane: _rescue.lane, x: _rescue.mosesX + 12, vx: 380, kind: 'boulder' }; _rescue.boulderC = 0; _rescueSpecialBtns(); _rescueCue('BOULDER! 🪨', _rescue.mosesX + 70, _rescue.laneY[_rescue.lane] - 32, '#ffd0a0', true); try { play('boulderRumble') || play('pop'); } catch(e){} }
 function _rescueSpawn() {
-  const r = Math.random(); let type = 'normal', hp = 1, spd = _rescue.foeSpeed, scale = 1;
-  if (r < _rescue.bigChance) { type = 'big'; hp = 4; spd = _rescue.foeSpeed * 0.55; scale = 1.34; }
-  else if (r < _rescue.bigChance + _rescue.fastChance) { type = 'fast'; hp = 1; spd = _rescue.foeSpeed * 1.7; scale = 0.86; }
+  let type = 'normal', hp = 1, spd = _rescue.foeSpeed, scale = 1, bounty = 20;
+  if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 130; _rescue.bossSpawned = true; }
+  else { const r = Math.random(); if (r < _rescue.bigChance) { type = 'big'; hp = 4; spd = _rescue.foeSpeed * 0.55; scale = 1.34; bounty = 45; } else if (r < _rescue.bigChance + _rescue.fastChance) { type = 'fast'; hp = 1; spd = _rescue.foeSpeed * 1.7; scale = 0.86; bounty = 16; } }
   const lane = Math.floor(Math.random() * _rescue.LANES);
-  _rescue.foes.push({ lane: lane, x: 778, hp: hp, maxhp: hp, spd: spd, scale: scale, type: type, hitT: 0, kb: 0 });
+  _rescue.foes.push({ lane: lane, x: 800, hp: hp, maxhp: hp, spd: spd, scale: scale, type: type, bounty: bounty, hitT: 0, kb: 0, snared: 0, dying: 0 });
   _rescue.spawned++;
 }
 function _rescueGrab(foe) {
   if (_rescue.laneDaughter[foe.lane]) {
     _rescue.laneDaughter[foe.lane] = false; _rescue.daughtersLost++; _rescue.shake = 14;
-    _rescueCue('A daughter taken!', 120, _rescue.laneY[foe.lane] - 20, '#ff7a6a', true);
+    _rescue.kidnaps.push({ lane: foe.lane, x: _rescue.GRABX, idx: foe.lane, t: 0 });
+    _rescueCue('A daughter taken!', 130, _rescue.laneY[foe.lane] - 20, '#ff7a6a', true);
     try { play('oops') || play('error'); } catch(e){}
     _rescueHud();
     if (_rescue.daughtersLost >= 7) _rescueLose();
@@ -8294,7 +8391,8 @@ function _rescueWin() {
   if (_rescue.over) return;
   _rescue.over = true; _rescue.win = true;
   _rescue.stars = _rescue.daughtersLost === 0 ? 3 : (_rescue.daughtersLost <= 2 ? 2 : 1);
-  const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = '🎉 The whole gang flees! The daughters are safe!';
+  try { if (typeof game !== 'undefined') { game._wellGamePass = true; } } catch(e){}
+  const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = _rescue.bossDown ? '🎉 The mighty shepherd flees! The daughters are safe!' : '🎉 The shepherds are driven off!';
   try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
   try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){}
   setTimeout(() => { if (_rescue.over && _rescue.win) _rescueShowWinPanel(); }, 2200);
@@ -8304,7 +8402,7 @@ function _rescueShowWinPanel() {
   const row = document.getElementById('rescueStarRow');
   if (row) { let h = ''; for (let i = 0; i < 3; i++) h += '<span class="pStar ' + (i < stars ? 'full' : 'empty') + '" style="animation-delay:' + (0.15 + i * 0.2).toFixed(2) + 's">★</span>'; row.innerHTML = h; }
   const msg = document.getElementById('rescueWinMsg');
-  if (msg) msg.textContent = stars >= 3 ? 'Heroic! All seven daughters saved!' : (stars === 2 ? 'Well done! Try again to save them all.' : 'Rescued! Can you save every daughter?');
+  if (msg) msg.innerHTML = (stars >= 3 ? 'Heroic! All seven daughters saved!' : (stars === 2 ? 'Well done! Try again to save them all.' : 'Rescued! Can you save every daughter?')) + '<br><span style="font-size:14px;color:#ffe07a;">💰 ' + _rescue.earned + ' treasure earned' + (_rescue.bossDown ? ' &middot; Pass to the Flock unlocked!' : '') + '</span>';
   const rep = document.getElementById('rescueWinReplayBtn'); if (rep) rep.style.display = stars >= 3 ? 'none' : '';
   try { setTimeout(() => play('coin'), 200); if (stars >= 2) setTimeout(() => play('coin'), 420); if (stars >= 3) setTimeout(() => play('chime'), 640); } catch(e){}
   const ov = document.getElementById('rescueWinOverlay'); if (ov) ov.style.display = 'flex';
@@ -8323,16 +8421,14 @@ function _rescueLose() {
 function _rescueRetry() {
   ['rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
   if (!_rescue.gate) return;
-  cancelAnimationFrame(_rescue.rafId); _rescue.last = 0; _rescueReset(); _rescueHud();
-  document.getElementById('rescueFeedback').textContent = 'Here they come again — defend every lane!';
-  try { if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
-  _rescue.rafId = requestAnimationFrame(_rescueFrame);
+  cancelAnimationFrame(_rescue.rafId); _rescueReset(); _rescueHud();
+  _rescueShowLoadout();
 }
-function _rescuePause() { if (_rescue.over || _rescue.paused || !_rescue.gate) return; _rescue.paused = true; cancelAnimationFrame(_rescue.rafId); try { if (audio.wellMusic) audio.wellMusic.pause(); } catch(e){} const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'flex'; }
+function _rescuePause() { if (_rescue.over || _rescue.paused || !_rescue.started) return; _rescue.paused = true; cancelAnimationFrame(_rescue.rafId); try { if (audio.wellMusic) audio.wellMusic.pause(); } catch(e){} const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'flex'; }
 function _rescueResume() { if (!_rescue.paused) return; _rescue.paused = false; const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'none'; try { if (audio.wellMusic) audio.wellMusic.play().catch(()=>{}); } catch(e){} _rescue.last = 0; _rescue.rafId = requestAnimationFrame(_rescueFrame); }
 function _rescueQuit() {
-  _rescue.paused = false; _rescue.over = true; cancelAnimationFrame(_rescue.rafId);
-  ['rescuePausedOverlay', 'rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  _rescue.paused = false; _rescue.over = true; _rescue.started = false; cancelAnimationFrame(_rescue.rafId);
+  ['rescuePausedOverlay', 'rescueLoseOverlay', 'rescueWinOverlay', 'rescueLoadout'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
   const modal = document.getElementById('rescueModal'); modal.style.display = 'none'; modal.classList.remove('active');
   try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
   try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
@@ -8340,7 +8436,7 @@ function _rescueQuit() {
 }
 function _rescueWinContinue() { const ov = document.getElementById('rescueWinOverlay'); if (ov) ov.style.display = 'none'; _closeRescue(); }
 function _closeRescue() {
-  cancelAnimationFrame(_rescue.rafId);
+  cancelAnimationFrame(_rescue.rafId); _rescue.started = false;
   const modal = document.getElementById('rescueModal'); modal.style.display = 'none'; modal.classList.remove('active');
   try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
   try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
@@ -8359,88 +8455,85 @@ function _rescueFrame(now) {
   const c = canvas.getContext('2d'); const W = canvas.width, H = canvas.height;
   const dt = Math.min(60, now - (_rescue.last || now)); _rescue.last = now; const dts = dt / 1000;
 
-  if (!_rescue.over) {
+  if (_rescue.started && !_rescue.over) {
     _rescue.mosesY += (_rescue.laneY[_rescue.lane] - _rescue.mosesY) * Math.min(1, dts * 12);
-    if (_rescue.throwCd > 0) _rescue.throwCd -= dts;
     if (_rescue.throwAnim > 0) _rescue.throwAnim -= dts;
-    if (_rescue.throwCd <= 0 && _rescue.foes.some(f => f.lane === _rescue.lane && f.x > _rescue.mosesX)) _rescueAct();
+    for (const k in _rescue.cd) if (_rescue.cd[k] > 0) _rescue.cd[k] -= dts;
+    // trickle income (a daughter slips Moses a few coins so he never fully stalls)
+    _rescue.trickleT += dts; if (_rescue.trickleT >= 1.6) { _rescue.trickleT = 0; _rescue.coins += 4; }
+    // spawn
     if (_rescue.spawned < _rescue.total) { _rescue.spawnT -= dts; if (_rescue.spawnT <= 0) { _rescueSpawn(); _rescue.spawnT = Math.max(0.55, _rescue.spawnEvery - _rescue.spawned * 0.03); } }
     // shots
     for (let i = _rescue.shots.length - 1; i >= 0; i--) {
       const s = _rescue.shots[i]; s.x += s.vx * dts;
-      let hf = null; for (const f of _rescue.foes) { if (f.lane === s.lane && f.x > _rescue.mosesX && Math.abs(f.x - s.x) < 26) { hf = f; break; } }
-      if (hf) { _rescueFx('splashFx', s.x, s.y, 32, 16); _rescue.shots.splice(i, 1); _rescueDamage(hf, s.dmg); try { play('pop'); } catch(e){} }
+      let hf = null; for (const f of _rescue.foes) { if (!f.dying && f.lane === s.lane && f.x > _rescue.mosesX && Math.abs(f.x - s.x) < 28) { hf = f; break; } }
+      if (hf) { _rescueFx(s.kind === 'pot' ? 'splashFx' : 'dustPuff', s.x, s.y, 30, 14); _rescue.shots.splice(i, 1); if (s.snare) { hf.snared = s.snare; _rescueCue('tangled!', hf.x, _rescue.laneY[hf.lane] - 30, '#cfe0ff'); } if (s.dmg > 0) _rescueHurt(hf, s.dmg); try { play('pop'); } catch(e){} }
       else if (s.x > W + 20) _rescue.shots.splice(i, 1);
     }
-    // ram (sheep/boulder)
-    if (_rescue.ram) {
-      _rescue.ram.x += _rescue.ram.vx * dts;
-      for (const f of _rescue.foes.slice()) { if (f.lane === _rescue.ram.lane && Math.abs(f.x - _rescue.ram.x) < 34) { _rescue.foes = _rescue.foes.filter(x => x !== f); _rescue.foesDriven++; _rescueFx('dustPuff', f.x, _rescue.laneY[f.lane], 46, 18); } }
-      if (_rescue.ram.x > W + 30) { _rescue.ram = null; _rescueHud(); }
-    }
-    // foes advance
+    // lane fires (torch)
+    for (let i = _rescue.fires.length - 1; i >= 0; i--) { const fr = _rescue.fires[i]; fr.t -= dts; fr.dmgT -= dts; if (fr.dmgT <= 0) { fr.dmgT = 0.45; for (const f of _rescue.foes.slice()) if (!f.dying && f.lane === fr.lane && f.x > _rescue.mosesX) _rescueHurt(f, 1); } if (fr.t <= 0) _rescue.fires.splice(i, 1); }
+    // ram
+    if (_rescue.ram) { _rescue.ram.x += _rescue.ram.vx * dts; for (const f of _rescue.foes.slice()) { if (!f.dying && f.lane === _rescue.ram.lane && Math.abs(f.x - _rescue.ram.x) < 36) { f.hp = 0; f.dying = 0.4; _rescueAward(f); _rescueFx('dustPuff', f.x, _rescue.laneY[f.lane], 46, 18); } } if (_rescue.ram.x > W + 30) _rescue.ram = null; }
+    // foes advance / dying
     for (let i = _rescue.foes.length - 1; i >= 0; i--) {
-      const f = _rescue.foes[i]; if (f.hitT > 0) f.hitT -= dts;
-      if (f.kb > 0) { f.x += Math.min(f.kb, 70 * dts); f.kb -= 70 * dts; } else f.x -= f.spd * dts;
+      const f = _rescue.foes[i];
+      if (f.dying) { f.dying -= dts; if (f.dying <= 0) _rescue.foes.splice(i, 1); continue; }
+      if (f.hitT > 0) f.hitT -= dts;
+      if (f.snared > 0) { f.snared -= dts; }
+      else if (f.kb > 0) { f.x += Math.min(f.kb, 70 * dts); f.kb -= 70 * dts; }
+      else f.x -= f.spd * dts;
       if (f.x <= _rescue.GRABX) { _rescue.foes.splice(i, 1); _rescueGrab(f); }
     }
+    // kidnap anim
+    for (let i = _rescue.kidnaps.length - 1; i >= 0; i--) { _rescue.kidnaps[i].t += dts; _rescue.kidnaps[i].x += 120 * dts; if (_rescue.kidnaps[i].t > 1.6) _rescue.kidnaps.splice(i, 1); }
     if (!_rescue.over && _rescue.spawned >= _rescue.total && _rescue.foes.length === 0 && !_rescue.ram) _rescueWin();
+    _rescueUpdateBar();
   }
   const sx = _rescue.shake > 0.3 ? Math.sin(now / 26) * _rescue.shake : 0; if (_rescue.shake > 0) _rescue.shake *= 0.86;
   _rescueHud();
 
-  // ---- draw ----
+  // ---------- draw ----------
   c.save(); c.translate(sx, 0);
-  if (!_pDraw(c, ['rescueBg', 'scene3Bg', 'midian'], -4, -4, W + 8, H + 8)) {
-    const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#e0c088'); g.addColorStop(1, '#caa868'); c.fillStyle = g; c.fillRect(-4, -4, W + 8, H + 8);
-  }
-  // lane bands (clearer striping so the 7 lanes read) + the daughters' home strip
-  c.fillStyle = 'rgba(40,24,10,0.18)'; c.fillRect(0, 30, _rescue.GRABX, H - 60);  // protected "home" zone
+  if (!_pDraw(c, ['rescueBg', 'scene3Bg', 'midian'], -4, -4, W + 8, H + 8)) { const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#9ad06a'); g.addColorStop(1, '#6aa84a'); c.fillStyle = g; c.fillRect(-4, -4, W + 8, H + 8); }
+  c.fillStyle = 'rgba(40,24,10,0.16)'; c.fillRect(0, 30, _rescue.GRABX, H - 60);
   for (let i = 0; i < _rescue.LANES; i++) {
-    c.fillStyle = (i % 2 === 0) ? 'rgba(70,45,20,0.22)' : 'rgba(255,240,210,0.10)';
-    c.fillRect(0, _rescue.laneY[i] - 29, W, 58);
-    c.strokeStyle = 'rgba(40,24,10,0.18)'; c.lineWidth = 1; c.strokeRect(0, _rescue.laneY[i] - 29, W, 58);
-    if (i === _rescue.lane) { c.fillStyle = 'rgba(120,200,255,0.12)'; c.fillRect(0, _rescue.laneY[i] - 28, W, 56); c.strokeStyle = 'rgba(120,200,255,0.6)'; c.lineWidth = 2; c.strokeRect(2, _rescue.laneY[i] - 28, W - 4, 56); }
+    c.fillStyle = (i % 2 === 0) ? 'rgba(60,40,18,0.18)' : 'rgba(255,245,215,0.08)'; c.fillRect(0, _rescue.laneY[i] - 29, W, 58);
+    c.strokeStyle = 'rgba(40,24,10,0.16)'; c.lineWidth = 1; c.strokeRect(0, _rescue.laneY[i] - 29, W, 58);
+    if (_rescue.started && i === _rescue.lane) { c.fillStyle = 'rgba(120,200,255,0.12)'; c.fillRect(0, _rescue.laneY[i] - 28, W, 56); c.strokeStyle = 'rgba(120,200,255,0.6)'; c.lineWidth = 2; c.strokeRect(2, _rescue.laneY[i] - 28, W - 4, 56); }
     if (_rescue.laneDaughter[i]) _pDrawFit(c, ['daughter' + ((i % 7) + 1), 'daughter1'], 36, _rescue.laneY[i] + 24, 30, 48);
-    else { c.globalAlpha = 0.22; _pDrawFit(c, ['daughter' + ((i % 7) + 1), 'daughter1'], 36, _rescue.laneY[i] + 24, 26, 42); c.globalAlpha = 1; }
+    else { c.globalAlpha = 0.18; _pDrawFit(c, ['daughter' + ((i % 7) + 1), 'daughter1'], 36, _rescue.laneY[i] + 24, 24, 40); c.globalAlpha = 1; }
   }
-  // protected-zone line
   c.strokeStyle = 'rgba(120,200,120,0.4)'; c.setLineDash([6, 6]); c.lineWidth = 2; c.beginPath(); c.moveTo(_rescue.GRABX, 8); c.lineTo(_rescue.GRABX, H - 8); c.stroke(); c.setLineDash([]);
-
+  // lane fires
+  for (const fr of _rescue.fires) { const ly = _rescue.laneY[fr.lane]; for (let x = _rescue.GRABX; x < W; x += 34) { const fl = 10 + 8 * Math.sin((now / 90) + x); c.fillStyle = 'rgba(255,' + (120 + ((x % 60))) + ',40,0.5)'; c.beginPath(); c.moveTo(x, ly + 24); c.quadraticCurveTo(x + 8, ly + 24 - fl, x + 16, ly + 24); c.fill(); } }
   // foes
   for (const f of _rescue.foes) {
     const yb = _rescue.laneY[f.lane] + 28;
-    if (f.type === 'big') { c.fillStyle = 'rgba(180,30,20,' + (0.18 + 0.1 * Math.sin(now / 160)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 40, 36 * f.scale, 50 * f.scale, 0, 0, Math.PI * 2); c.fill(); }
+    if (f.dying) { const k = 1 - f.dying / (f.type === 'boss' ? 0.4 : 0.5); c.save(); c.globalAlpha = Math.max(0, 1 - k); c.translate(f.x, yb); c.rotate(k * 1.25); c.translate(-f.x, -yb + k * 26); _pDrawFit(c, ['shepherdFall', 'shepherdLeft'], f.x, yb, 60 * f.scale, 78 * f.scale); c.restore(); continue; }
+    if (f.type === 'big' || f.type === 'boss') { c.fillStyle = 'rgba(180,30,20,' + (0.18 + 0.1 * Math.sin(now / 160)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 42 * f.scale, 38 * f.scale, 52 * f.scale, 0, 0, Math.PI * 2); c.fill(); }
     if (f.hitT > 0) { c.save(); c.globalAlpha = 0.55 + 0.45 * Math.sin(now / 28); }
-    const fk = f.type === 'big' ? ['shepHelpB', 'shepherd4', 'shepherdLeft'] : (f.type === 'fast' ? ['shepherdLeftAlt', 'shepherdLeft'] : ['shepherdLeft', 'shepPull']);
+    const fk = f.type === 'boss' ? ['shepherdBoss', 'shepHelpB', 'shepherd4'] : (f.type === 'big' ? ['shepHelpB', 'shepherd4', 'shepherdLeft'] : (f.type === 'fast' ? ['shepherdLeftAlt', 'shepherdLeft'] : ['shepherdLeft', 'shepPull']));
     if (!_pDrawFit(c, fk, f.x, yb, 58 * f.scale, 76 * f.scale)) { c.fillStyle = '#c08040'; c.fillRect(f.x - 16, yb - 50, 32, 50); }
     if (f.hitT > 0) c.restore();
-    if (f.maxhp > 1) { for (let h = 0; h < f.maxhp; h++) { c.fillStyle = h < f.hp ? '#ff6a4a' : 'rgba(0,0,0,0.3)'; c.fillRect(f.x - 16 + h * 9, yb - 88 * f.scale - 8, 7, 5); } }
+    if (f.snared > 0) { c.strokeStyle = 'rgba(200,220,255,0.7)'; c.lineWidth = 1; for (let gx = -14; gx <= 14; gx += 7) { c.beginPath(); c.moveTo(f.x + gx, yb - 60 * f.scale); c.lineTo(f.x + gx, yb); c.stroke(); } }
+    // strength meter
+    const bw = 42 * f.scale, bx = f.x - bw / 2, by = yb - 76 * f.scale - 12, r = Math.max(0, f.hp / f.maxhp);
+    c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(bx - 1, by - 1, bw + 2, 6);
+    c.fillStyle = r > 0.5 ? '#6ad06a' : (r > 0.25 ? '#e0c050' : '#e05050'); c.fillRect(bx, by, bw * r, 4);
+    if (f.type === 'boss') { c.fillStyle = '#ffce4a'; c.font = 'bold 10px Georgia'; c.textAlign = 'center'; c.fillText('MIGHTY SHEPHERD', f.x, by - 5); }
   }
   // ram
-  if (_rescue.ram) {
-    if (_rescue.ram.kind === 'boulder') { if (!_pDraw(c, ['rollingBoulder', 'rock'], _rescue.ram.x - 26, _rescue.laneY[_rescue.ram.lane] - 26, 52, 52)) { c.fillStyle = '#8a7a5a'; c.beginPath(); c.arc(_rescue.ram.x, _rescue.laneY[_rescue.ram.lane], 24, 0, Math.PI * 2); c.fill(); } }
-    else _pDrawFit(c, ['sheepRight', 'sheep'], _rescue.ram.x, _rescue.laneY[_rescue.ram.lane] + 24, 56, 46, true);
-  }
+  if (_rescue.ram) { if (_rescue.ram.kind === 'boulder') { if (!_pDraw(c, ['rollingBoulder', 'rock'], _rescue.ram.x - 26, _rescue.laneY[_rescue.ram.lane] - 26, 52, 52)) { c.fillStyle = '#8a7a5a'; c.beginPath(); c.arc(_rescue.ram.x, _rescue.laneY[_rescue.ram.lane], 24, 0, Math.PI * 2); c.fill(); } } else _pDrawFit(c, ['sheepRight', 'sheep'], _rescue.ram.x, _rescue.laneY[_rescue.ram.lane] + 24, 56, 46, true); }
+  // kidnaps (daughter carried off)
+  for (const kd of _rescue.kidnaps) { c.save(); c.globalAlpha = Math.max(0, 1 - kd.t / 1.6); _pDrawFit(c, ['daughterKidnap', 'daughter' + ((kd.idx % 7) + 1), 'daughter1'], kd.x, _rescue.laneY[kd.lane] + 22, 26, 42); c.restore(); }
   // Moses
-  const throwing = _rescue.throwAnim > 0;
-  _pDrawFit(c, throwing ? ['mosesShove', 'mosesRight', 'moses'] : ['mosesRight', 'mosesPull', 'moses'], _rescue.mosesX, _rescue.mosesY + 46, 74, 100);
-
+  if (_rescue.started) { const throwing = _rescue.throwAnim > 0; _pDrawFit(c, throwing ? ['mosesShove', 'mosesRight', 'moses'] : ['mosesRight', 'mosesPull', 'moses'], _rescue.mosesX, _rescue.mosesY + 46, 74, 100); }
   // shots
-  for (const s of _rescue.shots) {
-    if (s.kind === 'sling') { c.fillStyle = '#9a7a4a'; c.beginPath(); c.arc(s.x, s.y, 6, 0, Math.PI * 2); c.fill(); }
-    else if (!_pDrawFit(c, ['waterPot', 'waterJar'], s.x, s.y + 12, 24, 26)) { c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(s.x, s.y, 8, 0, Math.PI * 2); c.fill(); }
-  }
+  for (const s of _rescue.shots) { if (s.kind === 'sling' || s.kind === 'volley') { c.fillStyle = '#9a7a4a'; c.beginPath(); c.arc(s.x, s.y, 6, 0, Math.PI * 2); c.fill(); } else if (s.kind === 'net') { if (!_pDraw(c, ['net'], s.x - 14, s.y - 4, 28, 24)) { c.strokeStyle = '#e8e8d0'; c.strokeRect(s.x - 10, s.y - 4, 20, 16); } } else if (!_pDrawFit(c, ['waterPot', 'waterJar'], s.x, s.y + 12, 24, 26)) { c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(s.x, s.y, 8, 0, Math.PI * 2); c.fill(); } }
   // fx
-  for (let i = _rescue.fx.length - 1; i >= 0; i--) { const x = _rescue.fx[i]; x.t++; if (x.t > x.life) { _rescue.fx.splice(i, 1); continue; } const k = x.t / x.life, a = Math.max(0, 1 - k), s = x.size * (0.7 + 0.5 * k); c.globalAlpha = a; if (!_pDraw(c, x.key, x.x - s / 2, x.y - s / 2, s, s)) { c.fillStyle = 'rgba(150,200,255,0.6)'; c.beginPath(); c.arc(x.x, x.y, s / 2, 0, Math.PI * 2); c.fill(); } c.globalAlpha = 1; }
+  for (let i = _rescue.fx.length - 1; i >= 0; i--) { const x = _rescue.fx[i]; x.t++; if (x.t > x.life) { _rescue.fx.splice(i, 1); continue; } const k = x.t / x.life, a = Math.max(0, 1 - k), s = x.size * (0.7 + 0.5 * k); c.globalAlpha = a; if (!_pDraw(c, x.key, x.x - s / 2, x.y - s / 2, s, s)) { c.fillStyle = 'rgba(255,220,120,0.6)'; c.beginPath(); c.arc(x.x, x.y, s / 2, 0, Math.PI * 2); c.fill(); } c.globalAlpha = 1; }
   // cues
-  for (let i = _rescue.cues.length - 1; i >= 0; i--) {
-    const q = _rescue.cues[i]; q.t++; if (q.t > q.life) { _rescue.cues.splice(i, 1); continue; }
-    const a = Math.max(0, 1 - q.t / q.life), cyy = q.y - q.t * (q.big ? 0.4 : 0.55);
-    c.globalAlpha = a; c.font = q.big ? 'bold 21px Georgia' : 'bold 17px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    let cxx = q.x; if (q.big) { const half = c.measureText(q.text).width / 2 + 12; cxx = Math.max(half + 2, Math.min(W - half - 2, q.x)); c.fillStyle = 'rgba(10,24,40,0.78)'; c.beginPath(); if (c.roundRect) c.roundRect(cxx - half, cyy - 15, half * 2, 30, 8); else c.rect(cxx - half, cyy - 15, half * 2, 30); c.fill(); }
-    c.fillStyle = q.color; c.fillText(q.text, cxx, cyy); c.globalAlpha = 1;
-  }
+  for (let i = _rescue.cues.length - 1; i >= 0; i--) { const q = _rescue.cues[i]; q.t++; if (q.t > q.life) { _rescue.cues.splice(i, 1); continue; } const a = Math.max(0, 1 - q.t / q.life), cyy = q.y - q.t * (q.big ? 0.4 : 0.55); c.globalAlpha = a; c.font = q.big ? 'bold 21px Georgia' : 'bold 16px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; let cxx = q.x; if (q.big) { const half = c.measureText(q.text).width / 2 + 12; cxx = Math.max(half + 2, Math.min(W - half - 2, q.x)); c.fillStyle = 'rgba(10,24,40,0.78)'; c.beginPath(); if (c.roundRect) c.roundRect(cxx - half, cyy - 15, half * 2, 30, 8); else c.rect(cxx - half, cyy - 15, half * 2, 30); c.fill(); } c.fillStyle = q.color; c.fillText(q.text, cxx, cyy); c.globalAlpha = 1; }
   if (_rescue.over && _rescue.win) { c.fillStyle = 'rgba(255,230,120,' + (0.12 + 0.07 * Math.sin(now / 120)).toFixed(2) + ')'; c.fillRect(0, 0, W, H); }
   c.restore();
 }
@@ -8459,9 +8552,7 @@ function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: t
         const gp = document.getElementById('gamePage'); if (gp) gp.classList.add('active');
         try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}
         try { game.state = 'playing'; } catch(e){}
-        if (!window._rescueTestWatch) {
-          window._rescueTestWatch = setInterval(() => { try { if (!window._rescueTestMode) return; const m = document.getElementById('rescueModal'); if (m && !m.classList.contains('active') && !_rescue.gate) { game.state = 'playing'; openRescueGame(_makeRescueGate()); } } catch(e){} }, 1200);
-        }
+        if (!window._rescueTestWatch) { window._rescueTestWatch = setInterval(() => { try { if (!window._rescueTestMode) return; const m = document.getElementById('rescueModal'); if (m && !m.classList.contains('active') && !_rescue.gate) { game.state = 'playing'; openRescueGame(_makeRescueGate()); } } catch(e){} }, 1200); }
       } catch(e){ try { console.error('rescuetest boot failed', e); } catch(_){} }
     };
     const waitReady = (tries) => { if ((typeof imagesReady !== 'undefined' && imagesReady >= imagesTotal) || tries <= 0) boot(); else setTimeout(() => waitReady(tries - 1), 300); };
@@ -8470,11 +8561,8 @@ function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: t
 })();
 (function() {
   const tap = (el, fn) => { if (!el) return; el.addEventListener('click', fn); el.addEventListener('touchend', (e) => { e.preventDefault(); fn(); }); };
-  tap(document.getElementById('rescueWpnPot'), () => _rescueSelectWeapon('pot'));
-  tap(document.getElementById('rescueWpnSling'), () => _rescueSelectWeapon('sling'));
-  tap(document.getElementById('rescueWpnStaff'), () => _rescueSelectWeapon('staff'));
-  tap(document.getElementById('rescueSheepBtn'), _rescueSheep);
-  tap(document.getElementById('rescueBoulderBtn'), _rescueBoulder);
+  tap(document.getElementById('rescueStartBtn'), _rescueBegin);
+  tap(document.getElementById('rescueAutoPickBtn'), _rescueAutoPick);
   tap(document.getElementById('rescueResumeBtn'), _rescueResume);
   tap(document.getElementById('rescueQuitBtn'), _rescueQuit);
   tap(document.getElementById('rescueRetryBtn'), _rescueRetry);
