@@ -5689,9 +5689,10 @@ function _updateHeartbeat(){
     // intensity: 1.0 at adjacent, 0.4 at 3 tiles away, 1.0 if alerted
     _heartbeat.intensity = anyAlerted ? 1.0 : Math.max(0.35, 1.0 - (minDist - 1) * 0.30);
     if (!_heartbeat.active) _startHeartbeat();
-    // Modulate volume each frame so the cue gets louder as guard closes in
+    // Modulate volume + TEMPO each frame so the cue gets louder AND faster as
+    // the guard closes in (PM66 thrill upgrade — heart races near capture).
     const a = audio.heartbeat;
-    if (a) try { a.volume = Math.min(0.85, 0.30 + _heartbeat.intensity * 0.55); } catch(e){}
+    if (a) try { a.volume = Math.min(0.85, 0.30 + _heartbeat.intensity * 0.55); a.playbackRate = 1 + _heartbeat.intensity * 0.7; } catch(e){}
   } else {
     if (_heartbeat.active) _stopHeartbeat();
   }
@@ -5710,9 +5711,37 @@ function _startHeartbeat(){
 }
 function _stopHeartbeat(){
   const a = audio.heartbeat;
-  if (a) try { a.pause(); a.currentTime = 0; } catch(e){}
+  if (a) try { a.pause(); a.currentTime = 0; a.playbackRate = 1; } catch(e){}
   _heartbeat.active = false;
   _heartbeat.intensity = 0;
+}
+// PM66 (Jane: "make the game more thrilling") — NEAR-MISS payoff. When the
+// heartbeat threat spikes near-capture (>=0.8) and then drops back to safe
+// with Moses still free, reward a "Close Call!" — bonus stars, glitter, a
+// relief cue + a quick blue flash. Cooldown so it can't spam.
+const _nearMiss = { armed: false, lastAt: 0 };
+function _updateNearMiss(){
+  if (typeof game === 'undefined' || game.state !== 'playing') { _nearMiss.armed = false; return; }
+  const i = _heartbeat.active ? _heartbeat.intensity : 0;
+  if (i >= 0.8) _nearMiss.armed = true;
+  else if (_nearMiss.armed && i <= 0.22) {
+    _nearMiss.armed = false;
+    const now = performance.now();
+    if (now - _nearMiss.lastAt > 6000) { _nearMiss.lastAt = now; _triggerCloseCall(); }
+  }
+}
+function _triggerCloseCall(){
+  try { game.stars += 2; if (typeof updateHudStars === 'function') updateHudStars(); } catch(e){}
+  try { play('chime') || play('success'); } catch(e){}
+  try { if (typeof spawnGlitterBurstAtPlayer === 'function') spawnGlitterBurstAtPlayer(16); } catch(e){}
+  try { toast('\u{1F605} Close call! +2 ★'); } catch(e){}
+  try { window._closeCallFlashAt = performance.now(); } catch(e){}
+}
+function drawCloseCallFlash(){
+  const t0 = window._closeCallFlashAt || 0; if (!t0) return;
+  const dt = performance.now() - t0; if (dt > 450) { window._closeCallFlashAt = 0; return; }
+  const a = 0.45 * (1 - dt / 450);
+  ctx.save(); ctx.fillStyle = 'rgba(150,220,255,' + a.toFixed(2) + ')'; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H); ctx.restore();
 }
 // Wave 3a (2026-05-07): per-zone in-game music. Decides which loop should
 // be playing based on player.tx + player.ty. Smooth swap: if the kid is
@@ -15813,7 +15842,7 @@ const UNLOCK_TIERS = [
   { threshold: 350, resource: 'treasures', key: 'truthSeeker',
     label: '📖 Truth Seeker',    cooldownMs: 60000,
     desc: 'On the next Bible Gate: clue is free + 2 wrong options greyed out.' },
-  { threshold:  10, resource: 'scrolls',   key: 'scribesWisdom',
+  { threshold:   5, resource: 'scrolls',   key: 'scribesWisdom',
     label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000,
     desc: 'Skip the next Bible Gate (counts as solved). Recharges every 90 s.' },
   // 2026-05-14 PM22 (Jane: "instead of 'pharaoh's mercy', say something
@@ -16425,7 +16454,7 @@ function _renderJourneyPanel(){
     { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
     { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
-    { th:10,  res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
+    { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
   const resVal = { treasures: t, crowns: c, scrolls: s };
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
@@ -18434,6 +18463,7 @@ function _renderInner(){
   // threat cue. Layered ABOVE the world but BELOW the HUD — so canvas
   // contents read with a subtle red rim warning when a guard is closing in.
   try { drawHeartbeatVignette(); } catch(e){}
+  try { drawCloseCallFlash(); } catch(e){}   // PM66 near-miss relief flash
   // ambient: warm light rays + dust motes
   drawAmbient();
   // Phase 1: torchlight dim overlay — soft cool wash + slight darken so kids
@@ -22300,6 +22330,7 @@ function loop(now){
     // Wave 3a (2026-05-07): heartbeat threat cue + per-zone music swap.
     // Both are cheap per-frame checks gated by game state.
     try { _updateHeartbeat(); } catch(e){}
+    try { _updateNearMiss(); } catch(e){}   // PM66 near-miss "Close Call" payoff
     try { _maybeSwapZoneMusicThrottled(); } catch(e){}
     // 2026-05-17 PM36: enforce single-track invariant on bgm loops
     // every 800 ms so direct .play() calls can't leave two tracks

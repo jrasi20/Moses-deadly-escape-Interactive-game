@@ -7806,6 +7806,53 @@ function _closePulleyGame() {
   try { if (typeof showVerseDrift === 'function') setTimeout(showVerseDrift, 600); } catch(e){}
   try { _saveCheckpoint(); } catch(e){}
 }
+// 2026-05-21 PM65 (Jane: "give me a link to play the [well] game alone since
+// other parts of scene 3 are still underdeveloped"). Standalone harness:
+//   scene3_midian.html?welltest=1   (optional &diff=easy|medium|hard)
+// boots STRAIGHT into "Race to Water the Flock" and auto-relaunches it after
+// each round so it can be played on its own. Fully gated behind the URL flag —
+// it does nothing on a normal load.
+function _makeWellTestGate(){ return { tx: 0, ty: 0, solved: false, _welltest: true }; }
+(function _wellTestHarness(){
+  try {
+    const wq = new URLSearchParams(location.search);
+    if (wq.get('welltest') !== '1' && wq.get('minigame') !== 'well') return;
+    const wd = wq.get('diff');
+    const boot = () => {
+      try {
+        if (wd === 'easy' || wd === 'medium' || wd === 'hard') { try { game.difficulty = wd; } catch(e){} }
+        window._wellTestMode = true;
+        const ag = document.getElementById('accessGate');   if (ag) ag.classList.add('hidden');
+        const cp = document.getElementById('coverPage');    if (cp) cp.style.display = 'none';
+        const gp = document.getElementById('gamePage');     if (gp) gp.classList.add('active');
+        try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}
+        try { game.state = 'playing'; } catch(e){}
+        // Relaunch loop: whenever the mini-game is idle (no active round),
+        // open a fresh one. Handles the very first launch AND replay-after-win.
+        if (!window._wellTestWatch) {
+          window._wellTestWatch = setInterval(() => {
+            try {
+              if (!window._wellTestMode) return;
+              const m = document.getElementById('wellPulleyModal');
+              if (m && !m.classList.contains('active') && !_pulley.gate) {
+                game.state = 'playing';
+                openWellPulleyGame(_makeWellTestGate());
+              }
+            } catch(e){}
+          }, 1200);
+        }
+      } catch(e){ try { console.error('welltest boot failed', e); } catch(_){} }
+    };
+    // Wait for sprites so the first frame draws fully (cap the wait).
+    const waitReady = (tries) => {
+      if ((typeof imagesReady !== 'undefined' && imagesReady >= imagesTotal) || tries <= 0) boot();
+      else setTimeout(() => waitReady(tries - 1), 300);
+    };
+    if (document.readyState === 'complete') waitReady(50);
+    else window.addEventListener('load', () => waitReady(50));
+  } catch(e){}
+})();
+
 // ---- pause / resume / quit (works inside the mini-game modal) ----
 function _pulleyPause() {
   if (_pulley.over || _pulley.paused || !_pulley.gate) return;
@@ -8322,51 +8369,6 @@ function _pulleyFrame(now) {
     }
   }
 })();
-
-// 2026-05-21 PM65 (Jane: "give me a link to play the [well] game alone since
-// other parts of scene 3 are still underdeveloped"). Standalone harness:
-//   scene3_midian.html?welltest=1   (optional &diff=easy|medium|hard)
-// boots STRAIGHT into "Race to Water the Flock" and auto-relaunches it after
-// each round so it can be played on its own. Fully gated behind the URL flag —
-// it does nothing on a normal load.
-function _makeWellTestGate(){ return { tx: 0, ty: 0, solved: false, _welltest: true }; }
-(function _wellTestHarness(){
-  try {
-    const wq = new URLSearchParams(location.search);
-    if (wq.get('welltest') !== '1' && wq.get('minigame') !== 'well') return;
-    const wd = wq.get('diff');
-    const boot = () => {
-      try {
-        if (wd === 'easy' || wd === 'medium' || wd === 'hard') { try { game.difficulty = wd; } catch(e){} }
-        window._wellTestMode = true;
-        const ag = document.getElementById('accessGate');   if (ag) ag.classList.add('hidden');
-        const cp = document.getElementById('coverPage');    if (cp) cp.style.display = 'none';
-        const gp = document.getElementById('gamePage');     if (gp) gp.classList.add('active');
-        try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}
-        try { game.state = 'playing'; } catch(e){}
-        if (!window._wellTestWatch) {
-          window._wellTestWatch = setInterval(() => {
-            try {
-              if (!window._wellTestMode) return;
-              const m = document.getElementById('wellPulleyModal');
-              if (m && !m.classList.contains('active') && !_pulley.gate) {
-                game.state = 'playing';
-                openWellPulleyGame(_makeWellTestGate());
-              }
-            } catch(e){}
-          }, 1200);
-        }
-      } catch(e){ try { console.error('welltest boot failed', e); } catch(_){} }
-    };
-    const waitReady = (tries) => {
-      if ((typeof imagesReady !== 'undefined' && imagesReady >= imagesTotal) || tries <= 0) boot();
-      else setTimeout(() => waitReady(tries - 1), 300);
-    };
-    if (document.readyState === 'complete') waitReady(50);
-    else window.addEventListener('load', () => waitReady(50));
-  } catch(e){}
-})();
-
 
 /* ===== RESCUE THE DAUGHTERS (lane-defense) ===== */
 /* ============================================================================
@@ -10193,7 +10195,7 @@ const UNLOCK_TIERS = [
   { threshold: 175, resource: 'treasures', key: 'guardFreeze',   label: '❄️ Foe Freeze',      cooldownMs: 35000, desc: 'Shepherds AND wolves freeze in place for 5 seconds. Recharges every 35 s.' },
   { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '🦅 Eagle Eye',       cooldownMs: 30000, desc: 'Marks every river stone safe (✓) or sinking (✗) so you cross without stumbling. Lasts 8 seconds.' },
   { threshold: 350, resource: 'treasures', key: 'truthSeeker',   label: '📖 Truth Seeker',    cooldownMs: 60000, desc: 'On the next checkpoint: clue is free + 2 wrong options greyed out.' },
-  { threshold:  10, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000, desc: 'Skip the next checkpoint (counts as solved). Recharges every 90 s.' },
+  { threshold:   5, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000, desc: 'Skip the next checkpoint (counts as solved). Recharges every 90 s.' },
 ];
 function _loadLifetimeTreasures(){ try { return parseInt(localStorage.getItem(_LIFETIME_TREASURES_KEY) || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadLifetimeCrowns(){    try { return parseInt(localStorage.getItem(_LIFETIME_CROWNS_KEY)    || '0', 10) || 0; } catch(e){ return 0; } }
@@ -10461,7 +10463,7 @@ function _renderJourneyPanel(){
     { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
     { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
-    { th:10,  res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
+    { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
   const resVal = { treasures: t, crowns: c, scrolls: s };
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'

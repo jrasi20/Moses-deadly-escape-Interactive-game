@@ -551,6 +551,33 @@
   }
   .jigsaw-verse.show { opacity: 1; transform: translateY(0); }
   .jigsaw-verse small { display:block; color:#ffd976; font-style:normal; font-size:0.82em; margin-top:3px; letter-spacing:0.5px; }
+  /* 2026-05-21 PM64 (Jane: "show confetti blast there for a cheer ... the
+     'thy word is a lamp unto my feet' part is very quick and hardly
+     noticeable"). The verse now lands with a golden pop so it reads as a
+     celebration, and a confetti layer rains over the solved board. */
+  .jigsaw-verse.celebrate {
+    animation: jigsawVersePop 0.8s cubic-bezier(.2,1.4,.4,1) both;
+    color:#fff7d6; font-size: clamp(13px, 3.4vw, 16.5px);
+    text-shadow: 0 0 12px rgba(255,215,0,0.55);
+  }
+  @keyframes jigsawVersePop {
+    0%   { opacity:0; transform: translateY(8px) scale(0.7); }
+    55%  { opacity:1; transform: translateY(0) scale(1.12); }
+    100% { opacity:1; transform: translateY(0) scale(1); }
+  }
+  .jigsaw-confetti {
+    position:absolute; inset:0; overflow:hidden; pointer-events:none;
+    z-index: 40; border-radius: inherit;
+  }
+  .confetti-bit {
+    position:absolute; top:-14px; width:9px; height:14px; border-radius:2px;
+    opacity:0.95; will-change: transform, opacity;
+    animation: confettiFall var(--cdur,2.4s) ease-in var(--cdelay,0s) forwards;
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(-10px) translateX(0) rotate(0deg); opacity:1; }
+    100% { transform: translateY(var(--cfall,420px)) translateX(var(--cdrift,0px)) rotate(var(--crot,540deg)); opacity:0; }
+  }
   /* 2026-05-21 PM63i (Jane: "the colors on the midian square are blending
      against the background. make these squares larger"). Slots widened
      18%→23% and the dashed outline darkened + thickened with a soft
@@ -1746,6 +1773,11 @@
   }
   .ch-spot-tile:hover { background:#fff1c2; transform:translateY(-2px); }
   .ch-spot-tile:active { transform:scale(0.97); }
+  /* 2026-05-21 Jane: tapped spot tiles showed no selected state (only
+     .ch-option had .correct/.wrong styling). Green = right, red = wrong,
+     with a bright ring so the kid clearly sees which tile they picked. */
+  .ch-spot-tile.correct { background:#2e8b3e; border-color:#FFD700; color:#fff6cc; box-shadow:0 0 0 3px rgba(255,215,0,0.55); }
+  .ch-spot-tile.wrong   { background:#b71c1c; border-color:#ff8a80; color:#fff; box-shadow:0 0 0 3px rgba(255,138,128,0.5); }
   /* -- PAIR: flex-wrap grid of emoji tiles -- */
   .ch-pair-grid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:8px auto; max-width:360px; }
   .ch-pair-tile {
@@ -1759,6 +1791,8 @@
   .ch-pair-tile img { max-width:100%; max-height:100%; object-fit:contain; }
   .ch-pair-tile:hover { transform:translateY(-3px); background:#fff1c2; }
   .ch-pair-tile:active { transform:scale(0.96); }
+  .ch-pair-tile.correct { background:#2e8b3e; border-color:#FFD700; color:#fff6cc; box-shadow:0 0 0 3px rgba(255,215,0,0.55); }
+  .ch-pair-tile.wrong   { background:#b71c1c; border-color:#ff8a80; color:#fff; box-shadow:0 0 0 3px rgba(255,138,128,0.5); }
   /* -- COUNT: scene grid above, number buttons below -- */
   .ch-count-scene {
     display:flex; flex-wrap:wrap; gap:4px; justify-content:center;
@@ -3285,8 +3319,15 @@
       <!-- START / EXIT pins on the parchment. PM63i: nudged inward
            (8%→12%, 90%→86%) so the wider label pills never clip the
            board edge, and wrapped text in a .pin-label pill. -->
-      <div class="jigsaw-pin start" style="left:12%;top:50%;"><span class="pin-dot"></span><span class="pin-label">START</span></div>
-      <div class="jigsaw-pin exit"  style="left:86%;top:50%;"><span class="pin-dot"></span><span class="pin-label">MIDIAN</span></div>
+      <!-- 2026-05-21 PM63n (Jane: "the start and midian labels should be
+           above the squares ... so kids can see the pattern present").
+           Moved the START/MIDIAN markers ABOVE slot 1 (centre 17.5%) and
+           slot 3 (centre 87.5%) — at top:15%, clear of the slots (top:34%)
+           — so each slot's ghost-hint pattern is fully visible. Label
+           sits ABOVE the dot now (flex column-reverse) so the pill never
+           dips back onto the square. -->
+      <div class="jigsaw-pin start label-above" style="left:17.5%;top:15%;"><span class="pin-label">START</span><span class="pin-dot"></span></div>
+      <div class="jigsaw-pin exit label-above"  style="left:87.5%;top:15%;"><span class="pin-label">MIDIAN</span><span class="pin-dot"></span></div>
       <!-- Faint dashed guide showing roughly where the trail will run -->
       <svg class="jigsaw-route" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
         <path d="M16,118 C60,110 130,150 200,146 C270,142 340,110 384,118"
@@ -3408,7 +3449,7 @@
 <div class="scene-banner" id="sceneBanner">
   <div class="scene-banner-box">
     <h1>SCENE 2 COMPLETE</h1>
-    <p>Moses has reached the Midian well!</p>
+    <p>Moses has reached Midian!</p>
     <p style="color:#ffd700;font-weight:700;">A Truth Card has been added to your collection!</p>
   </div>
 </div>
@@ -3518,6 +3559,12 @@
      Alerts route to 'danger alert.mp3'; gameplay hints route to 'friendly
      alert.mp3'. Challenge modal gets a quiet bed via audNarration. -->
 <audio id="audBgm" loop preload="auto" src="assets/audio/desert%20tension.mp3"></audio>
+<!-- 2026-05-21 PM64 (Jane: "while staying on the win modal, play some music").
+     Calm Midian theme loops under the victory modal. -->
+<audio id="audWinMusic" loop preload="auto" src="assets/audio/midian%20calm.mp3"></audio>
+<!-- 2026-05-22 PM66 (Jane: "make the game more thrilling"). Danger-heat
+     heartbeat: fades in + speeds up as a guard/scout closes on Moses. -->
+<audio id="audHeartbeat" loop preload="auto" src="assets/audio/heartbeat.mp3"></audio>
 <audio id="audFootstep" preload="auto" src="assets/audio/guard%20footsteps.mp3"></audio>
 <audio id="audSword" preload="auto" src="assets/audio/sword%20clink.mp3"></audio>
 <audio id="audDog" preload="auto" src="assets/audio/dog%20bark.mp3"></audio>
@@ -3528,10 +3575,16 @@
 <audio id="audUhOh" preload="auto" src="assets/audio/uh%20oh.mp3"></audio>
 <!-- v2.2.2 NEW: danger alert + friendly alert -->
 <audio id="audDangerAlert" preload="auto" src="assets/audio/danger%20alert.mp3"></audio>
+<!-- 2026-05-21 PM63o (Jane: "when fox or vultures come, change the alert music ... i added danger alert 2.mp3"). -->
+<audio id="audDangerAlert2" preload="auto" src="assets/audio/danger%20alert%202.mp3"></audio>
 <audio id="audFriendlyAlert" preload="auto" src="assets/audio/friendly%20alert.mp3"></audio>
 <audio id="audGate" preload="auto" src="assets/audio/gate%20unlock.mp3"></audio>
 <audio id="audWin" preload="auto" src="assets/audio/win%20sound.mp3"></audio>
 <audio id="audClick" preload="auto" src="assets/audio/magic%20button%20click%202.mp3"></audio>
+<!-- 2026-05-21 PM64 (Jane: "the sfx while rotating the puzzle pieces are not
+     heard. use click sound.mp3"). Dedicated element so the jigsaw rotate has
+     its own tactile click without changing the general UI button click. -->
+<audio id="audClickSound" preload="auto" src="assets/audio/click%20sound.mp3"></audio>
 <!-- v3.4: character-input click (letter taps, match/unscramble/sequence) -->
 <audio id="audTap" preload="auto" src="assets/audio/click.mp3"></audio>
 <!-- v3.4: fast tension music that kicks in when guards become 'alerted' -->
@@ -3787,7 +3840,10 @@ const audio = {
   uhoh:      $('audUhOh'),
   gate:      $('audGate'),
   win:       $('audWin'),
+  winMusic:  $('audWinMusic'),      // looping calm theme under the win modal (PM64)
+  heartbeat: $('audHeartbeat'),     // danger-heat threat cue (PM66)
   click:     $('audClick'),
+  clickSound: $('audClickSound'),  // jigsaw piece rotate (PM64)
   tap:       $('audTap'),       // v3.4: character-input clicks
   alerted:   $('audAlerted'),   // v3.4: fast tension when a guard is alerted
   narration:    $('audNarration'),   // v3.6: cinematic / story-panel narration bed
@@ -3798,6 +3854,7 @@ const audio = {
   timeUp:    $('audTimeUp'),    // v3.6: timer expired
   // v2.2.2 Scene 2 audio rework (Jane feedback 2026-04-21)
   dangerAlert:   $('audDangerAlert'),   // replaces uhoh for scout proximity
+  dangerAlert2:  $('audDangerAlert2'),  // PM63o: fox/vulture aerial alert
   friendlyAlert: $('audFriendlyAlert'), // hints + tutorial chirps
   // v2.2.7 FULL SCENE 2 AUDIO WIRING (Jane asset brief 2026-04-22)
   waterSkin:     $('audWaterSkin'),      // picking up/drinking from waterskin
@@ -3857,6 +3914,7 @@ audio.uhoh.volume = 0.7;
 audio.gate.volume = 0.7;
 audio.win.volume = 0.85;
 audio.click.volume = 0.5;
+if (audio.clickSound) audio.clickSound.volume = 0.7;  // jigsaw rotate — clearly audible over puzzle bed
 if (audio.tap)       audio.tap.volume = 0.4;
 if (audio.alerted)   audio.alerted.volume = 0.42;
 if (audio.narration) audio.narration.volume = 0.32;  // v3.6: soft bed under story text
@@ -4542,16 +4600,16 @@ const MAP_STR = [
   // col 39 changed back to wall (1). With random checkpoint placement those
   // positions no longer host gates, so the stepping-stone decoration drew
   // as orphan markers next to the actual checkpoints.
-  "1003000300000000000063000000003030030001", //  7  oasis mid
+  "1003000300000000000060003000003030030001", //  7  oasis mid (boulder moved off oasis's right edge -> col 24)
   "1000303000000003000000030003003003000001", //  8  dunes
   "1000000000020000000005000300000400030001", //  9  scorpion, treasure Zone C, torch Zone D
-  "1003000000030000060060000000030000030001", // 10  paired oases Zone C
+  "1003000000030000060060000000000030003001", // 10  paired oases Zone C (boulder moved off oasis (29,11)'s top -> col 32)
   "1000030000000030000000030000060000003001", // 11  oasis Zone C
   "1800000000090000030000000003000030000001", // 12  START (col 1), quicksand Zone B
   "1000030003000000000003000000000000000001", // 13
   "1003000000000300000002000030003003000001", // 14  viper Zone C
   "1000000000000003060000000500000030000001", // 15  oasis, treasure
-  "1003000300000000003000000030000030030001", // 16
+  "1003000300000000000003000030000300030001", // 16  (boulder moved off oasis (17,15)'s diagonal -> col 21)
   "1030000200000020000000030000003000000001", // 17  scorpions wadi/dunes
   "1000000000003000030000000000000000050001", // 18  treasure Zone D
   "1003003000090000000000000300030000000001", // 19  quicksand Zone B
@@ -4635,6 +4693,110 @@ function isHiddenFromAnyGuard() {
     if (hasLineOfSight(g.tx, g.ty, player.tx, player.ty)) return false;
   }
   return true;
+}
+
+/* ============================================================
+   DANGER HEAT + NEAR-MISS  (PM66 — Jane: "make the game more thrilling")
+   A continuous threat 0..1 from the nearest patrol guard / pursuit scout.
+   Drives a heartbeat cue (louder + FASTER as danger closes) and a red-edge
+   canvas vignette. When the threat spikes near-capture and then drops with
+   Moses still free, a "Close Call!" payoff fires (+stars, glitter, relief).
+   Ported from Scene 1's Wave-3a heartbeat, extended for Scene 2's scouts.
+   ============================================================ */
+const _heartbeat = { active: false, intensity: 0 };
+function _computeThreat(){
+  if (typeof game === 'undefined' || game.state !== 'playing') return 0;
+  const hidden = !!player.crouched || (typeof isMosesInCave === 'function' && isMosesInCave());
+  let t = 0;
+  // Patrol guards — alerted (chasing) is always tense; otherwise LOS within 3 tiles.
+  if (typeof guards !== 'undefined' && guards.length) {
+    for (const g of guards) {
+      const d = Math.max(Math.abs(g.tx - player.tx), Math.abs(g.ty - player.ty));
+      if (g.state === 'alerted') { t = Math.max(t, Math.max(0.5, 1 - (d - 1) * 0.18)); }
+      else if (!hidden && d <= 3 && typeof hasLineOfSight === 'function'
+               && hasLineOfSight(g.tx, g.ty, player.tx, player.ty)) {
+        t = Math.max(t, Math.max(0.30, 1 - (d - 1) * 0.30));
+      }
+    }
+  }
+  // Pursuit scouts — they always advance + catch when adjacent, so proximity = dread.
+  if (typeof pursuitScouts !== 'undefined' && pursuitScouts.length) {
+    for (const s of pursuitScouts) {
+      if (s.caught) continue;
+      if (s.spawnGraceUntil && performance.now() < s.spawnGraceUntil) continue;
+      const d = Math.max(Math.abs(s.tx - player.tx), Math.abs(s.ty - player.ty));
+      if (d <= 4) t = Math.max(t, Math.max(0.30, 1 - (d - 1) * 0.22));
+    }
+  }
+  return Math.max(0, Math.min(1, t));
+}
+function _updateHeartbeat(){
+  if (typeof game === 'undefined' || game.state !== 'playing') {
+    if (_heartbeat.active) _stopHeartbeat();
+    _heartbeat.intensity = 0;
+    return;
+  }
+  const target = _computeThreat();
+  // smooth toward the target so the cue RAMPS (dread builds) rather than jumps
+  _heartbeat.intensity += (target - _heartbeat.intensity) * 0.18;
+  if (_heartbeat.intensity < 0.02) _heartbeat.intensity = 0;
+  const i = _heartbeat.intensity;
+  if (i > 0.12 && !(typeof _anyBlockingModalOpen === 'function' && _anyBlockingModalOpen())) {
+    if (!_heartbeat.active) _startHeartbeat();
+    const a = audio.heartbeat;
+    if (a) { try { a.volume = Math.min(0.85, 0.22 + i * 0.6); a.playbackRate = 1 + i * 0.7; } catch(e){} }
+  } else {
+    if (_heartbeat.active) _stopHeartbeat();
+  }
+}
+function _startHeartbeat(){
+  const a = audio.heartbeat; if (!a) return;
+  try { a.volume = 0.22; a.currentTime = 0; a.play().catch(()=>{}); _heartbeat.active = true; } catch(e){}
+}
+function _stopHeartbeat(){
+  const a = audio.heartbeat; if (a) try { a.pause(); a.currentTime = 0; a.playbackRate = 1; } catch(e){}
+  _heartbeat.active = false;
+}
+function drawHeartbeatVignette(){
+  const i = Math.max(0, Math.min(1, _heartbeat.intensity));
+  if (i <= 0.05) return;
+  const pulseHz = 1.4 + i * 1.6;                 // heart beats harder as danger nears
+  const phase = (Math.sin(performance.now() / 1000 * pulseHz * Math.PI * 2) + 1) / 2;
+  const r = 220 + Math.round(35 * i), g = Math.round(110 - 80 * i), b = Math.round(80 - 60 * i);
+  const peakA = 0.16 + 0.42 * i;
+  const a = peakA * (0.55 + 0.45 * phase);
+  ctx.save();
+  const cx = CANVAS_W / 2, cy = CANVAS_H / 2;
+  const grd = ctx.createRadialGradient(cx, cy, Math.min(CANVAS_W, CANVAS_H) * 0.32, cx, cy, Math.max(CANVAS_W, CANVAS_H) * 0.85);
+  grd.addColorStop(0,    'rgba(' + r + ',' + g + ',' + b + ',0)');
+  grd.addColorStop(0.55, 'rgba(' + r + ',' + g + ',' + b + ',' + (a * 0.35).toFixed(2) + ')');
+  grd.addColorStop(1,    'rgba(' + r + ',' + g + ',' + b + ',' + a.toFixed(2) + ')');
+  ctx.fillStyle = grd; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  ctx.restore();
+}
+const _nearMiss = { armed: false, lastAt: 0 };
+function _updateNearMiss(){
+  if (typeof game === 'undefined' || game.state !== 'playing') { _nearMiss.armed = false; return; }
+  const i = _heartbeat.intensity;
+  if (i >= 0.8) _nearMiss.armed = true;          // a guard/scout nearly had Moses
+  else if (_nearMiss.armed && i <= 0.22) {       // ...and now he's slipped free
+    _nearMiss.armed = false;
+    const now = performance.now();
+    if (now - _nearMiss.lastAt > 6000) { _nearMiss.lastAt = now; _triggerCloseCall(); }
+  }
+}
+function _triggerCloseCall(){
+  try { game.stars += 2; updateHudStars(); } catch(e){}
+  try { play('chime') || play('success'); } catch(e){}
+  try { spawnGlitterBurstAtPlayer(16); } catch(e){}
+  try { toast('\u{1F605} Close call! +2 ★'); } catch(e){}
+  try { window._closeCallFlashAt = performance.now(); } catch(e){}
+}
+function drawCloseCallFlash(){
+  const t0 = window._closeCallFlashAt || 0; if (!t0) return;
+  const dt = performance.now() - t0; if (dt > 450) { window._closeCallFlashAt = 0; return; }
+  const a = 0.45 * (1 - dt / 450);
+  ctx.save(); ctx.fillStyle = 'rgba(150,220,255,' + a.toFixed(2) + ')'; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H); ctx.restore();
 }
 
 /* find start tile */
@@ -4794,7 +4956,11 @@ const interactables = [
     used:false, reward:'stars2' },
   { tx: 26, ty: 20, kind:'servant', icon:'[S]',
     name:'A Kind Shepherd',
-    body:'"Go quickly, child of Abraham. Midian is east - just beyond the far dunes. May the Lord be with you."',
+    // 2026-05-21 PM63o (Jane: "what kind of hints would the kind
+    // messengers share? nobody knows where the exit is"). The shepherd
+    // can't point to the sealed exit — instead he points to the real
+    // mechanic: the three torn caravan-map scraps that reveal the path.
+    body:'"No one knows the way through these endless sands, child of Abraham. But travelers whisper of three torn map scraps — join them, and the hidden path to Midian appears. Seek them, and trust the Lord."',
     used:false, reward:'hint' },
   { tx: 7,  ty: 16, kind:'servant', icon:'[S]',
     name:'A Worried Merchant',
@@ -5129,10 +5295,11 @@ const CHALLENGE_BANK = {
       answer:'Dinosaur',
       verse:'Dinosaurs are not named in the Moses story.' },
     { id:'eSp3', type:'spot',
-      q:'Which is NOT a river creature from the Nile story?',
-      options:['Crocodile','Fish','Frog','Penguin'],
+      q:'Which animal is NOT in the Bible\'s Moses story?',
+      options:['Frog','Sheep','Snake','Penguin'],
       answer:'Penguin',
-      verse:'Penguins live in cold places, not the Nile.' },
+      clue:'Frogs filled Egypt in a plague, Moses kept sheep in Midian, and his staff turned into a snake. One cold-weather bird never appears -- that is the odd one out.',
+      verse:'Penguins live in icy lands, far from Egypt and Midian.' },
     // --- Count ---
     { id:'eC1', type:'count',
       q:'Count the water pots at the well (Moses helped Jethro\'s daughters draw water):',
@@ -6296,7 +6463,7 @@ function playIntroPan(onDone){
     const lbl = document.createElement('div');
     lbl.id = '_introPanLabel';
     lbl.style.cssText = 'position:fixed;top:12%;left:50%;transform:translateX(-50%);z-index:55;background:linear-gradient(180deg,#3a1708,#5a2510);color:#ffd976;border:3px solid #ffd976;padding:10px 22px;border-radius:14px;font-family:Georgia,serif;font-weight:900;font-size:18px;letter-spacing:1px;box-shadow:0 6px 20px rgba(0,0,0,0.55);text-shadow:0 0 8px rgba(255,217,118,0.55);pointer-events:none;opacity:0;transition:opacity 0.35s, background 0.35s;text-align:center;line-height:1.35;';
-    lbl.innerHTML = 'Help Moses reach the well at Midian!';
+    lbl.innerHTML = 'Help Moses cross to Midian!';
     document.body.appendChild(lbl);
     _introPanLabel = lbl;
     setTimeout(() => { try { lbl.style.opacity = '1'; } catch(e){} }, 30);
@@ -6325,7 +6492,12 @@ function playIntroPan(onDone){
           // Rewrote the banner to describe what the kid is actually
           // doing: find checkpoints + caravan map pieces. No mention
           // of the exit until the kid earns it.
-          _introPanLabel.innerHTML = 'Cross the desert, Moses!<br><span style="font-size:13px;font-weight:600;letter-spacing:0.3px;">Clear every checkpoint and find the 3 caravan map pieces.</span>';
+          // 2026-05-21 PM64 (Jane: "turn off overhead messages for events we
+          // have tutorials for"). Dropped the "clear every checkpoint / find
+          // the 3 map pieces" objective subtext — both now have their own
+          // proximity tip-popup tutorials, so the overhead banner stays a
+          // brief atmospheric line only.
+          _introPanLabel.innerHTML = 'Cross the desert, Moses!';
           _introPanLabel.style.background = 'linear-gradient(180deg,#0f3a1a,#1f6b2e)';
           _introPanLabel.style.color = '#ffeaa3';
           _introPanLabel.style.borderColor = '#ffeaa3';
@@ -6380,6 +6552,11 @@ function handleDirInput(dir) {
 }
 function attemptMove(dir) {
   player.dir = dir;
+  // 2026-05-21 PM63o (Jane: "desert treasure tutorial is shown even before
+  // moses moves"). Flag the first real move so proximity tutorials
+  // (treasure) only fire once the kid is actually walking — Moses starts
+  // adjacent to a bag, so without this the tip popped on frame 1.
+  window._mosesMoved = true;
   // v2.3.4: track previous tile so mirage knockback can safely un-step
   player.prevTx = player.tx;
   player.prevTy = player.ty;
@@ -6982,13 +7159,13 @@ function openCinematic() {
   game.cinStep = 0;
   showCinPanel();
   $('openingCinematic').classList.add('active');
-  // 2026-05-20 PM63h (Jane: "2 music tracks are being played during
-  // narration section 5"). The narration BG bed + scene2NarrBg + cover
-  // music + bgm could ALL leak under the Section 5 voice-over depending
-  // on entry path. Hard-stop EVERY loop track first so the only audio
-  // playing is the scene-2-narration.mp3 voice-over (clean kid-storybook
-  // narration with no music competing under it).
-  const _killTracks = ['bgm','alerted','narration','scene2NarrBg','coverMusic','egyptianCover','palmShadow','desertMusic'];
+  // 2026-05-20 PM63h: hard-stop EVERY loop track first so nothing leaks.
+  // 2026-05-21 PM63o (Jane: "i don't hear the background music for this
+  // narration modal"). PM63h killed ALL music; Jane wants ONE soft bed
+  // under the voice-over. So: kill everything EXCEPT scene2NarrBg, then
+  // start scene2NarrBg quietly (0.22) under the cinNarrate voice — one
+  // clean bed, no "two tracks fighting."
+  const _killTracks = ['bgm','alerted','narration','coverMusic','egyptianCover','palmShadow','desertMusic'];
   for (const _k of _killTracks) {
     try {
       const _a = audio && audio[_k];
@@ -6996,7 +7173,16 @@ function openCinematic() {
     } catch(e){}
   }
   try { if (typeof setMusic === 'function') setMusic(null); } catch(e){}
-  // Voice-over (only) — scene-2-narration.mp3 covers the full Section 5
+  // Soft background-music bed (scene 2 narration background.mp3).
+  try {
+    if (audio.scene2NarrBg) {
+      audio.scene2NarrBg.currentTime = 0;
+      audio.scene2NarrBg.volume = 0.22;
+      audio.scene2NarrBg.loop = true;
+      audio.scene2NarrBg.play().catch(()=>{});
+    }
+  } catch(e){}
+  // Voice-over — scene-2-narration.mp3 covers the full Section 5
   // script with built-in pauses. .play() rejects silently on a missing
   // file and the panels still function as plain captions.
   try {
@@ -7067,17 +7253,19 @@ function showCinPanel() {
   const _isLastPanel = (game.cinStep === CIN_PANELS.length - 1);
   const _nextBtn = $('cinNextBtn');
   if (_nextBtn) {
-    // 2026-05-21 PM63i (Jane: "from the game, when i go to main menu and
-    // arrive at the narration panel, continue button is no longer
-    // there"). The PM63h logic HID the Next button on mid-deck panels
-    // (auto-advance only) — so re-entering the narration via Main Menu
-    // left the kid with only Skip until ~20 s of auto-advance reached
-    // the last panel. Now the forward button is ALWAYS visible: it
-    // reads "Next →" mid-deck and "Continue →" on the last panel. The
-    // auto-advance slideshow still runs as the hands-free default; the
-    // button is just an always-available manual path forward.
-    _nextBtn.style.display = '';
-    _nextBtn.textContent = _isLastPanel ? 'Continue →' : 'Next →';
+    // 2026-05-21 PM63o (Jane: "why do we have next on this narration
+    // panel? its a continuous audio and image slideshow. at the last
+    // panel we just need continue"). Mid-deck panels auto-advance with
+    // NO button (hands-free slideshow synced to the voice-over). Only
+    // the LAST panel shows "Continue" — the explicit "I'm ready" gate.
+    // (Re-entry restarts the deck at panel 0 — see openCinematic — so
+    // the kid always sees the full slideshow + reaches Continue.)
+    if (_isLastPanel) {
+      _nextBtn.style.display = '';
+      _nextBtn.textContent = 'Continue →';
+    } else {
+      _nextBtn.style.display = 'none';
+    }
   }
   // Per-panel image swap (Jane's intro scene 2.png / _1.png / _2.png / _3.png).
   try {
@@ -7115,8 +7303,11 @@ function _beginGameplayWhenReady(){
     const overlay = document.getElementById('preloadOverlay');
     if (overlay) overlay.classList.add('active');
     _pendingBeginTap = () => { try { if (overlay) overlay.classList.remove('active'); } catch(e){} _go(); };
-    // 12 s safety ceiling so a stuck asset never strands the kid.
-    setTimeout(() => { if (_pendingBeginTap) { const fn = _pendingBeginTap; _pendingBeginTap = null; fn(); } }, 12000);
+    // Safety ceiling so a stuck asset never strands the kid. 2026-05-21 PM64:
+    // bumped 12s -> 16s so it fires AFTER the 15s sprite watchdog (which
+    // re-fetches a stuck sprite) — that way a forced start never lands on a
+    // spriteless map; the watchdog gets first chance to recover.
+    setTimeout(() => { if (_pendingBeginTap) { const fn = _pendingBeginTap; _pendingBeginTap = null; fn(); } }, 16000);
   } else {
     _go();
   }
@@ -7363,6 +7554,9 @@ function startScene1() {
   // resetting when game is restarted"). Wipe mapFragments + jigsawSolved
   // so a fresh replay starts at 0/3 and the jigsaw modal re-arms.
   try { game.mapFragments = {}; game.jigsawSolved = false; updateHudMapFragments(); } catch(e){}
+  // PM63o: reset the moved-flag so the treasure proximity tutorial waits
+  // for the kid to actually walk before firing.
+  try { window._mosesMoved = false; } catch(e){}
   game.perfectRun = true;
   // 2026-05-19 (Jane): clear the Scene 2 spectacle/fog-lift state on a
   // fresh start so a replay doesn't open mid-sandstorm or with stale
@@ -7652,6 +7846,7 @@ const _firstEventSeen = {
   quicksand: false,
   cave: false,
   caravan: false,
+  mapPiece: false,   // 2026-05-21 PM64: first caravan-map scrap proximity tip
 };
 function _resetFirstEventSeen(){
   for (const k in _firstEventSeen) _firstEventSeen[k] = false;
@@ -7708,18 +7903,18 @@ function showTipPopup(eventKey, opts){
       }
     }
   } catch(e){}
-  // 2026-05-19 PM63f (Jane: "i am still seeing tutorial halos on the
-  // modal instead of surrounding the object/subject"). The PM63e
-  // z-index drop helped but the kid's main confusion was the halo
-  // visible AT ALL during the modal — visually it merged with the
-  // modal icon area. New behaviour: STASH the halo target while the
-  // modal is up, then SHOW IT after dismiss for ~3.5 s so the kid
-  // sees exactly which tile they should walk to.
-  _tipPointAt(null);
+  // 2026-05-21 PM63o (Jane: "we don't see the hand sign and halo of the
+  // tutorial appearing simultaneously with the modal. they are shown
+  // only after the modal is closed"). Reverted the PM63f deferral —
+  // the halo + hand now appear WITH the modal so the kid sees what's
+  // being pointed at while reading. The left/right-anchoring above
+  // flips the modal to the opposite half from the halo so they don't
+  // overlap (and the halo z-index sits below the modal card).
+  window._tipPendingTile = null;
   if (opts.pointAtTile && typeof opts.pointAtTile === 'object') {
-    window._tipPendingTile = { tx: opts.pointAtTile.tx, ty: opts.pointAtTile.ty };
+    _tipPointAtTile(opts.pointAtTile.tx, opts.pointAtTile.ty);
   } else {
-    window._tipPendingTile = null;
+    _tipPointAt(null);
   }
 }
 // Point at a tile on the game canvas with a live-tracking halo + hand.
@@ -7783,17 +7978,11 @@ function _hideTipPopup(){
     game.state = _tipPopupPrevState || 'playing';
     _tipPopupPrevState = null;
   }
-  // 2026-05-19 PM63f: NOW that the modal is dismissed, surface the halo
-  // + hand pointer at the stashed tile for a short visible window
-  // (~3.5 s) so the kid sees exactly where to walk.
+  // 2026-05-21 PM63o: halo now shows WITH the modal (see showTipPopup),
+  // so on dismiss we just tear it down. Keep it visible ~2.5 s after
+  // dismiss so the kid still sees the target as they start moving.
   try {
-    const t = window._tipPendingTile;
-    if (t && typeof t.tx === 'number' && typeof t.ty === 'number') {
-      _tipPointAtTile(t.tx, t.ty);
-      setTimeout(() => { try { _tipPointAt(null); } catch(e){} }, 3500);
-    } else {
-      _tipPointAt(null);
-    }
+    setTimeout(() => { try { _tipPointAt(null); } catch(e){} }, 2500);
     window._tipPendingTile = null;
   } catch(e){ try { _tipPointAt(null); } catch(_){} }
 }
@@ -8055,7 +8244,11 @@ function _openJigsawModal(){
   try {
     if (audio.puzzleBg) {
       audio.puzzleBg.currentTime = 0;
-      audio.puzzleBg.volume = 0.45;
+      // 2026-05-21 PM63n (Jane: "the sfx is too loud for that torn caravan
+      // map ... the sfx while rotating the pieces are all not heard.
+      // reduce the volume on that track"). Dropped 0.45 -> 0.16 so the
+      // rotate / snap / chime-chomp piece SFX sit clearly on top.
+      audio.puzzleBg.volume = 0.16;
       audio.puzzleBg.play().catch(()=>{});
     }
   } catch(e){}
@@ -8101,6 +8294,9 @@ function _wireJigsawPiece(pieceEl){
     try { pieceEl.releasePointerCapture(e.pointerId); } catch(_){}
     if (!moved) {
       // Tap (no drag) → rotate 90°.
+      // 2026-05-21 PM64 (Jane: "the sfx while rotating the puzzle pieces are
+      // not heard. use click sound.mp3"). Tactile click on every turn.
+      try { play('clickSound') || play('click'); } catch(_){}
       const cur = parseInt(pieceEl.dataset.rotation, 10) || 0;
       const next = (cur + 90) % 360;
       pieceEl.dataset.rotation = String(next);
@@ -8206,17 +8402,55 @@ function _playMapReveal(){
   if (title)  title.textContent = 'The path is revealed!';
   if (status) status.textContent = 'God lights the way to Midian ✨';
   try { play('puzzleComplete') || play('victoryChime') || play('success'); } catch(e){}
-  // verse lands once the golden route has finished drawing
-  setTimeout(() => { try { if (verse) verse.classList.add('show'); } catch(_){} }, 1500);
-  // hold on the glowing map, then close and continue to the world pan
+  // 2026-05-21 PM64 (Jane: "show confetti blast there for a cheer ... the
+  // verse is very quick and hardly noticeable. linger that celebration").
+  // verse lands once the golden route has finished drawing — now with a
+  // golden pop, a confetti rain, and the win-sparkle sfx.
+  setTimeout(() => {
+    try { if (verse) { verse.classList.add('show'); verse.classList.add('celebrate'); } } catch(_){}
+    try { play('confetti'); } catch(_){}
+    try { _burstJigsawConfetti(); } catch(_){}
+  }, 1500);
+  // Second confetti pop so the cheer keeps going while kids read the verse.
+  setTimeout(() => { try { _burstJigsawConfetti(); } catch(_){} }, 3000);
+  // hold on the glowing map + verse much longer (was 3600ms — the verse only
+  // got ~2.1s of screen time), then close and continue to the world pan.
   setTimeout(() => {
     try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(_){}
     const modal = document.getElementById('jigsawModal');
     if (modal) modal.classList.remove('active');
     if (board) board.classList.remove('revealed');
-    if (verse) verse.classList.remove('show');
+    if (verse) { verse.classList.remove('show'); verse.classList.remove('celebrate'); }
     _showMosesKeepGoing();
-  }, 3600);
+  }, 6200);
+}
+// 2026-05-21 PM64: DOM confetti rain over the jigsaw modal (canvas glitter
+// can't show over a DOM overlay). Appends to the full-screen #jigsawModal so
+// bits fall across the whole screen without clipping the draggable pieces.
+function _burstJigsawConfetti(){
+  try {
+    const host = document.getElementById('jigsawModal');
+    if (!host) return;
+    const layer = document.createElement('div');
+    layer.className = 'jigsaw-confetti';
+    const colors = ['#FFD700','#ff6b9d','#5ad1ff','#7CFC8A','#ffae42','#c792ff','#fff2c4'];
+    const H = window.innerHeight || 640;
+    for (let i = 0; i < 46; i++){
+      const bit = document.createElement('div');
+      bit.className = 'confetti-bit';
+      bit.style.left = (Math.random()*100) + '%';
+      bit.style.background = colors[i % colors.length];
+      bit.style.setProperty('--cdur',  (1.8 + Math.random()*1.8).toFixed(2) + 's');
+      bit.style.setProperty('--cdelay',(Math.random()*0.5).toFixed(2) + 's');
+      bit.style.setProperty('--cfall', Math.round(H * (0.7 + Math.random()*0.35)) + 'px');
+      bit.style.setProperty('--cdrift',Math.round((Math.random()-0.5)*160) + 'px');
+      bit.style.setProperty('--crot',  Math.round((Math.random()-0.5)*900) + 'deg');
+      if (Math.random() < 0.4) bit.style.borderRadius = '50%';
+      layer.appendChild(bit);
+    }
+    host.appendChild(layer);
+    setTimeout(() => { try { layer.remove(); } catch(_){} }, 4500);
+  } catch(_){}
 }
 function _showMosesKeepGoing(){
   let overlay = document.getElementById('mosesKeepGoing');
@@ -8449,6 +8683,13 @@ function triggerInteractable(obj){
     spawnGlitterBurstAtPlayer(20);
     try { play('chimeChomp') || play('coin'); } catch(e){}
     const have = (game.mapFragments[1]?1:0) + (game.mapFragments[2]?1:0) + (game.mapFragments[3]?1:0);
+    // 2026-05-21 PM64 (Jane: "we don't have any scrolls ... the 3 torn
+    // parchments will be the scroll in desert scene"). The desert has no
+    // scroll collectable, so the scroll-gated power (Scribe's Wisdom) was
+    // unreachable here. Treat each torn caravan-map parchment as one scroll
+    // toward the cross-scene lifetime scroll counter + power unlock.
+    try { _addLifetimeScrolls(1); } catch(e){}
+    try { _refreshUnlockButtons(); } catch(e){}
     try { updateHudMapFragments(); } catch(e){}
     try {
       toast(have === 3
@@ -8492,6 +8733,12 @@ function triggerInteractable(obj){
   } else if (obj.reward === 'stars50') {
     game.stars += 50;
     game.crownFound = true;
+    // 2026-05-21 PM64 (Jane: "i collected a crown in scene 2 but win modal
+    // says 0 crowns"). The hidden crown set game.crownFound (which lights the
+    // badge) but never bumped the cross-scene lifetime crown counter, so the
+    // win-modal tally + the 4-crown Royal Vision unlock both stayed at 0.
+    try { _addLifetimeCrowns(1); } catch(e){}
+    try { _refreshUnlockButtons(); } catch(e){}
     updateHudStars();
     try { play('collectCrown'); } catch(e){}  // v2.2.7 crown-specific fanfare
     try { play('win') || play('success'); } catch(e){}
@@ -8745,6 +8992,17 @@ let currentGate = null;
 //  4) verse-specific clue derived from the reference
 //  5) last-resort generic encouragement
 function getHintForQuestion(q){
+  // v3.x Jane 2026-05-21: hard unscramble words (e.g. TASKMASTERS) were nearly
+  // unsolvable even WITH the story clue. For unscramble/unscr questions, append
+  // a gentle "first letter + how many letters" nudge derived from the answer so
+  // kids can actually crack long words. Runs BEFORE the q.clue early return.
+  if ((q.type === 'unscramble' || q.type === 'unscr') && q.answer) {
+    const ans   = String(q.answer).trim();
+    const first = ans.charAt(0).toUpperCase();
+    const nLet  = ans.replace(/\s+/g, '').length;
+    const lenHint = 'It starts with "' + first + '" and has ' + nLet + ' letters.';
+    return (q.clue ? q.clue + ' ' : '') + lenHint;
+  }
   if (q.clue) return q.clue;
 
   // --- Layer 2: type-specific gameplay coaching ---
@@ -8760,7 +9018,7 @@ function getHintForQuestion(q){
     // family") was wrong for emoji-spot puzzles where the odd-one-out is a
     // CATEGORY mismatch (3 fires + 1 thermometer, etc.). New riddle directs
     // the kid to look for the icon that doesn\u2019t fit the pattern.
-    spot:       'Riddle: four shapes look alike, one is a stranger. Look at every icon and ask, "Does this belong to the same family as the others?" The misfit is the answer.',
+    spot:       'Most of the pictures are the SAME kind of thing -- only one is different. Look at them as groups (animals, food, weather...) and tap the single picture that does not belong with the rest.',
     pair:       'Most of the pictures appear TWO times. One appears only once. Find the lonely one.',
     count:      'Count slowly and only the thing the question asks about. Skip anything else in the picture.',
     tf:         'Read the sentence slowly. Is it exactly true to the Bible story, or is one piece wrong?',
@@ -8940,6 +9198,11 @@ function getHintForQuestion(q){
 // images (text clue stands alone). Add new image triggers here as new
 // scenes drop in their backstory art.
 function getHintImagesForQuestion(q){
+  // 2026-05-21 Jane ("what is this? remove irrelevant ones"): scenario art was
+  // leaking into puzzle questions — e.g. a baby-Moses image appeared under an
+  // odd-one-out question only because the prompt mentioned the "Nile". Backstory
+  // imagery only makes sense for knowledge questions, so restrict it to those.
+  if (!(q.type === 'trivia' || q.type === 'fill' || q.type === 'tf')) return [];
   const text = ((q.q || q.prompt || '') + ' ' + (q.clue || '')).toLowerCase();
   const has = (...words) => words.some(w => new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i').test(text));
   const out = [];
@@ -9721,6 +9984,13 @@ function renderCount(gate, q, container){
    We procedurally generate 4 palace-themed emoji pairs (8 cards, 2x4 grid). */
 function renderMemory(gate, q, container){
   const PAIR_COUNT = 4;
+  // 2026-05-21 PM63o (Jane: "don't use similar things to match. look at 2
+  // different kinds of water pots used in the memory game"). The pool had
+  // BOTH `color water pot.png` (Jar) and `water jar.png` (Flask) — two
+  // pot-shaped items that read as "the same kind of thing," so kids tried
+  // to match an amphora to a jug. Dropped `water jar.png`; every pool
+  // item is now visually distinct so a wrong-but-similar match is
+  // impossible.
   const MEMORY_POOL = [
     {src:'assets/images/color crown.png',           alt:'Crown'},
     {src:'assets/images/color shield.png',          alt:'Shield'},
@@ -9730,7 +10000,6 @@ function renderMemory(gate, q, container){
     {src:'assets/images/color basket.png',          alt:'Basket'},
     {src:'assets/images/color spear.png',           alt:'Spear'},
     {src:'assets/images/bread loaf.png',            alt:'Bread'},
-    {src:'assets/images/water jar.png',             alt:'Flask'},
     {src:'assets/images/color mortar.png',          alt:'Mortar'},
     {src:'assets/images/stone tablet.png',          alt:'Tablet'},
     {src:'assets/images/treasure chest closed.png', alt:'Chest'},
@@ -10193,8 +10462,11 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
     } else {
       showCorrectAnswerFlash('CORRECT!');
     }
-    try { play('correct'); } catch(e){}  // v2.2.7 gentle ding for kids
-    play('success');
+    // 2026-05-21 PM63o (Jane: "correct answers ... don't still match
+    // scene 1"). Scene 1 plays a SINGLE correct-answer ding
+    // (correctAnswer, fallback success); Scene 2 was layering correct +
+    // success. Match Scene 1 — one clean ding.
+    try { play('correctAnswer') || play('success'); } catch(e){}
     gate.bundleCorrect++;
     gate.strikes = 0; // reset strikes on success
     game.stars += 3;
@@ -10429,7 +10701,10 @@ $('chExitBtn').addEventListener('click', () => {
 const _chHintBtn = $('chHintBtn');
 if (_chHintBtn) {
   _chHintBtn.addEventListener('click', () => {
-    play('chime');
+    // 2026-05-21 PM63o (Jane: "the audio sfx for using clue within
+    // challenge modal ... don't still match scene 1"). Scene 1 plays
+    // hint.mp3 (fallback chime) on the clue button — match it.
+    play('hint') || play('chime');
     const box = $('chHintBox');
     if (box) box.style.display = 'block';
     _chHintBtn.disabled = true;
@@ -10497,17 +10772,16 @@ function onTreasure(tx, ty){
   // can earn power-up unlocks by collecting bags in EITHER scene.
   try { _addLifetimeTreasures(1); } catch(e){}
   try { _refreshUnlockButtons(); } catch(e){}
-  // 2026-05-19 PM57: first-treasure tutorial popup.
-  // 2026-05-19 PM58: point at Moses's current tile (where the bag
-  // just was) so the halo + finger reinforce what the kid just did.
-  try {
-    showTipPopup('treasure', {
-      icon: '💎',
-      title: 'A Desert Treasure',
-      body: 'Treasures hidden in the sand give you +2 stars. Look out for more as you cross the dunes!',
-      pointAtTile: { tx: tx, ty: ty },
-    });
-  } catch(e){}
+  // 2026-05-21 PM63n (Jane: "there is no treasure bag around the area when
+  // treasure bag tutorial is shown ... after the treasure bag tutorial,
+  // the hand sign is shown"). The tutorial used to fire HERE — AFTER the
+  // bag was already collected — so the popup + halo pointed at empty sand
+  // (the bag was gone) and the kid heard the pickup sfx with nothing to
+  // see. Moved to a PROXIMITY trigger in loop() that fires when Moses
+  // first walks NEAR an uncollected bag, pointing at the real bag (same
+  // pattern as the checkpoint tutorial). Marked seen here as a safety
+  // net so it never double-fires post-pickup.
+  try { _firstEventSeen.treasure = true; } catch(e){}
 }
 
 /* ============================================================
@@ -10539,7 +10813,7 @@ const UNLOCK_TIERS = [
   { threshold: 350, resource: 'treasures', key: 'truthSeeker',
     label: '📖 Truth Seeker',    cooldownMs: 60000,
     desc: 'On the next Bible Gate: clue is free + 2 wrong options greyed out.' },
-  { threshold:  10, resource: 'scrolls',   key: 'scribesWisdom',
+  { threshold:   5, resource: 'scrolls',   key: 'scribesWisdom',
     label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000,
     desc: 'Skip the next Bible Gate (counts as solved). Recharges every 90 s.' },
 ];
@@ -10954,6 +11228,7 @@ function showWin(){
       try { play('levelUp'); } catch(e){}  // v2.2.7 victory-modal fanfare
       try { play('confetti'); } catch(e){}  // PM60: parity with Scene 1 win sparkle
       $('winModal').classList.add('active');
+      try { _startWinMusic(); } catch(e){}  // PM64: calm theme under the modal
       try { _personalizeWinModal(); } catch(e){}
       // v3.4: no chest animation here -- chest plays mid-scene only so the
       // finish modal is compact and never cut off by small screens.
@@ -10963,8 +11238,27 @@ function showWin(){
     try { play('levelUp'); } catch(e){}  // v2.2.7 victory-modal fanfare
     try { play('confetti'); } catch(e){}
     $('winModal').classList.add('active');
+    try { _startWinMusic(); } catch(e){}  // PM64: calm theme under the modal
     try { _personalizeWinModal(); } catch(e){}
   }
+}
+// 2026-05-21 PM64: win-modal background music. The fanfares (win/levelUp/
+// confetti) are one-shot, so the modal sat in silence after ~2s. Loop a calm
+// Midian theme softly under it; _stopWinMusic() is called whenever the modal
+// is dismissed (Replay / Continue / Menu).
+function _startWinMusic(){
+  try {
+    if (audio.winMusic) {
+      audio.winMusic.currentTime = 0;
+      audio.winMusic.volume = 0.42;
+      audio.winMusic.loop = true;
+      // let the win fanfare ring first, then fade the bed in
+      setTimeout(() => { try { audio.winMusic.play().catch(()=>{}); } catch(e){} }, 900);
+    }
+  } catch(e){}
+}
+function _stopWinMusic(){
+  try { if (audio.winMusic) { audio.winMusic.pause(); audio.winMusic.currentTime = 0; } } catch(e){}
 }
 // 2026-05-19 PM59 (parity with Scene 1 PM51): personalized win-modal
 // block. Reads bek.kidName from localStorage (set by Scene 1's first-
@@ -10997,7 +11291,7 @@ function _personalizeWinModal(){
     verseBody = '"Moses fled from Pharaoh and went to live in Midian."';
     verseRef = '— Exodus 2:15';
   } else {
-    tag = 'You helped Moses escape the desert! God smiles on every brave step you took.';
+    tag = 'You helped Moses escape the desert!';
     verseBody = '"By faith he left Egypt, not fearing the king\'s anger; he persevered because he saw him who is invisible."';
     verseRef = '— Hebrews 11:27';
   }
@@ -11031,7 +11325,7 @@ function _renderJourneyPanel(){
     { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
     { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
-    { th:10,  res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
+    { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
   const resVal = { treasures: t, crowns: c, scrolls: s };
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
@@ -11109,6 +11403,7 @@ function openTransCinematic2() {
 })();
 $('winNextBtn').addEventListener('click', () => {
   play('click');
+  try { _stopWinMusic(); } catch(e){}
   $('winModal').classList.remove('active');
   openTransCinematic2();
 });
@@ -11136,11 +11431,13 @@ if (_midChestBtn) _midChestBtn.addEventListener('click', () => {
 });
 $('winReplayBtn').addEventListener('click', () => {
   play('click');
+  try { _stopWinMusic(); } catch(e){}
   restartScene();
 });
 const _winMenuBtn = $('winMenuBtn');
 if (_winMenuBtn) _winMenuBtn.addEventListener('click', () => {
   play('click');
+  try { _stopWinMusic(); } catch(e){}
   // Return to the cover page without a full reload (keeps access unlock intact)
   $('winModal').classList.remove('active');
   $('gamePage').classList.remove('active');
@@ -11371,20 +11668,38 @@ function _drawMapPeek(){
       const exg = Math.max(erg + epad, Math.min(PW - erg - epad, ex.tx*cx + cx/2));
       const eyg = Math.max(erg + epad, Math.min(PH - erg - epad, ex.ty*cy + cy/2));
       const ePulse = 0.55 + Math.sin(performance.now()/260)*0.35;
-      _peekCtx.fillStyle = 'rgba(80,255,120,' + (0.55 * ePulse).toFixed(2) + ')';
-      _peekCtx.beginPath(); _peekCtx.arc(exg, eyg, erg + 7, 0, Math.PI*2); _peekCtx.fill();
-      _peekCtx.fillStyle = '#28d04a';
-      _peekCtx.strokeStyle = '#0e5a20';
-      _peekCtx.lineWidth = 2.5;
-      _peekCtx.beginPath(); _peekCtx.arc(exg, eyg, erg, 0, Math.PI*2); _peekCtx.fill(); _peekCtx.stroke();
-      _peekCtx.font = 'bold ' + Math.max(10, Math.floor(erg*0.85)) + 'px Georgia, serif';
-      _peekCtx.textAlign = 'center';
-      _peekCtx.textBaseline = 'middle';
-      _peekCtx.fillStyle = '#fff';
-      _peekCtx.strokeStyle = '#0e5a20';
-      _peekCtx.lineWidth = 3;
-      _peekCtx.strokeText('EXIT', exg, eyg + 1);
-      _peekCtx.fillText('EXIT', exg, eyg + 1);
+      // 2026-05-21 PM63o (Jane: "the exit is sealed until the map pieces
+      // are put together. until then we should not exit in the mini
+      // map"). Until the caravan-map jigsaw is solved, the minimap shows
+      // a LOCKED grey padlock marker instead of a reachable green EXIT —
+      // matching the sealed-exit state in-world.
+      if (game.jigsawSolved) {
+        _peekCtx.fillStyle = 'rgba(80,255,120,' + (0.55 * ePulse).toFixed(2) + ')';
+        _peekCtx.beginPath(); _peekCtx.arc(exg, eyg, erg + 7, 0, Math.PI*2); _peekCtx.fill();
+        _peekCtx.fillStyle = '#28d04a';
+        _peekCtx.strokeStyle = '#0e5a20';
+        _peekCtx.lineWidth = 2.5;
+        _peekCtx.beginPath(); _peekCtx.arc(exg, eyg, erg, 0, Math.PI*2); _peekCtx.fill(); _peekCtx.stroke();
+        _peekCtx.font = 'bold ' + Math.max(10, Math.floor(erg*0.85)) + 'px Georgia, serif';
+        _peekCtx.textAlign = 'center';
+        _peekCtx.textBaseline = 'middle';
+        _peekCtx.fillStyle = '#fff';
+        _peekCtx.strokeStyle = '#0e5a20';
+        _peekCtx.lineWidth = 3;
+        _peekCtx.strokeText('EXIT', exg, eyg + 1);
+        _peekCtx.fillText('EXIT', exg, eyg + 1);
+      } else {
+        // sealed: grey disc + padlock glyph, no "EXIT" reveal
+        _peekCtx.fillStyle = '#8a8a8a';
+        _peekCtx.strokeStyle = '#4a4a4a';
+        _peekCtx.lineWidth = 2.5;
+        _peekCtx.beginPath(); _peekCtx.arc(exg, eyg, erg, 0, Math.PI*2); _peekCtx.fill(); _peekCtx.stroke();
+        _peekCtx.font = 'bold ' + Math.max(11, Math.floor(erg*1.0)) + 'px Georgia, serif';
+        _peekCtx.textAlign = 'center';
+        _peekCtx.textBaseline = 'middle';
+        _peekCtx.fillStyle = '#fff';
+        _peekCtx.fillText('🔒', exg, eyg + 1); // 🔒
+      }
     }
   } catch(e){}
   // v3.28 Jane 2026-04-27: START disc deferred until AFTER the player
@@ -11654,8 +11969,11 @@ function togglePause(){
     // We fade it in at a gentle volume so it reads like a menu/cover theme.
     try {
       if (audio.narration) {
-        audio.narration.volume = 0.30;
+        // PM64 (Jane: "while on pause play some music") — was 0.30, too quiet
+        // to notice; bumped to 0.42 so the cover bed is clearly audible.
+        audio.narration.volume = 0.42;
         audio.narration.currentTime = 0;
+        audio.narration.loop = true;
         audio.narration.play().catch(()=>{});
       }
     } catch(e){}
@@ -13064,6 +13382,10 @@ function spawnActiveVulture(){
     done: false,
     spawnT: performance.now(),
   });
+  // 2026-05-21 PM63o (Jane: "when fox or vultures come, change the alert
+  // music ... i added danger alert 2.mp3"). Vulture dive now leads with
+  // the danger-alert-2 cue, then the vulture cry underneath.
+  try { play('dangerAlert2'); } catch(e){}
   try { play('vulture') || play('friendlyAlert') || play('click'); } catch(e){}  // v2.2.7 vulture dive cry
 }
 function updateActiveVultures(dt){
@@ -13224,6 +13546,9 @@ function updateActiveFoxes(dt){
     if (!f.soundPlayed){
       const onScreen = (f.px - camera.px) > -40 && (f.px - camera.px) < CANVAS_W + 40;
       if (onScreen){
+        // PM63o: danger-alert-2 cue when the fox darts across, then the
+        // fox yip underneath (Jane: "when fox or vultures come").
+        try { play('dangerAlert2'); } catch(e){}
         try { play('fox'); } catch(e){}
         f.soundPlayed = true;
       }
@@ -13917,6 +14242,10 @@ function render(){
     ctx.fillRect(0, CANVAS_H * 0.82, CANVAS_W, CANVAS_H * 0.18);
     ctx.restore();
   }
+  // PM66 danger-heat: red-edge vignette that intensifies as a guard/scout
+  // closes in, plus the close-call relief flash. Drawn over the world.
+  try { drawHeartbeatVignette(); } catch(e){}
+  try { drawCloseCallFlash(); } catch(e){}
   // HUD-on-canvas: pulsing red overlay already in DOM
 
   // side HUD canvases (mini-map & compass)
@@ -14254,12 +14583,35 @@ function drawInteractable(obj){
     // no alpha change — servant stays solid both visually and in walk-check
   }
   // pedestal glow
-  const pulse = 0.35 + 0.25 * Math.sin(performance.now()/400 + obj.tx*3 + obj.ty);
+  // 2026-05-21 PM64 (Jane: "does it really glow on the tiles to interact? i
+  // have not seen it"). The old glow was a tiny 12px amber disc hidden behind
+  // the sprite. Now: a clearly visible pulsing halo on every active
+  // interactable that brightens into a bold green-gold ring the moment Moses
+  // is close enough — so kids see WHERE and WHEN to tap Interact.
   if (!obj.used) {
-    ctx.fillStyle = 'rgba(255,215,118,' + pulse.toFixed(2) + ')';
-    ctx.beginPath();
-    ctx.arc(dx+TILE/2, dy+TILE/2+4, 12, 0, Math.PI*2);
-    ctx.fill();
+    const _now = performance.now();
+    const cdCheb   = Math.max(Math.abs(obj.tx - player.tx), Math.abs(obj.ty - player.ty));
+    const orthoAdj = (Math.abs(obj.tx - player.tx) + Math.abs(obj.ty - player.ty)) <= 1;
+    const _wideGlow = { crown:1, truthchest:1, bread:1, jug:1, scroll:1, mapFragment:1 };
+    const canInteract = orthoAdj || (_wideGlow[obj.kind] && cdCheb <= 2);
+    const gcx = dx + TILE/2, gcy = dy + TILE/2 + 2;
+    const pulse = 0.5 + 0.35 * Math.sin(_now/360 + obj.tx*3 + obj.ty);
+    const baseR = TILE * (canInteract ? 0.78 : 0.55);
+    const halo = ctx.createRadialGradient(gcx, gcy, 2, gcx, gcy, baseR);
+    const ha = (canInteract ? 0.60 : 0.32) * pulse;
+    halo.addColorStop(0,   (canInteract ? 'rgba(150,255,170,' : 'rgba(255,215,118,') + ha.toFixed(2) + ')');
+    halo.addColorStop(0.6, (canInteract ? 'rgba(120,230,140,' : 'rgba(255,190,90,')  + (ha*0.4).toFixed(2) + ')');
+    halo.addColorStop(1,   'rgba(255,200,100,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(gcx, gcy, baseR, 0, Math.PI*2); ctx.fill();
+    if (canInteract) {
+      ctx.save();
+      const ringR = TILE * (0.52 + 0.10 * Math.sin(_now/200));
+      ctx.strokeStyle = 'rgba(140,255,160,' + (0.70 + 0.25*Math.sin(_now/180)).toFixed(2) + ')';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(gcx, gcy, ringR, 0, Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
   }
   // icon box
   if (obj.kind === 'servant') {
@@ -15731,10 +16083,14 @@ function drawTile(t, dx, dy, tx, ty){
         // working scale at ~1.85× TILE. PM54 reintroduced both
         // regressions for "richness"; this restores the known-good
         // pre-PM54 values.
-        const esH = TILE * 1.85;
+        // 2026-05-21 PM64 (Jane: "make the exit sprite larger"). Bumped
+        // 1.85× -> 2.2×. Safe: the sprite is RIGHT-anchored (right edge =
+        // tile right edge = canvas edge), so the extra size grows LEFT/UP
+        // into open sand (col 38), never past the canvas right edge.
+        const esH = TILE * 2.2;
         const esAR = (exitPNG.naturalWidth || 1) / (exitPNG.naturalHeight || 1);
         let esW = Math.round(esH * esAR);
-        const esWMax = Math.round(TILE * 1.8);
+        const esWMax = Math.round(TILE * 2.2);
         let esHInt = Math.round(esH);
         if (esW > esWMax) {
           esHInt = Math.round(esWMax / esAR);
@@ -15807,22 +16163,29 @@ function drawTile(t, dx, dy, tx, ty){
         // it's always readable against any tile background.
         ctx.save();
         const exitLabel = _allGatesSolved ? 'GO! EXIT' : 'EXIT';
-        ctx.font = 'bold 14px Georgia';
+        // 2026-05-21 PM64 (Jane: "GO EXIT is very small and is getting cut").
+        // Bigger font, and CLAMP the pill within the canvas: the exit tile is
+        // the far-right column, so a tile-centred pill spilled past the right
+        // edge and got clipped. Now the pill (and its centred text) are kept
+        // fully on-screen.
+        ctx.font = 'bold 17px Georgia';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const labelY = dy + TILE + 12;
+        const labelY = dy + TILE + 14;
         const lblTextW = ctx.measureText(exitLabel).width;
-        const pillW = lblTextW + 14, pillH = 18;
-        const pillX = dx + TILE/2 - pillW/2;
+        const pillW = lblTextW + 18, pillH = 22;
+        let pillX = dx + TILE/2 - pillW/2;
+        pillX = Math.max(4, Math.min(pillX, CANVAS_W - pillW - 4));
+        const pillCX = pillX + pillW/2;
         const pillY = labelY - pillH/2;
-        ctx.fillStyle = 'rgba(20,10,40,0.78)';
+        ctx.fillStyle = 'rgba(20,10,40,0.82)';
         if (typeof ctx.roundRect === 'function') {
-          ctx.beginPath(); ctx.roundRect(pillX, pillY, pillW, pillH, 9); ctx.fill();
+          ctx.beginPath(); ctx.roundRect(pillX, pillY, pillW, pillH, 10); ctx.fill();
         } else {
           ctx.fillRect(pillX, pillY, pillW, pillH);
         }
         ctx.fillStyle = _allGatesSolved ? '#7fff8a' : '#ffd976';
-        ctx.fillText(exitLabel, dx + TILE/2, labelY);
+        ctx.fillText(exitLabel, pillCX, labelY);
         ctx.restore();
         // v3.25 Jane 2026-04-26: GIANT pulsing arrow during the intro pan
         // HOLD — points HORIZONTALLY at the EXIT from the LEFT side so it
@@ -16096,7 +16459,11 @@ function drawTile(t, dx, dy, tx, ty){
       // oasis tiles (e.g. col 17 + col 20 on same row) visually overlap
       // and clip each other on the right edge. 1.45x stays clearly larger
       // than the tile but doesn't reach into the neighbor's space.
-      const oH = TILE * 1.45;
+      // 2026-05-21 PM63o Jane: "oasis needs to be larger." Bumped 1.45 -> 1.7.
+      // Safe because (a) no two oases sit within 2 cols on the same row, and
+      // (b) the three boulders that used to touch an oasis were relocated in
+      // MAP_STR (rows 7/10/16), so the wider sprite no longer overlaps rocks.
+      const oH = TILE * 1.7;
       const oAR = (IMG.oasisTile.naturalWidth || 1) / (IMG.oasisTile.naturalHeight || 1);
       const oW = Math.round(oH * oAR);
       const oHInt = Math.round(oH);
@@ -17697,10 +18064,65 @@ function loop(now){
           }
         }
       } catch(e){}
+      // 2026-05-21 PM63n (Jane: "there is no treasure bag around the area
+      // when treasure bag tutorial is shown"). Fire the treasure tutorial
+      // when Moses first walks within 3 tiles of an UNCOLLECTED bag
+      // (MAP tile === 5), pointing at the real bag — BEFORE he steps on
+      // it. (Was firing in onTreasure AFTER pickup, so the bag + halo
+      // pointed at empty sand.)
+      try {
+        if (!_firstEventSeen.treasure && window._mosesMoved && typeof MAP !== 'undefined' && MAP) {
+          let _bx = -1, _by = -1, _bestD = 99;
+          const _y0 = Math.max(0, player.ty - 3), _y1 = Math.min(MAP_H - 1, player.ty + 3);
+          const _x0 = Math.max(0, player.tx - 3), _x1 = Math.min(MAP_W - 1, player.tx + 3);
+          for (let yy = _y0; yy <= _y1; yy++) {
+            for (let xx = _x0; xx <= _x1; xx++) {
+              if (MAP[yy][xx] === 5) {
+                const d = Math.max(Math.abs(player.tx - xx), Math.abs(player.ty - yy));
+                if (d <= 3 && d < _bestD) { _bestD = d; _bx = xx; _by = yy; }
+              }
+            }
+          }
+          if (_bx >= 0) {
+            showTipPopup('treasure', {
+              icon: '💎',
+              title: 'A Desert Treasure',
+              body: 'Walk over a treasure bag to pick it up — each one gives +2 stars. Collect every bag of one colour for a bonus heart!',
+              pointAtTile: { tx: _bx, ty: _by },
+            });
+          }
+        }
+      } catch(e){}
+      // 2026-05-21 PM64 (Jane: "turn off overhead messages for events we have
+      // tutorials for"). Map pieces were the one objective with NO proximity
+      // tutorial — only the overhead intro banner mentioned them. Give the
+      // first uncollected caravan-map scrap its own tip popup so the overhead
+      // banner can drop the objective text entirely.
+      try {
+        if (!_firstEventSeen.mapPiece && window._mosesMoved && typeof interactables !== 'undefined') {
+          let _mp = null, _mpD = 99;
+          for (const _o of interactables) {
+            if (!_o || _o.kind !== 'mapFragment' || _o.used) continue;
+            const d = Math.max(Math.abs(player.tx - _o.tx), Math.abs(player.ty - _o.ty));
+            if (d <= 3 && d < _mpD) { _mpD = d; _mp = _o; }
+          }
+          if (_mp) {
+            showTipPopup('mapPiece', {
+              icon: '🗺️',
+              title: 'A Caravan Map Scrap',
+              body: 'Walk over this torn map scrap to pick it up — no button needed. Find all 3 and clear every checkpoint to reveal the hidden path to Midian.',
+              pointAtTile: { tx: _mp.tx, ty: _mp.ty },
+            });
+          }
+        }
+      } catch(e){}
     }
     // recompute hiding status each frame (guards move, so LoS changes)
     player.crouched = isHiddenFromAnyGuard();
   }
+  // PM66 danger-heat + near-miss (self-guard on game.state)
+  try { _updateHeartbeat(); } catch(e){}
+  try { _updateNearMiss(); } catch(e){}
   render();
   requestAnimationFrame(loop);
 }
