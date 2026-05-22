@@ -7523,6 +7523,7 @@ function _pulleyReset() {
   _pulley.shepHeave = 0; _pulley.shepPourT = 0; _pulley.paused = false; _pulley.intro = false;
   _pulley.matchPoint = false; _pulley.slowmo = 0; _pulley.flock = null; _pulley.zoom = 1; _pulley.zoomTarget = 1;
   _pulley.potsLostToSteal = 0; _pulley.ownGoals = 0; _pulley.earnedStars = 3; _pulley.winPanelShown = false;
+  _pulley.stealNo = 0;
   _pulley.shepX = _pulley.shepHomeX; _pulley.mosesX = _pulley.mosesHomeX;
   const lo = document.getElementById('pulleyLoseOverlay'); if (lo) lo.style.display = 'none';
   const wo = document.getElementById('pulleyWinOverlay'); if (wo) wo.style.display = 'none';
@@ -7595,17 +7596,26 @@ function _pulleyFire() {
   _pulley.bucketBob = 14;
   try { play('waterSkin') || play('pop'); } catch(e){}
 }
-// ---- the steal: shepherd runs to a filled pot; SHOO → Moses dashes to save it ----
+// ---- the steal: a shepherd runs to a filled pot; SHOO → Moses dashes to save it ----
+// The whole rude-shepherd gang takes turns (one threat at a time, per Jane), and the
+// steals come thicker as the round wears on AND at higher difficulty — thrilling but doable.
+function _pulleyNextStealDelay() {
+  const base = _pulley.stealEvery || 5;
+  return Math.max(base * 0.55, base - (_pulley.stealNo || 0) * 0.18);
+}
 function _pulleyStartSteal() {
   // prefer a finished pot of yours; otherwise any partly-filled one
   const done = _pulley.pots.filter(p => p.mine && p.done);
   const targets = done.length ? done : _pulley.pots.filter(p => p.mine && p.fill > 0);
   if (!targets.length) { _pulley.nextSteal = 2.5; return; }
   const pot = targets[Math.floor(Math.random() * targets.length)];
-  _pulley.steal = { pot: pot, t: 0 };
+  _pulley.stealNo = (_pulley.stealNo || 0) + 1;
+  const who = (_pulley.stealNo - 1) % 3; // rotate through the gang so it's a different shepherd each time
+  _pulley.steal = { pot: pot, t: 0, who: who };
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = '';
-  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '⚠️ The rude shepherd is grabbing a pot — tap SHOO!';
-  _pulleySay('shepSay', 'That water is mine!', 'voMine');
+  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '⚠️ A rude shepherd is grabbing a pot — tap SHOO!';
+  const lines = [['That water is mine!', 'voMine'], ['Hand it over!', null], ['We\'ll take that one!', null]];
+  _pulleySay('shepSay', lines[who][0], lines[who][1] || undefined);
   try { play('stealWhoosh') || play('mirageWoosh') || play('pop'); } catch(e){}
 }
 function _pulleyShoo() {
@@ -7624,7 +7634,7 @@ function _pulleyResolveSteal(saved) {
     _pulleySay('mosesSay', 'Leave it be!', 'voLeaveItBe');
     if (fb) fb.textContent = 'Saved it! He has to wait now.';
     try { play('voLeaveItBe') || play('chime') || play('coin'); } catch(e){}
-    _pulley.steal = null; _pulley.nextSteal = _pulley.stealEvery;
+    _pulley.steal = null; _pulley.nextSteal = _pulleyNextStealDelay();
   } else if (pot) {
     pot.fill = 0; pot.done = false; pot.pop = 0;
     _pulley.shake = 12; _pulleySpawnDrops(8, pot.x, pot.y - 26, 40);
@@ -7641,7 +7651,7 @@ function _pulleyResolveSteal(saved) {
     _pulley.shepCarry = { t: 0, fromX: pot.x + 8 };
     _pulley.steal = null;
   } else {
-    _pulley.steal = null; _pulley.nextSteal = _pulley.stealEvery;
+    _pulley.steal = null; _pulley.nextSteal = _pulleyNextStealDelay();
   }
 }
 function _pulleyWin() {
@@ -7907,7 +7917,7 @@ function _pulleyFrame(now) {
     }
     if (_pulley.shoveT > 0) _pulley.shoveT -= dts;
     // shepherd carrying a stolen pot back to his side, then resets
-    if (_pulley.shepCarry) { _pulley.shepCarry.t += dts; if (_pulley.shepCarry.t > 1.2) { _pulley.shepCarry = null; _pulley.nextSteal = _pulley.stealEvery; } }
+    if (_pulley.shepCarry) { _pulley.shepCarry.t += dts; if (_pulley.shepCarry.t > 1.2) { _pulley.shepCarry = null; _pulley.nextSteal = _pulleyNextStealDelay(); } }
     // steal scheduling + progress
     if (_pulley.steal) {
       _pulley.steal.t += dts;
@@ -8059,10 +8069,12 @@ function _pulleyFrame(now) {
   c.lineCap = 'butt';
 
   // helper rogue shepherds (the gang) — on the LEFT side of the shepherd's well so
-  // they stay fully on-canvas (placeholders for now)
+  // they stay fully on-canvas. When it's THEIR turn to steal, hide the static one so the
+  // same shepherd isn't drawn in two places at once.
   c.save(); c.globalAlpha = 0.9;
-  _pDrawFit(c, ['shepHelpA', 'shepherd2Front'], 432, 236, 70, 92);
-  _pDrawFit(c, ['shepHelpB', 'shepherd3Front'], 470, 230, 66, 88);
+  const _stealerWho = _pulley.steal ? _pulley.steal.who : -1;
+  if (_stealerWho !== 1) _pDrawFit(c, ['shepHelpA', 'shepherd2Front'], 432, 236, 70, 92);
+  if (_stealerWho !== 2) _pDrawFit(c, ['shepHelpB', 'shepherd3Front'], 470, 230, 66, 88);
   c.restore();
 
   // Jethro's daughters watching by Moses' well — bigger/clearer, and they jump for joy on a win
@@ -8086,7 +8098,11 @@ function _pulleyFrame(now) {
   if (_pulley.shepCarry) { shepKeys = ['shepPotRight', 'shepPull']; }
   else if (_pulley.steal) {
     const nearPot = Math.abs(sIdleX - (_pulley.steal.pot.x + 18)) < 28;
-    shepKeys = nearPot ? ['shepGrab', 'shepherdLeft', 'shepPull'] : ['shepherdLeft', 'shepPull'];
+    const who = _pulley.steal.who || 0; // which gang member is lunging this turn
+    const base = who === 1 ? ['shepHelpA', 'shepherd2Front', 'shepherdLeft', 'shepPull']
+               : who === 2 ? ['shepHelpB', 'shepherd3Front', 'shepherdLeft', 'shepPull']
+               :             ['shepherdLeft', 'shepPull'];
+    shepKeys = nearPot ? ['shepGrab'].concat(base) : base;
   } else { shepKeys = ['shepHeave', 'shepPull', 'shepherdLeft', 'shepherdFront']; }
   _pDraw(c, shepKeys, sIdleX, sIdleY, 130, 140, shepFlip);
 
