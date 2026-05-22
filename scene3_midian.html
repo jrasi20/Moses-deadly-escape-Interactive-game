@@ -2355,26 +2355,35 @@
     <div style="color:#d8b890;font-size:12px;text-align:center;margin-top:4px;font-style:italic;">"Moses got up and came to their rescue." — Exodus 2:17</div>
     <!-- weapon-select / loadout screen (shown before each round) -->
     <div id="rescueLoadout" style="display:none;position:absolute;inset:0;z-index:6;background:linear-gradient(160deg,#2a1d10,#4a3320);border-radius:16px;flex-direction:column;padding:14px 16px;overflow:hidden;">
-      <div style="color:#ffe0a0;text-align:center;font-size:19px;font-weight:bold;letter-spacing:.5px;">Choose your weapons</div>
-      <div style="color:#d8b890;text-align:center;font-size:12.5px;margin:2px 0 8px;">Pick up to 5 — <span id="rescueLoadoutCount">0/5</span> chosen. Locked weapons need more ⭐ &amp; 💰.</div>
-      <div id="rescueCardGrid" style="flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;align-content:start;padding:2px;"></div>
+      <div style="color:#ffe0a0;text-align:center;font-size:20px;font-weight:bold;letter-spacing:.5px;text-shadow:0 2px 6px rgba(0,0,0,.5);">⚔️ Choose your weapons</div>
+      <div style="display:flex;justify-content:center;gap:10px;margin:5px 0 3px;flex-wrap:wrap;">
+        <span style="background:linear-gradient(135deg,#ffd86a,#e0a83a);color:#3a2a08;font-weight:bold;font-size:13px;padding:4px 12px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);" id="rescueWalletStars">⭐ 0</span>
+        <span style="background:linear-gradient(135deg,#ffe07a,#caa24a);color:#3a2a08;font-weight:bold;font-size:13px;padding:4px 12px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);" id="rescueWalletBags">💰 0 treasure</span>
+      </div>
+      <div style="color:#e8c8a0;text-align:center;font-size:12.5px;margin:2px 0 9px;">Pick up to 5 — <span id="rescueLoadoutCount" style="color:#ffe07a;font-weight:bold;">0/5</span> chosen &middot; unlock more with ⭐ &amp; 💰 from your journey</div>
+      <div id="rescueCardGrid" style="flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:9px;align-content:start;padding:2px;"></div>
       <div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-top:10px;">
         <button class="btn" id="rescueAutoPickBtn" style="font-size:13px;padding:8px 16px;background:rgba(80,60,40,0.8);border:2px solid #c8a86a;">✨ Auto-pick</button>
         <button class="btn btn-gold" id="rescueStartBtn" disabled style="font-size:19px;padding:11px 32px;opacity:0.5;">Start Rescue ▶</button>
       </div>
     </div>
     <style>
-      #rescueCardGrid .rwCard{background:rgba(20,12,4,0.5);border:2px solid #6a4a2a;border-radius:10px;padding:8px;cursor:pointer;transition:transform .1s,border-color .15s,box-shadow .15s;position:relative;text-align:left;color:#ffe8c8;}
-      #rescueCardGrid .rwCard:hover{transform:translateY(-2px);border-color:#d8a86a;}
-      #rescueCardGrid .rwCard.sel{border-color:#ffe07a;box-shadow:0 0 0 2px #ffe07a inset,0 4px 14px rgba(255,200,80,0.3);background:rgba(60,44,16,0.7);}
-      #rescueCardGrid .rwCard.locked{opacity:0.55;cursor:not-allowed;filter:grayscale(0.5);}
-      #rescueCardGrid .rwCard .rwName{font-weight:bold;font-size:14px;display:flex;align-items:center;gap:5px;}
-      #rescueCardGrid .rwCard .rwDesc{font-size:11px;line-height:1.3;color:#e8d2b0;margin:3px 0 5px;min-height:42px;}
-      #rescueCardGrid .rwCard .rwStat{font-size:10.5px;display:flex;justify-content:space-between;color:#d8c0a0;}
-      #rescueCardGrid .rwCard .rwStat b{color:#ffd98a;letter-spacing:1px;}
-      #rescueCardGrid .rwCard .rwCost{margin-top:5px;font-size:12px;font-weight:bold;color:#ffe07a;}
-      #rescueCardGrid .rwCard .rwBadge{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:#ffe07a;color:#3a2a10;font-weight:bold;font-size:13px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;}
-      #rescueCardGrid .rwCard .rwLock{position:absolute;top:6px;right:8px;font-size:14px;}
+      #rescueCardGrid .rwCard{background:linear-gradient(165deg,rgba(40,28,14,0.92),rgba(22,15,7,0.92));border:2.5px solid var(--tint,#6a4a2a);border-radius:14px;padding:0 0 9px;cursor:pointer;transition:transform .12s ease,box-shadow .15s;position:relative;text-align:center;color:#fff4e2;overflow:hidden;display:flex;flex-direction:column;}
+      #rescueCardGrid .rwCard:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 8px 20px rgba(0,0,0,.45);}
+      #rescueCardGrid .rwCard.sel{box-shadow:0 0 0 3px #ffe07a inset,0 6px 18px rgba(255,200,80,0.45);}
+      #rescueCardGrid .rwCard.sel .rwThumb{filter:brightness(1.12) saturate(1.15);}
+      #rescueCardGrid .rwCard.locked{cursor:not-allowed;}
+      #rescueCardGrid .rwCard.locked .rwThumb{filter:grayscale(0.85) brightness(0.6);}
+      #rescueCardGrid .rwCard.locked .rwName,#rescueCardGrid .rwCard.locked .rwDesc,#rescueCardGrid .rwCard.locked .rwStats,#rescueCardGrid .rwCard.locked .rwCost{opacity:0.5;}
+      #rescueCardGrid .rwCard .rwThumb{height:74px;display:flex;align-items:center;justify-content:center;font-size:46px;background:radial-gradient(circle at 50% 38%,var(--tint,#6a4a2a),rgba(0,0,0,0.35));text-shadow:0 3px 8px rgba(0,0,0,.55);border-bottom:2px solid var(--tint,#6a4a2a);}
+      #rescueCardGrid .rwCard .rwName{font-weight:bold;font-size:14px;margin:7px 6px 0;line-height:1.1;}
+      #rescueCardGrid .rwCard .rwDesc{font-size:10.5px;line-height:1.3;color:#e8d2b0;margin:4px 8px 6px;min-height:40px;}
+      #rescueCardGrid .rwCard .rwStats{margin:0 9px;}
+      #rescueCardGrid .rwCard .rwStat{font-size:10px;display:flex;justify-content:space-between;color:#cbb89c;}
+      #rescueCardGrid .rwCard .rwStat b{color:#ffd23a;letter-spacing:1px;font-size:11px;}
+      #rescueCardGrid .rwCard .rwCost{margin:7px 8px 0;font-size:13px;font-weight:bold;color:#fff;background:var(--tint,#6a4a2a);border-radius:8px;padding:3px 0;box-shadow:0 2px 5px rgba(0,0,0,.3);}
+      #rescueCardGrid .rwCard .rwBadge{position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;background:#ffe07a;color:#3a2a10;font-weight:bold;font-size:14px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);z-index:2;}
+      #rescueCardGrid .rwCard .rwLock{position:absolute;top:8px;right:8px;font-size:12px;font-weight:bold;background:rgba(10,6,2,0.82);color:#ffd23a;padding:3px 7px;border-radius:10px;z-index:2;}
       #rescueWeaponBar .rwBtn{flex:1;min-width:0;position:relative;overflow:hidden;border:2px solid #2a6a9a;border-radius:9px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);color:#fff;padding:7px 2px 6px;cursor:pointer;text-align:center;line-height:1.1;}
       #rescueWeaponBar .rwBtn.sel{border-color:#ffe9a8;box-shadow:0 0 0 2px #ffe9a8 inset;}
       #rescueWeaponBar .rwBtn.poor{filter:grayscale(0.6) brightness(0.7);}
@@ -3450,6 +3459,7 @@ const game = {
   stars: 0,
   treasureCount: 0,
   treasuresTotal: 3,
+  treasureBags: 0,
   timeLimit: 180, timeLeft: 180,
   startedAt: null,
   perfectRun: true,   // no hits
@@ -6515,6 +6525,7 @@ function _saveCheckpoint(){
       hearts: game.hearts,
       stars: game.stars,
       treasureCount: game.treasureCount,
+      treasureBags: game.treasureBags,
       altitudeCleared: game.altitudeCleared || 0,
       timeLeft: Math.max(0, Math.round(game.timeLeft || 0)),
       gates: (challengeGates || []).map(g => ({
@@ -6581,6 +6592,7 @@ function _applyCheckpointAfterSeed(){
     if (typeof p.hearts === 'number') game.hearts = p.hearts;
     if (typeof p.stars === 'number') game.stars = p.stars;
     if (typeof p.treasureCount === 'number') game.treasureCount = p.treasureCount;
+    if (typeof p.treasureBags === 'number') game.treasureBags = p.treasureBags;
     if (typeof p.altitudeCleared === 'number') game.altitudeCleared = p.altitudeCleared;
     if (typeof p.timeLeft === 'number' && p.timeLeft > 0) game.timeLeft = p.timeLeft;
     if (Array.isArray(p.gates) && Array.isArray(challengeGates)) {
@@ -8199,21 +8211,21 @@ function _makeWellTestGate(){ return { tx: 0, ty: 0, solved: false, _welltest: t
    Standalone: ?rescuetest=1  (&diff=easy|medium|hard)
    ========================================================================== */
 const _RES_ROSTER = {
-  staff:   { name: 'Shepherd Staff', icon: '🦯', desc: 'A close swing — strong, but only hits the shepherd right beside Moses. Always free.', rng: 1, dmg: 5, spd: 3, cost: 0,   cd: 0.6,  melee: true, mrange: 92, starReq: 0 },
-  sling:   { name: 'Sling',          icon: '🎯', desc: 'Quick stones flung far. Cheap, fast, low damage — your workhorse.',               rng: 5, dmg: 1, spd: 5, cost: 8,   cd: 0.36, projSpeed: 780, starReq: 0 },
-  pot:     { name: 'Water Pot',      icon: '🏺', desc: 'A heavy jar that splashes the shepherd it strikes.',                                rng: 3, dmg: 2, spd: 3, cost: 22,  cd: 0.7,  projSpeed: 540, starReq: 0 },
-  net:     { name: 'Throwing Net',   icon: '🕸️', desc: 'Tangles a shepherd so he is stuck in place for a few seconds.',                      rng: 3, dmg: 0, spd: 3, cost: 28,  cd: 1.1,  projSpeed: 520, snare: 3.5, starReq: 3 },
-  volley:  { name: 'Pebble Volley',  icon: '🌾', desc: 'Flings three stones at once down the lane.',                                        rng: 5, dmg: 1, spd: 2, cost: 42,  cd: 1.4,  projSpeed: 720, multi: 3, starReq: 6 },
-  torch:   { name: 'Torch',          icon: '🔥', desc: 'Sets the whole lane ablaze — burns every shepherd over time.',                      rng: 5, dmg: 3, spd: 1, cost: 55,  cd: 2.4,  laneBurn: 5, starReq: 9 },
-  sheep:   { name: 'Ram Sheep',      icon: '🐏', desc: 'A charging ram bowls over EVERY shepherd in the lane.',                             rng: 5, dmg: 5, spd: 1, cost: 95,  cd: 1.0,  ram: 'sheep', starReq: 5 },
-  boulder: { name: 'Boulder',        icon: '🪨', desc: 'A giant rock rolls down the lane, crushing all in its path.',                       rng: 5, dmg: 5, spd: 1, cost: 130, cd: 1.0,  ram: 'boulder', starReq: 12 },
+  staff:   { name: 'Shepherd Staff', icon: '🦯', tint: '#c98a3a', desc: 'A close swing — strong, but only hits the shepherd right beside Moses. Always free.', rng: 1, dmg: 5, spd: 3, cost: 0,   cd: 0.6,  melee: true, mrange: 92, starReq: 0,  bagReq: 0 },
+  sling:   { name: 'Sling',          icon: '🎯', tint: '#3a9ad8', desc: 'Quick stones flung far. Cheap, fast, low damage — your workhorse.',               rng: 5, dmg: 1, spd: 5, cost: 8,   cd: 0.36, projSpeed: 780, starReq: 0,  bagReq: 0 },
+  pot:     { name: 'Water Pot',      icon: '🏺', tint: '#2bb3a3', desc: 'A heavy jar that splashes the shepherd it strikes.',                                rng: 3, dmg: 2, spd: 3, cost: 22,  cd: 0.7,  projSpeed: 540, starReq: 0,  bagReq: 0 },
+  net:     { name: 'Throwing Net',   icon: '🕸️', tint: '#9a6ad8', desc: 'Tangles a shepherd so he is stuck in place for a few seconds.',                      rng: 3, dmg: 0, spd: 3, cost: 28,  cd: 1.1,  projSpeed: 520, snare: 3.5, starReq: 3,  bagReq: 60 },
+  volley:  { name: 'Pebble Volley',  icon: '🌾', tint: '#5fc04a', desc: 'Flings three stones at once down the lane.',                                        rng: 5, dmg: 1, spd: 2, cost: 42,  cd: 1.4,  projSpeed: 720, multi: 3, starReq: 6,  bagReq: 140 },
+  torch:   { name: 'Torch',          icon: '🔥', tint: '#ee6a2e', desc: 'Sets the whole lane ablaze — burns every shepherd over time.',                      rng: 5, dmg: 3, spd: 1, cost: 55,  cd: 2.4,  laneBurn: 5, starReq: 9,  bagReq: 220 },
+  sheep:   { name: 'Ram Sheep',      icon: '🐏', tint: '#d8b65a', desc: 'A charging ram bowls over EVERY shepherd in the lane.',                             rng: 5, dmg: 5, spd: 1, cost: 95,  cd: 1.0,  ram: 'sheep', starReq: 5,  bagReq: 120 },
+  boulder: { name: 'Boulder',        icon: '🪨', tint: '#9090a8', desc: 'A giant rock rolls down the lane, crushing all in its path.',                       rng: 5, dmg: 5, spd: 1, cost: 130, cd: 1.0,  ram: 'boulder', starReq: 12, bagReq: 300 },
 };
 const _RES_ORDER = ['staff', 'sling', 'pot', 'net', 'volley', 'torch', 'sheep', 'boulder'];
 const _rescue = {
   gate: null, rafId: null, last: 0, paused: false, over: false, win: false, started: false,
   LANES: 7, laneY: [54, 114, 174, 234, 294, 354, 414], lane: 3, mosesY: 234, mosesX: 84, GRABX: 116,
   loadout: [], weapon: null, cd: {}, btns: {}, throwAnim: 0,
-  shots: [], foes: [], cues: [], fx: [], fires: [], ram: null, kidnaps: [],
+  shots: [], foes: [], cues: [], fx: [], fires: [], ram: null, kidnaps: [], flyers: [], coinPulse: 0,
   laneDaughter: [true, true, true, true, true, true, true], daughtersLost: 0,
   coins: 0, earned: 0, trickleT: 0, foesDriven: 0, spawned: 0, total: 18, spawnEvery: 1.5, spawnT: 1.6,
   foeSpeed: 42, bigChance: 0.18, fastChance: 0.3, bossSpawned: false, bossDown: false,
@@ -8226,28 +8238,34 @@ function _rescueCfg() {
   return { total: 18, spawnEvery: 1.55, foeSpeed: 41, bigChance: 0.18, fastChance: 0.28, coins: 135, bossHp: 32 }; // easy
 }
 function _resStars(n) { n = Math.max(0, Math.min(5, n | 0)); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
-function _resWealth() { return { stars: (typeof game !== 'undefined' && game.stars) || 0, bags: (typeof game !== 'undefined' && game.treasureCount) || 0 }; }
-function _resUnlocked(key) { const w = _RES_ROSTER[key]; return _resWealth().stars >= (w.starReq || 0); }
+function _resWealth() { return { stars: (typeof game !== 'undefined' && game.stars) || 0, bags: (typeof game !== 'undefined' && game.treasureBags) || 0 }; }
+function _resUnlocked(key) { const w = _RES_ROSTER[key], wl = _resWealth(); return wl.stars >= (w.starReq || 0) || wl.bags >= (w.bagReq || 1e9); }
 function _rescueCue(text, x, y, color, big) { _rescue.cues.push({ text: text, x: x, y: y, color: color || '#fff', t: 0, life: big ? 80 : 58, big: !!big }); }
 function _rescueFx(key, x, y, size, life) { _rescue.fx.push({ key: key, x: x, y: y, size: size || 38, t: 0, life: life || 20 }); }
 // ---------- loadout / weapon-select screen ----------
 function _rescueBuildCards() {
   const grid = document.getElementById('rescueCardGrid'); if (!grid) return;
   const wealth = _resWealth();
+  const ws = document.getElementById('rescueWalletStars'); if (ws) ws.textContent = '⭐ ' + wealth.stars;
+  const wb = document.getElementById('rescueWalletBags'); if (wb) wb.textContent = '💰 ' + wealth.bags + ' treasure';
   grid.innerHTML = '';
   _RES_ORDER.forEach(key => {
     const w = _RES_ROSTER[key]; const unlocked = _resUnlocked(key); const sel = _rescue.loadout.indexOf(key) >= 0;
     const card = document.createElement('div');
     card.className = 'rwCard' + (sel ? ' sel' : '') + (unlocked ? '' : ' locked');
+    card.style.setProperty('--tint', w.tint || '#6a4a2a');
     card.innerHTML =
-      '<div class="rwName">' + w.icon + ' ' + w.name + '</div>' +
+      '<div class="rwThumb">' + w.icon + '</div>' +
+      '<div class="rwName">' + w.name + '</div>' +
       '<div class="rwDesc">' + w.desc + '</div>' +
-      '<div class="rwStat"><span>Range</span><b>' + _resStars(w.rng) + '</b></div>' +
-      '<div class="rwStat"><span>Damage</span><b>' + _resStars(w.dmg) + '</b></div>' +
-      '<div class="rwStat"><span>Load speed</span><b>' + _resStars(w.spd) + '</b></div>' +
+      '<div class="rwStats">' +
+        '<div class="rwStat"><span>Range</span><b>' + _resStars(w.rng) + '</b></div>' +
+        '<div class="rwStat"><span>Damage</span><b>' + _resStars(w.dmg) + '</b></div>' +
+        '<div class="rwStat"><span>Load speed</span><b>' + _resStars(w.spd) + '</b></div>' +
+      '</div>' +
       '<div class="rwCost">' + (w.cost === 0 ? 'FREE' : '💰 ' + w.cost + ' / throw') + '</div>' +
       (sel ? '<div class="rwBadge">' + (_rescue.loadout.indexOf(key) + 1) + '</div>' : '') +
-      (unlocked ? '' : '<div class="rwLock">🔒 ⭐' + w.starReq + '</div>');
+      (unlocked ? '' : '<div class="rwLock">🔒 ⭐' + w.starReq + ' / 💰' + w.bagReq + '</div>');
     if (unlocked) card.addEventListener('click', () => _rescueToggleCard(key));
     grid.appendChild(card);
   });
@@ -8304,7 +8322,7 @@ function _rescueReset() {
   _rescue.coins = cfg.coins + Math.min(120, wealth.bags * 8 + wealth.stars * 2);
   _rescue.earned = 0; _rescue.trickleT = 0;
   _rescue.lane = 3; _rescue.mosesY = _rescue.laneY[3]; _rescue.throwAnim = 0; _rescue.cd = {};
-  _rescue.shots = []; _rescue.foes = []; _rescue.cues = []; _rescue.fx = []; _rescue.fires = []; _rescue.ram = null; _rescue.kidnaps = [];
+  _rescue.shots = []; _rescue.foes = []; _rescue.cues = []; _rescue.fx = []; _rescue.fires = []; _rescue.ram = null; _rescue.kidnaps = []; _rescue.flyers = []; _rescue.coinPulse = 0;
   _rescue.laneDaughter = [true, true, true, true, true, true, true]; _rescue.daughtersLost = 0;
   _rescue.foesDriven = 0; _rescue.spawned = 0; _rescue.spawnT = 1.6; _rescue.bossSpawned = false; _rescue.bossDown = false;
   _rescue.shake = 0; _rescue.stars = 3; _rescue.over = false; _rescue.win = false; _rescue.paused = false; _rescue.winPanelShown = false; _rescue.started = false;
@@ -8347,7 +8365,9 @@ function _rescueTap(e) { if (_rescue.over || _rescue.paused || !_rescue.started)
 function _rescueAward(foe) {
   _rescue.foesDriven++; const b = foe.bounty || 18; _rescue.coins += b; _rescue.earned += b;
   _rescueCue('+💰' + b, foe.x, _rescue.laneY[foe.lane] - 34, '#ffe07a');
-  _rescueFx('treasureBag', foe.x, _rescue.laneY[foe.lane], 26, 20);
+  // wow: a treasure bag bursts from the shepherd and flies up to Moses's purse
+  const n = foe.type === 'boss' ? 5 : (foe.type === 'big' ? 3 : 1);
+  for (let i = 0; i < n; i++) _rescue.flyers.push({ x: foe.x + (Math.random() * 30 - 15), y: _rescue.laneY[foe.lane] - 8, t: -i * 0.06, life: 0.72, spin: Math.random() * 6 });
   if (foe.type === 'boss') _rescue.bossDown = true;
   _rescueHud();
 }
@@ -8371,7 +8391,7 @@ function _rescueFire(key) {
 }
 function _rescueSpawn() {
   let type = 'normal', hp = 1, spd = _rescue.foeSpeed, scale = 1, bounty = 20;
-  if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 130; _rescue.bossSpawned = true; }
+  if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 130; _rescue.bossSpawned = true; _rescue.shake = 18; _rescueCue('⚠️ THE MIGHTY SHEPHERD!', 380, 40, '#ff7a4a', true); try { play('alarm') || play('error'); } catch(e){} }
   else { const r = Math.random(); if (r < _rescue.bigChance) { type = 'big'; hp = 4; spd = _rescue.foeSpeed * 0.55; scale = 1.34; bounty = 45; } else if (r < _rescue.bigChance + _rescue.fastChance) { type = 'fast'; hp = 1; spd = _rescue.foeSpeed * 1.7; scale = 0.86; bounty = 16; } }
   const lane = Math.floor(Math.random() * _rescue.LANES);
   _rescue.foes.push({ lane: lane, x: 800, hp: hp, maxhp: hp, spd: spd, scale: scale, type: type, bounty: bounty, hitT: 0, kb: 0, snared: 0, dying: 0 });
@@ -8391,7 +8411,7 @@ function _rescueWin() {
   if (_rescue.over) return;
   _rescue.over = true; _rescue.win = true;
   _rescue.stars = _rescue.daughtersLost === 0 ? 3 : (_rescue.daughtersLost <= 2 ? 2 : 1);
-  try { if (typeof game !== 'undefined') { game._wellGamePass = true; } } catch(e){}
+  try { if (typeof game !== 'undefined') { game._wellGamePass = true; game.treasureBags = (game.treasureBags || 0) + _rescue.earned; } } catch(e){}
   const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = _rescue.bossDown ? '🎉 The mighty shepherd flees! The daughters are safe!' : '🎉 The shepherds are driven off!';
   try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
   try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){}
@@ -8486,6 +8506,8 @@ function _rescueFrame(now) {
     }
     // kidnap anim
     for (let i = _rescue.kidnaps.length - 1; i >= 0; i--) { _rescue.kidnaps[i].t += dts; _rescue.kidnaps[i].x += 120 * dts; if (_rescue.kidnaps[i].t > 1.6) _rescue.kidnaps.splice(i, 1); }
+    // treasure-bag flyers (cosmetic: bag flies to Moses's purse, then HUD coin pulses)
+    for (let i = _rescue.flyers.length - 1; i >= 0; i--) { const fl = _rescue.flyers[i]; fl.t += dts; if (fl.t >= fl.life) { _rescue.flyers.splice(i, 1); const co = document.getElementById('rescueCoins'); if (co) { co.style.transition = 'transform .12s'; co.style.transform = 'scale(1.4)'; setTimeout(() => { co.style.transform = 'scale(1)'; }, 120); } try { play('coin'); } catch(e){} } }
     if (!_rescue.over && _rescue.spawned >= _rescue.total && _rescue.foes.length === 0 && !_rescue.ram) _rescueWin();
     _rescueUpdateBar();
   }
@@ -8534,6 +8556,8 @@ function _rescueFrame(now) {
   for (let i = _rescue.fx.length - 1; i >= 0; i--) { const x = _rescue.fx[i]; x.t++; if (x.t > x.life) { _rescue.fx.splice(i, 1); continue; } const k = x.t / x.life, a = Math.max(0, 1 - k), s = x.size * (0.7 + 0.5 * k); c.globalAlpha = a; if (!_pDraw(c, x.key, x.x - s / 2, x.y - s / 2, s, s)) { c.fillStyle = 'rgba(255,220,120,0.6)'; c.beginPath(); c.arc(x.x, x.y, s / 2, 0, Math.PI * 2); c.fill(); } c.globalAlpha = 1; }
   // cues
   for (let i = _rescue.cues.length - 1; i >= 0; i--) { const q = _rescue.cues[i]; q.t++; if (q.t > q.life) { _rescue.cues.splice(i, 1); continue; } const a = Math.max(0, 1 - q.t / q.life), cyy = q.y - q.t * (q.big ? 0.4 : 0.55); c.globalAlpha = a; c.font = q.big ? 'bold 21px Georgia' : 'bold 16px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; let cxx = q.x; if (q.big) { const half = c.measureText(q.text).width / 2 + 12; cxx = Math.max(half + 2, Math.min(W - half - 2, q.x)); c.fillStyle = 'rgba(10,24,40,0.78)'; c.beginPath(); if (c.roundRect) c.roundRect(cxx - half, cyy - 15, half * 2, 30, 8); else c.rect(cxx - half, cyy - 15, half * 2, 30); c.fill(); } c.fillStyle = q.color; c.fillText(q.text, cxx, cyy); c.globalAlpha = 1; }
+  // treasure-bag flyers (arc to the purse)
+  for (const fl of _rescue.flyers) { if (fl.t < 0) continue; const k = Math.max(0, Math.min(1, fl.t / fl.life)), e = k * k * (3 - 2 * k); const cx = fl.x + (44 - fl.x) * e, cy = fl.y + (14 - fl.y) * e - Math.sin(k * Math.PI) * 48, sc = 1 + Math.sin(k * Math.PI) * 0.55; c.save(); c.globalAlpha = k > 0.82 ? Math.max(0, 1 - (k - 0.82) / 0.18) : 1; c.font = Math.round(19 * sc) + 'px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; if (!_pDraw(c, ['treasureBag', 'coinBag'], cx - 11 * sc, cy - 11 * sc, 22 * sc, 22 * sc)) c.fillText('💰', cx, cy); c.restore(); }
   if (_rescue.over && _rescue.win) { c.fillStyle = 'rgba(255,230,120,' + (0.12 + 0.07 * Math.sin(now / 120)).toFixed(2) + ')'; c.fillRect(0, 0, W, H); }
   c.restore();
 }
