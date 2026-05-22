@@ -2313,6 +2313,15 @@
     </div>
     <div id="pulleyFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:17px;font-weight:bold;">Drag from Moses to aim — fill every pot!</div>
     <div style="color:#9fcbe0;font-size:12px;text-align:center;margin-top:5px;font-style:italic;">"Moses got up and came to their rescue and watered their flock." — Exodus 2:17</div>
+    <div id="pulleyIntroOverlay" style="display:none;position:absolute;inset:0;z-index:6;background:rgba(8,24,42,0.9);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:14px;font-family:'Baloo 2','Comic Sans MS','Trebuchet MS',Verdana,sans-serif;">
+      <div style="color:#ffe0a0;font-size:22px;font-weight:bold;letter-spacing:.5px;text-shadow:0 2px 6px rgba(0,0,0,.5);">💧 How to water the flock</div>
+      <div id="pulleyHowTo" style="display:flex;gap:9px;justify-content:center;flex-wrap:wrap;max-width:560px;">
+        <div class="ptStep"><span class="ptIco">👆</span><span class="ptTx"><b>1. Drag &amp; let go</b><br>aim water into a pot</span></div>
+        <div class="ptStep"><span class="ptIco">✋</span><span class="ptTx"><b>2. Tap SHOO!</b><br>when he grabs your pot</span></div>
+        <div class="ptStep"><span class="ptIco">🪣</span><span class="ptTx"><b>3. Fill them all</b><br>before the rude shepherd</span></div>
+      </div>
+      <button class="btn btn-gold" id="pulleyStartBtn" style="font-size:20px;padding:12px 34px;letter-spacing:.5px;margin-top:4px;">Start watering ▶</button>
+    </div>
     <div id="pulleyPausedOverlay" style="display:none;position:absolute;inset:0;z-index:4;background:rgba(8,20,36,0.82);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
       <div style="color:#ffe0a0;font-size:30px;font-weight:bold;letter-spacing:2px;">PAUSED</div>
       <button class="btn btn-gold" id="pulleyResumeBtn" style="font-size:20px;padding:12px 30px;">▶ Resume</button>
@@ -2442,6 +2451,11 @@
 </div>
 
 <style>
+#pulleyHowTo .ptStep{flex:1;min-width:150px;max-width:230px;background:rgba(255,240,200,0.10);border:1.5px solid rgba(255,215,120,0.4);border-radius:12px;padding:8px 10px;display:flex;align-items:center;gap:9px;color:#ffeccb;}
+#pulleyHowTo .ptStep .ptIco{font-size:26px;line-height:1;flex:0 0 auto;}
+#pulleyHowTo .ptStep .ptTx{font-size:13px;line-height:1.25;text-align:left;}
+#pulleyHowTo .ptStep .ptTx b{color:#ffd86a;}
+@media (max-width:560px){#pulleyHowTo{flex-direction:column;}#pulleyHowTo .ptStep{min-width:0;max-width:none;width:100%;}}
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
 @keyframes pulleyWinPop{0%{transform:scale(.82);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
 @keyframes pulleyStarPop{0%{transform:scale(0) rotate(-30deg);opacity:0}70%{transform:scale(1.35) rotate(8deg)}100%{transform:scale(1) rotate(0);opacity:1}}
@@ -7467,7 +7481,7 @@ function _pulleyReset() {
   _pulley.shake = 0; _pulley.drops = []; _pulley.cues = []; _pulley.fx = []; _pulley.bucketBob = 0;
   _pulley.aiming = false; _pulley.proj = null; _pulley.curWind = 0;
   _pulley.steal = null; _pulley.mosesRun = null; _pulley.shepStun = 0; _pulley.shepCarry = null; _pulley.shoveT = 0;
-  _pulley.shepHeave = 0; _pulley.shepPourT = 0; _pulley.paused = false;
+  _pulley.shepHeave = 0; _pulley.shepPourT = 0; _pulley.paused = false; _pulley.intro = false;
   _pulley.matchPoint = false; _pulley.slowmo = 0; _pulley.flock = null; _pulley.zoom = 1; _pulley.zoomTarget = 1;
   _pulley.potsLostToSteal = 0; _pulley.ownGoals = 0; _pulley.earnedStars = 3; _pulley.winPanelShown = false;
   _pulley.shepX = _pulley.shepHomeX; _pulley.mosesX = _pulley.mosesHomeX;
@@ -7490,6 +7504,8 @@ function openWellPulleyGame(gate) {
   const modal = document.getElementById('wellPulleyModal');
   modal.style.display = 'flex'; modal.classList.add('active');
   const ov = document.getElementById('pulleyPausedOverlay'); if (ov) ov.style.display = 'none';
+  _pulley.intro = true;
+  const intro = document.getElementById('pulleyIntroOverlay'); if (intro) intro.style.display = 'flex';
   _pulleyUpdateHud();
   document.getElementById('pulleyFeedback').textContent = 'Drag from Moses to aim — fill every pot before the shepherd!';
   // banter is sequenced so the two speech bubbles never overlap
@@ -7512,7 +7528,7 @@ function _pulleyCanvasPos(e) {
   return { x: (cx - r.left) * (c.width / r.width), y: (cy - r.top) * (c.height / r.height) };
 }
 function _pulleyAimStart(e) {
-  if (_pulley.over || _pulley.proj || _pulley.mosesRun || _pulley.paused || !_pulley.gate) return;
+  if (_pulley.over || _pulley.intro || _pulley.proj || _pulley.mosesRun || _pulley.paused || !_pulley.gate) return;
   if (e.cancelable) e.preventDefault();
   const p = _pulleyCanvasPos(e);
   _pulley.aiming = true; _pulley.aimX = p.x; _pulley.aimY = p.y;
@@ -7654,6 +7670,12 @@ function _pulleyLose() {
   const retry = document.getElementById('pulleyRetryBtn');
   if (retry) retry.textContent = out ? 'Try once more' : '\u{1F501} Retry';
   const ov = document.getElementById('pulleyLoseOverlay'); if (ov) ov.style.display = 'flex';
+}
+function _pulleyStartGame() {
+  const intro = document.getElementById('pulleyIntroOverlay'); if (intro) intro.style.display = 'none';
+  _pulley.intro = false; _pulley.lastFrame = 0;
+  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = 'Drag back from Moses, then let go to splash water in!';
+  try { play('click') || play('pop'); } catch(e){}
 }
 function _pulleyRetry() {
   const lo = document.getElementById('pulleyLoseOverlay'); if (lo) lo.style.display = 'none';
@@ -7799,7 +7821,7 @@ function _pulleyFrame(now) {
   const fb = document.getElementById('pulleyFeedback');
 
   // ===== UPDATE =====
-  if (!_pulley.over) {
+  if (!_pulley.over && !_pulley.intro) {
     // pot fill "pop" animation decay
     _pulley.pots.forEach(p => { if (p.pop > 0) p.pop = Math.max(0, p.pop - dts * 2.2); });
     // rival fills his pots one at a time (unless stunned / mid-steal-away),
@@ -8152,6 +8174,7 @@ function _pulleyFrame(now) {
     shoo.addEventListener('click', _pulleyShoo);
     shoo.addEventListener('touchend', (e) => { e.preventDefault(); _pulleyShoo(); });
   }
+  const startBtn = document.getElementById('pulleyStartBtn'); if (startBtn) { startBtn.addEventListener('click', _pulleyStartGame); startBtn.addEventListener('touchend', (e) => { e.preventDefault(); _pulleyStartGame(); }); }
   const pauseBtn = document.getElementById('pulleyPauseBtn'); if (pauseBtn) pauseBtn.addEventListener('click', _pulleyPause);
   const resumeBtn = document.getElementById('pulleyResumeBtn'); if (resumeBtn) resumeBtn.addEventListener('click', _pulleyResume);
   const quitBtn = document.getElementById('pulleyQuitBtn'); if (quitBtn) quitBtn.addEventListener('click', _pulleyQuit);
