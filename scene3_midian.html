@@ -2370,6 +2370,8 @@
       #rescueCardGrid .rwCard .rwStat b{color:#ffd23a;letter-spacing:1px;font-size:11px;}
       #rescueCardGrid .rwCard .rwCost{margin:7px 8px 0;font-size:13px;font-weight:bold;color:#fff;background:var(--tint,#6a4a2a);border-radius:8px;padding:3px 0;box-shadow:0 2px 5px rgba(0,0,0,.3);}
       #rescueCardGrid .rwCard .rwBadge{position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;background:#ffe07a;color:#3a2a10;font-weight:bold;font-size:14px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);z-index:2;}
+      #rescueCardGrid .rwCard .rwCheck{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:7px;background:rgba(0,0,0,0.38);border:2px solid rgba(255,255,255,0.55);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:bold;color:#fff;line-height:1;z-index:2;transition:background .12s,transform .12s;}
+      #rescueCardGrid .rwCard.sel .rwCheck{background:#34c759;border-color:#fff;transform:scale(1.1);box-shadow:0 2px 8px rgba(40,180,80,0.6);}
       #rescueCardGrid .rwCard .rwLock{position:absolute;top:8px;right:8px;font-size:12px;font-weight:bold;background:rgba(10,6,2,0.82);color:#ffd23a;padding:3px 7px;border-radius:10px;z-index:2;}
       #rescueWeaponBar .rwBtn{flex:1;min-width:0;position:relative;overflow:hidden;border:2px solid #2a6a9a;border-radius:9px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);color:#fff;padding:7px 2px 6px;cursor:pointer;text-align:center;line-height:1.1;}
       #rescueWeaponBar .rwBtn.sel{border-color:#ffe9a8;box-shadow:0 0 0 2px #ffe9a8 inset;}
@@ -8287,7 +8289,7 @@ function _rescueBuildCards() {
       '</div>' +
       '<div class="rwCost">' + (w.cost === 0 ? 'FREE' : '💰 ' + w.cost + ' / throw') + '</div>' +
       (sel ? '<div class="rwBadge">' + (_rescue.loadout.indexOf(key) + 1) + '</div>' : '') +
-      (unlocked ? '' : '<div class="rwLock">🔒 ⭐' + w.starReq + ' / 💰' + w.bagReq + '</div>');
+      (unlocked ? '<div class="rwCheck">' + (sel ? '✓' : '') + '</div>' : '<div class="rwLock">🔒 ⭐' + w.starReq + ' / 💰' + w.bagReq + '</div>');
     if (unlocked) card.addEventListener('click', () => _rescueToggleCard(key));
     grid.appendChild(card);
   });
@@ -8389,7 +8391,7 @@ function _rescueAward(foe) {
   _rescueCue('+💰' + b, foe.x, _rescue.laneY[foe.lane] - 34, '#ffe07a');
   // wow: a treasure bag bursts from the shepherd and flies up to Moses's purse
   const n = foe.type === 'boss' ? 5 : (foe.type === 'big' ? 3 : 1);
-  for (let i = 0; i < n; i++) _rescue.flyers.push({ x: foe.x + (Math.random() * 30 - 15), y: _rescue.laneY[foe.lane] - 8, t: -i * 0.06, life: 0.72, spin: Math.random() * 6 });
+  for (let i = 0; i < n; i++) _rescue.flyers.push({ x: foe.x + (Math.random() * 30 - 15), y: _rescue.laneY[foe.lane] - 8, t: -i * 0.06, life: 0.72, spin: Math.random() * 6, bag: ['treasureB', 'treasureG', 'treasureR'][(Math.random() * 3) | 0] });
   if (foe.type === 'boss') _rescue.bossDown = true;
   _rescueHud();
 }
@@ -8583,7 +8585,7 @@ function _rescueFrame(now) {
   // cues
   for (let i = _rescue.cues.length - 1; i >= 0; i--) { const q = _rescue.cues[i]; q.t++; if (q.t > q.life) { _rescue.cues.splice(i, 1); continue; } const a = Math.max(0, 1 - q.t / q.life), cyy = q.y - q.t * (q.big ? 0.4 : 0.55); c.globalAlpha = a; c.font = q.big ? 'bold 21px Georgia' : 'bold 16px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; let cxx = q.x; if (q.big) { const half = c.measureText(q.text).width / 2 + 12; cxx = Math.max(half + 2, Math.min(W - half - 2, q.x)); c.fillStyle = 'rgba(10,24,40,0.78)'; c.beginPath(); if (c.roundRect) c.roundRect(cxx - half, cyy - 15, half * 2, 30, 8); else c.rect(cxx - half, cyy - 15, half * 2, 30); c.fill(); } c.fillStyle = q.color; c.fillText(q.text, cxx, cyy); c.globalAlpha = 1; }
   // treasure-bag flyers (arc to the purse)
-  for (const fl of _rescue.flyers) { if (fl.t < 0) continue; const k = Math.max(0, Math.min(1, fl.t / fl.life)), e = k * k * (3 - 2 * k); const cx = fl.x + (44 - fl.x) * e, cy = fl.y + (14 - fl.y) * e - Math.sin(k * Math.PI) * 48, sc = 1 + Math.sin(k * Math.PI) * 0.55; c.save(); c.globalAlpha = k > 0.82 ? Math.max(0, 1 - (k - 0.82) / 0.18) : 1; c.font = Math.round(19 * sc) + 'px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; if (!_pDraw(c, ['treasureBag', 'coinBag'], cx - 11 * sc, cy - 11 * sc, 22 * sc, 22 * sc)) c.fillText('💰', cx, cy); c.restore(); }
+  for (const fl of _rescue.flyers) { if (fl.t < 0) continue; const k = Math.max(0, Math.min(1, fl.t / fl.life)), e = k * k * (3 - 2 * k); const cx = fl.x + (44 - fl.x) * e, cy = fl.y + (14 - fl.y) * e - Math.sin(k * Math.PI) * 48, sc = 1 + Math.sin(k * Math.PI) * 0.55; c.save(); c.globalAlpha = k > 0.82 ? Math.max(0, 1 - (k - 0.82) / 0.18) : 1; c.font = Math.round(19 * sc) + 'px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; if (!_pDraw(c, [fl.bag || 'treasureB', 'treasureG', 'treasureR'], cx - 12 * sc, cy - 12 * sc, 24 * sc, 24 * sc)) c.fillText('💰', cx, cy); c.restore(); }
   if (_rescue.over && _rescue.win) { c.fillStyle = 'rgba(255,230,120,' + (0.12 + 0.07 * Math.sin(now / 120)).toFixed(2) + ')'; c.fillRect(0, 0, W, H); }
   c.restore();
 }
