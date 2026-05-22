@@ -2122,6 +2122,7 @@
     <canvas id="gameCanvas" width="448" height="320"></canvas>
   </div>
   <div class="controls" role="group" aria-label="Game controls">
+    <div id="hudPowerups" aria-label="Power-ups"></div>
     <div class="dpad" role="group" aria-label="Movement">
       <span class="dpad-spacer"></span>
       <button class="dpad-btn" data-dir="up" aria-label="Move up"><span class="dpad-glyph">&#9650;</span><span class="dpad-text">UP</span></button>
@@ -4079,6 +4080,18 @@ function drawScene3Stream(){
       ctx.beginPath();
       ctx.ellipse(dx + TILE/2 + wobX, dy + TILE*0.78 + wobY, TILE*0.42, TILE*0.10, 0, 0, Math.PI*2);
       ctx.stroke();
+      // Eagle Eye power: unmistakable safe (✓) / sinking (✗) marker above each stone
+      if (window._royalVisionUntil && now < window._royalVisionUntil) {
+        const pulse = 0.55 + 0.45 * Math.sin(now / 170);
+        ctx.font = 'bold ' + Math.round(TILE * 0.46) + 'px Georgia';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+        const mark = sinking ? '✗' : '✓';
+        const mx = dx + TILE / 2, my = dy + TILE * 0.14;
+        ctx.strokeText(mark, mx, my);
+        ctx.fillStyle = sinking ? 'rgba(255,70,50,' + pulse + ')' : 'rgba(70,235,100,' + pulse + ')';
+        ctx.fillText(mark, mx, my);
+      }
       ctx.restore();
     }
   }
@@ -4145,6 +4158,8 @@ const scene3Wolf = {
 function updateScene3Wolf(dt){
   if (game.scene !== 2) return;
   if (game.state !== 'playing') return;
+  if (window._guardFreezeUntil && performance.now() < window._guardFreezeUntil) return; // Foe Freeze power
+
   const now = performance.now();
   const dusk = _scene3DuskT();
   // Wolf only appears once dusk progress > 0.7 (twilight)
@@ -5759,7 +5774,8 @@ const MOVE_COOLDOWN_MS = 150;
 function handleDirInput(dir) {
   if (game.state !== 'playing') return;
   const now = performance.now();
-  if (now - lastMoveAt < MOVE_COOLDOWN_MS) return;
+  const cd = (window._speedBurstUntil && now < window._speedBurstUntil) ? MOVE_COOLDOWN_MS * 0.5 : MOVE_COOLDOWN_MS;
+  if (now - lastMoveAt < cd) return;
   lastMoveAt = now;
   attemptMove(dir);
 }
@@ -6666,7 +6682,7 @@ function _applyCheckpointAfterSeed(){
         }
       } catch(e){}
     }
-    try { updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); updateHudAltitude(); } catch(e){}
+    try { updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); updateHudAltitude(); } catch(e){} try { _refreshUnlockButtons(); } catch(e){}
     try { toast('Welcome back! Resumed from your last checkpoint.'); } catch(e){}
     return true;
   } catch(e) { return false; }
@@ -6725,7 +6741,7 @@ function startScene1() {
   // v2.1: arm mirage traps (Zone C) and rolling boulder schedule (Zone A hard)
   try { seedMirages(); } catch(e){}
   try { seedRollingBoulders(); } catch(e){}
-  updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){}
+  updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){} try { _refreshUnlockButtons(); } catch(e){}
   $('gamePage').classList.add('active');
   // now that the game page is visible, the canvas-wrapper has real dimensions
   resizeCanvas();
@@ -6832,7 +6848,7 @@ function restartScene() {
   try { seedPursuitScouts(); } catch(e){}
   try { seedMirages(); } catch(e){}
   try { seedRollingBoulders(); } catch(e){}
-  updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){}
+  updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){} try { _refreshUnlockButtons(); } catch(e){}
   updateCamera();
   game.state = 'playing';
   setMusic('bgm');
@@ -8666,6 +8682,15 @@ function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: t
 function openChallenge(gate) {
   // Phase C Step 7: Well gate → pulley mini-game instead of trivia
   if (gate && gate.zone === 'well') { openWellPulleyGame(gate); return; }
+  // Scribe's Wisdom power: skip a trivia checkpoint (never a mini-game gate).
+  if (window._scribesWisdomArmed && gate && gate.zone !== 'well') {
+    window._scribesWisdomArmed = false;
+    gate.solved = true; game.state = 'playing';
+    try { play('success') || play('chime'); } catch(e){}
+    try { spawnGlitterBurstAtPlayer(12); } catch(e){}
+    try { toast('🪶 Scribe\'s Wisdom — checkpoint skipped!'); } catch(e){}
+    return;
+  }
   // v2.3.1 (Jane) BULLETPROOF: if the gate or its questions are missing,
   // treat the gate as already-solved so Moses can walk past it instead of
   // getting stuck in a 'dialog' state with no modal. Fixes Jane's bug:
@@ -8792,6 +8817,16 @@ function openChallenge(gate) {
         b.addEventListener('click', () => handleChallengeAnswer(gate, i, b));
         opts.appendChild(b);
       });
+      // Truth Seeker power: free clue + grey out 2 wrong options on this MCQ.
+      if (window._truthSeekerArmed) {
+        window._truthSeekerArmed = false;
+        if (hintBox) hintBox.style.display = 'block';
+        if (hintBtn) hintBtn.style.display = 'none';
+        const wrong = Array.from(opts.querySelectorAll('.ch-option')).filter((_, i) => i !== q.correct);
+        for (let s = wrong.length - 1; s > 0; s--) { const j = Math.floor(Math.random() * (s + 1)); const t = wrong[s]; wrong[s] = wrong[j]; wrong[j] = t; }
+        wrong.slice(0, 2).forEach(b => { b.disabled = true; b.style.opacity = '0.35'; b.style.textDecoration = 'line-through'; });
+        try { toast('📖 Truth Seeker: clue revealed, 2 wrong answers removed!'); } catch(e){}
+      }
     }
   } catch(rErr) {
     /* v3.28 strip — renderer error falls through to feedback message below */
@@ -10000,30 +10035,102 @@ $('dlgCloseBtn').addEventListener('click', () => {
 /* ---------- TREASURE ----------
    v3.6: uses its OWN "coin collect" sound so treasure pickup does not share
    the same chime as a correct Bible-answer. Different event, different cue. */
-// 2026-05-19 (Jane: "wire scene 3 into the unified game"). Scene 3 was not
-// feeding the cross-scene lifetime collectables / power-unlock progression at
-// all. Ported the DATA layer from scenes 1 & 2 so treasures collected here
-// now count toward the SAME lifetime totals + unlock thresholds (and the
-// "Your Journey" win panel). NOTE: the in-game power DOCK + effects are NOT
-// wired here yet — those are built alongside scene 3's rogue-shepherd
-// antagonist so the foe-powers target the right enemy (the temporary `guards`
-// here will be replaced by shepherds). Keep these tiers in sync with S1/S2.
+// 2026-05-19 (Jane: "wire scene 3 into the unified game"). Scene 3 feeds the
+// cross-scene lifetime collectables / power-unlock progression: treasures
+// collected here count toward the SAME lifetime totals + unlock thresholds
+// (and the "Your Journey" win panel). The in-game power DOCK + effects ARE now
+// wired (see the power-dock block below): Speed Burst, Foe Freeze (shepherds +
+// wolf), Eagle Eye (river-stone reveal — was Royal Vision), Truth Seeker and
+// Scribe's Wisdom (checkpoint helpers). Keep these tiers in sync with S1/S2.
 const _LIFETIME_TREASURES_KEY = 'bek.bundle1.totalTreasures';
 const _LIFETIME_CROWNS_KEY    = 'bek.bundle1.totalCrowns';
 const _LIFETIME_SCROLLS_KEY   = 'bek.bundle1.totalScrolls';
 const _UNLOCKS_KEY            = 'bek.bundle1.unlocks';
 const UNLOCK_TIERS = [
-  { threshold:  75, resource: 'treasures', key: 'speedBurst',    label: '⚡ Speed Burst' },
-  { threshold: 175, resource: 'treasures', key: 'guardFreeze',   label: '❄️ Foe Freeze' },
-  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '👁️ Royal Vision' },
-  { threshold: 350, resource: 'treasures', key: 'truthSeeker',   label: '📖 Truth Seeker' },
-  { threshold:  10, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom' },
+  { threshold:  75, resource: 'treasures', key: 'speedBurst',    label: '⚡ Speed Burst',     cooldownMs: 25000, desc: 'Moses sprints 2× for 5 seconds. Tap any time — recharges every 25 s.' },
+  { threshold: 175, resource: 'treasures', key: 'guardFreeze',   label: '❄️ Foe Freeze',      cooldownMs: 35000, desc: 'Shepherds AND wolves freeze in place for 5 seconds. Recharges every 35 s.' },
+  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '🦅 Eagle Eye',       cooldownMs: 30000, desc: 'Marks every river stone safe (✓) or sinking (✗) so you cross without stumbling. Lasts 8 seconds.' },
+  { threshold: 350, resource: 'treasures', key: 'truthSeeker',   label: '📖 Truth Seeker',    cooldownMs: 60000, desc: 'On the next checkpoint: clue is free + 2 wrong options greyed out.' },
+  { threshold:  10, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000, desc: 'Skip the next checkpoint (counts as solved). Recharges every 90 s.' },
 ];
 function _loadLifetimeTreasures(){ try { return parseInt(localStorage.getItem(_LIFETIME_TREASURES_KEY) || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadLifetimeCrowns(){    try { return parseInt(localStorage.getItem(_LIFETIME_CROWNS_KEY)    || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadLifetimeScrolls(){   try { return parseInt(localStorage.getItem(_LIFETIME_SCROLLS_KEY)   || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadUnlocks(){ try { return JSON.parse(localStorage.getItem(_UNLOCKS_KEY) || '[]'); } catch(e){ return []; } }
 function _hasUnlock(key){ return _loadUnlocks().includes(key); }
+
+/* ---------- IN-GAME POWER DOCK (ported from scenes 1 & 2, wired to scene-3 systems) ----------
+   Same dock UI/cooldown framework as the other scenes; the EFFECTS target scene 3's
+   shepherds (`guards`), the dusk wolf, the river stones and the checkpoint gates. */
+window._puCooldownUntil = window._puCooldownUntil || {};
+window._puActiveUntil   = window._puActiveUntil   || {};
+function _puReady(key){ return performance.now() >= (window._puCooldownUntil[key] || 0); }
+function _puActive(key){ return performance.now() < (window._puActiveUntil[key] || 0); }
+function _activatePowerup(key){
+  const tier = UNLOCK_TIERS.find(t => t.key === key);
+  if (!tier) return;
+  if (!_hasUnlock(key)) return;
+  if (!_puReady(key)) {
+    const left = Math.max(0, Math.ceil(((window._puCooldownUntil[key] || 0) - performance.now()) / 1000));
+    try { toast('⏳ ' + tier.label + ' recharging — ' + left + 's left.'); } catch(e){}
+    return;
+  }
+  const now = performance.now();
+  if (key === 'speedBurst') {
+    window._speedBurstUntil = now + 5000;
+    window._puActiveUntil[key] = now + 5000;
+    try { toast('⚡ SPEED BURST! Run, Moses, run!'); } catch(e){}
+  } else if (key === 'guardFreeze') {
+    window._guardFreezeUntil = now + 5000;
+    try {
+      if (typeof guards !== 'undefined' && Array.isArray(guards)) {
+        for (const g of guards) { if (g.state === 'alerted' || g.state === 'suspicious') { g.state = 'patrol'; g.swordOut = false; g.swordAnim = 0; } }
+      }
+    } catch(e){}
+    window._puActiveUntil[key] = now + 5000;
+    try { play('frozen'); } catch(e){}
+    try { toast('❄️ FOE FREEZE! Shepherds and wolves are stuck — slip past!'); } catch(e){}
+  } else if (key === 'royalVision') {
+    window._royalVisionUntil = now + 8000;
+    window._puActiveUntil[key] = now + 8000;
+    try { toast('🦅 EAGLE EYE! Safe stones ✓ and sinking stones ✗ revealed.'); } catch(e){}
+  } else if (key === 'truthSeeker') {
+    window._truthSeekerArmed = true;
+    window._puActiveUntil[key] = now + 1500;
+    try { toast('📖 TRUTH SEEKER armed for the next checkpoint.'); } catch(e){}
+  } else if (key === 'scribesWisdom') {
+    window._scribesWisdomArmed = true;
+    window._puActiveUntil[key] = now + 1500;
+    try { toast('🪶 SCRIBE\'S WISDOM armed — next checkpoint skipped.'); } catch(e){}
+  }
+  if (tier.cooldownMs && tier.cooldownMs > 0) window._puCooldownUntil[key] = now + tier.cooldownMs;
+  try { play('powerSpell') || play('magicSfx') || play('chime') || play('success'); } catch(e){}
+  try { spawnGlitterBurstAtPlayer(20); } catch(e){}
+  _refreshUnlockButtons();
+  if (window._puActiveUntil[key]) setTimeout(_refreshUnlockButtons, Math.max(60, window._puActiveUntil[key] - performance.now() + 50));
+  if (tier.cooldownMs && tier.cooldownMs > 0) setTimeout(_refreshUnlockButtons, tier.cooldownMs + 100);
+}
+function _refreshUnlockButtons(){
+  try {
+    const dock = document.getElementById('hudPowerups');
+    if (!dock) return;
+    const have = _loadUnlocks();
+    let html = '';
+    for (const tier of UNLOCK_TIERS) {
+      if (!have.includes(tier.key)) continue;
+      const ready  = _puReady(tier.key);
+      const active = _puActive(tier.key);
+      const css = active ? 'background:linear-gradient(145deg,#7fff8a,#3aa54a);box-shadow:0 0 14px rgba(120,255,140,0.85);'
+                : ready  ? 'background:linear-gradient(145deg,#ffd976,#c38b28);'
+                :          'background:linear-gradient(145deg,#6a4a20,#3a2810);opacity:0.55;';
+      const cdLeft = ready ? '' : Math.max(0, Math.ceil(((window._puCooldownUntil[tier.key] || 0) - performance.now()) / 1000));
+      const cdBadge = cdLeft ? '<span style="position:absolute;right:-4px;top:-4px;background:#000;color:#ffd976;border-radius:50%;width:18px;height:18px;font-size:10px;display:flex;align-items:center;justify-content:center;border:1px solid #ffd976;">' + cdLeft + '</span>' : '';
+      html += '<button type="button" data-pu="' + tier.key + '" class="hud-pu-btn" aria-label="' + tier.label + '" title="' + tier.desc + '" style="position:relative;border:2px solid #ffd976;border-radius:10px;width:48px;height:48px;font-size:22px;cursor:pointer;color:#3a1505;font-weight:900;' + css + '">' + tier.label.split(' ')[0] + cdBadge + '</button>';
+    }
+    dock.innerHTML = html;
+    dock.querySelectorAll('button[data-pu]').forEach(b => { b.addEventListener('click', () => _activatePowerup(b.getAttribute('data-pu'))); });
+  } catch(e){}
+}
 function _addLifetimeResource(which, n){
   const KEY = which === 'crowns'  ? _LIFETIME_CROWNS_KEY
             : which === 'scrolls' ? _LIFETIME_SCROLLS_KEY
@@ -10042,8 +10149,8 @@ function _addLifetimeResource(which, n){
     try { localStorage.setItem(_UNLOCKS_KEY, JSON.stringify([...have])); } catch(e){}
     try { play('rankReveal') || play('success'); } catch(e){}
     try { spawnGlitterBurstAtPlayer(28); } catch(e){}
-    // Scene 3 has no power dock yet, so don't tell the kid to "tap the button".
-    granted.forEach(g => { try { toast('✨ ' + g.label + ' power unlocked!'); } catch(e){} });
+    granted.forEach(g => { try { toast('✨ ' + g.label + ' power unlocked — tap it in the dock!'); } catch(e){} });
+    try { _refreshUnlockButtons(); } catch(e){}
   }
   return next;
 }
@@ -12111,6 +12218,7 @@ function drawRollingBoulders(ctx){
 }
 
 function updateGuards(dt){
+  if (window._guardFreezeUntil && performance.now() < window._guardFreezeUntil) return; // Foe Freeze power
   for (const g of guards) {
     g.timer -= dt;
     if (g.swordOut) g.swordAnim = Math.min(g.swordAnim + dt*0.003, 1);
