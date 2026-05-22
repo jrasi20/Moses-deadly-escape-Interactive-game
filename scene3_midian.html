@@ -2318,6 +2318,12 @@
       <button class="btn" id="pulleyResumeBtn" style="font-size:20px;padding:12px 30px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #7ab8d8;">▶ Resume</button>
       <button class="btn" id="pulleyQuitBtn" style="font-size:15px;padding:9px 22px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit mini-game</button>
     </div>
+    <div id="pulleyLoseOverlay" style="display:none;position:absolute;inset:0;z-index:5;background:rgba(20,8,8,0.86);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:0 16px;">
+      <div style="color:#ff8a6a;font-size:26px;font-weight:bold;letter-spacing:1px;">Moses lost the race!</div>
+      <div id="pulleyLoseMsg" style="color:#ffe0c0;font-size:16px;line-height:1.5;">The rude shepherd watered his flock first.</div>
+      <button class="btn" id="pulleyRetryBtn" style="font-size:20px;padding:12px 34px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #7ab8d8;">🔁 Retry</button>
+      <button class="btn" id="pulleyLoseQuitBtn" style="font-size:14px;padding:8px 20px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit to map</button>
+    </div>
   </div>
 </div>
 
@@ -7295,10 +7301,20 @@ function _pulleyCue(text, x, y, color, big) {
 function _pulleyFx(key, x, y, size, life) {
   _pulley.fx.push({ key: key, x: x, y: y, size: size || 46, t: 0, life: life || 26 });
 }
-// say a banter line with an optional matching voice-over
+// say a banter line with an optional matching voice-over. Ducks the music while
+// the line plays so the dialogue is clearly audible, then restores it.
 function _pulleySay(who, text, voKey) {
   _pulley[who] = { text: text, t: 0 };
-  if (voKey) { try { play(voKey); } catch(e){} }
+  if (voKey) {
+    try {
+      const vo = audio[voKey]; if (vo) vo.volume = 1.0;
+      const base = _pulley.matchPoint ? 0.34 : 0.2;
+      if (audio.wellMusic) audio.wellMusic.volume = 0.06;
+      clearTimeout(_pulley._duckT);
+      _pulley._duckT = setTimeout(() => { try { if (audio.wellMusic && !audio.wellMusic.paused) audio.wellMusic.volume = base; } catch(e){} }, 1700);
+      play(voKey);
+    } catch(e){}
+  }
 }
 function _pulleyReset() {
   const cfg = _pulleyCfg();
@@ -7311,7 +7327,9 @@ function _pulleyReset() {
   _pulley.aiming = false; _pulley.proj = null; _pulley.curWind = 0;
   _pulley.steal = null; _pulley.mosesRun = null; _pulley.shepStun = 0; _pulley.shepCarry = null; _pulley.shoveT = 0;
   _pulley.shepHeave = 0; _pulley.shepPourT = 0; _pulley.paused = false;
+  _pulley.matchPoint = false; _pulley.slowmo = 0; _pulley.flock = null;
   _pulley.shepX = _pulley.shepHomeX; _pulley.mosesX = _pulley.mosesHomeX;
+  const lo = document.getElementById('pulleyLoseOverlay'); if (lo) lo.style.display = 'none';
   _pulley.mosesSay = null; _pulley.shepSay = null;
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
   const bar = document.getElementById('pulleyBar'); if (bar) bar.style.display = 'none';
@@ -7324,7 +7342,7 @@ function openWellPulleyGame(gate) {
   // swap the scene BGM for the dedicated well-game music bed
   try {
     if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); }
-    if (audio.wellMusic) { audio.wellMusic.volume = 0.4; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); }
+    if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); }
   } catch(e){}
   const modal = document.getElementById('wellPulleyModal');
   modal.style.display = 'flex'; modal.classList.add('active');
@@ -7430,27 +7448,52 @@ function _pulleyWin() {
   if (_pulley.over) return;
   _pulley.over = true; _pulley.win = true; _pulley.celebrate = 0; _pulley.steal = null; _pulley.proj = null;
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
-  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F389} All pots filled! The flock is watered!';
-  _pulley.shepCarry = null;
+  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F389} All pots filled! The flock comes to drink!';
+  _pulley.shepCarry = null; _pulley.shoveT = 0; _pulley.mosesRun = null;
   _pulleySay('mosesSay', 'The flock is watered!');
-  _pulleyConfetti(40);
+  _pulleyConfetti(46);
+  // the watered flock trots in to drink at your pots (real sheep sprites)
+  _pulley.flock = [];
+  const mine = _pulley.pots.filter(p => p.mine).sort((a, b) => a.x - b.x);
+  const keys = [['sheep', 'sheepRight'], ['lamb', 'lambAlt'], ['sheepRight', 'sheep'], ['lamb', 'sheep'], ['sheep', 'sheepRight']];
+  for (let i = 0; i < 5; i++) {
+    const tp = mine[i % mine.length];
+    _pulley.flock.push({ key: keys[i], x: -40 - i * 46, y: 326, tx: Math.max(70, Math.min(290, tp.x + (i % 2 ? 14 : -14))), vx: 1, drinking: false, ph: Math.random() * 6 });
+  }
   // stop the looping music so the victory cheer plays clean
   try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
   try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){}
-  setTimeout(_closePulleyGame, 2300);
+  setTimeout(_closePulleyGame, 4200);   // linger on the win
 }
 function _pulleyLose() {
   if (_pulley.over) return;
   _pulley.over = true; _pulley.win = false; _pulley.steal = null; _pulley.proj = null; _pulley.mosesRun = null;
+  cancelAnimationFrame(_pulley.rafId);
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
-  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F605} The shepherd filled his pots first — try again!';
-  _pulley.shepSay = { text: 'Too slow!', t: 0 };
-  try { play('pop'); } catch(e){}
-  setTimeout(() => {
-    if (!_pulley.gate) return;
-    _pulleyReset(); _pulleyUpdateHud();
-    document.getElementById('pulleyFeedback').textContent = 'Go again — fill every pot before the shepherd!';
-  }, 1900);
+  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F62B} The rude shepherd filled all 5 pots first!';
+  _pulleySay('shepSay', 'Too slow!');
+  // pause the music; lose a heart
+  try { if (audio.wellMusic) audio.wellMusic.pause(); } catch(e){}
+  try { game.hearts = Math.max(0, game.hearts - 1); updateHudHearts(); game.perfectRun = false; } catch(e){}
+  try { play('sandThud') || play('pop'); } catch(e){}
+  // show the lose overlay with the heart loss + a Retry option
+  const out = (game && game.hearts <= 0);
+  const msgEl = document.getElementById('pulleyLoseMsg');
+  if (msgEl) msgEl.innerHTML = out
+    ? '\u{1F494} The shepherd won — and that was your last heart!'
+    : 'The rude shepherd watered his flock first.<br>Moses lost a heart \u{2764}\u{FE0F}';
+  const retry = document.getElementById('pulleyRetryBtn');
+  if (retry) retry.textContent = out ? 'Try once more' : '\u{1F501} Retry';
+  const ov = document.getElementById('pulleyLoseOverlay'); if (ov) ov.style.display = 'flex';
+}
+function _pulleyRetry() {
+  const ov = document.getElementById('pulleyLoseOverlay'); if (ov) ov.style.display = 'none';
+  if (!_pulley.gate) return;
+  _pulley.lastFrame = 0;
+  _pulleyReset(); _pulleyUpdateHud();
+  document.getElementById('pulleyFeedback').textContent = 'Go again — fill every pot before the shepherd!';
+  try { if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
+  _pulley.rafId = requestAnimationFrame(_pulleyFrame);
 }
 function _closePulleyGame() {
   cancelAnimationFrame(_pulley.rafId);
@@ -7508,6 +7551,21 @@ function _pDraw(c, keys, x, y, w, h, flip) {
   else c.drawImage(im, x, y, w, h);
   return true;
 }
+// Aspect-preserving draw: fit the sprite inside a maxW x maxH box, anchored by
+// its horizontal centre (cx) and bottom (baseY). Prevents the stretching that
+// distorted the daughters/sheep when forced into a fixed w/h.
+function _pDrawFit(c, keys, cx, baseY, maxW, maxH, flip) {
+  let im = null;
+  const list = Array.isArray(keys) ? keys : [keys];
+  for (const k of list) { im = _pImg(k); if (im) break; }
+  if (!im) return false;
+  const nw = im.naturalWidth || im.width, nh = im.naturalHeight || im.height;
+  const s = Math.min(maxW / nw, maxH / nh);
+  const w = nw * s, h = nh * s, x = cx - w / 2, y = baseY - h;
+  if (flip) { c.save(); c.translate(x + w, y); c.scale(-1, 1); c.drawImage(im, 0, 0, w, h); c.restore(); }
+  else c.drawImage(im, x, y, w, h);
+  return true;
+}
 function _pulleySayBubble(c, tipX, tipY, text, alpha) {
   c.save();
   c.globalAlpha = (alpha == null) ? 1 : alpha;
@@ -7536,7 +7594,7 @@ function _pPot(c, p, now) {
   const pop = p.pop ? Math.sin(p.pop * Math.PI) * 4 : 0;
   c.save(); if (!p.done && p.fill <= 0) c.globalAlpha = 0.95;
   const potKeys = p.done ? ['waterPotFull', 'waterPot', 'waterJar'] : ['waterPot', 'waterJar'];
-  if (!_pDraw(c, potKeys, x, y - pop, w, h)) { c.fillStyle = '#c0703a'; c.fillRect(x + 6, y + 8, w - 12, h - 8); }
+  if (!_pDrawFit(c, potKeys, p.x, p.y - pop, w, h)) { c.fillStyle = '#c0703a'; c.fillRect(x + 6, y + 8, w - 12, h - 8); }
   c.restore();
   // water shimmer at the mouth
   const f = Math.max(0, Math.min(1, p.fill / 100));
@@ -7561,8 +7619,10 @@ function _pulleyFrame(now) {
   if (!canvas) return;
   const c = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  const dt = Math.min(60, now - (_pulley.lastFrame || now));
+  const rawDt = Math.min(60, now - (_pulley.lastFrame || now));
   _pulley.lastFrame = now;
+  if (_pulley.slowmo > 0) _pulley.slowmo -= rawDt / 1000;          // match-point slow-mo (real-time countdown)
+  const dt = (_pulley.slowmo > 0) ? rawDt * 0.5 : rawDt;
   const dts = dt / 1000;
   const fb = document.getElementById('pulleyFeedback');
 
@@ -7649,7 +7709,7 @@ function _pulleyFrame(now) {
         const lx = Math.max(8, Math.min(W - 8, pr.x));
         _pulleySpawnDrops(9, lx, _pulley.GROUND + 4, 26, true);
         _pulleyFx('dustPuff', lx, _pulley.GROUND - 4, 44, 24);
-        _pulleyCue('Splash! Aim for a pot', Math.max(80, Math.min(W - 80, lx)), _pulley.GROUND - 18, '#ffd86a', true);
+        _pulleyCue('Aim for a pot!', lx, _pulley.GROUND - 18, '#ffd86a', true);
         _pulley.combo = 0;
         try { play('sandThud') || play('pop'); } catch(e){}
         if (fb) fb.textContent = 'Missed — adjust your angle/power and try again!';
@@ -7658,11 +7718,28 @@ function _pulleyFrame(now) {
         _pulley.proj = null; _pulley.combo = 0;
       }
     }
+    // MATCH POINT — both down to their final pot: flash, slow-mo, ramp music,
+    // and the shepherd lunges to steal more often. Instant nail-biter finish.
+    if (!_pulley.matchPoint) {
+      const mt = _pulleyMine().length, rt = _pulleyRival().length;
+      if (mt > 1 && _pulleyDone(true) >= mt - 1 && _pulleyDone(false) >= rt - 1) {
+        _pulley.matchPoint = true; _pulley.slowmo = 1.2;
+        _pulley.stealEvery = Math.max(2.2, _pulley.stealEvery * 0.5);
+        _pulley.nextSteal = Math.min(_pulley.nextSteal, 1.4);
+        _pulleyCue('★ MATCH POINT! ★', 300, 150, '#ffe06a', true);
+        try { if (audio.wellMusic) audio.wellMusic.volume = 0.34; } catch(e){}
+        try { play('levelUp'); } catch(e){}
+      }
+    }
     if (_pulleyDone(false) >= _pulleyRival().length) _pulleyLose();
     else if (_pulleyDone(true) >= _pulleyMine().length) _pulleyWin();
   } else if (_pulley.win) {
     _pulley.celebrate += dts;
-    if (Math.random() < 0.3) _pulleyConfetti(2);
+    if (Math.random() < 0.22) _pulleyConfetti(2);
+    // the watered flock trots in and drinks at your pots
+    if (_pulley.flock) for (const s of _pulley.flock) {
+      if (!s.drinking) { s.x += (s.tx - s.x) * Math.min(1, dts * 2.2); if (Math.abs(s.x - s.tx) < 6) s.drinking = true; }
+    }
   }
   _pulley.bucketBob *= 0.9;
   const sx = _pulley.shake > 0.2 ? Math.sin(now / 26) * _pulley.shake : 0;
@@ -7694,10 +7771,23 @@ function _pulleyFrame(now) {
   // wells (real art); shepherd's is mirrored so its bucket faces him
   _pDraw(c, ['midianWell', 'wellMouth'], 52, 86, 132, 150);
   _pDraw(c, ['midianWell', 'wellMouth'], 446, 86, 132, 150, true);
-  // Jethro's daughters watching by Moses' well (background spectators)
-  _pDraw(c, 'daughter1', 150, 150, 28, 48);
-  _pDraw(c, 'daughter2', 176, 156, 26, 44);
-  _pDraw(c, 'daughter3', 122, 156, 26, 44);
+  // ropes drawn FROM each well down to the heaving hands, so the rope clearly
+  // belongs to the well instead of hanging in mid-air
+  c.strokeStyle = '#b9935f'; c.lineWidth = 4; c.lineCap = 'round';
+  if (!_pulley.mosesRun) {
+    const hx = 78 - _pulley.bucketBob * 0.6, hy = 214;
+    c.beginPath(); c.moveTo(112, 150); c.quadraticCurveTo((112 + hx) / 2, 190, hx, hy); c.stroke();
+  }
+  if (!_pulley.steal && !_pulley.shepCarry) {
+    const hx = (_pulley.shepX != null ? _pulley.shepX : 478) + 40, hy = 214;
+    c.beginPath(); c.moveTo(516, 150); c.quadraticCurveTo((516 + hx) / 2, 190, hx, hy); c.stroke();
+  }
+  c.lineCap = 'butt';
+
+  // Jethro's daughters watching by Moses' well (aspect-preserved, not stretched)
+  _pDrawFit(c, 'daughter1', 156, 214, 30, 60);
+  _pDrawFit(c, 'daughter2', 182, 214, 28, 56);
+  _pDrawFit(c, 'daughter3', 130, 214, 28, 56);
 
   // characters — Moses
   const mBob = Math.sin(now / 430) * 2.4, heave = _pulley.bucketBob;
@@ -7722,13 +7812,17 @@ function _pulleyFrame(now) {
   } else { shepKeys = ['shepPull', 'shepherdLeft', 'shepherdFront']; shepFlip = _pImg('shepPull') ? false : true; }
   _pDraw(c, shepKeys, (_pulley.shepX != null ? _pulley.shepX : 470), 150 + sBob, 130, 140, shepFlip);
 
-  // flock
-  _pDraw(c, ['sheep', 'sheepRight'], 150, 250, 46, 38);
-  _pDraw(c, ['goat'], 470, 250, 46, 40);
+  // pots — drawn back-to-front (by y) so raised pots never hide the front ones
+  _pulley.pots.slice().sort((a, b) => a.y - b.y).forEach(p => _pPot(c, p, now));
 
-  // pots (draw rival first, then mine on top for clarity)
-  _pulley.pots.forEach(p => { if (!p.mine) _pPot(c, p, now); });
-  _pulley.pots.forEach(p => { if (p.mine)  _pPot(c, p, now); });
+  // flock standing clear at the front edges (aspect-preserved so they aren't squished)
+  _pDrawFit(c, ['sheep', 'sheepRight'], 96, 326, 52, 44);
+  _pDrawFit(c, ['lamb', 'lambAlt'], 132, 324, 34, 30);
+  _pDrawFit(c, ['goat'], 506, 326, 52, 46);
+  // victory flock — real sheep run in to drink at the pots
+  if (_pulley.flock) for (const s of _pulley.flock) {
+    _pDrawFit(c, s.key, s.x, s.y + Math.sin(now / 110 + s.ph) * (s.drinking ? 2.5 : 0), 50, 42, s.vx > 0);
+  }
 
   // subtle target ring on the nearest unfilled pot while idle (teaching aid)
   if (!_pulley.over && !_pulley.proj && !_pulley.aiming) {
@@ -7797,14 +7891,17 @@ function _pulleyFrame(now) {
     c.globalAlpha = a;
     c.font = q.big ? 'bold 22px Georgia' : 'bold 18px Georgia';
     c.textAlign = 'center'; c.textBaseline = 'middle';
+    // keep the (big) pill fully on-canvas so the text is never clipped at an edge
+    let cx = q.x;
     if (q.big) {
-      const tw = c.measureText(q.text).width;
-      c.fillStyle = 'rgba(10,24,40,0.72)';
+      const tw = c.measureText(q.text).width, half = tw / 2 + 14;
+      cx = Math.max(half + 2, Math.min(W - half - 2, q.x));
+      c.fillStyle = 'rgba(10,24,40,0.78)';
       c.beginPath();
-      if (c.roundRect) c.roundRect(q.x - tw / 2 - 12, cy - 17, tw + 24, 34, 9); else c.rect(q.x - tw / 2 - 12, cy - 17, tw + 24, 34);
+      if (c.roundRect) c.roundRect(cx - half, cy - 17, half * 2, 34, 9); else c.rect(cx - half, cy - 17, half * 2, 34);
       c.fill();
     }
-    c.fillStyle = q.color; c.fillText(q.text, q.x, cy);
+    c.fillStyle = q.color; c.fillText(q.text, cx, cy);
     c.globalAlpha = 1;
   }
 
@@ -7831,6 +7928,16 @@ function _pulleyFrame(now) {
     else { c.fillStyle = 'rgba(120,200,255,' + a.toFixed(2) + ')'; c.beginPath(); c.arc(d.x, d.y, 2.4, 0, Math.PI * 2); c.fill(); }
   }
 
+  // MATCH POINT banner + slow-mo vignette during the nail-biter finish
+  if (_pulley.matchPoint && !_pulley.over) {
+    if (_pulley.slowmo > 0) { c.fillStyle = 'rgba(0,0,0,0.12)'; c.fillRect(0, 0, W, H); }
+    const pulse = 0.6 + 0.4 * Math.sin(now / 140);
+    c.fillStyle = 'rgba(120,20,20,0.5)'; c.fillRect(W / 2 - 120, 6, 240, 30);
+    c.strokeStyle = 'rgba(255,120,90,' + pulse.toFixed(2) + ')'; c.lineWidth = 2; c.strokeRect(W / 2 - 120, 6, 240, 30);
+    c.fillStyle = '#ffd86a'; c.font = 'bold 19px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.globalAlpha = pulse; c.fillText('★ MATCH POINT ★', W / 2, 21); c.globalAlpha = 1;
+  }
+
   // win overlay
   if (_pulley.over && _pulley.win) {
     c.fillStyle = 'rgba(255,230,120,' + (0.12 + 0.06 * Math.sin(now / 120)).toFixed(2) + ')'; c.fillRect(0, 0, W, H);
@@ -7853,6 +7960,8 @@ function _pulleyFrame(now) {
   const pauseBtn = document.getElementById('pulleyPauseBtn'); if (pauseBtn) pauseBtn.addEventListener('click', _pulleyPause);
   const resumeBtn = document.getElementById('pulleyResumeBtn'); if (resumeBtn) resumeBtn.addEventListener('click', _pulleyResume);
   const quitBtn = document.getElementById('pulleyQuitBtn'); if (quitBtn) quitBtn.addEventListener('click', _pulleyQuit);
+  const retryBtn = document.getElementById('pulleyRetryBtn'); if (retryBtn) retryBtn.addEventListener('click', _pulleyRetry);
+  const loseQuitBtn = document.getElementById('pulleyLoseQuitBtn'); if (loseQuitBtn) loseQuitBtn.addEventListener('click', _pulleyQuit);
   const cv = document.getElementById('pulleyCanvas');
   if (cv) {
     if (window.PointerEvent) {
