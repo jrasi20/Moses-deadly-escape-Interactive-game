@@ -2381,6 +2381,15 @@
 <audio id="audVulture"        preload="auto" src="assets/audio/vulture.mp3"></audio>
 <audio id="audCamelGrunt"     preload="auto" src="assets/audio/camel%20grunt.mp3"></audio>
 <audio id="audSuccess3"       preload="auto" src="assets/audio/success%203.mp3"></audio>
+<!-- Scene 3 well mini-game audio (Jane drop 2026-05-21): music bed, SFX + rude-shepherd voice lines -->
+<audio id="audWellMusic"   loop preload="auto" src="assets/audio/well%20game%20music.mp3"></audio>
+<audio id="audPotFill"          preload="auto" src="assets/audio/pot%20fill%20ding.mp3"></audio>
+<audio id="audSandThud"         preload="auto" src="assets/audio/sand%20thud.mp3"></audio>
+<audio id="audStealWhoosh"      preload="auto" src="assets/audio/steal%20whoosh.mp3"></audio>
+<audio id="audWellCheer"        preload="auto" src="assets/audio/well%20win%20cheer.mp3"></audio>
+<audio id="audVoJethro"         preload="auto" src="assets/audio/this%20water%20is%20for%20jethro.mp3"></audio>
+<audio id="audVoSeeAbout"       preload="auto" src="assets/audio/we%20will%20see%20about%20that.mp3"></audio>
+<audio id="audVoMine"           preload="auto" src="assets/audio/that%20water%20is%20mine.mp3"></audio>
 
 <script>
 /* ============================================================================
@@ -2528,6 +2537,15 @@ const audio = {
   vulture:       $('audVulture'),        // vulture dive hazard
   camelGrunt:    $('audCamelGrunt'),     // friendly camel interaction
   success3:      $('audSuccess3'),       // truth card reveal sting
+  // Scene 3 well mini-game audio
+  wellMusic:     $('audWellMusic'),      // looping bed for the well race
+  potFill:       $('audPotFill'),        // a pot is completed
+  sandThud:      $('audSandThud'),       // a shot misses onto the sand
+  stealWhoosh:   $('audStealWhoosh'),    // shepherd lunges to steal
+  wellCheer:     $('audWellCheer'),      // win the race
+  voJethro:      $('audVoJethro'),       // Moses: "This water is for Jethro's flock!"
+  voSeeAbout:    $('audVoSeeAbout'),     // shepherd: "We'll see about that!"
+  voMine:        $('audVoMine'),         // shepherd: "That water is mine!"
 };
 // volumes
 audio.bgm.volume = 0.28;
@@ -2827,8 +2845,15 @@ const IMG_SRC = {
   // Well-race "heaving on the rope" poses (Moses faces right, shepherd faces left — a mirrored pair):
   mosesPull: 'assets/images/moses%20right%20facing%20with%20rope.png',
   shepPull:  'assets/images/orange%20shepherd%20heave%203%20with%20rope.png',
-  waterPot:  'assets/images/color%20water%20pot.png',   // the fillable target pots
+  waterPot:  'assets/images/color%20water%20pot.png',   // the fillable target pots (empty)
+  waterPotFull: 'assets/images/water%20pot%20full.png', // brimming pot (swapped in when filled)
   waterJar:  'assets/images/water%20jar.png',
+  splashFx:  'assets/images/water%20splash.png',        // splash burst on a pot hit
+  dustPuff:  'assets/images/dust%20puff.png',            // dust kick on a miss
+  shepGrab:  'assets/images/rude%20shepherd%20grabbing.png',          // bending to grab a pot
+  shepPotLeft:  'assets/images/rude%20shepherd%20with%20pot%20facing%20left.png',
+  shepPotRight: 'assets/images/rude%20shepherd%20with%20pot%20facing%20right.png',
+  mosesShove:   'assets/images/moses%20shoving%20right.png',          // Moses shoves him off
   // SHEPHERD 2 — front view only (used at 2nd patrol post for visual variety):
   shepherd2Front: 'assets/images/shepherd%202%20front.png',
   // SHEPHERD 3 — front view only (used at 3rd patrol post):
@@ -7198,7 +7223,7 @@ const _pulley = {
   gate: null, rafId: null, lastFrame: 0,
   pots: [], combo: 0, bestCombo: 0,
   over: false, win: false, celebrate: 0,
-  shake: 0, drops: [], cues: [], bucketBob: 0,
+  shake: 0, drops: [], cues: [], fx: [], bucketBob: 0,
   aiming: false, aimX: 0, aimY: 0, proj: null, curWind: 0, wind: 0,
   gain: 58, shepRate: 6, stealEvery: 8, stealWindow: 2.2,
   shepFillIdx: 0, nextSteal: 8, steal: null, mosesRun: null,
@@ -7247,6 +7272,15 @@ function _pulleyConfetti(n) {
 function _pulleyCue(text, x, y, color) {
   _pulley.cues.push({ text: text, x: x, y: y, color: color || '#fff', t: 0, life: 70 });
 }
+// one-shot sprite FX (splash on a hit, dust on a miss)
+function _pulleyFx(key, x, y, size, life) {
+  _pulley.fx.push({ key: key, x: x, y: y, size: size || 46, t: 0, life: life || 26 });
+}
+// say a banter line with an optional matching voice-over
+function _pulleySay(who, text, voKey) {
+  _pulley[who] = { text: text, t: 0 };
+  if (voKey) { try { play(voKey); } catch(e){} }
+}
 function _pulleyReset() {
   const cfg = _pulleyCfg();
   _pulley.gain = cfg.gain; _pulley.shepRate = cfg.shepRate; _pulley.stealEvery = cfg.stealEvery;
@@ -7254,9 +7288,9 @@ function _pulleyReset() {
   _pulleyLayoutPots();
   _pulley.combo = 0; _pulley.bestCombo = 0; _pulley.shepFillIdx = 0;
   _pulley.over = false; _pulley.win = false; _pulley.celebrate = 0;
-  _pulley.shake = 0; _pulley.drops = []; _pulley.cues = []; _pulley.bucketBob = 0;
+  _pulley.shake = 0; _pulley.drops = []; _pulley.cues = []; _pulley.fx = []; _pulley.bucketBob = 0;
   _pulley.aiming = false; _pulley.proj = null; _pulley.curWind = 0;
-  _pulley.steal = null; _pulley.mosesRun = null; _pulley.shepStun = 0;
+  _pulley.steal = null; _pulley.mosesRun = null; _pulley.shepStun = 0; _pulley.shepCarry = null; _pulley.shoveT = 0;
   _pulley.shepX = _pulley.shepHomeX; _pulley.mosesX = _pulley.mosesHomeX;
   _pulley.mosesSay = null; _pulley.shepSay = null;
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
@@ -7267,13 +7301,17 @@ function openWellPulleyGame(gate) {
   _pulley.gate = gate; _pulley.lastFrame = 0;
   _pulleyReset();
   game.state = 'dialog';
-  try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.volume = Math.max(0.18, audio.bgm.volume * 0.62); } } catch(e){}
+  // swap the scene BGM for the dedicated well-game music bed
+  try {
+    if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); }
+    if (audio.wellMusic) { audio.wellMusic.volume = 0.4; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); }
+  } catch(e){}
   const modal = document.getElementById('wellPulleyModal');
   modal.style.display = 'flex'; modal.classList.add('active');
   _pulleyUpdateHud();
   document.getElementById('pulleyFeedback').textContent = 'Drag from Moses to aim — fill every pot before the shepherd!';
-  _pulley.mosesSay = { text: 'This water is for Jethro’s flock!', t: 0 };
-  setTimeout(() => { if (_pulley.gate) _pulley.shepSay = { text: 'Not if I fill mine first!', t: 0 }; }, 1500);
+  _pulleySay('mosesSay', 'This water is for Jethro’s flock!', 'voJethro');
+  setTimeout(() => { if (_pulley.gate && !_pulley.over) _pulleySay('shepSay', 'We’ll see about that!', 'voSeeAbout'); }, 1800);
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
 }
 function _pulleyUpdateHud() {
@@ -7326,8 +7364,8 @@ function _pulleyStartSteal() {
   _pulley.steal = { pot: pot, t: 0 };
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = '';
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '⚠️ The rude shepherd is grabbing a pot — tap SHOO!';
-  _pulley.shepSay = { text: 'That one’s mine!', t: 0 };
-  try { play('mirageWoosh') || play('pop'); } catch(e){}
+  _pulleySay('shepSay', 'That water is mine!', 'voMine');
+  try { play('stealWhoosh') || play('mirageWoosh') || play('pop'); } catch(e){}
 }
 function _pulleyShoo() {
   if (_pulley.over || !_pulley.steal || _pulley.mosesRun) return;
@@ -7340,31 +7378,37 @@ function _pulleyResolveSteal(saved) {
   const fb = document.getElementById('pulleyFeedback');
   const pot = _pulley.steal ? _pulley.steal.pot : null;
   if (saved) {
-    _pulley.shepStun = 1.9; _pulley.shake = 6;
+    _pulley.shepStun = 2.0; _pulley.shake = 6; _pulley.shoveT = 0.6;
     if (pot) _pulleyCue('SAVED! \u{1F4AA}', pot.x, pot.y - 54, '#9affb0');
-    _pulley.mosesSay = { text: 'Leave it be!', t: 0 };
+    _pulleySay('mosesSay', 'Leave it be!');
     if (fb) fb.textContent = 'Saved it! He has to wait now.';
     try { play('chime') || play('coin'); } catch(e){}
+    _pulley.steal = null; _pulley.nextSteal = _pulley.stealEvery;
   } else if (pot) {
     pot.fill = 0; pot.done = false; pot.pop = 0;
     _pulley.shake = 12; _pulleySpawnDrops(8, pot.x, pot.y - 26, 40);
-    _pulleyCue('emptied!', pot.x, pot.y - 54, '#ff7a6a');
-    _pulley.shepSay = { text: 'Hah!', t: 0 };
-    if (fb) fb.textContent = 'He emptied a pot! Tap SHOO faster next time.';
-    try { play('pop'); } catch(e){}
+    _pulleyCue('stole it!', pot.x, pot.y - 54, '#ff7a6a');
+    _pulleySay('shepSay', 'Hah! Got it!');
+    if (fb) fb.textContent = 'He got away with a pot! Tap SHOO faster next time.';
+    try { play('sandThud') || play('pop'); } catch(e){}
     _pulleyUpdateHud();
+    // shepherd carries the pot back to his side (getaway sprite)
+    _pulley.shepCarry = { t: 0, fromX: pot.x + 8 };
+    _pulley.steal = null;
+  } else {
+    _pulley.steal = null; _pulley.nextSteal = _pulley.stealEvery;
   }
-  _pulley.steal = null; _pulley.nextSteal = _pulley.stealEvery;
 }
 function _pulleyWin() {
   if (_pulley.over) return;
   _pulley.over = true; _pulley.win = true; _pulley.celebrate = 0; _pulley.steal = null; _pulley.proj = null;
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F389} All pots filled! The flock is watered!';
-  _pulley.mosesSay = { text: 'The flock is watered!', t: 0 };
+  _pulley.shepCarry = null;
+  _pulleySay('mosesSay', 'The flock is watered!');
   _pulleyConfetti(40);
-  try { play('levelUp') || play('success') || play('chime'); } catch(e){}
-  setTimeout(_closePulleyGame, 2100);
+  try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){}
+  setTimeout(_closePulleyGame, 2300);
 }
 function _pulleyLose() {
   if (_pulley.over) return;
@@ -7383,7 +7427,9 @@ function _closePulleyGame() {
   cancelAnimationFrame(_pulley.rafId);
   const modal = document.getElementById('wellPulleyModal');
   modal.style.display = 'none'; modal.classList.remove('active');
-  try { if (audio.bgm && audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; } catch(e){}
+  // stop the well-game music bed and bring the scene BGM back
+  try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
+  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
   const gate = _pulley.gate; _pulley.gate = null;
   if (!gate) return;
   gate.solved = true; game.state = 'playing';
@@ -7434,7 +7480,8 @@ function _pPot(c, p, now) {
   }
   const pop = p.pop ? Math.sin(p.pop * Math.PI) * 4 : 0;
   c.save(); if (!p.done && p.fill <= 0) c.globalAlpha = 0.95;
-  if (!_pDraw(c, ['waterPot', 'waterJar'], x, y - pop, w, h)) { c.fillStyle = '#c0703a'; c.fillRect(x + 6, y + 8, w - 12, h - 8); }
+  const potKeys = p.done ? ['waterPotFull', 'waterPot', 'waterJar'] : ['waterPot', 'waterJar'];
+  if (!_pDraw(c, potKeys, x, y - pop, w, h)) { c.fillStyle = '#c0703a'; c.fillRect(x + 6, y + 8, w - 12, h - 8); }
   c.restore();
   // water shimmer at the mouth
   const f = Math.max(0, Math.min(1, p.fill / 100));
@@ -7485,15 +7532,18 @@ function _pulleyFrame(now) {
         if (mr.t >= 0.45) { _pulley.mosesX = _pulley.mosesHomeX; _pulley.mosesRun = null; }
       }
     }
+    if (_pulley.shoveT > 0) _pulley.shoveT -= dts;
+    // shepherd carrying a stolen pot back to his side, then resets
+    if (_pulley.shepCarry) { _pulley.shepCarry.t += dts; if (_pulley.shepCarry.t > 1.2) { _pulley.shepCarry = null; _pulley.nextSteal = _pulley.stealEvery; } }
     // steal scheduling + progress
     if (_pulley.steal) {
       _pulley.steal.t += dts;
       if (!_pulley.mosesRun && _pulley.steal.t >= _pulley.stealWindow) _pulleyResolveSteal(false);
-    } else if (!_pulley.mosesRun) {
+    } else if (!_pulley.mosesRun && !_pulley.shepCarry) {
       _pulley.nextSteal -= dts;
       if (_pulley.nextSteal <= 0 && _pulley.shepStun <= 0 && _pulleyDone(false) < _pulleyRival().length) _pulleyStartSteal();
     }
-    // shepherd horizontal position (walks toward a targeted pot, else home)
+    // shepherd horizontal position (toward a targeted pot, else home)
     let shepTarget = _pulley.shepHomeX;
     if (_pulley.steal) shepTarget = _pulley.steal.pot.x + 18;
     _pulley.shepX += (shepTarget - _pulley.shepX) * Math.min(1, dts * 3.5);
@@ -7514,11 +7564,12 @@ function _pulleyFrame(now) {
         const bonus = (_pulley.combo - 1) * 6;
         hit.fill = Math.min(100, hit.fill + _pulley.gain + bonus);
         _pulleySpawnDrops(12, hit.x, hit.y - 28, 26);
+        _pulleyFx('splashFx', hit.x, hit.y - 30, 46, 24);
         try { play('oasisWater') || play('chime'); } catch(e){}
         if (hit.fill >= 100 && !hit.done) {
           hit.done = true; hit.pop = 1; _pulleyUpdateHud();
           _pulleyCue('POT FILLED! ✓', hit.x, hit.y - 54, '#7fe0a0');
-          try { play('coin'); } catch(e){}
+          try { play('potFill') || play('coin'); } catch(e){}
           if (fb) fb.textContent = 'Pot filled! ' + (_pulleyMine().length - _pulleyDone(true)) + ' to go.';
         } else {
           _pulleyCue('+' + Math.round(_pulley.gain + bonus) + '%', hit.x, hit.y - 50, '#9fe0ff');
@@ -7530,9 +7581,10 @@ function _pulleyFrame(now) {
       } else if (pr.vy > 0 && pr.y >= _pulley.GROUND) {
         const lx = Math.max(8, Math.min(W - 8, pr.x));
         _pulleySpawnDrops(9, lx, _pulley.GROUND + 4, 26, true);
+        _pulleyFx('dustPuff', lx, _pulley.GROUND - 4, 44, 24);
         _pulleyCue('Splash! aim for a pot', lx, _pulley.GROUND - 12, '#ffd0a0');
         _pulley.combo = 0;
-        try { play('pop'); } catch(e){}
+        try { play('sandThud') || play('pop'); } catch(e){}
         if (fb) fb.textContent = 'Missed — adjust your angle/power and try again!';
         _pulley.proj = null;
       } else if (pr.x < -30 || pr.x > W + 30 || pr.y > H + 60) {
@@ -7576,19 +7628,27 @@ function _pulleyFrame(now) {
   _pDraw(c, ['midianWell', 'wellMouth'], 52, 86, 132, 150);
   _pDraw(c, ['midianWell', 'wellMouth'], 426, 86, 132, 150, true);
 
-  // characters
+  // characters — Moses
   const mBob = Math.sin(now / 430) * 2.4, heave = _pulley.bucketBob;
   if (_pulley.mosesRun) {
-    const facingLeft = false; // pots are to Moses' right, so he runs rightward facing right
-    _pDraw(c, ['mosesRight', 'mosesPull', 'moses'], (_pulley.mosesX || 0), 152 + Math.sin(now / 80) * 3, 120, 132, facingLeft);
+    // dashing to defend; shove pose at the moment of contact
+    const shoving = _pulley.shoveT > 0 || (_pulley.mosesRun.phase === 'out' && _pulley.mosesRun.t > 0.3);
+    _pDraw(c, shoving ? ['mosesShove', 'mosesRight', 'moses'] : ['mosesRight', 'mosesPull', 'moses'],
+           (_pulley.mosesX || 0), 152 + (shoving ? 0 : Math.sin(now / 80) * 3), 122, 134);
+  } else if (_pulley.shoveT > 0) {
+    _pDraw(c, ['mosesShove', 'mosesRight', 'moses'], (_pulley.mosesX || 0), 152, 122, 134);
   } else {
     _pDraw(c, ['mosesPull', 'mosesRight', 'mosesFront', 'moses'], 0 - heave * 0.6, 150 + mBob - heave * 0.2, 130, 140);
   }
+  // characters — rude shepherd (idle / walking to steal / grabbing / carrying off)
   const sBob = Math.sin(now / 360 + 1.6) * 2.2 + (_pulley.shepStun > 0 ? Math.sin(now / 70) * 2 : 0);
-  const shepWalking = !!_pulley.steal;
-  _pDraw(c, shepWalking ? ['shepherdLeft', 'shepPull'] : ['shepPull', 'shepherdLeft', 'shepherdFront'],
-         (_pulley.shepX != null ? _pulley.shepX : 470), 150 + sBob, 130, 140,
-         _pImg(shepWalking ? 'shepherdLeft' : 'shepPull') ? false : true);
+  let shepKeys, shepFlip = false;
+  if (_pulley.shepCarry) { shepKeys = ['shepPotRight', 'shepPull']; }                 // walking off with the pot (rightward)
+  else if (_pulley.steal) {
+    const nearPot = Math.abs((_pulley.shepX || 470) - (_pulley.steal.pot.x + 18)) < 28;
+    shepKeys = nearPot ? ['shepGrab', 'shepherdLeft', 'shepPull'] : ['shepherdLeft', 'shepPull'];
+  } else { shepKeys = ['shepPull', 'shepherdLeft', 'shepherdFront']; shepFlip = _pImg('shepPull') ? false : true; }
+  _pDraw(c, shepKeys, (_pulley.shepX != null ? _pulley.shepX : 470), 150 + sBob, 130, 140, shepFlip);
 
   // flock
   _pDraw(c, ['sheep', 'sheepRight'], 150, 250, 46, 38);
@@ -7663,6 +7723,19 @@ function _pulleyFrame(now) {
     const a = Math.max(0, 1 - q.t / q.life);
     c.globalAlpha = a; c.fillStyle = q.color; c.font = 'bold 18px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText(q.text, q.x, q.y - q.t * 0.55); c.globalAlpha = 1;
+  }
+
+  // sprite FX (splash on hit / dust on miss) — pop in, scale up, fade out
+  for (let i = _pulley.fx.length - 1; i >= 0; i--) {
+    const fx = _pulley.fx[i]; fx.t++;
+    if (fx.t > fx.life) { _pulley.fx.splice(i, 1); continue; }
+    const k = fx.t / fx.life, a = Math.max(0, 1 - k), s = fx.size * (0.7 + 0.5 * k);
+    c.globalAlpha = a;
+    if (!_pDraw(c, fx.key, fx.x - s / 2, fx.y - s / 2, s, s)) {
+      c.fillStyle = fx.key === 'dustPuff' ? 'rgba(214,180,120,0.6)' : 'rgba(120,200,255,0.6)';
+      c.beginPath(); c.arc(fx.x, fx.y, s / 2, 0, Math.PI * 2); c.fill();
+    }
+    c.globalAlpha = 1;
   }
 
   // particles
