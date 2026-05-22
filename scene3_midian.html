@@ -2354,19 +2354,6 @@
     <div id="rescueFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:16px;font-weight:bold;">Tap a lane to move Moses, tap a weapon to throw it!</div>
     <div style="color:#d8b890;font-size:12px;text-align:center;margin-top:4px;font-style:italic;">"Moses got up and came to their rescue." — Exodus 2:17</div>
     <!-- weapon-select / loadout screen (shown before each round) -->
-    <div id="rescueLoadout" style="display:none;position:absolute;inset:0;z-index:6;background:linear-gradient(160deg,#2a1d10,#4a3320);border-radius:16px;flex-direction:column;padding:14px 16px;overflow:hidden;">
-      <div style="color:#ffe0a0;text-align:center;font-size:20px;font-weight:bold;letter-spacing:.5px;text-shadow:0 2px 6px rgba(0,0,0,.5);">⚔️ Choose your weapons</div>
-      <div style="display:flex;justify-content:center;gap:10px;margin:5px 0 3px;flex-wrap:wrap;">
-        <span style="background:linear-gradient(135deg,#ffd86a,#e0a83a);color:#3a2a08;font-weight:bold;font-size:13px;padding:4px 12px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);" id="rescueWalletStars">⭐ 0</span>
-        <span style="background:linear-gradient(135deg,#ffe07a,#caa24a);color:#3a2a08;font-weight:bold;font-size:13px;padding:4px 12px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);" id="rescueWalletBags">💰 0 treasure</span>
-      </div>
-      <div style="color:#e8c8a0;text-align:center;font-size:12.5px;margin:2px 0 9px;">Pick up to 5 — <span id="rescueLoadoutCount" style="color:#ffe07a;font-weight:bold;">0/5</span> chosen &middot; unlock more with ⭐ &amp; 💰 from your journey</div>
-      <div id="rescueCardGrid" style="flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:9px;align-content:start;padding:2px;"></div>
-      <div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-top:10px;">
-        <button class="btn" id="rescueAutoPickBtn" style="font-size:13px;padding:8px 16px;background:rgba(80,60,40,0.8);border:2px solid #c8a86a;">✨ Auto-pick</button>
-        <button class="btn btn-gold" id="rescueStartBtn" disabled style="font-size:19px;padding:11px 32px;opacity:0.5;">Start Rescue ▶</button>
-      </div>
-    </div>
     <style>
       #rescueCardGrid .rwCard{background:linear-gradient(165deg,rgba(40,28,14,0.92),rgba(22,15,7,0.92));border:2.5px solid var(--tint,#6a4a2a);border-radius:14px;padding:0 0 9px;cursor:pointer;transition:transform .12s ease,box-shadow .15s;position:relative;text-align:center;color:#fff4e2;overflow:hidden;display:flex;flex-direction:column;}
       #rescueCardGrid .rwCard:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 8px 20px rgba(0,0,0,.45);}
@@ -2391,6 +2378,41 @@
       #rescueWeaponBar .rwBtn .rwLbl{font-size:10px;display:block;}
       #rescueWeaponBar .rwBtn .rwPrice{font-size:10px;font-weight:bold;color:#ffe07a;display:block;}
       #rescueWeaponBar .rwBtn .rwCd{position:absolute;left:0;bottom:0;width:100%;background:rgba(10,10,20,0.62);pointer-events:none;height:0;}
+      /* kid-friendly font + clear directions */
+      #rescueModal{font-family:'Baloo 2','Comic Sans MS','Trebuchet MS',Verdana,sans-serif;}
+      #rescueCardGrid{grid-template-columns:repeat(4,1fr);}
+      #rescueHowTo{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:4px 0 9px;}
+      #rescueHowTo .htStep{flex:1;min-width:128px;max-width:240px;background:rgba(255,240,200,0.10);border:1.5px solid rgba(255,215,120,0.4);border-radius:12px;padding:7px 9px;display:flex;align-items:center;gap:8px;color:#ffeccb;}
+      #rescueHowTo .htStep .htIco{font-size:24px;line-height:1;flex:0 0 auto;}
+      #rescueHowTo .htStep .htTx{font-size:12.5px;line-height:1.25;text-align:left;}
+      #rescueHowTo .htStep .htTx b{color:#ffd86a;}
+      /* tablet / small landscape */
+      @media (max-width:640px){
+        #rescueCardGrid{grid-template-columns:repeat(2,1fr);gap:7px;}
+        #rescueCardGrid .rwCard .rwThumb{height:58px;font-size:38px;}
+        #rescueCardGrid .rwCard .rwDesc{min-height:46px;}
+        #rescueHowTo .htStep{min-width:0;}
+        #rescueWeaponBar .rwBtn .rwIco{font-size:18px;}
+        #rescueWeaponBar .rwBtn .rwLbl,#rescueWeaponBar .rwBtn .rwPrice{font-size:9px;}
+      }
+      /* phones */
+      @media (max-width:430px){
+        #rescueModal .modal-content{padding:10px 9px !important;}
+        #rescueLoadout{padding:10px 10px !important;}
+        #rescueCardGrid .rwCard .rwName{font-size:12.5px;}
+        #rescueCardGrid .rwCard .rwDesc{font-size:9.5px;min-height:42px;}
+        #rescueCardGrid .rwCard .rwCost{font-size:11.5px;}
+      }
+      /* short landscape: keep the playfield + controls on one screen, no scroll */
+      @media (max-height:540px) and (orientation:landscape){
+        #rescueCanvas{max-height:48vh !important;}
+        #rescueModal h2{font-size:15px !important;margin-bottom:3px !important;}
+        #rescueHowTo{margin:2px 0 5px;}
+        #rescueHowTo .htStep{padding:4px 7px;}
+        #rescueCardGrid{grid-template-columns:repeat(4,1fr);}
+        #rescueCardGrid .rwCard .rwThumb{height:46px;font-size:30px;}
+        #rescueCardGrid .rwCard .rwDesc{min-height:30px;font-size:9.5px;}
+      }
     </style>
     <div id="rescuePausedOverlay" style="display:none;position:absolute;inset:0;z-index:4;background:rgba(20,12,4,0.84);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
       <div style="color:#ffe0a0;font-size:30px;font-weight:bold;letter-spacing:2px;">PAUSED</div>
@@ -8324,7 +8346,7 @@ function _rescueReset() {
   _rescue.lane = 3; _rescue.mosesY = _rescue.laneY[3]; _rescue.throwAnim = 0; _rescue.cd = {};
   _rescue.shots = []; _rescue.foes = []; _rescue.cues = []; _rescue.fx = []; _rescue.fires = []; _rescue.ram = null; _rescue.kidnaps = []; _rescue.flyers = []; _rescue.coinPulse = 0;
   _rescue.laneDaughter = [true, true, true, true, true, true, true]; _rescue.daughtersLost = 0;
-  _rescue.foesDriven = 0; _rescue.spawned = 0; _rescue.spawnT = 1.6; _rescue.bossSpawned = false; _rescue.bossDown = false;
+  _rescue.foesDriven = 0; _rescue.spawned = 0; _rescue.spawnT = 2.0; _rescue.bossSpawned = false; _rescue.bossDown = false; _rescue._lulled = false;
   _rescue.shake = 0; _rescue.stars = 3; _rescue.over = false; _rescue.win = false; _rescue.paused = false; _rescue.winPanelShown = false; _rescue.started = false;
   ['rescuePausedOverlay', 'rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
 }
@@ -8373,7 +8395,8 @@ function _rescueAward(foe) {
 }
 function _rescueHurt(foe, dmg) {
   if (foe.dying) return; foe.hp -= dmg; foe.hitT = 0.16; foe.kb = foe.maxhp > 3 ? 6 : (foe.maxhp > 1 ? 10 : 18);
-  if (foe.hp <= 0) { foe.dying = 0.5; foe.kb = 0; _rescueAward(foe); }
+  if (foe.type === 'boss') _rescue.shake = Math.max(_rescue.shake, 5);
+  if (foe.hp <= 0) { foe.dying = 0.5; foe.kb = 0; if (foe.type === 'boss') _rescue.shake = 16; _rescueAward(foe); }
 }
 function _rescueFire(key) {
   if (_rescue.over || _rescue.paused || !_rescue.started) return;
@@ -8386,7 +8409,7 @@ function _rescueFire(key) {
   if (w.ram) { _rescue.ram = { lane: lane, x: _rescue.mosesX + 12, vx: w.ram === 'boulder' ? 380 : 640, kind: w.ram }; _rescueCue((w.ram === 'boulder' ? 'BOULDER! 🪨' : 'CHARGE! 🐏'), _rescue.mosesX + 70, ly - 32, '#fff0b0', true); try { play(w.ram === 'boulder' ? 'boulderRumble' : 'camelGrunt') || play('pop'); } catch(e){} }
   else if (w.melee) { let best = null, bd = 1e9; for (const f of _rescue.foes) { if (!f.dying && f.lane === lane && f.x > _rescue.mosesX) { const d = f.x - _rescue.mosesX; if (d < w.mrange && d < bd) { bd = d; best = f; } } } if (best) { _rescueHurt(best, w.dmg); _rescueFx('dustPuff', best.x - 10, ly, 40, 16); } try { play('sword') || play('pop'); } catch(e){} }
   else if (w.laneBurn) { _rescue.fires.push({ lane: lane, t: w.laneBurn, dmgT: 0 }); try { play('fireWhoosh') || play('pop'); } catch(e){} }
-  else { const n = w.multi || 1; for (let k = 0; k < n; k++) _rescue.shots.push({ lane: lane, x: _rescue.mosesX + 26, y: ly - 6 + (k - (n - 1) / 2) * 12, vx: w.projSpeed, dmg: w.dmg, kind: key, snare: w.snare || 0 }); try { play('waterSkin') || play('pop'); } catch(e){} }
+  else { const n = w.multi || 1, lob = (key === 'pot' || key === 'net'); for (let k = 0; k < n; k++) _rescue.shots.push({ lane: lane, x: _rescue.mosesX + 26, baseY: ly - 6 + (k - (n - 1) / 2) * 10, arcY: 0, vy: lob ? -320 : -90 - k * 10, g: lob ? 1150 : 900, vx: w.projSpeed, dmg: w.dmg, kind: key, snare: w.snare || 0, spin: 0 }); _rescueFx('dustPuff', _rescue.mosesX + 30, ly + 12, 22, 10); try { play('waterSkin') || play('pop'); } catch(e){} }
   _rescueHud(); _rescueUpdateBar();
 }
 function _rescueSpawn() {
@@ -8482,12 +8505,12 @@ function _rescueFrame(now) {
     // trickle income (a daughter slips Moses a few coins so he never fully stalls)
     _rescue.trickleT += dts; if (_rescue.trickleT >= 1.6) { _rescue.trickleT = 0; _rescue.coins += 4; }
     // spawn
-    if (_rescue.spawned < _rescue.total) { _rescue.spawnT -= dts; if (_rescue.spawnT <= 0) { _rescueSpawn(); _rescue.spawnT = Math.max(0.55, _rescue.spawnEvery - _rescue.spawned * 0.03); } }
+    if (_rescue.spawned < _rescue.total) { _rescue.spawnT -= dts; if (_rescue.spawnT <= 0) { if (_rescue.spawned === _rescue.total - 1 && !_rescue._lulled) { _rescue._lulled = true; _rescue.spawnT = 2.3; _rescueCue('⚔️ FINAL WAVE!', 380, 64, '#ffd23a', true); try { play('dangerAlert') || play('error'); } catch(e){} } else { _rescueSpawn(); _rescue.spawnT = Math.max(0.6, _rescue.spawnEvery - _rescue.spawned * 0.022); } } }
     // shots
     for (let i = _rescue.shots.length - 1; i >= 0; i--) {
-      const s = _rescue.shots[i]; s.x += s.vx * dts;
+      const s = _rescue.shots[i]; s.x += s.vx * dts; s.vy += s.g * dts; s.arcY += s.vy * dts; if (s.arcY > 0) s.arcY = 0; s.spin += dts * 14;
       let hf = null; for (const f of _rescue.foes) { if (!f.dying && f.lane === s.lane && f.x > _rescue.mosesX && Math.abs(f.x - s.x) < 28) { hf = f; break; } }
-      if (hf) { _rescueFx(s.kind === 'pot' ? 'splashFx' : 'dustPuff', s.x, s.y, 30, 14); _rescue.shots.splice(i, 1); if (s.snare) { hf.snared = s.snare; _rescueCue('tangled!', hf.x, _rescue.laneY[hf.lane] - 30, '#cfe0ff'); } if (s.dmg > 0) _rescueHurt(hf, s.dmg); try { play('pop'); } catch(e){} }
+      if (hf) { _rescueFx(s.kind === 'pot' ? 'splashFx' : 'dustPuff', s.x, s.baseY, 32, 14); _rescue.shots.splice(i, 1); if (s.snare) { hf.snared = s.snare; _rescueCue('tangled!', hf.x, _rescue.laneY[hf.lane] - 30, '#cfe0ff'); } if (s.dmg > 0) _rescueHurt(hf, s.dmg); try { play('pop'); } catch(e){} }
       else if (s.x > W + 20) _rescue.shots.splice(i, 1);
     }
     // lane fires (torch)
@@ -8531,11 +8554,14 @@ function _rescueFrame(now) {
   // foes
   for (const f of _rescue.foes) {
     const yb = _rescue.laneY[f.lane] + 28;
+    c.fillStyle = 'rgba(20,10,4,0.22)'; c.beginPath(); c.ellipse(f.x, yb + 2, 22 * f.scale, 7 * f.scale, 0, 0, Math.PI * 2); c.fill();
     if (f.dying) { const k = 1 - f.dying / (f.type === 'boss' ? 0.4 : 0.5); c.save(); c.globalAlpha = Math.max(0, 1 - k); c.translate(f.x, yb); c.rotate(k * 1.25); c.translate(-f.x, -yb + k * 26); _pDrawFit(c, ['shepherdFall', 'shepherdLeft'], f.x, yb, 60 * f.scale, 78 * f.scale); c.restore(); continue; }
     if (f.type === 'big' || f.type === 'boss') { c.fillStyle = 'rgba(180,30,20,' + (0.18 + 0.1 * Math.sin(now / 160)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 42 * f.scale, 38 * f.scale, 52 * f.scale, 0, 0, Math.PI * 2); c.fill(); }
-    if (f.hitT > 0) { c.save(); c.globalAlpha = 0.55 + 0.45 * Math.sin(now / 28); }
+    const bob = (f.snared > 0) ? 0 : Math.sin(now / 165 + f.x * 0.07) * 2.4 * f.scale;
+    const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = 58 * f.scale * (1 + sq * 0.12), sh = 76 * f.scale * (1 - sq * 0.1);
+    if (f.hitT > 0) { c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(now / 26); }
     const fk = f.type === 'boss' ? ['shepherdBoss', 'shepHelpB', 'shepherd4'] : (f.type === 'big' ? ['shepHelpB', 'shepherd4', 'shepherdLeft'] : (f.type === 'fast' ? ['shepherdLeftAlt', 'shepherdLeft'] : ['shepherdLeft', 'shepPull']));
-    if (!_pDrawFit(c, fk, f.x, yb, 58 * f.scale, 76 * f.scale)) { c.fillStyle = '#c08040'; c.fillRect(f.x - 16, yb - 50, 32, 50); }
+    if (!_pDrawFit(c, fk, f.x, yb + bob, sw, sh)) { c.fillStyle = '#c08040'; c.fillRect(f.x - 16, yb + bob - 50, 32, 50); }
     if (f.hitT > 0) c.restore();
     if (f.snared > 0) { c.strokeStyle = 'rgba(200,220,255,0.7)'; c.lineWidth = 1; for (let gx = -14; gx <= 14; gx += 7) { c.beginPath(); c.moveTo(f.x + gx, yb - 60 * f.scale); c.lineTo(f.x + gx, yb); c.stroke(); } }
     // strength meter
@@ -8549,9 +8575,9 @@ function _rescueFrame(now) {
   // kidnaps (daughter carried off)
   for (const kd of _rescue.kidnaps) { c.save(); c.globalAlpha = Math.max(0, 1 - kd.t / 1.6); _pDrawFit(c, ['daughterKidnap', 'daughter' + ((kd.idx % 7) + 1), 'daughter1'], kd.x, _rescue.laneY[kd.lane] + 22, 26, 42); c.restore(); }
   // Moses
-  if (_rescue.started) { const throwing = _rescue.throwAnim > 0; _pDrawFit(c, throwing ? ['mosesShove', 'mosesRight', 'moses'] : ['mosesRight', 'mosesPull', 'moses'], _rescue.mosesX, _rescue.mosesY + 46, 74, 100); }
+  if (_rescue.started) { const throwing = _rescue.throwAnim > 0; const mbob = Math.sin(now / 320) * 2; c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _rescue.mosesY + 50, 26, 8, 0, 0, Math.PI * 2); c.fill(); _pDrawFit(c, throwing ? ['mosesShove', 'mosesRight', 'moses'] : ['mosesRight', 'mosesPull', 'moses'], _rescue.mosesX + (throwing ? 6 : 0), _rescue.mosesY + 46 + (throwing ? 0 : mbob), 74, 100); }
   // shots
-  for (const s of _rescue.shots) { if (s.kind === 'sling' || s.kind === 'volley') { c.fillStyle = '#9a7a4a'; c.beginPath(); c.arc(s.x, s.y, 6, 0, Math.PI * 2); c.fill(); } else if (s.kind === 'net') { if (!_pDraw(c, ['net'], s.x - 14, s.y - 4, 28, 24)) { c.strokeStyle = '#e8e8d0'; c.strokeRect(s.x - 10, s.y - 4, 20, 16); } } else if (!_pDrawFit(c, ['waterPot', 'waterJar'], s.x, s.y + 12, 24, 26)) { c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(s.x, s.y, 8, 0, Math.PI * 2); c.fill(); } }
+  for (const s of _rescue.shots) { const sy = s.baseY + s.arcY; if (s.kind === 'sling' || s.kind === 'volley') { c.save(); c.fillStyle = '#9a7a4a'; c.strokeStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.arc(s.x, sy, 6, 0, Math.PI * 2); c.fill(); c.stroke(); c.restore(); } else if (s.kind === 'net') { c.save(); c.translate(s.x, sy); c.rotate(s.spin); if (!_pDraw(c, ['net'], -14, -12, 28, 24)) { c.strokeStyle = '#e8e8d0'; c.lineWidth = 1.5; for (let g = -10; g <= 10; g += 5) { c.beginPath(); c.moveTo(g, -10); c.lineTo(g, 10); c.moveTo(-10, g); c.lineTo(10, g); c.stroke(); } } c.restore(); } else { c.save(); c.translate(s.x, sy + 10); c.rotate(s.spin * 0.5); if (!_pDrawFit(c, ['waterPot', 'waterJar'], 0, 0, 24, 26)) { c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(0, 0, 8, 0, Math.PI * 2); c.fill(); } c.restore(); } }
   // fx
   for (let i = _rescue.fx.length - 1; i >= 0; i--) { const x = _rescue.fx[i]; x.t++; if (x.t > x.life) { _rescue.fx.splice(i, 1); continue; } const k = x.t / x.life, a = Math.max(0, 1 - k), s = x.size * (0.7 + 0.5 * k); c.globalAlpha = a; if (!_pDraw(c, x.key, x.x - s / 2, x.y - s / 2, s, s)) { c.fillStyle = 'rgba(255,220,120,0.6)'; c.beginPath(); c.arc(x.x, x.y, s / 2, 0, Math.PI * 2); c.fill(); } c.globalAlpha = 1; }
   // cues
@@ -8584,18 +8610,21 @@ function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: t
   } catch(e){}
 })();
 (function() {
-  const tap = (el, fn) => { if (!el) return; el.addEventListener('click', fn); el.addEventListener('touchend', (e) => { e.preventDefault(); fn(); }); };
-  tap(document.getElementById('rescueStartBtn'), _rescueBegin);
-  tap(document.getElementById('rescueAutoPickBtn'), _rescueAutoPick);
-  tap(document.getElementById('rescueResumeBtn'), _rescueResume);
-  tap(document.getElementById('rescueQuitBtn'), _rescueQuit);
-  tap(document.getElementById('rescueRetryBtn'), _rescueRetry);
-  tap(document.getElementById('rescueLoseQuitBtn'), _rescueQuit);
-  tap(document.getElementById('rescueWinContinueBtn'), _rescueWinContinue);
-  tap(document.getElementById('rescueWinReplayBtn'), _rescueRetry);
-  const pb = document.getElementById('rescuePauseBtn'); if (pb) pb.addEventListener('click', _rescuePause);
-  const cv = document.getElementById('rescueCanvas');
-  if (cv) { cv.addEventListener('pointerdown', _rescueTap); cv.addEventListener('touchstart', _rescueTap, { passive: false }); cv.style.touchAction = 'none'; }
+  function wire() {
+    const tap = (el, fn) => { if (!el) return; el.addEventListener('click', fn); el.addEventListener('touchend', (e) => { e.preventDefault(); fn(); }); };
+    tap(document.getElementById('rescueStartBtn'), _rescueBegin);
+    tap(document.getElementById('rescueAutoPickBtn'), _rescueAutoPick);
+    tap(document.getElementById('rescueResumeBtn'), _rescueResume);
+    tap(document.getElementById('rescueQuitBtn'), _rescueQuit);
+    tap(document.getElementById('rescueRetryBtn'), _rescueRetry);
+    tap(document.getElementById('rescueLoseQuitBtn'), _rescueQuit);
+    tap(document.getElementById('rescueWinContinueBtn'), _rescueWinContinue);
+    tap(document.getElementById('rescueWinReplayBtn'), _rescueRetry);
+    const pb = document.getElementById('rescuePauseBtn'); if (pb) pb.addEventListener('click', _rescuePause);
+    const cv = document.getElementById('rescueCanvas');
+    if (cv) { cv.addEventListener('pointerdown', _rescueTap); cv.addEventListener('touchstart', _rescueTap, { passive: false }); cv.style.touchAction = 'none'; }
+  }
+  if (document.readyState !== 'loading') wire(); else document.addEventListener('DOMContentLoaded', wire);
 })();
 
 function openChallenge(gate) {
@@ -16565,5 +16594,24 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<!-- Rescue weapon-select (top-level so position:fixed escapes any transformed ancestor) -->
+<div id="rescueLoadout" style="display:none;position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:min(97vw,920px);max-height:100vh;z-index:80;background:linear-gradient(160deg,#2a1d10,#4a3320);box-shadow:0 0 0 100vmax rgba(0,0,0,0.6);border-radius:14px;flex-direction:column;padding:14px 16px;overflow:hidden;font-family:'Baloo 2','Comic Sans MS','Trebuchet MS',Verdana,sans-serif;">
+  <div style="color:#ffe0a0;text-align:center;font-size:20px;font-weight:bold;letter-spacing:.5px;text-shadow:0 2px 6px rgba(0,0,0,.5);">⚔️ Choose your weapons</div>
+  <div style="display:flex;justify-content:center;gap:10px;margin:5px 0 3px;flex-wrap:wrap;">
+    <span style="background:linear-gradient(135deg,#ffd86a,#e0a83a);color:#3a2a08;font-weight:bold;font-size:13px;padding:4px 12px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);" id="rescueWalletStars">⭐ 0</span>
+    <span style="background:linear-gradient(135deg,#ffe07a,#caa24a);color:#3a2a08;font-weight:bold;font-size:13px;padding:4px 12px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);" id="rescueWalletBags">💰 0 treasure</span>
+  </div>
+  <div style="color:#e8c8a0;text-align:center;font-size:12.5px;margin:2px 0 7px;">Pick up to 5 — <span id="rescueLoadoutCount" style="color:#ffe07a;font-weight:bold;">0/5</span> chosen &middot; unlock more with ⭐ &amp; 💰 from your journey</div>
+  <div id="rescueHowTo">
+    <div class="htStep"><span class="htIco">👆</span><span class="htTx"><b>1. Tap a row</b><br>to move Moses there</span></div>
+    <div class="htStep"><span class="htIco">🏺</span><span class="htTx"><b>2. Tap a weapon</b><br>to throw it (uses 💰)</span></div>
+    <div class="htStep"><span class="htIco">👧</span><span class="htTx"><b>3. Save the girls!</b><br>stop shepherds reaching them</span></div>
+  </div>
+  <div id="rescueCardGrid" style="flex:1;overflow-y:auto;display:grid;gap:9px;align-content:start;padding:2px;"></div>
+  <div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-top:10px;">
+    <button class="btn" id="rescueAutoPickBtn" style="font-size:13px;padding:8px 16px;background:rgba(80,60,40,0.8);border:2px solid #c8a86a;">✨ Auto-pick</button>
+    <button class="btn btn-gold" id="rescueStartBtn" disabled style="font-size:19px;padding:11px 32px;opacity:0.5;">Start Rescue ▶</button>
+  </div>
+</div>
 </body>
 </html>
