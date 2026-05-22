@@ -7412,14 +7412,14 @@ const _pulley = {
 };
 function _pulleyCfg() {
   const d = (typeof game !== 'undefined' && game.difficulty) || 'easy';
-  // gain = % a pot gains per accurate hit (lower = more shots per pot). The rival
-  // fills slowly on his own; his real weapon is STEALING — each unblocked steal
-  // empties one of your pots AND completes one of his, so you must SHOO to win.
-  // Tuned HARD on purpose: 3 stars require zero stolen pots and no overshoots,
-  // so kids have to both fill fast AND defend. The gang steals relentlessly.
-  if (d === 'hard')   return { gain: 26, shepRate: 4.0, stealEvery: 3.4, stealWindow: 1.2, wind: 130 };
-  if (d === 'medium') return { gain: 30, shepRate: 3.2, stealEvery: 4.2, stealWindow: 1.5, wind: 70 };
-  return { gain: 34, shepRate: 2.6, stealEvery: 5.0, stealWindow: 1.9, wind: 0 }; // easy
+  // gain = % a pot gains per accurate hit (lower = more shots per pot, longer game).
+  // The rival fills slowly on his own; his real weapon is STEALING — each unblocked
+  // steal empties one of your pots AND completes one of his, so you must SHOO to win.
+  // Skewed HARDER on purpose (kid-challenge): even EASY has wind + regular steals and
+  // needs ~4 accurate throws per pot, so a round never ends in a few taps.
+  if (d === 'hard')   return { gain: 21, shepRate: 4.2, stealEvery: 2.8, stealWindow: 1.0, wind: 150 };
+  if (d === 'medium') return { gain: 24, shepRate: 3.3, stealEvery: 3.5, stealWindow: 1.3, wind: 90 };
+  return { gain: 27, shepRate: 2.8, stealEvery: 4.2, stealWindow: 1.6, wind: 40 }; // easy
 }
 // ---- pot layout: 5 per side (2-row cluster), varied distance + elevation ----
 function _pulleyLayoutPots() {
@@ -8288,9 +8288,12 @@ const _rescue = {
 };
 function _rescueCfg() {
   const d = (typeof game !== 'undefined' && game.difficulty) || 'easy';
-  if (d === 'hard')   return { total: 28, spawnEvery: 1.05, foeSpeed: 54, bigChance: 0.26, fastChance: 0.34, coins: 90,  bossHp: 60 };
-  if (d === 'medium') return { total: 22, spawnEvery: 1.3,  foeSpeed: 47, bigChance: 0.22, fastChance: 0.32, coins: 110, bossHp: 45 };
-  return { total: 18, spawnEvery: 1.55, foeSpeed: 41, bigChance: 0.18, fastChance: 0.28, coins: 135, bossHp: 32 }; // easy
+  // Skewed HARDER for kid-challenge: more shepherds per round (longer fight), faster
+  // spawns, more brutes/runners and a tougher boss. Even EASY now runs 24 foes so the
+  // defense never feels over in a handful of throws.
+  if (d === 'hard')   return { total: 38, spawnEvery: 0.95, foeSpeed: 58, bigChance: 0.28, fastChance: 0.38, coins: 85,  bossHp: 72 };
+  if (d === 'medium') return { total: 30, spawnEvery: 1.15, foeSpeed: 50, bigChance: 0.24, fastChance: 0.34, coins: 105, bossHp: 55 };
+  return { total: 24, spawnEvery: 1.4,  foeSpeed: 44, bigChance: 0.20, fastChance: 0.30, coins: 130, bossHp: 40 }; // easy
 }
 function _resStars(n) { n = Math.max(0, Math.min(5, n | 0)); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
 function _resWealth() { return { stars: (typeof game !== 'undefined' && game.stars) || 0, bags: (typeof game !== 'undefined' && game.treasureBags) || 0 }; }
