@@ -2322,15 +2322,15 @@
       <!-- animated backdrop: Moses at the well, the rude shepherd on the other side -->
       <div class="piScene" aria-hidden="true">
         <img class="piImg piWell" src="assets/images/midian%20well.png" alt="">
-        <img class="piImg piMoses" src="assets/images/moses%20right%20facing.png" alt="">
-        <img class="piImg piShep" src="assets/images/rude%20shepherd%20left%20facing.png" alt="">
+        <img class="piImg piMoses" src="assets/images/moses%20right%20facing%20heaving%20and%20leaning.png" alt="">
+        <img class="piImg piShep" src="assets/images/orange%20shepherd%20heave%202.png" alt="">
       </div>
       <div class="piContent" style="position:relative;z-index:2;text-align:center;">
         <div class="piTitle" style="color:#ffe0a0;font-size:34px;font-weight:800;letter-spacing:.5px;line-height:1.1;">🏺 How to Water the Flock</div>
         <div class="piSub" style="color:#dff0fa;font-size:18px;font-weight:600;margin-top:8px;text-shadow:0 2px 8px rgba(0,0,0,.8);">Fill all your water pots before the rude shepherds do!</div>
       </div>
       <div id="pulleyHowTo" style="position:relative;z-index:2;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;max-width:760px;">
-        <div class="ptStep"><span class="ptIco">👆</span><span class="ptTx"><b>1. Drag &amp; Let Go</b><br>Aim water into a pot</span></div>
+        <div class="ptStep"><span class="ptIco">👆</span><span class="ptTx"><b>1. Drag &amp; Let Go</b><br>Aim water into your pot</span></div>
         <div class="ptStep"><span class="ptIco">✋</span><span class="ptTx"><b>2. Tap SHOO!</b><br>When a shepherd grabs your pot</span></div>
         <div class="ptStep"><span class="ptIco">🏺</span><span class="ptTx"><b>3. Fill Them All</b><br>Beat the rude shepherds to it</span></div>
       </div>
@@ -2341,11 +2341,11 @@
       #pulleyIntroOverlay .piImg{position:absolute;bottom:0;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));}
       #pulleyIntroOverlay .piWell{left:50%;transform:translateX(-50%);width:min(34vw,260px);opacity:.45;bottom:-2%;animation:piWellRise 1s ease-out both;}
       #pulleyIntroOverlay .piMoses{left:4%;height:min(40vh,260px);opacity:.95;animation:piMosesIn .7s ease-out both,piBob 2.8s ease-in-out infinite;}
-      #pulleyIntroOverlay .piShep{right:4%;height:min(38vh,250px);opacity:.92;transform:scaleX(-1);animation:piShepIn .7s ease-out both,piLean 2.2s ease-in-out infinite;}
-      @keyframes piMosesIn{from{transform:translateX(-70px);opacity:0;}to{opacity:.95;}}
-      @keyframes piShepIn{from{transform:scaleX(-1) translateX(-70px);opacity:0;}to{opacity:.92;}}
+      #pulleyIntroOverlay .piShep{right:4%;height:min(38vh,250px);opacity:.92;animation:piShepIn .7s ease-out both,piLean 2.2s ease-in-out infinite;}
+      @keyframes piMosesIn{from{opacity:0;}to{opacity:.95;}}
+      @keyframes piShepIn{from{opacity:0;}to{opacity:.92;}}
       @keyframes piBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
-      @keyframes piLean{0%,100%{transform:scaleX(-1) translateX(0);}50%{transform:scaleX(-1) translateX(-16px);}}
+      @keyframes piLean{0%,100%{transform:translateX(0);}50%{transform:translateX(-14px);}}
       @keyframes piWellRise{from{transform:translateX(-50%) translateY(40px);opacity:0;}to{opacity:.45;}}
       #pulleyIntroOverlay .piTitle{animation:piPop .6s .15s both;text-shadow:0 3px 8px rgba(0,0,0,.6),0 0 22px rgba(120,200,255,.4);}
       #pulleyIntroOverlay .piSub{animation:piFade .6s .3s both;}
@@ -2605,7 +2605,7 @@
 <audio id="audStealWhoosh"      preload="auto" src="assets/audio/steal%20whoosh.mp3"></audio>
 <audio id="audWellCheer"        preload="auto" src="assets/audio/well%20win%20cheer.mp3"></audio>
 <audio id="audSheepBleat"       preload="auto" src="assets/audio/sheep%20bleat.mp3"></audio>
-<audio id="audGameOver"         preload="auto" src="assets/audio/game%20over.mp3"></audio>
+<audio id="audGameOver"         preload="auto" src="assets/audio/game%20over%202.mp3"></audio>
 <audio id="audVoJethro"         preload="auto" src="assets/audio/this%20water%20is%20for%20jethro.mp3"></audio>
 <audio id="audVoSeeAbout"       preload="auto" src="assets/audio/we%20will%20see%20about%20that.mp3"></audio>
 <audio id="audVoMine"           preload="auto" src="assets/audio/that%20water%20is%20mine.mp3"></audio>
@@ -3079,7 +3079,7 @@ const IMG_SRC = {
   mosesPull: 'assets/images/moses%20right%20facing%20with%20rope.png',
   shepPull:  'assets/images/orange%20shepherd%20heave%203%20with%20rope.png',
   mosesHeave: 'assets/images/moses%20right%20facing%20heaving%20and%20leaning.png', // no baked rope (rope drawn in-engine)
-  shepHeave:  'assets/images/orange%20shepherd%20heave%201.png',
+  shepHeave:  'assets/images/orange%20shepherd%20heave%202.png',
   shepHelpA:  'assets/images/shepherd%202%20front.png',  // gang supporters on the rival side
   shepHelpB:  'assets/images/shepherd%204.png',
   waterPot:  'assets/images/color%20water%20pot.png',   // the fillable target pots (empty)
@@ -7584,11 +7584,9 @@ function openWellPulleyGame(gate) {
   _pulley.gate = gate; _pulley.lastFrame = 0;
   _pulleyReset();
   game.state = 'dialog';
-  // swap the scene BGM for the dedicated well-game music bed
-  try {
-    if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); }
-    if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); }
-  } catch(e){}
+  // pause the scene BGM; the well-game music + banter + loop don't start until the
+  // player taps "Start Watering" so nothing plays under the intro/tutorial screen.
+  try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); } } catch(e){}
   const modal = document.getElementById('wellPulleyModal');
   modal.style.display = 'flex'; modal.classList.add('active');
   const ov = document.getElementById('pulleyPausedOverlay'); if (ov) ov.style.display = 'none';
@@ -7596,10 +7594,6 @@ function openWellPulleyGame(gate) {
   const intro = document.getElementById('pulleyIntroOverlay'); if (intro) intro.style.display = 'flex';
   _pulleyUpdateHud();
   document.getElementById('pulleyFeedback').textContent = 'Drag from Moses to aim — fill every pot before the shepherd!';
-  // banter is sequenced so the two speech bubbles never overlap
-  _pulleySay('mosesSay', 'This water is for Jethro’s flock!', 'voJethro');
-  setTimeout(() => { if (_pulley.gate && !_pulley.over && !_pulley.paused) _pulleySay('shepSay', 'We’ll see about that!', 'voSeeAbout'); }, 3000);
-  _pulley.rafId = requestAnimationFrame(_pulleyFrame);
 }
 function _pulleyUpdateHud() {
   const you = document.getElementById('pulleyTaps');
@@ -7722,7 +7716,7 @@ function _pulleyWin() {
   // star rating — generous to keep kids motivated: a clean-ish run still earns 3,
   // and you can never drop below 2 stars for finishing the race.
   const slip = (_pulley.potsLostToSteal || 0) + (_pulley.ownGoals || 0);
-  _pulley.earnedStars = slip <= 3 ? 3 : 2;
+  _pulley.earnedStars = slip === 0 ? 3 : 2; // 3 stars only for a truly clean run (no pot lost)
   // stop the looping music so the victory cheer plays clean
   try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
   try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){}
@@ -7778,6 +7772,11 @@ function _pulleyStartGame() {
   _pulley.intro = false; _pulley.lastFrame = 0;
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = 'Drag back from Moses, then let go to splash water in!';
   try { play('click') || play('pop'); } catch(e){}
+  // now (and only now) start the music bed, opening banter and the game loop
+  try { if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
+  _pulleySay('mosesSay', 'This water is for Jethro’s flock!', 'voJethro');
+  setTimeout(() => { if (_pulley.gate && !_pulley.over && !_pulley.paused && !_pulley.intro) _pulleySay('shepSay', 'We’ll see about that!', 'voSeeAbout'); }, 3000);
+  cancelAnimationFrame(_pulley.rafId); _pulley.rafId = requestAnimationFrame(_pulleyFrame);
 }
 function _pulleyRetry() {
   const lo = document.getElementById('pulleyLoseOverlay'); if (lo) lo.style.display = 'none';
@@ -7918,7 +7917,7 @@ function _pulleyFrame(now) {
   // below assume it), but size the backing store to the on-screen size × DPR so the
   // canvas is never blurrily stretched. This sharpens every sprite, current + future.
   const W = 600, H = 340;
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = Math.min(3, window.devicePixelRatio || 1); // crisper on high-DPI phones/tablets
   const cssW = canvas.clientWidth || W;
   const needW = Math.max(W, Math.round(cssW * dpr)), needH = Math.round(needW * (H / W));
   if (canvas.width !== needW || canvas.height !== needH) { canvas.width = needW; canvas.height = needH; }
@@ -8112,8 +8111,8 @@ function _pulleyFrame(now) {
   };
   // top anchor = the well's pulley beam (well art spans y≈86..236, beam near the top);
   // Moses heaves forward-and-down, the rude shepherd reaches up — so their hand anchors differ.
-  if (!_pulley.mosesRun) _rope(116, 108, mIdleX + 88, mIdleY + 34);
-  if (!_pulley.steal && !_pulley.shepCarry) _rope(512, 108, sIdleX + 46, sIdleY + 24);
+  if (!_pulley.mosesRun) _rope(116, 108, mIdleX + 74, mIdleY + 30);
+  if (!_pulley.steal && !_pulley.shepCarry) _rope(512, 108, sIdleX + 48, sIdleY + 40);
   c.lineCap = 'butt';
 
   // helper rogue shepherds (the gang) — on the LEFT side of the shepherd's well so
