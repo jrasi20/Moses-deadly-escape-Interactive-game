@@ -3562,6 +3562,9 @@
 <!-- 2026-05-21 PM64 (Jane: "while staying on the win modal, play some music").
      Calm Midian theme loops under the victory modal. -->
 <audio id="audWinMusic" loop preload="auto" src="assets/audio/midian%20calm.mp3"></audio>
+<!-- 2026-05-22 PM66 (Jane: "make the game more thrilling"). Danger-heat
+     heartbeat: fades in + speeds up as a guard/scout closes on Moses. -->
+<audio id="audHeartbeat" loop preload="auto" src="assets/audio/heartbeat.mp3"></audio>
 <audio id="audFootstep" preload="auto" src="assets/audio/guard%20footsteps.mp3"></audio>
 <audio id="audSword" preload="auto" src="assets/audio/sword%20clink.mp3"></audio>
 <audio id="audDog" preload="auto" src="assets/audio/dog%20bark.mp3"></audio>
@@ -3838,6 +3841,7 @@ const audio = {
   gate:      $('audGate'),
   win:       $('audWin'),
   winMusic:  $('audWinMusic'),      // looping calm theme under the win modal (PM64)
+  heartbeat: $('audHeartbeat'),     // danger-heat threat cue (PM66)
   click:     $('audClick'),
   clickSound: $('audClickSound'),  // jigsaw piece rotate (PM64)
   tap:       $('audTap'),       // v3.4: character-input clicks
@@ -4689,6 +4693,110 @@ function isHiddenFromAnyGuard() {
     if (hasLineOfSight(g.tx, g.ty, player.tx, player.ty)) return false;
   }
   return true;
+}
+
+/* ============================================================
+   DANGER HEAT + NEAR-MISS  (PM66 — Jane: "make the game more thrilling")
+   A continuous threat 0..1 from the nearest patrol guard / pursuit scout.
+   Drives a heartbeat cue (louder + FASTER as danger closes) and a red-edge
+   canvas vignette. When the threat spikes near-capture and then drops with
+   Moses still free, a "Close Call!" payoff fires (+stars, glitter, relief).
+   Ported from Scene 1's Wave-3a heartbeat, extended for Scene 2's scouts.
+   ============================================================ */
+const _heartbeat = { active: false, intensity: 0 };
+function _computeThreat(){
+  if (typeof game === 'undefined' || game.state !== 'playing') return 0;
+  const hidden = !!player.crouched || (typeof isMosesInCave === 'function' && isMosesInCave());
+  let t = 0;
+  // Patrol guards — alerted (chasing) is always tense; otherwise LOS within 3 tiles.
+  if (typeof guards !== 'undefined' && guards.length) {
+    for (const g of guards) {
+      const d = Math.max(Math.abs(g.tx - player.tx), Math.abs(g.ty - player.ty));
+      if (g.state === 'alerted') { t = Math.max(t, Math.max(0.5, 1 - (d - 1) * 0.18)); }
+      else if (!hidden && d <= 3 && typeof hasLineOfSight === 'function'
+               && hasLineOfSight(g.tx, g.ty, player.tx, player.ty)) {
+        t = Math.max(t, Math.max(0.30, 1 - (d - 1) * 0.30));
+      }
+    }
+  }
+  // Pursuit scouts — they always advance + catch when adjacent, so proximity = dread.
+  if (typeof pursuitScouts !== 'undefined' && pursuitScouts.length) {
+    for (const s of pursuitScouts) {
+      if (s.caught) continue;
+      if (s.spawnGraceUntil && performance.now() < s.spawnGraceUntil) continue;
+      const d = Math.max(Math.abs(s.tx - player.tx), Math.abs(s.ty - player.ty));
+      if (d <= 4) t = Math.max(t, Math.max(0.30, 1 - (d - 1) * 0.22));
+    }
+  }
+  return Math.max(0, Math.min(1, t));
+}
+function _updateHeartbeat(){
+  if (typeof game === 'undefined' || game.state !== 'playing') {
+    if (_heartbeat.active) _stopHeartbeat();
+    _heartbeat.intensity = 0;
+    return;
+  }
+  const target = _computeThreat();
+  // smooth toward the target so the cue RAMPS (dread builds) rather than jumps
+  _heartbeat.intensity += (target - _heartbeat.intensity) * 0.18;
+  if (_heartbeat.intensity < 0.02) _heartbeat.intensity = 0;
+  const i = _heartbeat.intensity;
+  if (i > 0.12 && !(typeof _anyBlockingModalOpen === 'function' && _anyBlockingModalOpen())) {
+    if (!_heartbeat.active) _startHeartbeat();
+    const a = audio.heartbeat;
+    if (a) { try { a.volume = Math.min(0.85, 0.22 + i * 0.6); a.playbackRate = 1 + i * 0.7; } catch(e){} }
+  } else {
+    if (_heartbeat.active) _stopHeartbeat();
+  }
+}
+function _startHeartbeat(){
+  const a = audio.heartbeat; if (!a) return;
+  try { a.volume = 0.22; a.currentTime = 0; a.play().catch(()=>{}); _heartbeat.active = true; } catch(e){}
+}
+function _stopHeartbeat(){
+  const a = audio.heartbeat; if (a) try { a.pause(); a.currentTime = 0; a.playbackRate = 1; } catch(e){}
+  _heartbeat.active = false;
+}
+function drawHeartbeatVignette(){
+  const i = Math.max(0, Math.min(1, _heartbeat.intensity));
+  if (i <= 0.05) return;
+  const pulseHz = 1.4 + i * 1.6;                 // heart beats harder as danger nears
+  const phase = (Math.sin(performance.now() / 1000 * pulseHz * Math.PI * 2) + 1) / 2;
+  const r = 220 + Math.round(35 * i), g = Math.round(110 - 80 * i), b = Math.round(80 - 60 * i);
+  const peakA = 0.16 + 0.42 * i;
+  const a = peakA * (0.55 + 0.45 * phase);
+  ctx.save();
+  const cx = CANVAS_W / 2, cy = CANVAS_H / 2;
+  const grd = ctx.createRadialGradient(cx, cy, Math.min(CANVAS_W, CANVAS_H) * 0.32, cx, cy, Math.max(CANVAS_W, CANVAS_H) * 0.85);
+  grd.addColorStop(0,    'rgba(' + r + ',' + g + ',' + b + ',0)');
+  grd.addColorStop(0.55, 'rgba(' + r + ',' + g + ',' + b + ',' + (a * 0.35).toFixed(2) + ')');
+  grd.addColorStop(1,    'rgba(' + r + ',' + g + ',' + b + ',' + a.toFixed(2) + ')');
+  ctx.fillStyle = grd; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  ctx.restore();
+}
+const _nearMiss = { armed: false, lastAt: 0 };
+function _updateNearMiss(){
+  if (typeof game === 'undefined' || game.state !== 'playing') { _nearMiss.armed = false; return; }
+  const i = _heartbeat.intensity;
+  if (i >= 0.8) _nearMiss.armed = true;          // a guard/scout nearly had Moses
+  else if (_nearMiss.armed && i <= 0.22) {       // ...and now he's slipped free
+    _nearMiss.armed = false;
+    const now = performance.now();
+    if (now - _nearMiss.lastAt > 6000) { _nearMiss.lastAt = now; _triggerCloseCall(); }
+  }
+}
+function _triggerCloseCall(){
+  try { game.stars += 2; updateHudStars(); } catch(e){}
+  try { play('chime') || play('success'); } catch(e){}
+  try { spawnGlitterBurstAtPlayer(16); } catch(e){}
+  try { toast('\u{1F605} Close call! +2 ★'); } catch(e){}
+  try { window._closeCallFlashAt = performance.now(); } catch(e){}
+}
+function drawCloseCallFlash(){
+  const t0 = window._closeCallFlashAt || 0; if (!t0) return;
+  const dt = performance.now() - t0; if (dt > 450) { window._closeCallFlashAt = 0; return; }
+  const a = 0.45 * (1 - dt / 450);
+  ctx.save(); ctx.fillStyle = 'rgba(150,220,255,' + a.toFixed(2) + ')'; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H); ctx.restore();
 }
 
 /* find start tile */
@@ -14134,6 +14242,10 @@ function render(){
     ctx.fillRect(0, CANVAS_H * 0.82, CANVAS_W, CANVAS_H * 0.18);
     ctx.restore();
   }
+  // PM66 danger-heat: red-edge vignette that intensifies as a guard/scout
+  // closes in, plus the close-call relief flash. Drawn over the world.
+  try { drawHeartbeatVignette(); } catch(e){}
+  try { drawCloseCallFlash(); } catch(e){}
   // HUD-on-canvas: pulsing red overlay already in DOM
 
   // side HUD canvases (mini-map & compass)
@@ -18008,6 +18120,9 @@ function loop(now){
     // recompute hiding status each frame (guards move, so LoS changes)
     player.crouched = isHiddenFromAnyGuard();
   }
+  // PM66 danger-heat + near-miss (self-guard on game.state)
+  try { _updateHeartbeat(); } catch(e){}
+  try { _updateNearMiss(); } catch(e){}
   render();
   requestAnimationFrame(loop);
 }
