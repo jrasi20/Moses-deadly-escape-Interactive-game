@@ -2546,7 +2546,10 @@
   background:linear-gradient(160deg,rgba(48,32,14,0.96),rgba(26,16,7,0.97));
   border:3px solid #e6b760;border-radius:22px;padding:26px clamp(24px,5vw,46px);
   box-shadow:0 0 0 2px rgba(255,232,168,0.28) inset,0 14px 44px rgba(0,0,0,0.6);
-  max-width:min(92vw,560px);}
+  max-width:min(92vw,560px);
+  /* never let a tall card (or its art) spill past the screen — scroll inside instead */
+  max-height:92vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;box-sizing:border-box;}
+.pWinCard img,#rescueLoseOverlay .rLoseCard img,#rescuePausedOverlay .rPauseCard img{max-width:100%;}
 #rescuePausedOverlay .rPauseCard{display:flex;flex-direction:column;align-items:center;gap:14px;}
 #rescueLoseOverlay .rLoseCard{background:linear-gradient(160deg,rgba(60,20,16,0.96),rgba(30,10,8,0.97));border-color:#e0884a;}
 .pWinTitle{font-family:Georgia,'Times New Roman',serif;font-weight:bold;font-size:30px;letter-spacing:.5px;
@@ -2572,9 +2575,19 @@
 #rescueLoseOverlay .rLoseCard{animation:rLoseShake .62s ease-in-out both;display:flex;flex-direction:column;align-items:center;gap:14px;max-width:440px;}
 @keyframes rLoseSink{0%{transform:translateY(-16px) scale(.85);opacity:0}60%{transform:translateY(3px) scale(1.05)}100%{transform:translateY(0) scale(1);opacity:1}}
 #rescueLoseOverlay .rLoseIco{font-size:66px;line-height:1;animation:rLoseSink .55s ease-out both;}
-#rescueLoseOverlay .rLoseDecor{display:flex;gap:4px;justify-content:center;flex-wrap:nowrap;opacity:.9;margin:2px 0;}
-#rescueLoseOverlay .rLoseDecor img{height:clamp(48px,9vh,76px);filter:drop-shadow(0 4px 8px rgba(0,0,0,.55));animation:rWinDance 1.1s ease-in-out infinite;}
+#rescueLoseOverlay .rLoseDecor{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;opacity:.9;margin:2px 0;max-width:100%;}
+#rescueLoseOverlay .rLoseDecor img{height:clamp(44px,8vh,72px);max-width:23%;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(0,0,0,.55));animation:rWinDance 1.1s ease-in-out infinite;}
 #rescueLoseOverlay .rLoseDecor img:nth-child(2){animation-delay:.15s}#rescueLoseOverlay .rLoseDecor img:nth-child(3){animation-delay:.3s}#rescueLoseOverlay .rLoseDecor img:nth-child(4){animation-delay:.45s}
+/* short / landscape screens: compact the outcome modals so the action buttons stay
+   visible without scrolling. The decorative kidnap row / victory dancers are purely
+   cosmetic, so hide them here to free vertical space for the essential content. */
+@media (max-height:480px){
+  .pWinCard,#rescueLoseOverlay .rLoseCard,#rescuePausedOverlay .rPauseCard{padding:12px clamp(16px,4vw,30px);gap:6px;max-height:96vh;}
+  #rescueLoseOverlay .rLoseDecor,#rescueWinOverlay .rWinDancers{display:none;}
+  #rescueLoseOverlay .rLoseIco{font-size:34px;}
+  .pWinTitle{font-size:21px;}
+  .pStar{font-size:30px;margin:0 3px;}
+}
 </style>
 
 <!-- ================ TOAST ================ -->
@@ -2656,6 +2669,8 @@
 <audio id="audSwingStaff"       preload="auto" src="assets/audio/swinging%20staff.mp3"></audio>
 <audio id="audVillainLaugh"     preload="auto" src="assets/audio/villain%20laugh.mp3"></audio>
 <audio id="audEpicTransition"   preload="auto" src="assets/audio/epic%20transition.mp3"></audio>
+<audio id="audRaceCountdown"    preload="auto" src="assets/audio/race%20countdown.mp3"></audio>
+<audio id="audWhooshReady"      preload="auto" src="assets/audio/whoosh%20ready.mp3"></audio>
 <audio id="audPotFill"          preload="auto" src="assets/audio/pot%20fill%20ding.mp3"></audio>
 <audio id="audSandThud"         preload="auto" src="assets/audio/sand%20thud.mp3"></audio>
 <audio id="audStealWhoosh"      preload="auto" src="assets/audio/steal%20whoosh.mp3"></audio>
@@ -2841,6 +2856,8 @@ const audio = {
   swingStaff:    $('audSwingStaff'),      // rescue: staff swing
   villainLaugh:  $('audVillainLaugh'),    // rescue: boss arrives
   epicTransition:$('audEpicTransition'),  // rescue: victory transition
+  raceCountdown: $('audRaceCountdown'),   // rescue: 3-2-1 countdown beeps before the assault
+  whooshReady:   $('audWhooshReady'),     // rescue: GO! launch whoosh
 };
 // volumes
 audio.bgm.volume = 0.28;
@@ -2894,6 +2911,8 @@ if (audio.volleyPebbles) audio.volleyPebbles.volume = 0.6;
 if (audio.swingStaff)    audio.swingStaff.volume    = 0.7;
 if (audio.villainLaugh)  audio.villainLaugh.volume  = 0.85;
 if (audio.epicTransition)audio.epicTransition.volume= 0.8;
+if (audio.raceCountdown) audio.raceCountdown.volume = 0.8;
+if (audio.whooshReady)   audio.whooshReady.volume   = 0.7;
 if (audio.vulture)       audio.vulture.volume       = 0.70;
 if (audio.camelGrunt)    audio.camelGrunt.volume    = 0.65;
 if (audio.success3)      audio.success3.volume      = 0.80;
@@ -8719,6 +8738,7 @@ function _rescueBegin() {
   const intro = document.getElementById('rescueIntro'); if (intro) intro.style.display = 'none';
   _rescueBuildBar();
   _rescue.started = true; _rescue.last = 0; _rescue.countdown = 3.0; _rescue.goFlash = 0;
+  try { play('raceCountdown'); } catch(e){}   // "3..2..1.." race-start beeps over the visual countdown
   try { if (audio.puzzleBg) { audio.puzzleBg.volume = 0.2; audio.puzzleBg.currentTime = 0; audio.puzzleBg.play().catch(()=>{}); } } catch(e){}
   document.getElementById('rescueFeedback').textContent = 'Get ready — pick your lane!';
   _rescueHud(); _rescueUpdateBar();
@@ -8902,7 +8922,7 @@ function _rescueRetry() {
   cancelAnimationFrame(_rescue.rafId); _rescueReset(); _rescueHud();
   _rescueShowLoadout();
 }
-function _rescueStopSfx() { ['camelGrunt', 'boulderRumble', 'sheepBleat', 'waveShep', 'bossAlert', 'girlScream', 'shepScream', 'fireWhoosh', 'villainLaugh', 'volleyPebbles', 'weaponSling', 'swingStaff', 'jarSmash', 'epicTransition'].forEach(k => { try { if (audio[k] && !audio[k].paused) { audio[k].pause(); audio[k].currentTime = 0; } } catch(e){} }); }
+function _rescueStopSfx() { ['camelGrunt', 'boulderRumble', 'sheepBleat', 'waveShep', 'bossAlert', 'girlScream', 'shepScream', 'fireWhoosh', 'villainLaugh', 'volleyPebbles', 'weaponSling', 'swingStaff', 'jarSmash', 'epicTransition', 'raceCountdown', 'whooshReady'].forEach(k => { try { if (audio[k] && !audio[k].paused) { audio[k].pause(); audio[k].currentTime = 0; } } catch(e){} }); }
 function _rescuePause() { if (_rescue.over || _rescue.paused || !_rescue.started) return; _rescue.paused = true; cancelAnimationFrame(_rescue.rafId); try { if (audio.puzzleBg) audio.puzzleBg.pause(); } catch(e){} _rescueStopSfx(); const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'flex'; }
 function _rescueResume() { if (!_rescue.paused) return; _rescue.paused = false; const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'none'; try { if (audio.puzzleBg) audio.puzzleBg.play().catch(()=>{}); } catch(e){} _rescue.last = 0; _rescue.rafId = requestAnimationFrame(_rescueFrame); }
 function _rescueQuit() {
@@ -8948,7 +8968,7 @@ function _rescueFrame(now) {
     // 3·2·1·GO! countdown holds the assault until kids are ready
     if (_rescue.countdown > 0) {
       const p = Math.ceil(_rescue.countdown); _rescue.countdown = Math.max(0, _rescue.countdown - dts); const n = Math.ceil(_rescue.countdown);
-      if (n !== p) { if (n >= 1) { try { play('pop'); } catch(e){} } else { _rescue.goFlash = 0.85; try { play('chime') || play('pop'); } catch(e){} const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = 'Tap the lane under attack, then tap a weapon to throw!'; } }
+      if (n !== p && n < 1) { _rescue.goFlash = 0.85; try { play('whooshReady') || play('chime'); } catch(e){} const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = 'Tap the lane under attack, then tap a weapon to throw!'; }   // per-tick beeps come from raceCountdown.mp3; whoosh launches the round on GO
     } else if (_rescue.goFlash > 0) { _rescue.goFlash = Math.max(0, _rescue.goFlash - dts); }
     if (_rescue.throwAnim > 0) _rescue.throwAnim -= dts;
     for (const k in _rescue.cd) if (_rescue.cd[k] > 0) _rescue.cd[k] -= dts;
