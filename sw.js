@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v15'; // v15: bullock-cart heart boss ported onto the rescue game (mid-round tanky golden boss, +1 heart on defeat) (invalidate stale v14)
+const CACHE_VERSION = 'bek-bundle-v16'; // v16: fire sprites, jar-smash + combat SFX, right-facing daughters, front-facing victory dancers, boundary line, cue font, intro logo-scroll, pause-button header padding
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.

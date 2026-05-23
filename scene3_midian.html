@@ -2386,8 +2386,8 @@
 <div class="modal-overlay" id="rescueModal" style="z-index:50;display:none;">
   <div class="modal-content" style="background:linear-gradient(155deg,#3a2a1a,#5a3a22);border:3px solid #d8a86a;max-width:880px;width:min(96vw,880px);padding:16px 20px;position:relative;">
     <button id="rescuePauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:38px;height:38px;border-radius:10px;border:2px solid #d8a86a;background:rgba(40,24,10,0.7);color:#ffe0a0;font-size:18px;cursor:pointer;line-height:1;">⏸</button>
-    <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;">~ RESCUE THE DAUGHTERS ~</div>
-    <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;">Drive off the rude shepherds!</h2>
+    <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;padding:0 52px;">~ RESCUE THE DAUGHTERS ~</div>
+    <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;padding:0 52px;line-height:1.2;">Drive off the rude shepherds!</h2>
     <canvas id="rescueCanvas" width="760" height="470" style="display:block;width:100%;height:auto;max-height:60vh;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#e8c890;"></canvas>
     <div id="rescueLaneCtl" style="display:flex;justify-content:center;align-items:center;gap:14px;margin:7px 0 1px;">
       <button id="rescueLaneUp" class="rwLaneBtn" aria-label="Move Moses up a lane">▲</button>
@@ -2631,6 +2631,12 @@
 <audio id="audGirlScream"       preload="auto" src="assets/audio/girl%20scream.mp3"></audio>
 <audio id="audShepScream"       preload="auto" src="assets/audio/shepherd%20scream.mp3"></audio>
 <audio id="audNope"             preload="auto" src="assets/audio/nope.mp3"></audio>
+<audio id="audJarSmash"         preload="auto" src="assets/audio/jar%20smash.mp3"></audio>
+<audio id="audWeaponSling"      preload="auto" src="assets/audio/weapon%20sling.mp3"></audio>
+<audio id="audVolleyPebbles"    preload="auto" src="assets/audio/volley%20of%20pebbles.mp3"></audio>
+<audio id="audSwingStaff"       preload="auto" src="assets/audio/swinging%20staff.mp3"></audio>
+<audio id="audVillainLaugh"     preload="auto" src="assets/audio/villain%20laugh.mp3"></audio>
+<audio id="audEpicTransition"   preload="auto" src="assets/audio/epic%20transition.mp3"></audio>
 <audio id="audPotFill"          preload="auto" src="assets/audio/pot%20fill%20ding.mp3"></audio>
 <audio id="audSandThud"         preload="auto" src="assets/audio/sand%20thud.mp3"></audio>
 <audio id="audStealWhoosh"      preload="auto" src="assets/audio/steal%20whoosh.mp3"></audio>
@@ -2810,6 +2816,12 @@ const audio = {
   girlScream:    $('audGirlScream'),      // rescue: a daughter is taken
   shepScream:    $('audShepScream'),      // rescue: a shepherd is downed
   nope:          $('audNope'),            // rescue: tried to pick a locked/unavailable weapon
+  jarSmash:      $('audJarSmash'),        // rescue: water pot shatters on a shepherd
+  weaponSling:   $('audWeaponSling'),     // rescue: sling stone fling
+  volleyPebbles: $('audVolleyPebbles'),   // rescue: pebble volley
+  swingStaff:    $('audSwingStaff'),      // rescue: staff swing
+  villainLaugh:  $('audVillainLaugh'),    // rescue: boss arrives
+  epicTransition:$('audEpicTransition'),  // rescue: victory transition
 };
 // volumes
 audio.bgm.volume = 0.28;
@@ -2857,6 +2869,12 @@ if (audio.waveShep)      audio.waveShep.volume      = 0.85;
 if (audio.bossAlert)     audio.bossAlert.volume     = 0.90;
 if (audio.girlScream)    audio.girlScream.volume    = 0.95;
 if (audio.shepScream)    audio.shepScream.volume    = 0.70;
+if (audio.jarSmash)      audio.jarSmash.volume      = 0.80;
+if (audio.weaponSling)   audio.weaponSling.volume   = 0.55;
+if (audio.volleyPebbles) audio.volleyPebbles.volume = 0.6;
+if (audio.swingStaff)    audio.swingStaff.volume    = 0.7;
+if (audio.villainLaugh)  audio.villainLaugh.volume  = 0.85;
+if (audio.epicTransition)audio.epicTransition.volume= 0.8;
 if (audio.vulture)       audio.vulture.volume       = 0.70;
 if (audio.camelGrunt)    audio.camelGrunt.volume    = 0.65;
 if (audio.success3)      audio.success3.volume      = 0.80;
@@ -3195,6 +3213,8 @@ const IMG_SRC = {
   resBarrelSheep:'assets/images/sheep%20barrel%20with%20sheep.png',
   resStaffIcon: 'assets/images/shepherd%20staff.png',
   rescueBg2:    'assets/images/rescue%20background%201.png',
+  resFire1:     'assets/images/fire%201.png',
+  resFire2:     'assets/images/fire%202.png',
   jethroExisting:      'assets/images/jethro.png',
   jethroDaughter:      'assets/images/jethro%20daughter.png',
   // Midian pickups
@@ -8734,15 +8754,15 @@ function _rescueFire(key) {
   _rescue.coins -= w.cost; _rescue.cd[key] = w.cd; _rescue.weapon = key; _rescue.throwAnim = 0.2;
   const lane = _rescue.lane, ly = _rescue.laneY[lane];
   if (w.ram) { _rescue.ram = { lane: lane, x: _rescue.mosesX + 12, vx: w.ram === 'boulder' ? 300 : 440, kind: w.ram, t: 0 }; _rescueCue((w.ram === 'boulder' ? 'BOULDER! 🪨' : 'CHARGE! 🐏'), _rescue.mosesX + 70, ly - 32, '#fff0b0', true); try { play(w.ram === 'boulder' ? 'boulderRumble' : 'sheepBleat') || play('pop'); } catch(e){} }
-  else if (w.melee) { let best = null, bd = 1e9; for (const f of _rescue.foes) { if (!f.dying && f.lane === lane && f.x > _rescue.mosesX) { const d = f.x - _rescue.mosesX; if (d < w.mrange && d < bd) { bd = d; best = f; } } } _rescueFx('dustPuff', _rescue.mosesX + 78, ly + 6, 48, 14); /* the swing is always visible */ if (best) { _rescueHurt(best, w.dmg); _rescueFx('dustPuff', best.x - 8, ly, 46, 16); } else { _rescueCue('swish!', _rescue.mosesX + 86, ly - 24, '#ffe8b8'); } try { play('sword') || play('pop'); } catch(e){} }
+  else if (w.melee) { let best = null, bd = 1e9; for (const f of _rescue.foes) { if (!f.dying && f.lane === lane && f.x > _rescue.mosesX) { const d = f.x - _rescue.mosesX; if (d < w.mrange && d < bd) { bd = d; best = f; } } } _rescueFx('dustPuff', _rescue.mosesX + 78, ly + 6, 48, 14); /* the swing is always visible */ if (best) { _rescueHurt(best, w.dmg); _rescueFx('dustPuff', best.x - 8, ly, 46, 16); } else { _rescueCue('swish!', _rescue.mosesX + 86, ly - 24, '#ffe8b8'); } try { play('swingStaff') || play('sword') || play('pop'); } catch(e){} }
   else if (w.laneBurn) { _rescue.fires.push({ lane: lane, t: w.laneBurn, dmgT: 0 }); try { play('fireWhoosh') || play('pop'); } catch(e){} }
-  else { const n = w.multi || 1, lob = (key === 'pot' || key === 'net'); for (let k = 0; k < n; k++) _rescue.shots.push({ lane: lane, x: _rescue.mosesX + 26, baseY: ly - 6 + (k - (n - 1) / 2) * 10, arcY: 0, vy: lob ? -320 : -90 - k * 10, g: lob ? 1150 : 900, vx: w.projSpeed, dmg: w.dmg, kind: key, snare: w.snare || 0, spin: 0 }); _rescueFx('dustPuff', _rescue.mosesX + 30, ly + 12, 22, 10); try { play('waterSkin') || play('pop'); } catch(e){} }
+  else { const n = w.multi || 1, lob = (key === 'pot' || key === 'net'); for (let k = 0; k < n; k++) _rescue.shots.push({ lane: lane, x: _rescue.mosesX + 26, baseY: ly - 6 + (k - (n - 1) / 2) * 10, arcY: 0, vy: lob ? -320 : -90 - k * 10, g: lob ? 1150 : 900, vx: w.projSpeed, dmg: w.dmg, kind: key, snare: w.snare || 0, spin: 0 }); _rescueFx('dustPuff', _rescue.mosesX + 30, ly + 12, 22, 10); try { play(key === 'sling' ? 'weaponSling' : key === 'volley' ? 'volleyPebbles' : 'waterSkin') || play('pop'); } catch(e){} }
   _rescueHud(); _rescueUpdateBar();
 }
 function _rescueSpawn() {
   const fs = _rescue.foeSpeed * (0.7 + 0.55 * _rescueRamp()); // foes start slower, get faster as the round builds
   let type = 'normal', hp = 1, spd = fs, scale = 1, bounty = 22;
-  if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 150; _rescue.bossSpawned = true; _rescue.shake = 18; _rescueCue('⚠️ THE MIGHTY SHEPHERD!', 380, 40, '#ff7a4a', true); try { play('bossAlert') || play('alarm') || play('error'); } catch(e){} }
+  if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 150; _rescue.bossSpawned = true; _rescue.shake = 18; _rescueCue('⚠️ THE MIGHTY SHEPHERD!', 380, 40, '#ff7a4a', true); try { play('bossAlert') || play('alarm') || play('error'); } catch(e){} try { setTimeout(() => { try { play('villainLaugh'); } catch(e){} }, 350); } catch(e){} }
   else if (!_rescue.cartSpawned && _rescue.spawned >= Math.floor(_rescue.total / 2)) { type = 'cartboss'; hp = Math.max(8, Math.round(_rescue.bossHp * 0.8)); spd = _rescue.foeSpeed * 0.4; scale = 1.8; bounty = 110; _rescue.cartSpawned = true; _rescue.shake = 14; _rescueCue('🐂 Bullock-cart boss — down him to WIN a heart ❤️', 380, 40, '#ffd23a', true); try { play('bossAlert') || play('alarm'); } catch(e){} }
   else {
     // a fresh wave of shepherds charges in: the first one, then again mid-assault
@@ -8773,7 +8793,7 @@ function _rescueGrab(foe) {
         ? ['shepKidnapBoss', 'shepKidnapBoss3', 'shepKidnapNormal']
         : (foe.type === 'big')
           ? ['shepKidnap2', 'shepKidnap4', 'shepKidnapNormal']
-          : ['shepKidnapNormal', 'shepKidnap1', 'shepKidnap4'];
+          : [['shepKidnapNormal', 'shepKidnap1', 'shepKidnap2', 'shepKidnap4'][Math.floor(Math.random() * 4)], 'shepKidnapNormal', 'shepKidnap1'];
     const kdScale = (foe.type === 'cartboss' || foe.type === 'boss') ? 1.5 : (foe.scale || 1) * 1.12;
     _rescue.kidnaps.push({ lane: foe.lane, x: _rescue.GRABX, idx: foe.lane, t: 0, scale: kdScale, carry: carry, flash: 0.55 });
     _rescue.flashLane = { lane: foe.lane, t: 0.55 };               // red lane-flash on the loss
@@ -8813,7 +8833,7 @@ function _rescueShowWinPanel() {
   const rep = document.getElementById('rescueWinReplayBtn'); if (rep) rep.style.display = perfect ? 'none' : '';
   // the rescued daughters dance in celebration
   const dz = document.getElementById('rescueWinDancers');
-  if (dz) { let h = ''; const m = Math.min(saved, 7); for (let i = 0; i < m; i++) { const dn = (i % 7) + 1; const u = IMG_SRC['daughterR' + dn] || IMG_SRC['daughter' + dn]; if (u) h += '<img src="' + u + '" alt="" style="animation-delay:' + (i * 0.12).toFixed(2) + 's">'; } dz.innerHTML = h; }
+  if (dz) { let h = ''; const m = Math.min(saved, 7); for (let i = 0; i < m; i++) { const dn = (i % 7) + 1; const u = IMG_SRC['daughter' + dn] || IMG_SRC['daughter1']; if (u) h += '<img src="' + u + '" alt="" style="animation-delay:' + (i * 0.12).toFixed(2) + 's">'; } dz.innerHTML = h; }
   try { setTimeout(() => play('coin'), 200); if (perfect) { setTimeout(() => play('coin'), 420); setTimeout(() => play('chime'), 640); setTimeout(() => { try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){} }, 300); } } catch(e){}
   const ov = document.getElementById('rescueWinOverlay'); if (ov) ov.style.display = 'flex';
   _rescueConfetti(perfect ? 64 : 30);   // confetti rains down on the win
@@ -8863,7 +8883,7 @@ function _rescueRetry() {
   cancelAnimationFrame(_rescue.rafId); _rescueReset(); _rescueHud();
   _rescueShowLoadout();
 }
-function _rescueStopSfx() { ['camelGrunt', 'boulderRumble', 'sheepBleat', 'waveShep', 'bossAlert', 'girlScream', 'shepScream', 'fireWhoosh'].forEach(k => { try { if (audio[k] && !audio[k].paused) { audio[k].pause(); audio[k].currentTime = 0; } } catch(e){} }); }
+function _rescueStopSfx() { ['camelGrunt', 'boulderRumble', 'sheepBleat', 'waveShep', 'bossAlert', 'girlScream', 'shepScream', 'fireWhoosh', 'villainLaugh', 'volleyPebbles', 'weaponSling', 'swingStaff', 'jarSmash', 'epicTransition'].forEach(k => { try { if (audio[k] && !audio[k].paused) { audio[k].pause(); audio[k].currentTime = 0; } } catch(e){} }); }
 function _rescuePause() { if (_rescue.over || _rescue.paused || !_rescue.started) return; _rescue.paused = true; cancelAnimationFrame(_rescue.rafId); try { if (audio.puzzleBg) audio.puzzleBg.pause(); } catch(e){} _rescueStopSfx(); const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'flex'; }
 function _rescueResume() { if (!_rescue.paused) return; _rescue.paused = false; const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'none'; try { if (audio.puzzleBg) audio.puzzleBg.play().catch(()=>{}); } catch(e){} _rescue.last = 0; _rescue.rafId = requestAnimationFrame(_rescueFrame); }
 function _rescueQuit() {
@@ -8934,7 +8954,7 @@ function _rescueFrame(now) {
     for (let i = _rescue.shots.length - 1; i >= 0; i--) {
       const s = _rescue.shots[i]; s.x += s.vx * dts; s.vy += s.g * dts; s.arcY += s.vy * dts; if (s.arcY > 0) s.arcY = 0; s.spin += dts * 14;
       let hf = null; for (const f of _rescue.foes) { if (!f.dying && f.lane === s.lane && f.x > _rescue.mosesX && Math.abs(f.x - s.x) < 28) { hf = f; break; } }
-      if (hf) { _rescueFx(s.kind === 'pot' ? 'splashFx' : 'dustPuff', s.x, s.baseY, 32, 14); _rescue.shots.splice(i, 1); if (s.snare) { hf.snared = s.snare; _rescueCue('tangled!', hf.x, _rescue.laneY[hf.lane] - 30, '#cfe0ff'); } if (s.dmg > 0) _rescueHurt(hf, s.dmg); try { play('pop'); } catch(e){} }
+      if (hf) { _rescueFx(s.kind === 'pot' ? 'splashFx' : 'dustPuff', s.x, s.baseY, 32, 14); _rescue.shots.splice(i, 1); if (s.snare) { hf.snared = s.snare; _rescueCue('tangled!', hf.x, _rescue.laneY[hf.lane] - 30, '#cfe0ff'); } if (s.dmg > 0) _rescueHurt(hf, s.dmg); try { play(s.kind === 'pot' ? 'jarSmash' : s.kind === 'net' ? 'pop' : 'pop') || play('pop'); } catch(e){} }
       else if (s.x > W + 20) _rescue.shots.splice(i, 1);
     }
     // lane fires (torch)
@@ -8970,7 +8990,7 @@ function _rescueFrame(now) {
     c.fillStyle = (i % 2 === 0) ? 'rgba(60,40,18,0.18)' : 'rgba(255,245,215,0.08)'; c.fillRect(0, _rescue.laneY[i] - 29, W, 58);
     c.strokeStyle = 'rgba(40,24,10,0.16)'; c.lineWidth = 1; c.strokeRect(0, _rescue.laneY[i] - 29, W, 58);
     if (_rescue.started && i === _rescue.lane) { c.fillStyle = 'rgba(120,200,255,0.12)'; c.fillRect(0, _rescue.laneY[i] - 28, W, 56); c.strokeStyle = 'rgba(120,200,255,0.6)'; c.lineWidth = 2; c.strokeRect(2, _rescue.laneY[i] - 28, W - 4, 56); }
-    const _dn = (i % 7) + 1; // daughters face right, toward the incoming shepherds
+    const _dn = [3, 4, 5, 6, 7, 3, 4][i]; // use only daughters that have a RIGHT-facing pose (3-7) so none show front-on
     // supply cache tucked behind the daughter (only while she's still here to defend)
     if (_rescue.laneDaughter[i]) _rescueDrawCache(c, 16, _rescue.laneY[i] + 28);
     if (_rescue.laneDaughter[i]) { const dgb = Math.sin(now / 360 + i) * 1.6; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 48, _rescue.laneY[i] + 27 + dgb, 72, 104); }
@@ -8978,9 +8998,23 @@ function _rescueFrame(now) {
   }
   // red alarm flash over a lane where a daughter was just taken
   if (_rescue.flashLane) { const fl = _rescue.flashLane, ly = _rescue.laneY[fl.lane], a = Math.max(0, fl.t / 0.55); c.fillStyle = 'rgba(220,40,30,' + (0.34 * a).toFixed(3) + ')'; c.fillRect(0, ly - 29, W, 58); }
-  c.strokeStyle = 'rgba(120,200,120,0.4)'; c.setLineDash([6, 6]); c.lineWidth = 2; c.beginPath(); c.moveTo(_rescue.GRABX, 8); c.lineTo(_rescue.GRABX, H - 8); c.stroke(); c.setLineDash([]);
-  // lane fires
-  for (const fr of _rescue.fires) { const ly = _rescue.laneY[fr.lane]; for (let x = _rescue.GRABX; x < W; x += 34) { const fl = 10 + 8 * Math.sin((now / 90) + x); c.fillStyle = 'rgba(255,' + (120 + ((x % 60))) + ',40,0.5)'; c.beginPath(); c.moveTo(x, ly + 24); c.quadraticCurveTo(x + 8, ly + 24 - fl, x + 16, ly + 24); c.fill(); } }
+  // the DEFENSE LINE — shepherds must never cross it. Drawn as a bold guarded boundary with posts.
+  (function(){ const gx = _rescue.GRABX; c.save();
+    c.strokeStyle = 'rgba(70,40,16,0.55)'; c.lineWidth = 7; c.beginPath(); c.moveTo(gx, 6); c.lineTo(gx, H - 6); c.stroke();
+    c.strokeStyle = 'rgba(255,224,150,0.95)'; c.lineWidth = 3; c.setLineDash([14, 9]); c.lineDashOffset = -(now / 26) % 23; c.beginPath(); c.moveTo(gx, 6); c.lineTo(gx, H - 6); c.stroke(); c.setLineDash([]);
+    for (let py = 16; py < H; py += 78) { c.fillStyle = '#6a4a26'; c.fillRect(gx - 4, py, 8, 16); c.fillStyle = '#ffe6a6'; c.fillRect(gx - 4, py, 8, 4); }
+    c.restore();
+  })();
+  // lane fires — real flame sprites (fire 1/2 alternate for a flicker), fall back to drawn flames
+  for (const fr of _rescue.fires) {
+    const ly = _rescue.laneY[fr.lane];
+    let drew = false;
+    for (let x = _rescue.GRABX + 14; x < W; x += 46) {
+      const key = (((x + (now / 120) | 0)) % 2 === 0) ? 'resFire1' : 'resFire2';
+      if (_pDrawFit(c, [key], x, ly + 30, 46, 56)) drew = true; else break;
+    }
+    if (!drew) { for (let x = _rescue.GRABX; x < W; x += 34) { const fl = 10 + 8 * Math.sin((now / 90) + x); c.fillStyle = 'rgba(255,' + (120 + ((x % 60))) + ',40,0.5)'; c.beginPath(); c.moveTo(x, ly + 24); c.quadraticCurveTo(x + 8, ly + 24 - fl, x + 16, ly + 24); c.fill(); } }
+  }
   // foes
   for (const f of _rescue.foes) {
     const yb = _rescue.laneY[f.lane] + 28;
@@ -9058,7 +9092,7 @@ function _rescueFrame(now) {
   // fx
   for (let i = _rescue.fx.length - 1; i >= 0; i--) { const x = _rescue.fx[i]; x.t++; if (x.t > x.life) { _rescue.fx.splice(i, 1); continue; } const k = x.t / x.life, a = Math.max(0, 1 - k), s = x.size * (0.7 + 0.5 * k); c.globalAlpha = a; if (!_pDraw(c, x.key, x.x - s / 2, x.y - s / 2, s, s)) { c.fillStyle = 'rgba(255,220,120,0.6)'; c.beginPath(); c.arc(x.x, x.y, s / 2, 0, Math.PI * 2); c.fill(); } c.globalAlpha = 1; }
   // cues
-  for (let i = _rescue.cues.length - 1; i >= 0; i--) { const q = _rescue.cues[i]; q.t++; if (q.t > q.life) { _rescue.cues.splice(i, 1); continue; } const a = Math.max(0, 1 - q.t / q.life), cyy = q.y - q.t * (q.big ? 0.4 : 0.55); c.globalAlpha = a; c.font = q.big ? 'bold 21px Georgia' : 'bold 16px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; let cxx = q.x; if (q.big) { const half = c.measureText(q.text).width / 2 + 12; cxx = Math.max(half + 2, Math.min(W - half - 2, q.x)); c.fillStyle = 'rgba(10,24,40,0.78)'; c.beginPath(); if (c.roundRect) c.roundRect(cxx - half, cyy - 15, half * 2, 30, 8); else c.rect(cxx - half, cyy - 15, half * 2, 30); c.fill(); } c.fillStyle = q.color; c.fillText(q.text, cxx, cyy); c.globalAlpha = 1; }
+  for (let i = _rescue.cues.length - 1; i >= 0; i--) { const q = _rescue.cues[i]; q.t++; if (q.t > q.life) { _rescue.cues.splice(i, 1); continue; } const a = Math.max(0, 1 - q.t / q.life), cyy = q.y - q.t * (q.big ? 0.4 : 0.55); c.globalAlpha = a; c.font = q.big ? '800 24px Fredoka, "Baloo 2", Georgia, sans-serif' : 'bold 17px Fredoka, "Baloo 2", Georgia, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; let cxx = q.x; if (q.big) { const half = c.measureText(q.text).width / 2 + 14; cxx = Math.max(half + 2, Math.min(W - half - 2, q.x)); c.fillStyle = 'rgba(10,18,32,0.82)'; c.beginPath(); if (c.roundRect) c.roundRect(cxx - half, cyy - 17, half * 2, 34, 10); else c.rect(cxx - half, cyy - 17, half * 2, 34); c.fill(); c.lineWidth = 2; c.strokeStyle = 'rgba(255,224,150,0.45)'; if (c.roundRect) { c.beginPath(); c.roundRect(cxx - half, cyy - 17, half * 2, 34, 10); c.stroke(); } } c.lineJoin = 'round'; c.lineWidth = q.big ? 4 : 3; c.strokeStyle = 'rgba(8,6,3,0.9)'; c.strokeText(q.text, cxx, cyy); c.fillStyle = q.color; c.fillText(q.text, cxx, cyy); c.globalAlpha = 1; }
   // treasure-bag flyers (arc to the purse)
   for (const fl of _rescue.flyers) { if (fl.t < 0) continue; const k = Math.max(0, Math.min(1, fl.t / fl.life)), e = k * k * (3 - 2 * k); const cx = fl.x + (44 - fl.x) * e, cy = fl.y + (14 - fl.y) * e - Math.sin(k * Math.PI) * 48, sc = 1 + Math.sin(k * Math.PI) * 0.55; c.save(); c.globalAlpha = k > 0.82 ? Math.max(0, 1 - (k - 0.82) / 0.18) : 1; c.font = Math.round(19 * sc) + 'px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; if (!_pDraw(c, [fl.bag || 'treasureB', 'treasureG', 'treasureR'], cx - 12 * sc, cy - 12 * sc, 24 * sc, 24 * sc)) c.fillText('💰', cx, cy); c.restore(); }
   if (_rescue.over && _rescue.win) { c.fillStyle = 'rgba(255,230,120,' + (0.12 + 0.07 * Math.sin(now / 120)).toFixed(2) + ')'; c.fillRect(0, 0, W, H); }
@@ -17219,7 +17253,7 @@ if ('serviceWorker' in navigator) {
 <style>
   /* scrolling centered column — robust on every screen + orientation */
   #rescueIntro{flex-direction:column;align-items:center;justify-content:flex-start;padding:24px 16px 36px;box-sizing:border-box;}
-  #rescueIntro .riCol{position:relative;z-index:2;width:100%;max-width:min(94vw,860px);margin:auto;display:flex;flex-direction:column;align-items:center;text-align:center;color:#fff4e2;}
+  #rescueIntro .riCol{position:relative;z-index:2;width:100%;max-width:min(94vw,860px);margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;color:#fff4e2;}
   #rescueIntro .riLogo{height:clamp(42px,8vh,70px);width:auto;margin-bottom:8px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5));animation:riPop .6s .05s both;}
   #rescueIntro .riKicker{font-size:clamp(12px,1.6vw,14px);letter-spacing:2px;color:#ffd28a;animation:riFade .6s .1s both;}
   #rescueIntro .riTitle{font-size:clamp(30px,5vw,46px);font-weight:700;color:#ffe0a0;line-height:1.1;margin-top:4px;text-shadow:0 3px 10px rgba(0,0,0,.7),0 0 22px rgba(255,180,60,.45);animation:riPop .6s .15s both;}
