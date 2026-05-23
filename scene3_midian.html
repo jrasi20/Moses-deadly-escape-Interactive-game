@@ -2493,15 +2493,26 @@
       @media (orientation:portrait){
         #rescueRotateHint{display:block;text-align:center;color:#ffe0a0;font-size:12.5px;font-weight:bold;background:rgba(40,24,10,0.55);border:1px solid rgba(216,168,106,0.5);border-radius:10px;padding:5px 10px;margin:2px auto 4px;}
       }
-      /* LANDSCAPE (incl. desktop): canvas + controls SIDE-BY-SIDE so the canvas dominates */
+      /* LANDSCAPE (incl. desktop): canvas on top, controls in a COMPACT FULL-WIDTH BOTTOM BAR.
+         HUD sits slim on its own line; MOVE-MOSES + the weapon bar share ONE row so the bar
+         stays short (canvas keeps height) and the buttons are wide & easy to press. */
       @media (orientation:landscape){
-        #rescuePlayArea{flex-direction:row;align-items:stretch;gap:8px;}
-        #rescueStage{flex:1 1 auto;min-width:0;height:auto;width:auto;}
-        #rescueSidePanel{flex:0 0 clamp(140px,22vw,230px);width:auto;max-width:none;justify-content:center;gap:4px;margin:0;align-self:center;}
-        #rescueHudRow{flex-wrap:wrap;gap:4px;justify-content:center;font-size:13px !important;}
-        #rescueWeaponBar{gap:5px !important;}
-        #rescueLaneCtl{margin:2px 0 !important;}
-        #rescueFeedback{font-size:12.5px !important;min-height:0 !important;}
+        #rescueSidePanel{flex-flow:row wrap;align-items:center;justify-content:center;gap:6px;max-width:960px;}
+        #rescueHudRow{order:0;flex:0 0 100%;margin:2px 6px 1px !important;font-size:13.5px !important;}
+        #rescueLaneCtl{order:1;flex:0 0 auto;margin:0 !important;gap:8px !important;}
+        #rescueWeaponBar{order:2;flex:1 1 320px;min-width:0;gap:6px;}
+        #rescueFeedback{order:3;flex:0 0 100%;font-size:12px !important;margin:1px 0 0 !important;min-height:0 !important;}
+        #rescueWeaponBar .rwBtn{padding:5px 4px 5px;}
+        #rescueLaneCtl .rwLaneBtn{height:38px;width:52px;}
+      }
+      /* very short landscape (phones): hide the redundant feedback line + tighten the bar so
+         the playfield keeps as much height as possible */
+      @media (orientation:landscape) and (max-height:480px){
+        #rescueFeedback{display:none !important;}
+        #rescueHudRow{margin:1px 6px 0 !important;font-size:12.5px !important;}
+        #rescueWeaponBar .rwBtn{padding:4px 3px;}
+        #rescueWeaponBar .rwBtn .rwIco{font-size:22px;}
+        #rescueLaneCtl .rwLaneBtn{height:34px;width:46px;}
       }
       /* loadout screen on short landscape (unchanged) */
       @media (orientation:landscape) and (max-height:560px){
@@ -8992,7 +9003,7 @@ function _rescueFrame(now) {
   const W = 760;
   const dpr = Math.min(3, window.devicePixelRatio || 1);
   const cssW = canvas.clientWidth || W, cssH = canvas.clientHeight || 470;
-  const H = Math.max(360, Math.round(W * (cssH / Math.max(1, cssW))));
+  const H = Math.max(120, Math.round(W * (cssH / Math.max(1, cssW))));  // floor only guards degenerate sizes; never binds normally so scale stays UNIFORM (no squish)
   const needW = Math.max(1, Math.round(cssW * dpr)), needH = Math.max(1, Math.round(cssH * dpr));
   if (canvas.width !== needW || canvas.height !== needH) { canvas.width = needW; canvas.height = needH; }
   c.setTransform(needW / W, 0, 0, needH / H, 0, 0);   // needW/W === needH/H → uniform, undistorted
@@ -9000,7 +9011,7 @@ function _rescueFrame(now) {
   const _topM = Math.max(30, H * 0.07), _botM = Math.max(24, H * 0.05);
   _rescue.laneGap = (H - _topM - _botM) / _rescue.LANES;
   for (let _i = 0; _i < _rescue.LANES; _i++) _rescue.laneY[_i] = _topM + _rescue.laneGap * (_i + 0.5);
-  _rescue.H = H; _rescue.mag = Math.max(0.85, Math.min(1.8, _rescue.laneGap / 60));
+  _rescue.H = H; _rescue.mag = Math.max(0.6, Math.min(1.85, _rescue.laneGap / 58));
   c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
   const dt = Math.min(60, now - (_rescue.last || now)); _rescue.last = now; const dts = dt / 1000;
 
