@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v9'; // v9: merge — Scene 3 rescue game wired to new sprites/audio + hi-DPI canvas (invalidate stale v8 cache)
+const CACHE_VERSION = 'bek-bundle-v11'; // v11: rescue foe variety, waves, lane divert, win-tiers, 3-hearts lose model, cheaper weapons (invalidate stale v9 cache)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
