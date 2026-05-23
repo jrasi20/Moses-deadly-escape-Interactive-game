@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v18'; // v18: mini-game-specific pause, Moses lane-align, ram facing, framed modals, lost-modal kidnap decor
+const CACHE_VERSION = 'bek-bundle-v19'; // v19: Scene 3 redesign — 5-stop journey (3 Bible Checkpoints + Well + Rescue), rescue mini-game wired, exit-open fanfare
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.

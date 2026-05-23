@@ -5663,19 +5663,26 @@ const CHALLENGE_POSITIONS = [
 ];
 const challengeGates = [];  // populated once difficulty is chosen (legacy name preserved for downstream code)
 
-// v3.28 (Scene 3 port — CANONICAL §4): random 3×3 region-grid checkpoint
-// placement so the layout feels different each play. Bands tuned to
-// Scene 3's MAP_W=35 and the proposed zone split:
-//   Marketplace north  cols  1-11  (12 wide)
-//   Well center        cols 12-22  (11 wide)
-//   Pasture / Jethro   cols 23-33  (11 wide)
-// Row bands stay 3-tier like Scene 2.  The min Chebyshev 2 from caves +
-// 1 from oases avoidance comes in via tooNear (Bug 73). Falls back to
-// CHALLENGE_POSITIONS hardcoded list if a region fails (rare).
+// Scene 3 — REFUGE IN MIDIAN. Five mandatory stops along Moses' west→east
+// journey to Jethro's tent (the sealed EXIT on the east edge):
+//   1. Marketplace  — Bible Checkpoint (trivia)
+//   2. The Well     — MINI-GAME: Race to Water the Flock  (zone 'well')
+//   3. Wadi edge    — Bible Checkpoint (trivia)
+//   4. Pasture      — Bible Checkpoint (trivia)
+//   5. Jethro's tent— MINI-GAME: Rescue the Daughters     (zone 'rescue')
+// Each stop is jittered within a column/row band every play so the layout
+// feels fresh, but the COUNT, ORDER, and ZONES are fixed. Trivia gates use
+// non-mini-game zones so openChallenge() routes them to the question bundle;
+// the two mini-game gates carry zones 'well' / 'rescue'.
 function _generateRandomChallengePositions(){
+  const STOPS = [
+    { col: [3, 10],  row: [8, 16], zone: 'marketplace', label: 'Marketplace Checkpoint' },
+    { col: [14, 20], row: [8, 15], zone: 'well',        label: 'The Well — Water the Flock' },
+    { col: [19, 23], row: [9, 16], zone: 'pasture',     label: 'Wadi Checkpoint' },
+    { col: [24, 30], row: [8, 16], zone: 'pasture',     label: 'Pasture Checkpoint' },
+    { col: [29, 33], row: [9, 15], zone: 'rescue',      label: 'Rescue the Daughters' },
+  ];
   const out = [];
-  const colBands = [[1, 11], [12, 22], [23, 33]];
-  const rowBands = [[1,  8], [9,  16], [17, 23]];
   const startTile = (typeof findTileOfType === 'function') ? findTileOfType(8) : null;
   const exitTile  = (typeof findTileOfType === 'function') ? findTileOfType(7) : null;
   const sx = startTile ? startTile.x : 1;
@@ -5684,9 +5691,9 @@ function _generateRandomChallengePositions(){
   const ey = exitTile  ? exitTile.y  : 12;
   const tooNear = (tx, ty) => {
     if (Math.abs(tx - sx) + Math.abs(ty - sy) < 3) return true;
-    if (Math.abs(tx - ex) + Math.abs(ty - ey) < 3) return true;
+    if (Math.abs(tx - ex) + Math.abs(ty - ey) < 2) return true;
     for (const p of out) {
-      if (Math.abs(tx - p.tx) + Math.abs(ty - p.ty) < 4) return true;
+      if (Math.abs(tx - p.tx) + Math.abs(ty - p.ty) < 3) return true;
     }
     // Min Chebyshev 2 from caves; min 1 from oases.
     try {
@@ -5707,41 +5714,30 @@ function _generateRandomChallengePositions(){
     } catch(e){}
     return false;
   };
-  const labelFor = (tx) => (
-    tx <= 11 ? { name: 'Marketplace', zone: 'marketplace' } :
-    tx <= 22 ? { name: 'Well',        zone: 'well'        } :
-               { name: 'Pasture',     zone: 'pasture'     }
-  );
-  for (let ri = 0; ri < 3; ri++) {
-    for (let ci = 0; ci < 3; ci++) {
-      const [cMin, cMax] = colBands[ci];
-      const [rMin, rMax] = rowBands[ri];
-      let pick = null;
-      for (let attempt = 0; attempt < 80 && !pick; attempt++) {
-        const tx = cMin + Math.floor(Math.random() * (cMax - cMin + 1));
-        const ty = rMin + Math.floor(Math.random() * (rMax - rMin + 1));
-        if (typeof MAP === 'undefined' || !MAP[ty]) continue;
-        if (MAP[ty][tx] !== 0) continue;
-        if (tooNear(tx, ty)) continue;
-        pick = { tx, ty };
-      }
-      if (pick) {
-        const z = labelFor(pick.tx);
-        out.push({
-          tx: pick.tx, ty: pick.ty,
-          kind: 'zone',
-          zone: z.zone,
-          label: z.name + ' Checkpoint ' + (out.length + 1),
-        });
+  for (const s of STOPS) {
+    const cMin = s.col[0], cMax = s.col[1];
+    const rMin = s.row[0], rMax = s.row[1];
+    let pick = null;
+    // Preferred: a walkable, well-spaced tile inside the band.
+    for (let attempt = 0; attempt < 120 && !pick; attempt++) {
+      const tx = cMin + Math.floor(Math.random() * (cMax - cMin + 1));
+      const ty = rMin + Math.floor(Math.random() * (rMax - rMin + 1));
+      if (typeof MAP === 'undefined' || !MAP[ty]) continue;
+      if (MAP[ty][tx] !== 0) continue;
+      if (tooNear(tx, ty)) continue;
+      pick = { tx, ty };
+    }
+    // Fallback: any walkable tile in the band (ignore spacing).
+    if (!pick) {
+      for (let ty = rMin; ty <= rMax && !pick; ty++) {
+        for (let tx = cMin; tx <= cMax && !pick; tx++) {
+          if (MAP[ty] && MAP[ty][tx] === 0) pick = { tx, ty };
+        }
       }
     }
-  }
-  // Pad fallback: if any region failed, top up from hardcoded list.
-  let fbIdx = 0;
-  while (out.length < 9 && fbIdx < CHALLENGE_POSITIONS.length) {
-    const fb = CHALLENGE_POSITIONS[fbIdx++];
-    if (out.some(p => p.tx === fb.tx && p.ty === fb.ty)) continue;
-    out.push({ ...fb });
+    // Last resort: band centre, so a stop is never silently dropped.
+    if (!pick) pick = { tx: Math.round((cMin + cMax) / 2), ty: Math.round((rMin + rMax) / 2) };
+    out.push({ tx: pick.tx, ty: pick.ty, kind: 'zone', zone: s.zone, label: s.label });
   }
   return out;
 }
@@ -7068,8 +7064,8 @@ function restartScene() {
 const TUT_STEPS = [
   { icon:'[>]',  title:'Move Moses', body:'Tap the arrows below, swipe the screen, or use arrow keys on a keyboard to guide Moses east across Midian toward Jethro\u2019s tent.' },
   { icon:'[#]',  title:'Hide Behind Palms & Rocks', body:'Step beside a palm cluster, rock outcrop, or water-jar pile [#] to crouch. Crouching hides Moses from the three rude shepherds patrolling near the well.' },
-  { icon:'[?]',  title:'Midian Checkpoints (MANDATORY)', body:'Nine glowing [?] Midian Checkpoints are UNAVOIDABLE. Walk near any checkpoint and Moses will be stopped for 3 Bible questions. You must solve EVERY checkpoint in the scene to drive off the rude shepherds and open the path to Jethro\u2019s tent. You cannot walk around them.' },
-  { icon:'[!]',  title:'Reach Jethro\u2019s Tent', body:'To finish Scene 3, Moses must first clear all NINE Midian Checkpoints, then walk into the glowing EXIT tile on the east edge \u2014 Jethro\u2019s tent. Only then does the scene end and God welcomes Moses into a new family!' },
+  { icon:'[?]',  title:'Midian Stops (MANDATORY)', body:'Five glowing [?] stops are UNAVOIDABLE on the way to Jethro\u2019s tent: three Bible Checkpoints, plus two big mini-games \u2014 the Well (water Jethro\u2019s flock) and the Rescue (save his daughters from the rude shepherds). Walk near a Bible Checkpoint and Moses is stopped for 3 questions. You must clear EVERY stop to open the path east.' },
+  { icon:'[!]',  title:'Reach Jethro\u2019s Tent', body:'To finish Scene 3, Moses must first clear all five Midian stops \u2014 the three Bible Checkpoints, the Well, and the Rescue \u2014 then walk into the glowing EXIT tile on the east edge: Jethro\u2019s tent. Only then does the scene end and God welcomes Moses into a new family!' },
   { icon:'[x]',  title:'Watch for the Rude Shepherds', body:'Three rude shepherds patrol near the well. Stay in cover \u2014 palms, rocks, jar piles \u2014 when they look your way. Bump into one and Moses must answer a question to drive him off. Moses stood up for the weak; you can too.' },
 ];
 function showTutorial(step){
@@ -7125,7 +7121,7 @@ function updateHudAltitude(){
   const liveGates = (typeof challengeGates !== 'undefined' && challengeGates)
     ? challengeGates.length
     : 0;
-  const totalGates = liveGates > 0 ? liveGates : 9; // design: 4 zone + 5 eastern = 9
+  const totalGates = liveGates > 0 ? liveGates : 5; // design: 3 Bible Checkpoints + Well + Rescue = 5
   const solved = (typeof challengeGates !== 'undefined' && challengeGates)
     ? challengeGates.filter(g => g && g.solved).length
     : 0;
@@ -7941,6 +7937,7 @@ function _closePulleyGame() {
   try { spawnGlitterBurstAtPlayer(22); } catch(e){}
   try { toast('You watered Jethro\'s flock! ' + '⭐'.repeat(earned) + ' +' + earned + ' stars!'); } catch(e){}
   game.stars += earned; try { updateHudStars(); } catch(e){}
+  try { _announceAllGatesCleared(); } catch(e){}
   try { if (typeof showVerseDrift === 'function') setTimeout(showVerseDrift, 600); } catch(e){}
   try { _saveCheckpoint(); } catch(e){}
 }
@@ -8926,6 +8923,7 @@ function _closeRescue() {
   try { spawnGlitterBurstAtPlayer(20); } catch(e){}
   try { toast('You rescued Jethro\'s daughters! ' + '⭐'.repeat(earned) + ' +' + earned + ' stars!'); } catch(e){}
   game.stars += earned; try { updateHudStars(); } catch(e){}
+  try { _announceAllGatesCleared(); } catch(e){}
   try { _saveCheckpoint(); } catch(e){}
 }
 function _rescueFrame(now) {
@@ -9183,11 +9181,33 @@ function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: t
   if (document.readyState !== 'loading') wire(); else document.addEventListener('DOMContentLoaded', wire);
 })();
 
+// Scene 3 epic: fire the "exit is open" fanfare exactly once — the moment the
+// LAST of the five mandatory stops (3 Bible Checkpoints + Well + Rescue) is
+// cleared. Works no matter which stop type finishes last (trivia, Well, or
+// Rescue all call this). (game.scene stays 2 internally — Scene 3 was ported
+// from Scene 2 and kept the id so the shared gate/HUD logic keeps working.)
+function _announceAllGatesCleared(){
+  try {
+    if (game.scene !== 2) return;
+    if (game.allGatesCleared) return;
+    const total  = (typeof challengeGates !== 'undefined' && challengeGates) ? challengeGates.length : 0;
+    const solved = (typeof challengeGates !== 'undefined' && challengeGates)
+      ? challengeGates.filter(g => g && g.solved).length : 0;
+    if (total > 0 && solved >= total) {
+      game.allGatesCleared = true;
+      try { play('allComplete'); } catch(e){}
+      try { toast('All Midian stops cleared! Walk east into Jethro’s tent to finish!'); } catch(e){}
+    }
+  } catch(e){}
+}
+
 function openChallenge(gate) {
   // Phase C Step 7: Well gate → pulley mini-game instead of trivia
   if (gate && gate.zone === 'well') { openWellPulleyGame(gate); return; }
+  // Scene 3 epic: Rescue gate near Jethro's tent → lane-defense mini-game.
+  if (gate && gate.zone === 'rescue') { openRescueGame(gate); return; }
   // Scribe's Wisdom power: skip a trivia checkpoint (never a mini-game gate).
-  if (window._scribesWisdomArmed && gate && gate.zone !== 'well') {
+  if (window._scribesWisdomArmed && gate && gate.zone !== 'well' && gate.zone !== 'rescue') {
     window._scribesWisdomArmed = false;
     gate.solved = true; game.state = 'playing';
     try { play('success') || play('chime'); } catch(e){}
@@ -10397,24 +10417,19 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         // gates are cleared. Moses must still walk INTO the exit tile. We
         // only toast that the path east is now open — actual scene-complete
         // fires from onReachExit() when player.tx/ty hits the exit position.
-        if (game.scene === 2 && isClimb) {
-          const totalClimbs = challengeGates.filter(g => g.kind === 'climb').length;
-          const solvedClimbs = challengeGates.filter(g => g.kind === 'climb' && g.solved).length;
+        // Scene 3 epic: stops are no longer "climb" steps. Announce the
+        // exit-open fanfare the moment the LAST of the five stops is cleared;
+        // otherwise nudge how many remain. (The Well & Rescue mini-game stops
+        // call the same helper from their own completion handlers.)
+        if (game.scene === 2) {
           const totalGates = challengeGates.length;
           const solvedGates = challengeGates.filter(g => g.solved).length;
           if (solvedGates >= totalGates && totalGates > 0) {
-            // ALL mandatory gates cleared. Open the desert exit and tell
-            // Moses where to go — but don't jump to the next scene yet.
-            try { game.allGatesCleared = true; } catch(e){}
-            try { play('allComplete'); } catch(e){}  // v2.2.7 all-gates fanfare
-            try { toast('All Midian checkpoints cleared! Walk east into Jethro’s tent to finish!'); } catch(e){}
-          } else if (solvedClimbs >= totalClimbs && totalClimbs > 0) {
-            const zonesLeft = totalGates - solvedGates;
-            try { play('cliffStep'); } catch(e){}  // v2.2.7 east-edge gate step
-            try { toast('Press on! Still ' + zonesLeft + ' checkpoint' + (zonesLeft===1?'':'s') + ' to clear before Jethro’s tent opens.'); } catch(e){}
-          } else if (isClimb) {
-            // v2.2.7: an east-edge gate just cleared — climb-step sfx only
+            _announceAllGatesCleared();
+          } else {
+            const left = totalGates - solvedGates;
             try { play('cliffStep'); } catch(e){}
+            try { toast('Press on! Still ' + left + ' stop' + (left === 1 ? '' : 's') + ' to clear before Jethro’s tent opens.'); } catch(e){}
           }
         }
         // step onto the now-open gate (legacy behavior, Scene 1)
