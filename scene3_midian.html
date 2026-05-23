@@ -3241,7 +3241,15 @@ const SPRITE_BLEED = new Set([
   'daughter1','daughter2','daughter3',
   'sheep','sheepLeft','sheepRight','sheepBack','lamb','lambAlt','goat',
   'midianPalm','oliveTree','terebinth','jarPile','sheepPenWall','reedsCluster',
-  'wildflowers','hearth','waterJar','shepherdStaff','scrollStrategy','grassTile'
+  'wildflowers','hearth','waterJar','shepherdStaff','scrollStrategy','grassTile',
+  // Rescue mini-game sprites — strip the AI-export white edge halo (Jane: "white halo on edges")
+  'resShepNormal','resShepFast','resShepBrute','resBoss','resShepFall','resShepWalk2','resShep4Left',
+  'resBoss1','resBoss2','resBoss3','resRam','resBarrel','resBarrelSheep',
+  'resMosesIdle','resMosesThrow','resMosesSling','resMosesTorch','resMosesBoth',
+  'daughter4','daughter5','daughter6','daughter7',
+  'daughterR3','daughterR4','daughterR5','daughterR6','daughterR7',
+  'kidnap1','kidnap2','kidnap3','kidnap4','kidnap5','kidnap6','kidnap7',
+  'shepKidnapNormal','shepKidnap1','shepKidnap2','shepKidnap4','shepKidnapBoss','shepKidnapBoss3'
 ]);
 
 function _alphaBleed(srcImg) {
@@ -8589,10 +8597,23 @@ function _rescueAutoPick() {
 }
 function _rescueShowIntro() {
   const intro = document.getElementById('rescueIntro'); if (intro) intro.style.display = 'flex';
+  _rescueCleanIntroArt();   // strip white edge-halos off the diorama art
   // soft music bed + a gentle sting under the story (continues into the loadout + round)
   try { if (audio.puzzleBg) { audio.puzzleBg.volume = 0.16; audio.puzzleBg.currentTime = 0; audio.puzzleBg.loop = true; audio.puzzleBg.play().catch(()=>{}); } } catch(e){}
   try { play('chime') || play('pop'); } catch(e){}
   try { setTimeout(() => { try { play('girlScream'); } catch(e){} }, 520); } catch(e){}
+}
+// run the canvas alpha-bleed over the intro's DOM <img> diorama so the daughters/shepherds
+// have no white fringe (same chroma-key + edge-bleed the gameplay sprites get). Runs once.
+function _rescueCleanIntroArt() {
+  if (_rescue._introArtCleaned) return; _rescue._introArtCleaned = true;
+  try {
+    const imgs = document.querySelectorAll('#rescueIntro .riImg');
+    imgs.forEach(im => {
+      const go = () => { try { const baked = _alphaBleed(im); if (baked && typeof baked.toDataURL === 'function') { const u = baked.toDataURL('image/png'); if (u && u.length > 200) im.src = u; } } catch(e){} };
+      if (im.complete && im.naturalWidth) go(); else im.addEventListener('load', go, { once: true });
+    });
+  } catch(e){}
 }
 function _rescueIntroContinue() {
   const intro = document.getElementById('rescueIntro'); if (intro) intro.style.display = 'none';
@@ -17153,65 +17174,71 @@ if ('serviceWorker' in navigator) {
 <!-- Rescue weapon-select (top-level so position:fixed escapes any transformed ancestor) -->
 <!-- intro / story + how-to screen (shown once when the game opens, before weapon-select) -->
 <div id="rescueIntro" style="display:none;position:fixed;inset:0;z-index:85;background:radial-gradient(circle at 50% 26%,rgba(72,48,22,0.96),rgba(14,9,3,0.99));align-items:center;justify-content:center;padding:18px;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
-  <!-- animated sprite backdrop: Jethro's daughters (left) cornered by rude shepherds (right) -->
-  <div class="riScene" aria-hidden="true">
-    <img class="riImg riWell" src="assets/images/midian%20well.png" alt="">
-    <img class="riImg riGirl riGirl1" src="assets/images/daughter%201%20front%20facing.png" alt="">
-    <img class="riImg riGirl riGirl2" src="assets/images/daughter%202%20front%20facing.png" alt="">
-    <img class="riImg riGirl riGirl3" src="assets/images/daughter%203%20front%20facing.png" alt="">
-    <img class="riImg riFoe riFoe1" src="assets/images/shepherd%20normal.png" alt="">
-    <img class="riImg riFoe riFoe2" src="assets/images/shepherd%20brute.png" alt="">
-  </div>
-  <div class="riContent" style="position:relative;z-index:2;max-width:680px;width:100%;margin:auto;padding:8px 0 30px;text-align:center;color:#fff4e2;">
-    <div class="riKicker" style="font-size:13px;letter-spacing:2px;color:#ffd28a;">~ MIDIAN · THE WELL ~</div>
-    <div class="riTitle" style="font-size:36px;font-weight:700;color:#ffe0a0;line-height:1.1;margin-top:4px;">🛡️ Rescue the Daughters</div>
-    <p class="riStory" style="font-size:16px;line-height:1.5;color:#fff1d6;margin:12px auto 4px;max-width:560px;text-shadow:0 2px 8px rgba(0,0,0,.8);">Rude shepherds have stormed the well and are driving Jethro's <b>seven daughters</b> away! Stand beside Moses and <b>hold the line</b> — don't let a single shepherd reach the girls.</p>
-    <div id="rescueIntroSteps" style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:24px 0;">
+  <!-- scrolling centered column (Scene-1 cover pattern) — content flows top→bottom so the
+       character diorama at the bottom can NEVER be covered by the Choose Weapons button -->
+  <div class="riCol">
+    <img class="riLogo" src="assets/images/logo%201.png" alt="Bible Explorer Kids">
+    <div class="riKicker">~ MIDIAN · THE WELL ~</div>
+    <div class="riTitle">🛡️ Rescue the Daughters</div>
+    <p class="riStory">Rude shepherds have stormed the well and are driving Jethro's <b>seven daughters</b> away! Stand beside Moses and <b>hold the line</b> — don't let a single shepherd reach the girls.</p>
+    <div id="rescueIntroSteps">
       <div class="riStep"><span class="riIco">👆<span class="riArrows">▲▼</span></span><span class="riTx"><b>Move Moses</b>tap ▲ ▼ arrows, swipe, or arrow keys</span></div>
       <div class="riStep"><span class="riIco">🏺</span><span class="riTx"><b>Throw weapons</b>to drive shepherds back</span></div>
       <div class="riStep"><span class="riIco">👧</span><span class="riTx"><b>Save the girls</b>keep every lane safe</span></div>
     </div>
-    <button class="btn btn-gold riBtn" id="rescueIntroBtn" style="font-size:21px;padding:13px 40px;letter-spacing:.5px;">Choose Weapons ▶</button>
-    <div style="color:#e6c79e;font-size:12px;margin-top:14px;font-style:italic;text-shadow:0 2px 6px rgba(0,0,0,.8);">"Moses got up and came to their rescue and watered their flock." — Exodus 2:17</div>
+    <button class="btn btn-gold riBtn" id="rescueIntroBtn">Choose Weapons ▶</button>
+    <div class="riVerse">"Moses got up and came to their rescue and watered their flock." — Exodus 2:17</div>
+    <!-- in-flow character diorama: Jethro's daughters (left) cornered by rude shepherds (right) -->
+    <div class="riDiorama" aria-hidden="true">
+      <img class="riImg riWell" src="assets/images/midian%20well.png" alt="">
+      <img class="riImg riGirl riGirl1" src="assets/images/daughter%201%20front%20facing.png" alt="">
+      <img class="riImg riGirl riGirl2" src="assets/images/daughter%202%20front%20facing.png" alt="">
+      <img class="riImg riGirl riGirl3" src="assets/images/daughter%203%20front%20facing.png" alt="">
+      <img class="riImg riFoe riFoe1" src="assets/images/shepherd%20normal.png" alt="">
+      <img class="riImg riFoe riFoe2" src="assets/images/shepherd%20brute.png" alt="">
+    </div>
   </div>
 </div>
 <style>
-  #rescueIntro .riStep{flex:1;min-width:158px;max-width:215px;background:rgba(30,20,8,0.62);border:1.5px solid rgba(255,215,120,0.5);border-radius:16px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;color:#ffeccb;backdrop-filter:blur(2px);box-shadow:0 4px 14px rgba(0,0,0,.3);}
-  #rescueIntro .riStep .riIco{font-size:36px;line-height:1;}
-  #rescueIntro .riStep .riArrows{font-size:17px;color:#ffd86a;letter-spacing:3px;font-weight:bold;margin-left:3px;}
-  #rescueIntro .riStep .riTx{font-size:13.5px;line-height:1.4;}
-  #rescueIntro .riStep .riTx b{display:block;color:#ffd86a;font-size:15.5px;margin-bottom:3px;}
-  /* animated character backdrop — fixed to the viewport; lifted off the bottom edge so the
-     daughters' feet/legs are never clipped by the window edge or device chrome */
-  #rescueIntro .riScene{position:fixed;left:0;right:0;top:0;bottom:3vh;z-index:1;overflow:visible;pointer-events:none;}
-  #rescueIntro .riImg{position:absolute;bottom:0;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));image-rendering:auto;}
-  #rescueIntro .riWell{left:50%;transform:translateX(-50%);width:min(36vw,280px);opacity:.5;bottom:0;animation:riWellRise 1s ease-out both;}
-  #rescueIntro .riGirl{height:min(36vh,250px);opacity:.95;animation:riGirlIn .7s ease-out both,riHuddle 2.6s ease-in-out infinite;}
-  #rescueIntro .riGirl1{left:3%;bottom:0;animation-delay:.05s,.7s;}
-  #rescueIntro .riGirl2{left:15%;bottom:0;height:min(32vh,220px);opacity:.9;animation-delay:.18s,.95s;}
-  #rescueIntro .riGirl3{left:27%;bottom:0;height:min(28vh,190px);opacity:.82;animation-delay:.3s,1.2s;}
-  #rescueIntro .riFoe{right:3%;bottom:0;height:min(38vh,270px);opacity:.95;animation:riFoeIn .7s ease-out both,riLunge 1.8s ease-in-out infinite;}
-  #rescueIntro .riFoe2{right:17%;bottom:0;height:min(32vh,225px);opacity:.85;animation-delay:.2s,.6s;}
-  @media (max-height:600px){#rescueIntro .riGirl,#rescueIntro .riGirl2,#rescueIntro .riGirl3,#rescueIntro .riFoe,#rescueIntro .riFoe2{height:26vh;}#rescueIntro .riWell{width:24vw;}}
-  @keyframes riGirlIn{from{opacity:0;}to{opacity:.95;}}
-  @keyframes riFoeIn{from{opacity:0;}to{opacity:.95;}}
+  /* scrolling centered column — robust on every screen + orientation */
+  #rescueIntro{flex-direction:column;align-items:center;justify-content:flex-start;padding:24px 16px 36px;box-sizing:border-box;}
+  #rescueIntro .riCol{position:relative;z-index:2;width:100%;max-width:min(94vw,860px);margin:auto;display:flex;flex-direction:column;align-items:center;text-align:center;color:#fff4e2;}
+  #rescueIntro .riLogo{height:clamp(42px,8vh,70px);width:auto;margin-bottom:8px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5));animation:riPop .6s .05s both;}
+  #rescueIntro .riKicker{font-size:clamp(12px,1.6vw,14px);letter-spacing:2px;color:#ffd28a;animation:riFade .6s .1s both;}
+  #rescueIntro .riTitle{font-size:clamp(30px,5vw,46px);font-weight:700;color:#ffe0a0;line-height:1.1;margin-top:4px;text-shadow:0 3px 10px rgba(0,0,0,.7),0 0 22px rgba(255,180,60,.45);animation:riPop .6s .15s both;}
+  #rescueIntro .riStory{font-size:clamp(15px,1.9vw,18px);line-height:1.5;color:#fff1d6;margin:12px auto 4px;max-width:620px;text-shadow:0 2px 8px rgba(0,0,0,.8);animation:riFade .6s .3s both;}
+  #rescueIntro #rescueIntroSteps{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:22px 0;width:100%;animation:riFade .6s .45s both;}
+  #rescueIntro .riStep{flex:1;min-width:170px;max-width:245px;background:rgba(30,20,8,0.62);border:1.5px solid rgba(255,215,120,0.5);border-radius:16px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;color:#ffeccb;backdrop-filter:blur(2px);box-shadow:0 4px 14px rgba(0,0,0,.3);}
+  #rescueIntro .riStep .riIco{font-size:38px;line-height:1;}
+  #rescueIntro .riStep .riArrows{font-size:18px;color:#ffd86a;letter-spacing:3px;font-weight:bold;margin-left:3px;}
+  #rescueIntro .riStep .riTx{font-size:14px;line-height:1.4;}
+  #rescueIntro .riStep .riTx b{display:block;color:#ffd86a;font-size:16px;margin-bottom:3px;}
+  #rescueIntro .riBtn{font-size:clamp(19px,2.4vw,23px);padding:14px clamp(34px,5vw,52px);letter-spacing:.5px;animation:riPop .6s .6s both,riPulse 1.8s 1.2s ease-in-out infinite;}
+  #rescueIntro .riVerse{color:#e6c79e;font-size:clamp(12px,1.5vw,14px);margin-top:14px;font-style:italic;text-shadow:0 2px 6px rgba(0,0,0,.8);animation:riFade .6s .75s both;}
+  /* in-flow character diorama — sits BELOW the content, can never be covered by the button */
+  #rescueIntro .riDiorama{position:relative;width:100%;max-width:min(94vw,820px);height:clamp(150px,28vh,260px);margin:20px auto 0;animation:riFade .7s .5s both;}
+  #rescueIntro .riImg{position:absolute;bottom:0;width:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));image-rendering:auto;}
+  #rescueIntro .riWell{left:50%;transform:translateX(-50%);height:62%;opacity:.6;}
+  #rescueIntro .riGirl{opacity:.97;animation:riHuddle 2.6s ease-in-out infinite;}
+  #rescueIntro .riGirl1{left:3%;height:96%;animation-delay:.7s;}
+  #rescueIntro .riGirl2{left:19%;height:86%;opacity:.92;animation-delay:.95s;}
+  #rescueIntro .riGirl3{left:34%;height:76%;opacity:.85;animation-delay:1.2s;}
+  #rescueIntro .riFoe{animation:riLunge 1.8s ease-in-out infinite;}
+  #rescueIntro .riFoe1{right:3%;height:100%;}
+  #rescueIntro .riFoe2{right:19%;height:88%;opacity:.88;animation-delay:.6s;}
   @keyframes riHuddle{0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(-6px) rotate(1deg);}}
-  @keyframes riLunge{0%,100%{transform:translateX(0);}50%{transform:translateX(-22px);}}
-  @keyframes riWellRise{from{transform:translateX(-50%) translateY(40px);opacity:0;}to{opacity:.5;}}
-  #rescueIntro .riKicker{animation:riFade .6s .1s both;}
-  #rescueIntro .riTitle{animation:riPop .6s .15s both;text-shadow:0 3px 10px rgba(0,0,0,.7),0 0 22px rgba(255,180,60,.45);}
-  #rescueIntro .riStory{animation:riFade .6s .3s both;}
-  #rescueIntro #rescueIntroSteps{animation:riFade .6s .45s both;}
-  #rescueIntro .riBtn{animation:riPop .6s .6s both,riPulse 1.8s 1.2s ease-in-out infinite;}
+  @keyframes riLunge{0%,100%{transform:translateX(0);}50%{transform:translateX(-18px);}}
   @keyframes riFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
   @keyframes riPop{0%{opacity:0;transform:scale(.8);}70%{transform:scale(1.05);}100%{opacity:1;transform:scale(1);}}
   @keyframes riPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
   @media (max-width:560px){
-    #rescueIntro .riStep{min-width:0;flex-basis:100%;max-width:none;flex-direction:row;gap:12px;text-align:left;}
+    #rescueIntro{padding:18px 12px 28px;}
+    #rescueIntro .riStep{min-width:0;flex-basis:100%;max-width:none;flex-direction:row;gap:12px;text-align:left;padding:14px 14px;}
     #rescueIntro .riStep .riTx b{margin-bottom:0;}
-    #rescueIntro .riGirl{height:20vh;}#rescueIntro .riFoe{height:21vh;}#rescueIntro .riWell{opacity:.35;}
+    #rescueIntro #rescueIntroSteps{gap:10px;margin:16px 0;}
+    #rescueIntro .riDiorama{height:clamp(120px,22vh,180px);margin-top:14px;}
   }
-  @media (prefers-reduced-motion:reduce){#rescueIntro .riImg,#rescueIntro .riContent *{animation:none !important;}}
+  @media (prefers-reduced-motion:reduce){#rescueIntro *{animation:none !important;}}
 </style>
 <div id="rescueLoadout" style="display:none;position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:min(97vw,940px);max-height:100vh;z-index:80;background:linear-gradient(160deg,#2a1d10,#4a3320);box-shadow:0 0 0 100vmax rgba(0,0,0,0.6);border-radius:14px;flex-direction:column;padding:18px 20px;overflow:hidden;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
   <div style="color:#ffe0a0;text-align:center;font-size:20px;font-weight:bold;letter-spacing:.5px;text-shadow:0 2px 6px rgba(0,0,0,.5);">⚔️ Choose your weapons</div>
