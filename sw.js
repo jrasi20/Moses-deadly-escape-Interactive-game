@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v19'; // v19: race-countdown audio on 3-2-1, modal overflow fixes (decor wraps, cards scroll/compact on short screens), updated daughter-2 sprites (invalidate stale v18)
+const CACHE_VERSION = 'bek-bundle-v20'; // v20: keep modal character sprites visible on landscape/short screens (shrink to a single row instead of hiding) (invalidate stale v19)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
