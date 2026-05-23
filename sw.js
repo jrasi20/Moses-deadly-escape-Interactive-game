@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v13'; // v13: rescue intro responsive redesign (column + in-flow diorama, no overlap, BEK logo), white-halo removal on rescue sprites + intro art (invalidate stale v12)
+const CACHE_VERSION = 'bek-bundle-v14'; // v14: new combat assets (fire 1/2 sprites, 8 audio SFX) + updated moses-throwing-both-hands sprite (invalidate stale v13)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
