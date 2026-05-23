@@ -2388,7 +2388,7 @@
     <button id="rescuePauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:38px;height:38px;border-radius:10px;border:2px solid #d8a86a;background:rgba(40,24,10,0.7);color:#ffe0a0;font-size:18px;cursor:pointer;line-height:1;">⏸</button>
     <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;padding:0 52px;">~ RESCUE THE DAUGHTERS ~</div>
     <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;padding:0 52px;line-height:1.2;">Drive off the rude shepherds!</h2>
-    <canvas id="rescueCanvas" width="760" height="470" style="display:block;width:100%;height:auto;max-height:60vh;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#e8c890;"></canvas>
+    <canvas id="rescueCanvas" width="760" height="470" style="display:block;width:100%;height:auto;max-height:50vh;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#e8c890;"></canvas>
     <div id="rescueLaneCtl" style="display:flex;justify-content:center;align-items:center;gap:14px;margin:7px 0 1px;">
       <button id="rescueLaneUp" class="rwLaneBtn" aria-label="Move Moses up a lane">▲</button>
       <span style="color:#ffe2b0;font-size:14px;font-weight:bold;letter-spacing:.5px;">MOVE MOSES</span>
@@ -8794,7 +8794,7 @@ function _rescueGrab(foe) {
         : (foe.type === 'big')
           ? ['shepKidnap2', 'shepKidnap4', 'shepKidnapNormal']
           : [['shepKidnapNormal', 'shepKidnap1', 'shepKidnap2', 'shepKidnap4'][Math.floor(Math.random() * 4)], 'shepKidnapNormal', 'shepKidnap1'];
-    const kdScale = (foe.type === 'cartboss' || foe.type === 'boss') ? 1.5 : (foe.scale || 1) * 1.12;
+    const kdScale = (foe.type === 'cartboss' || foe.type === 'boss') ? 1.7 : (foe.scale || 1) * 1.4;
     _rescue.kidnaps.push({ lane: foe.lane, x: _rescue.GRABX, idx: foe.lane, t: 0, scale: kdScale, carry: carry, flash: 0.55 });
     _rescue.flashLane = { lane: foe.lane, t: 0.55 };               // red lane-flash on the loss
     _rescueCue('💔 A daughter is taken!', 170, _rescue.laneY[foe.lane] - 26, '#ff6a5a', true);
@@ -8989,12 +8989,12 @@ function _rescueFrame(now) {
   for (let i = 0; i < _rescue.LANES; i++) {
     c.fillStyle = (i % 2 === 0) ? 'rgba(60,40,18,0.18)' : 'rgba(255,245,215,0.08)'; c.fillRect(0, _rescue.laneY[i] - 29, W, 58);
     c.strokeStyle = 'rgba(40,24,10,0.16)'; c.lineWidth = 1; c.strokeRect(0, _rescue.laneY[i] - 29, W, 58);
-    if (_rescue.started && i === _rescue.lane) { c.fillStyle = 'rgba(120,200,255,0.12)'; c.fillRect(0, _rescue.laneY[i] - 28, W, 56); c.strokeStyle = 'rgba(120,200,255,0.6)'; c.lineWidth = 2; c.strokeRect(2, _rescue.laneY[i] - 28, W - 4, 56); }
+    if (_rescue.started && i === _rescue.lane) { c.fillStyle = 'rgba(120,200,255,0.24)'; c.fillRect(0, _rescue.laneY[i] - 28, W, 56); c.strokeStyle = 'rgba(150,222,255,0.95)'; c.lineWidth = 3; c.strokeRect(2, _rescue.laneY[i] - 28, W - 4, 56); c.fillStyle = 'rgba(150,222,255,0.95)'; c.beginPath(); c.moveTo(2, _rescue.laneY[i] - 13); c.lineTo(15, _rescue.laneY[i]); c.lineTo(2, _rescue.laneY[i] + 13); c.fill(); }
     const _dn = [3, 4, 5, 6, 7, 3, 4][i]; // use only daughters that have a RIGHT-facing pose (3-7) so none show front-on
     // supply cache tucked behind the daughter (only while she's still here to defend)
     if (_rescue.laneDaughter[i]) _rescueDrawCache(c, 16, _rescue.laneY[i] + 28);
-    if (_rescue.laneDaughter[i]) { const dgb = Math.sin(now / 360 + i) * 1.6; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 48, _rescue.laneY[i] + 27 + dgb, 72, 104); }
-    else { c.globalAlpha = 0.16; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 48, _rescue.laneY[i] + 26, 50, 70); c.globalAlpha = 1; }
+    if (_rescue.laneDaughter[i]) { const dgb = Math.sin(now / 360 + i) * 1.4; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 46, _rescue.laneY[i] + 26 + dgb, 52, 76); }
+    else { c.globalAlpha = 0.16; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 46, _rescue.laneY[i] + 26, 42, 60); c.globalAlpha = 1; }
   }
   // red alarm flash over a lane where a daughter was just taken
   if (_rescue.flashLane) { const fl = _rescue.flashLane, ly = _rescue.laneY[fl.lane], a = Math.max(0, fl.t / 0.55); c.fillStyle = 'rgba(220,40,30,' + (0.34 * a).toFixed(3) + ')'; c.fillRect(0, ly - 29, W, 58); }
@@ -9024,9 +9024,10 @@ function _rescueFrame(now) {
     else if (f.type === 'big' || f.type === 'boss') { c.fillStyle = 'rgba(180,30,20,' + (0.18 + 0.1 * Math.sin(now / 160)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 42 * f.scale, 38 * f.scale, 52 * f.scale, 0, 0, Math.PI * 2); c.fill(); }
     const bob = (f.snared > 0) ? 0 : Math.sin(now / 165 + f.x * 0.07) * 2.4 * f.scale;
     // "zoom" on the incoming threat: shepherds grow as they advance toward the daughters
-    const prox = Math.max(0, Math.min(1, (W - f.x) / (W - _rescue.GRABX))), zoom = 1 + prox * 0.22;
+    const prox = Math.max(0, Math.min(1, (W - f.x) / (W - _rescue.GRABX))), zoom = 1 + prox * 0.1;
     const isCart = f.type === 'cartboss';
-    const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = (isCart ? 122 : 70) * f.scale * zoom * (1 + sq * 0.12), sh = (isCart ? 104 : 92) * f.scale * zoom * (1 - sq * 0.1);
+    // sized to sit WITHIN a lane (lanes are 60px apart) so shepherds in parallel lanes don't pile up
+    const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = (isCart ? 104 : 52) * f.scale * zoom * (1 + sq * 0.12), sh = (isCart ? 84 : 68) * f.scale * zoom * (1 - sq * 0.1);
     if (f.hitT > 0) { c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(now / 26); }
     const _bphase = f.type === 'boss' ? (f.hp / f.maxhp > 0.6 ? 'resBoss' : (f.hp / f.maxhp > 0.3 ? 'resBoss1' : 'resBoss2')) : null;
     const fk = f.type === 'boss' ? [_bphase, 'resBoss', 'shepherdBoss', 'shepHelpB'] : (f.fk || ['resShepNormal', 'shepherdLeft', 'shepPull']);
@@ -9068,7 +9069,7 @@ function _rescueFrame(now) {
     if (kd.t > 0.32 && (kd.t * 60 | 0) % 6 === 0) _rescueFx('dustPuff', kd.x - 26 * sc, ly + 30, 26, 12);
     c.save(); c.translate(kd.x, ly + 28 - stride); c.rotate(sway); c.scale(grabPop, grabPop); c.translate(-kd.x, -(ly + 28 - stride));
     // carry sprite faces right (direction of escape) — no flip; fall back to plain shepherd + dragged girl
-    if (!_pDrawFit(c, kd.carry || ['shepKidnapNormal'], kd.x, ly + 28 - stride, 86 * sc, 104 * sc)) {
+    if (!_pDrawFit(c, kd.carry || ['shepKidnapNormal'], kd.x, ly + 30 - stride, 108 * sc, 100 * sc)) {
       _pDrawFit(c, ['resShepNormal', 'shepherdLeft'], kd.x, ly + 28 - stride, 60 * sc, 80 * sc, true);
       const _kn = (kd.idx % 7) + 1; _pDrawFit(c, ['kidnap' + _kn, 'daughterR' + _kn, 'daughter' + _kn, 'daughter1'], kd.x - 36 * sc, ly + 27, 42 * sc, 58 * sc);
     }
@@ -9084,8 +9085,8 @@ function _rescueFrame(now) {
       : (wk === 'sling' || wk === 'volley') ? ['resMosesSling', 'resMosesThrow', 'mosesShove', 'moses']
       : (wk === 'torch') ? ['resMosesTorch', 'resMosesThrow', 'mosesShove', 'moses']
       : ['resMosesBoth', 'resMosesThrow', 'mosesShove', 'moses'];
-    c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _rescue.mosesY + 52, 30, 9, 0, 0, Math.PI * 2); c.fill();
-    _pDrawFit(c, pose, _rescue.mosesX + (throwing ? 6 : 0), _rescue.mosesY + 52 + (throwing ? 0 : mbob), 96, 128);
+    c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _rescue.mosesY + 50, 24, 8, 0, 0, Math.PI * 2); c.fill();
+    _pDrawFit(c, pose, _rescue.mosesX + (throwing ? 6 : 0), _rescue.mosesY + 50 + (throwing ? 0 : mbob), 70, 96);
   }
   // shots
   for (const s of _rescue.shots) { const sy = s.baseY + s.arcY; if (s.kind === 'sling' || s.kind === 'volley') { c.save(); c.translate(s.x, sy); c.rotate(s.spin); if (!_pDrawFit(c, ['resPebble'], 0, 7, 16, 13)) { c.fillStyle = '#9a7a4a'; c.strokeStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.arc(0, 0, 6, 0, Math.PI * 2); c.fill(); c.stroke(); } c.restore(); } else if (s.kind === 'net') { c.save(); c.translate(s.x, sy); c.rotate(s.spin); if (!_pDrawFit(c, ['resNet', 'net'], 0, 14, 28, 26)) { c.strokeStyle = '#e8e8d0'; c.lineWidth = 1.5; for (let g = -10; g <= 10; g += 5) { c.beginPath(); c.moveTo(g, -10); c.lineTo(g, 10); c.moveTo(-10, g); c.lineTo(10, g); c.stroke(); } } c.restore(); } else { c.save(); c.translate(s.x, sy + 10); c.rotate(s.spin * 0.5); if (!_pDrawFit(c, ['waterPot', 'waterJar'], 0, 0, 24, 26)) { c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(0, 0, 8, 0, Math.PI * 2); c.fill(); } c.restore(); } }
@@ -17269,14 +17270,14 @@ if ('serviceWorker' in navigator) {
   /* in-flow character diorama — sits BELOW the content, can never be covered by the button */
   #rescueIntro .riDiorama{position:relative;width:100%;max-width:min(94vw,820px);height:clamp(150px,28vh,260px);margin:20px auto 0;animation:riFade .7s .5s both;}
   #rescueIntro .riImg{position:absolute;bottom:0;width:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));image-rendering:auto;}
-  #rescueIntro .riWell{left:50%;transform:translateX(-50%);height:62%;opacity:.6;}
-  #rescueIntro .riGirl{opacity:.97;animation:riHuddle 2.6s ease-in-out infinite;}
-  #rescueIntro .riGirl1{left:3%;height:96%;animation-delay:.7s;}
-  #rescueIntro .riGirl2{left:19%;height:86%;opacity:.92;animation-delay:.95s;}
-  #rescueIntro .riGirl3{left:34%;height:76%;opacity:.85;animation-delay:1.2s;}
-  #rescueIntro .riFoe{animation:riLunge 1.8s ease-in-out infinite;}
-  #rescueIntro .riFoe1{right:3%;height:100%;}
-  #rescueIntro .riFoe2{right:19%;height:88%;opacity:.88;animation-delay:.6s;}
+  #rescueIntro .riWell{left:50%;transform:translateX(-50%);height:72%;opacity:.85;z-index:1;}
+  #rescueIntro .riGirl{opacity:.97;animation:riHuddle 2.6s ease-in-out infinite;z-index:2;}
+  #rescueIntro .riGirl1{left:0%;height:82%;animation-delay:.7s;}
+  #rescueIntro .riGirl2{left:11%;height:76%;opacity:.94;animation-delay:.95s;}
+  #rescueIntro .riGirl3{left:23%;height:70%;opacity:.9;animation-delay:1.2s;}
+  #rescueIntro .riFoe{animation:riLunge 1.8s ease-in-out infinite;z-index:2;}
+  #rescueIntro .riFoe1{right:0%;height:86%;}
+  #rescueIntro .riFoe2{right:14%;height:78%;opacity:.9;animation-delay:.6s;}
   @keyframes riHuddle{0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(-6px) rotate(1deg);}}
   @keyframes riLunge{0%,100%{transform:translateX(0);}50%{transform:translateX(-18px);}}
   @keyframes riFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}

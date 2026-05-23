@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v16'; // v16: fire sprites, jar-smash + combat SFX, right-facing daughters, front-facing victory dancers, boundary line, cue font, intro logo-scroll, pause-button header padding
+const CACHE_VERSION = 'bek-bundle-v17'; // v17: lane seclusion (in-lane sprite sizes), no-scroll fit, clearer active lane, bigger kidnap, intro diorama declutter (well visible)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
