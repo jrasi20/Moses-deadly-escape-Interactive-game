@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v22'; // v22: full-screen rescue game — playfield is the hero (brown chrome/title/verse stripped, HUD+weapons slim), canvas ~2x bigger on landscape/desktop, portrait rotate-nudge; verified all orientations via Playwright (invalidate stale v21)
+const CACHE_VERSION = 'bek-bundle-v23'; // v23: responsive playfield — lanes spread to fill the whole height + sprites scale up (mag) so the game looks magnified on every device; portrait fills (no wasted space), desktop huge; verified via Playwright (invalidate stale v22)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
