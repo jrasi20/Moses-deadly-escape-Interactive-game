@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v8'; // v8: rescue game wires the new sprites/audio + hi-DPI canvas
+const CACHE_VERSION = 'bek-bundle-v9'; // v9: rescue game tuning (economy, ramp, 3 hearts, intro scroll, green bg)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.

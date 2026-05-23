@@ -2416,7 +2416,9 @@
       #rescueCardGrid .rwCard .rwDesc{font-size:10.5px;line-height:1.28;color:#e8d2b0;margin:4px 8px 6px;min-height:32px;}
       #rescueCardGrid .rwCard .rwStats{margin:0 9px;}
       #rescueCardGrid .rwCard .rwStat{font-size:10px;display:flex;justify-content:space-between;color:#cbb89c;}
-      #rescueCardGrid .rwCard .rwStat b{color:#ffd23a;letter-spacing:1px;font-size:11px;}
+      #rescueCardGrid .rwCard .rwStat b{letter-spacing:1px;font-size:11px;}
+      #rescueCardGrid .rwCard .rwStat .rwSf{color:#ffd23a;}
+      #rescueCardGrid .rwCard .rwStat .rwSe{color:#6a5a40;}
       #rescueCardGrid .rwCard .rwCost{margin:7px 8px 0;font-size:13px;font-weight:bold;color:#fff;background:var(--tint,#6a4a2a);border-radius:8px;padding:3px 0;box-shadow:0 2px 5px rgba(0,0,0,.3);}
       #rescueCardGrid .rwCard .rwBadge{position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;background:#ffe07a;color:#3a2a10;font-weight:bold;font-size:14px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);z-index:2;}
       #rescueCardGrid .rwCard .rwCheck{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:7px;background:rgba(0,0,0,0.38);border:2px solid rgba(255,255,255,0.55);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:bold;color:#fff;line-height:1;z-index:2;transition:background .12s,transform .12s;}
@@ -2606,6 +2608,7 @@
 <audio id="audBossAlert"        preload="auto" src="assets/audio/alert.mp3"></audio>
 <audio id="audGirlScream"       preload="auto" src="assets/audio/girl%20scream.mp3"></audio>
 <audio id="audShepScream"       preload="auto" src="assets/audio/shepherd%20scream.mp3"></audio>
+<audio id="audNope"             preload="auto" src="assets/audio/nope.mp3"></audio>
 <audio id="audPotFill"          preload="auto" src="assets/audio/pot%20fill%20ding.mp3"></audio>
 <audio id="audSandThud"         preload="auto" src="assets/audio/sand%20thud.mp3"></audio>
 <audio id="audStealWhoosh"      preload="auto" src="assets/audio/steal%20whoosh.mp3"></audio>
@@ -2784,6 +2787,7 @@ const audio = {
   bossAlert:     $('audBossAlert'),       // rescue: the mighty shepherd (boss) approaches
   girlScream:    $('audGirlScream'),      // rescue: a daughter is taken
   shepScream:    $('audShepScream'),      // rescue: a shepherd is downed
+  nope:          $('audNope'),            // rescue: tried to pick a locked/unavailable weapon
 };
 // volumes
 audio.bgm.volume = 0.28;
@@ -3143,9 +3147,15 @@ const IMG_SRC = {
   resShepBrute: 'assets/images/shepherd%20brute.png',
   resBoss:      'assets/images/shepherd%20boss.png',
   resShepFall:  'assets/images/shepherd%20fall.png',
-  // Rescue mini-game: Moses (faces RIGHT, throws rightward) + weapons
+  // Rescue mini-game: Moses (faces RIGHT, throws rightward) + per-weapon poses + boss phases
   resMosesIdle: 'assets/images/moses%20rescue%20idle.png',
   resMosesThrow:'assets/images/moses%20rescue%20throw.png',
+  resMosesSling:'assets/images/moses%20on%20sling.png',
+  resMosesTorch:'assets/images/moses%20holding%20torch.png',
+  resMosesBoth: 'assets/images/moses%20throwing%20with%20both%20hands.png',
+  resBoss1:     'assets/images/shepherd%20boss%201.png',
+  resBoss2:     'assets/images/shepherd%20boss%202.png',
+  resBoss3:     'assets/images/shepherd%20boss%203.png',
   resPebble:    'assets/images/pebble.png',
   resTorch:     'assets/images/torch.png',
   resNet:       'assets/images/throwing%20net.png',
@@ -8434,13 +8444,13 @@ function _pulleyFrame(now) {
    ========================================================================== */
 const _RES_ROSTER = {
   staff:   { name: 'Shepherd Staff', icon: '🦯', tint: '#c98a3a', desc: 'A close swing — strong, but only hits the shepherd right beside Moses. Always free.', rng: 1, dmg: 5, spd: 3, cost: 0,   cd: 0.6,  melee: true, mrange: 92, starReq: 0,  bagReq: 0 },
-  sling:   { name: 'Sling',          icon: '🎯', tint: '#3a9ad8', desc: 'Quick stones flung far. Cheap, fast, low damage — your workhorse.',               rng: 5, dmg: 1, spd: 5, cost: 8,   cd: 0.36, projSpeed: 780, starReq: 0,  bagReq: 0 },
-  pot:     { name: 'Water Pot',      icon: '🏺', tint: '#2bb3a3', desc: 'A heavy jar that splashes the shepherd it strikes.',                                rng: 3, dmg: 2, spd: 3, cost: 22,  cd: 0.7,  projSpeed: 540, starReq: 0,  bagReq: 0 },
-  net:     { name: 'Throwing Net',   icon: '🕸️', tint: '#9a6ad8', desc: 'Tangles a shepherd so he is stuck in place for a few seconds.',                      rng: 3, dmg: 0, spd: 3, cost: 28,  cd: 1.1,  projSpeed: 520, snare: 3.5, starReq: 3,  bagReq: 60 },
-  volley:  { name: 'Pebble Volley',  icon: '🌾', tint: '#5fc04a', desc: 'Flings three stones at once down the lane.',                                        rng: 5, dmg: 1, spd: 2, cost: 42,  cd: 1.4,  projSpeed: 720, multi: 3, starReq: 6,  bagReq: 140 },
-  torch:   { name: 'Torch',          icon: '🔥', tint: '#ee6a2e', desc: 'Sets the whole lane ablaze — burns every shepherd over time.',                      rng: 5, dmg: 3, spd: 1, cost: 55,  cd: 2.4,  laneBurn: 5, starReq: 9,  bagReq: 220 },
-  sheep:   { name: 'Ram Sheep',      icon: '🐏', tint: '#d8b65a', desc: 'A charging ram bowls over EVERY shepherd in the lane.',                             rng: 5, dmg: 5, spd: 1, cost: 95,  cd: 1.0,  ram: 'sheep', starReq: 5,  bagReq: 120 },
-  boulder: { name: 'Boulder',        icon: '🪨', tint: '#9090a8', desc: 'A giant rock rolls down the lane, crushing all in its path.',                       rng: 5, dmg: 5, spd: 1, cost: 130, cd: 1.0,  ram: 'boulder', starReq: 12, bagReq: 300 },
+  sling:   { name: 'Sling',          icon: '🎯', tint: '#3a9ad8', desc: 'Quick stones flung far. Cheap, fast, low damage — your workhorse.',               rng: 5, dmg: 1, spd: 5, cost: 3,   cd: 0.36, projSpeed: 780, starReq: 0,  bagReq: 0 },
+  pot:     { name: 'Water Pot',      icon: '🏺', tint: '#2bb3a3', desc: 'A heavy jar that splashes the shepherd it strikes.',                                rng: 3, dmg: 2, spd: 3, cost: 8,   cd: 0.7,  projSpeed: 540, starReq: 0,  bagReq: 0 },
+  net:     { name: 'Throwing Net',   icon: '🕸️', tint: '#9a6ad8', desc: 'Tangles a shepherd so he is stuck in place for a few seconds.',                      rng: 3, dmg: 0, spd: 3, cost: 10,  cd: 1.1,  projSpeed: 520, snare: 3.5, starReq: 3,  bagReq: 60 },
+  volley:  { name: 'Pebble Volley',  icon: '🌾', tint: '#5fc04a', desc: 'Flings three stones at once down the lane.',                                        rng: 5, dmg: 1, spd: 2, cost: 12,  cd: 1.4,  projSpeed: 720, multi: 3, starReq: 6,  bagReq: 140 },
+  torch:   { name: 'Torch',          icon: '🔥', tint: '#ee6a2e', desc: 'Sets the whole lane ablaze — burns every shepherd over time.',                      rng: 5, dmg: 3, spd: 1, cost: 16,  cd: 2.4,  laneBurn: 5, starReq: 9,  bagReq: 220 },
+  sheep:   { name: 'Ram Sheep',      icon: '🐏', tint: '#d8b65a', desc: 'A charging ram bowls over EVERY shepherd in the lane.',                             rng: 5, dmg: 5, spd: 1, cost: 26,  cd: 1.0,  ram: 'sheep', starReq: 5,  bagReq: 120 },
+  boulder: { name: 'Boulder',        icon: '🪨', tint: '#9090a8', desc: 'A giant rock rolls down the lane, crushing all in its path.',                       rng: 5, dmg: 5, spd: 1, cost: 40,  cd: 1.0,  ram: 'boulder', starReq: 12, bagReq: 300 },
 };
 const _RES_ORDER = ['staff', 'sling', 'pot', 'net', 'volley', 'torch', 'sheep', 'boulder'];
 // real art for the weapon cards / bar (falls back to the emoji icon when absent)
@@ -8458,14 +8468,17 @@ const _rescue = {
 };
 function _rescueCfg() {
   const d = (typeof game !== 'undefined' && game.difficulty) || 'easy';
-  // Skewed HARDER for kid-challenge: more shepherds per round (longer fight), faster
-  // spawns, more brutes/runners and a tougher boss. Even EASY now runs 24 foes so the
-  // defense never feels over in a handful of throws.
-  if (d === 'hard')   return { total: 38, spawnEvery: 0.95, foeSpeed: 58, bigChance: 0.28, fastChance: 0.38, coins: 85,  bossHp: 72 };
-  if (d === 'medium') return { total: 30, spawnEvery: 1.15, foeSpeed: 50, bigChance: 0.24, fastChance: 0.34, coins: 105, bossHp: 55 };
-  return { total: 24, spawnEvery: 1.4,  foeSpeed: 44, bigChance: 0.20, fastChance: 0.30, coins: 130, bossHp: 40 }; // easy
+  // Thrilling-but-doable: the assault RAMPS over the round (see _rescueRampMul) — it
+  // opens slow with few shepherds and speeds up. spawnEvery/foeSpeed below are the
+  // mid-round baseline; the ramp eases them at the start and pushes them at the end.
+  if (d === 'hard')   return { total: 34, spawnEvery: 1.15, foeSpeed: 52, bigChance: 0.26, fastChance: 0.34, coins: 120, bossHp: 44 };
+  if (d === 'medium') return { total: 28, spawnEvery: 1.35, foeSpeed: 46, bigChance: 0.22, fastChance: 0.30, coins: 140, bossHp: 34 };
+  return { total: 22, spawnEvery: 1.6,  foeSpeed: 40, bigChance: 0.18, fastChance: 0.26, coins: 160, bossHp: 24 }; // easy
 }
-function _resStars(n) { n = Math.max(0, Math.min(5, n | 0)); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
+// assault ramp: 0 at round start → 1 by the time the boss is near. Eases the spawn
+// interval / foe speed early and intensifies them late so kids ease in.
+function _rescueRamp() { return Math.max(0, Math.min(1, (_rescue.spawned || 0) / Math.max(1, _rescue.total - 1))); }
+function _resStars(n) { n = Math.max(0, Math.min(5, n | 0)); return '<span class="rwSf">' + '★'.repeat(n) + '</span><span class="rwSe">' + '☆'.repeat(5 - n) + '</span>'; }
 function _resWealth() { return { stars: (typeof game !== 'undefined' && game.stars) || 0, bags: (typeof game !== 'undefined' && game.treasureBags) || 0 }; }
 function _resUnlocked(key) { const w = _RES_ROSTER[key], wl = _resWealth(); return wl.stars >= (w.starReq || 0) || wl.bags >= (w.bagReq || 1e9); }
 function _rescueCue(text, x, y, color, big) { _rescue.cues.push({ text: text, x: x, y: y, color: color || '#fff', t: 0, life: big ? 80 : 58, big: !!big }); }
@@ -8508,6 +8521,7 @@ function _rescueBuildCards() {
       (sel ? '<div class="rwBadge">' + (_rescue.loadout.indexOf(key) + 1) + '</div>' : '') +
       (unlocked ? '<div class="rwCheck">' + (sel ? '✓' : '') + '</div>' : '<div class="rwLock">🔒 ⭐' + w.starReq + ' / 💰' + w.bagReq + '</div>');
     if (unlocked) card.addEventListener('click', () => _rescueToggleCard(key));
+    else card.addEventListener('click', () => { try { play('nope') || play('error'); } catch(e){} });
     grid.appendChild(card);
   });
   const cnt = document.getElementById('rescueLoadoutCount'); if (cnt) cnt.textContent = _rescue.loadout.length + '/5';
@@ -8516,7 +8530,7 @@ function _rescueBuildCards() {
 function _rescueToggleCard(key) {
   const i = _rescue.loadout.indexOf(key);
   if (i >= 0) _rescue.loadout.splice(i, 1);
-  else { if (_rescue.loadout.length >= 5) { try { play('error'); } catch(e){} return; } _rescue.loadout.push(key); }
+  else { if (_rescue.loadout.length >= 5) { try { play('nope') || play('error'); } catch(e){} return; } _rescue.loadout.push(key); }
   try { play('pop'); } catch(e){}
   _rescueBuildCards();
 }
@@ -8598,7 +8612,7 @@ function _rescueBegin() {
   cancelAnimationFrame(_rescue.rafId); _rescue.rafId = requestAnimationFrame(_rescueFrame);
 }
 function _rescueHud() {
-  const d = document.getElementById('rescueDaughters'); if (d) d.textContent = '👧 ' + (7 - _rescue.daughtersLost) + '/7';
+  const d = document.getElementById('rescueDaughters'); if (d) { const lost = Math.min(3, _rescue.daughtersLost); d.textContent = '❤️'.repeat(3 - lost) + '🤍'.repeat(lost) + ' · 👧 ' + (7 - _rescue.daughtersLost) + ' safe'; }
   const co = document.getElementById('rescueCoins'); if (co) co.textContent = '💰 ' + Math.floor(_rescue.coins);
   const f = document.getElementById('rescueFoes'); if (f) f.textContent = 'Driven off: ' + _rescue.foesDriven + '/' + _rescue.total;
 }
@@ -8636,19 +8650,20 @@ function _rescueFire(key) {
   if (_rescue.coins < w.cost) { const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = 'Not enough 💰 — down more shepherds!'; try { play('error'); } catch(e){} return; }
   _rescue.coins -= w.cost; _rescue.cd[key] = w.cd; _rescue.weapon = key; _rescue.throwAnim = 0.2;
   const lane = _rescue.lane, ly = _rescue.laneY[lane];
-  if (w.ram) { _rescue.ram = { lane: lane, x: _rescue.mosesX + 12, vx: w.ram === 'boulder' ? 380 : 640, kind: w.ram }; _rescueCue((w.ram === 'boulder' ? 'BOULDER! 🪨' : 'CHARGE! 🐏'), _rescue.mosesX + 70, ly - 32, '#fff0b0', true); try { play(w.ram === 'boulder' ? 'boulderRumble' : 'camelGrunt') || play('pop'); } catch(e){} }
+  if (w.ram) { _rescue.ram = { lane: lane, x: _rescue.mosesX + 12, vx: w.ram === 'boulder' ? 380 : 640, kind: w.ram, t: 0 }; _rescueCue((w.ram === 'boulder' ? 'BOULDER! 🪨' : 'CHARGE! 🐏'), _rescue.mosesX + 70, ly - 32, '#fff0b0', true); try { play(w.ram === 'boulder' ? 'boulderRumble' : 'sheepBleat') || play('pop'); } catch(e){} }
   else if (w.melee) { let best = null, bd = 1e9; for (const f of _rescue.foes) { if (!f.dying && f.lane === lane && f.x > _rescue.mosesX) { const d = f.x - _rescue.mosesX; if (d < w.mrange && d < bd) { bd = d; best = f; } } } if (best) { _rescueHurt(best, w.dmg); _rescueFx('dustPuff', best.x - 10, ly, 40, 16); } try { play('sword') || play('pop'); } catch(e){} }
   else if (w.laneBurn) { _rescue.fires.push({ lane: lane, t: w.laneBurn, dmgT: 0 }); try { play('fireWhoosh') || play('pop'); } catch(e){} }
   else { const n = w.multi || 1, lob = (key === 'pot' || key === 'net'); for (let k = 0; k < n; k++) _rescue.shots.push({ lane: lane, x: _rescue.mosesX + 26, baseY: ly - 6 + (k - (n - 1) / 2) * 10, arcY: 0, vy: lob ? -320 : -90 - k * 10, g: lob ? 1150 : 900, vx: w.projSpeed, dmg: w.dmg, kind: key, snare: w.snare || 0, spin: 0 }); _rescueFx('dustPuff', _rescue.mosesX + 30, ly + 12, 22, 10); try { play('waterSkin') || play('pop'); } catch(e){} }
   _rescueHud(); _rescueUpdateBar();
 }
 function _rescueSpawn() {
-  let type = 'normal', hp = 1, spd = _rescue.foeSpeed, scale = 1, bounty = 20;
-  if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 130; _rescue.bossSpawned = true; _rescue.shake = 18; _rescueCue('⚠️ THE MIGHTY SHEPHERD!', 380, 40, '#ff7a4a', true); try { play('bossAlert') || play('alarm') || play('error'); } catch(e){} }
+  const fs = _rescue.foeSpeed * (0.7 + 0.55 * _rescueRamp()); // foes start slower, get faster as the round builds
+  let type = 'normal', hp = 1, spd = fs, scale = 1, bounty = 22;
+  if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 150; _rescue.bossSpawned = true; _rescue.shake = 18; _rescueCue('⚠️ THE MIGHTY SHEPHERD!', 380, 40, '#ff7a4a', true); try { play('bossAlert') || play('alarm') || play('error'); } catch(e){} }
   else {
     // a fresh wave of shepherds charges in: the first one, then again mid-assault
     if (_rescue.spawned === 0 || _rescue.spawned === Math.floor(_rescue.total * 0.45)) { try { play('waveShep'); } catch(e){} if (_rescue.spawned > 0) _rescueCue('Another wave!', 380, 40, '#ffd23a', true); }
-    const r = Math.random(); if (r < _rescue.bigChance) { type = 'big'; hp = 4; spd = _rescue.foeSpeed * 0.55; scale = 1.34; bounty = 45; } else if (r < _rescue.bigChance + _rescue.fastChance) { type = 'fast'; hp = 1; spd = _rescue.foeSpeed * 1.7; scale = 0.86; bounty = 16; }
+    const r = Math.random(); if (r < _rescue.bigChance) { type = 'big'; hp = 4; spd = fs * 0.55; scale = 1.34; bounty = 48; } else if (r < _rescue.bigChance + _rescue.fastChance) { type = 'fast'; hp = 1; spd = fs * 1.7; scale = 0.86; bounty = 18; }
   }
   const lane = Math.floor(Math.random() * _rescue.LANES);
   _rescue.foes.push({ lane: lane, x: 800, hp: hp, maxhp: hp, spd: spd, scale: scale, type: type, bounty: bounty, hitT: 0, kb: 0, snared: 0, dying: 0 });
@@ -8662,13 +8677,13 @@ function _rescueGrab(foe) {
     _rescueCue('Help! A daughter is taken!', 150, _rescue.laneY[foe.lane] - 22, '#ff7a6a', true);
     try { play('girlScream') || play('oops') || play('error'); } catch(e){}
     _rescueHud();
-    if (_rescue.daughtersLost >= 7) _rescueLose();
+    if (_rescue.daughtersLost >= 3) _rescueLose(); // 3 hearts: lose the 3rd daughter → game over
   }
 }
 function _rescueWin() {
   if (_rescue.over) return;
   _rescue.over = true; _rescue.win = true;
-  _rescue.stars = _rescue.daughtersLost === 0 ? 3 : (_rescue.daughtersLost <= 2 ? 2 : 1);
+  _rescue.stars = _rescue.daughtersLost === 0 ? 3 : (_rescue.daughtersLost === 1 ? 2 : 1);
   try { if (typeof game !== 'undefined') { game._wellGamePass = true; game.treasureBags = (game.treasureBags || 0) + _rescue.earned; } } catch(e){}
   const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = _rescue.bossDown ? '🎉 The mighty shepherd flees! The daughters are safe!' : '🎉 The shepherds are driven off!';
   try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
@@ -8702,7 +8717,8 @@ function _rescueRetry() {
   cancelAnimationFrame(_rescue.rafId); _rescueReset(); _rescueHud();
   _rescueShowLoadout();
 }
-function _rescuePause() { if (_rescue.over || _rescue.paused || !_rescue.started) return; _rescue.paused = true; cancelAnimationFrame(_rescue.rafId); try { if (audio.puzzleBg) audio.puzzleBg.pause(); } catch(e){} const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'flex'; }
+function _rescueStopSfx() { ['camelGrunt', 'boulderRumble', 'sheepBleat', 'waveShep', 'bossAlert', 'girlScream', 'shepScream', 'fireWhoosh'].forEach(k => { try { if (audio[k] && !audio[k].paused) { audio[k].pause(); audio[k].currentTime = 0; } } catch(e){} }); }
+function _rescuePause() { if (_rescue.over || _rescue.paused || !_rescue.started) return; _rescue.paused = true; cancelAnimationFrame(_rescue.rafId); try { if (audio.puzzleBg) audio.puzzleBg.pause(); } catch(e){} _rescueStopSfx(); const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'flex'; }
 function _rescueResume() { if (!_rescue.paused) return; _rescue.paused = false; const ov = document.getElementById('rescuePausedOverlay'); if (ov) ov.style.display = 'none'; try { if (audio.puzzleBg) audio.puzzleBg.play().catch(()=>{}); } catch(e){} _rescue.last = 0; _rescue.rafId = requestAnimationFrame(_rescueFrame); }
 function _rescueQuit() {
   _rescue.paused = false; _rescue.over = true; _rescue.started = false; cancelAnimationFrame(_rescue.rafId);
@@ -8749,7 +8765,7 @@ function _rescueFrame(now) {
     // trickle income (a daughter slips Moses a few coins so he never fully stalls)
     _rescue.trickleT += dts; if (_rescue.trickleT >= 1.6) { _rescue.trickleT = 0; _rescue.coins += 4; }
     // spawn
-    if (_rescue.spawned < _rescue.total) { _rescue.spawnT -= dts; if (_rescue.spawnT <= 0) { if (_rescue.spawned === _rescue.total - 1 && !_rescue._lulled) { _rescue._lulled = true; _rescue.spawnT = 2.3; _rescueCue('⚔️ FINAL WAVE!', 380, 64, '#ffd23a', true); try { play('dangerAlert') || play('error'); } catch(e){} } else { _rescueSpawn(); _rescue.spawnT = Math.max(0.6, _rescue.spawnEvery - _rescue.spawned * 0.022); } } }
+    if (_rescue.spawned < _rescue.total) { _rescue.spawnT -= dts; if (_rescue.spawnT <= 0) { if (_rescue.spawned === _rescue.total - 1 && !_rescue._lulled) { _rescue._lulled = true; _rescue.spawnT = 2.3; _rescueCue('⚔️ FINAL WAVE!', 380, 64, '#ffd23a', true); try { play('dangerAlert') || play('error'); } catch(e){} } else { _rescueSpawn(); _rescue.spawnT = Math.max(0.55, _rescue.spawnEvery * (1.5 - 0.7 * _rescueRamp())); } } }
     // shots
     for (let i = _rescue.shots.length - 1; i >= 0; i--) {
       const s = _rescue.shots[i]; s.x += s.vx * dts; s.vy += s.g * dts; s.arcY += s.vy * dts; if (s.arcY > 0) s.arcY = 0; s.spin += dts * 14;
@@ -8760,7 +8776,7 @@ function _rescueFrame(now) {
     // lane fires (torch)
     for (let i = _rescue.fires.length - 1; i >= 0; i--) { const fr = _rescue.fires[i]; fr.t -= dts; fr.dmgT -= dts; if (fr.dmgT <= 0) { fr.dmgT = 0.45; for (const f of _rescue.foes.slice()) if (!f.dying && f.lane === fr.lane && f.x > _rescue.mosesX) _rescueHurt(f, 1); } if (fr.t <= 0) _rescue.fires.splice(i, 1); }
     // ram
-    if (_rescue.ram) { _rescue.ram.x += _rescue.ram.vx * dts; for (const f of _rescue.foes.slice()) { if (!f.dying && f.lane === _rescue.ram.lane && Math.abs(f.x - _rescue.ram.x) < 36) { f.hp = 0; f.dying = 0.4; _rescueAward(f); _rescueFx('dustPuff', f.x, _rescue.laneY[f.lane], 46, 18); } } if (_rescue.ram.x > W + 30) _rescue.ram = null; }
+    if (_rescue.ram) { _rescue.ram.t = (_rescue.ram.t || 0) + dts; _rescue.ram.x += _rescue.ram.vx * dts; for (const f of _rescue.foes.slice()) { if (!f.dying && f.lane === _rescue.ram.lane && Math.abs(f.x - _rescue.ram.x) < 36) { f.hp = 0; f.dying = 0.4; _rescueAward(f); _rescueFx('dustPuff', f.x, _rescue.laneY[f.lane], 46, 18); } } if (_rescue.ram.x > W + 30) _rescue.ram = null; }
     // foes advance / dying
     for (let i = _rescue.foes.length - 1; i >= 0; i--) {
       const f = _rescue.foes[i];
@@ -8783,15 +8799,15 @@ function _rescueFrame(now) {
 
   // ---------- draw ----------
   c.save(); c.translate(sx, 0);
-  if (!_pDraw(c, ['rescueBg', 'scene3Bg', 'midian'], -4, -4, W + 8, H + 8)) { const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#9ad06a'); g.addColorStop(1, '#6aa84a'); c.fillStyle = g; c.fillRect(-4, -4, W + 8, H + 8); }
+  if (!_pDraw(c, ['rescueBg2', 'rescueBg', 'scene3Bg', 'midian'], -4, -4, W + 8, H + 8)) { const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#9ad06a'); g.addColorStop(1, '#6aa84a'); c.fillStyle = g; c.fillRect(-4, -4, W + 8, H + 8); }
   c.fillStyle = 'rgba(40,24,10,0.16)'; c.fillRect(0, 30, _rescue.GRABX, H - 60);
   for (let i = 0; i < _rescue.LANES; i++) {
     c.fillStyle = (i % 2 === 0) ? 'rgba(60,40,18,0.18)' : 'rgba(255,245,215,0.08)'; c.fillRect(0, _rescue.laneY[i] - 29, W, 58);
     c.strokeStyle = 'rgba(40,24,10,0.16)'; c.lineWidth = 1; c.strokeRect(0, _rescue.laneY[i] - 29, W, 58);
     if (_rescue.started && i === _rescue.lane) { c.fillStyle = 'rgba(120,200,255,0.12)'; c.fillRect(0, _rescue.laneY[i] - 28, W, 56); c.strokeStyle = 'rgba(120,200,255,0.6)'; c.lineWidth = 2; c.strokeRect(2, _rescue.laneY[i] - 28, W - 4, 56); }
     const _dn = (i % 7) + 1; // daughters face right, toward the incoming shepherds
-    if (_rescue.laneDaughter[i]) _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 44, _rescue.laneY[i] + 25, 50, 70);
-    else { c.globalAlpha = 0.16; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 44, _rescue.laneY[i] + 25, 38, 54); c.globalAlpha = 1; }
+    if (_rescue.laneDaughter[i]) _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 46, _rescue.laneY[i] + 26, 60, 86);
+    else { c.globalAlpha = 0.16; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 46, _rescue.laneY[i] + 26, 44, 62); c.globalAlpha = 1; }
   }
   c.strokeStyle = 'rgba(120,200,120,0.4)'; c.setLineDash([6, 6]); c.lineWidth = 2; c.beginPath(); c.moveTo(_rescue.GRABX, 8); c.lineTo(_rescue.GRABX, H - 8); c.stroke(); c.setLineDash([]);
   // lane fires
@@ -8805,7 +8821,8 @@ function _rescueFrame(now) {
     const bob = (f.snared > 0) ? 0 : Math.sin(now / 165 + f.x * 0.07) * 2.4 * f.scale;
     const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = 58 * f.scale * (1 + sq * 0.12), sh = 76 * f.scale * (1 - sq * 0.1);
     if (f.hitT > 0) { c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(now / 26); }
-    const fk = f.type === 'boss' ? ['resBoss', 'shepherdBoss', 'shepHelpB'] : (f.type === 'big' ? ['resShepBrute', 'shepHelpB', 'shepherdLeft'] : (f.type === 'fast' ? ['resShepFast', 'shepherdLeftAlt', 'shepherdLeft'] : ['resShepNormal', 'shepherdLeft', 'shepPull']));
+    const _bphase = f.type === 'boss' ? (f.hp / f.maxhp > 0.66 ? 'resBoss' : (f.hp / f.maxhp > 0.33 ? 'resBoss1' : 'resBoss2')) : null;
+    const fk = f.type === 'boss' ? [_bphase, 'resBoss', 'shepherdBoss', 'shepHelpB'] : (f.type === 'big' ? ['resShepBrute', 'shepHelpB', 'shepherdLeft'] : (f.type === 'fast' ? ['resShepFast', 'shepherdLeftAlt', 'shepherdLeft'] : ['resShepNormal', 'shepherdLeft', 'shepPull']));
     if (!_pDrawFit(c, fk, f.x, yb + bob, sw, sh)) { c.fillStyle = '#c08040'; c.fillRect(f.x - 16, yb + bob - 50, 32, 50); }
     if (f.hitT > 0) c.restore();
     if (f.snared > 0) { c.strokeStyle = 'rgba(200,220,255,0.7)'; c.lineWidth = 1; for (let gx = -14; gx <= 14; gx += 7) { c.beginPath(); c.moveTo(f.x + gx, yb - 60 * f.scale); c.lineTo(f.x + gx, yb); c.stroke(); } }
@@ -8819,10 +8836,13 @@ function _rescueFrame(now) {
   if (_rescue.ram) {
     if (_rescue.ram.kind === 'boulder') { if (!_pDraw(c, ['rollingBoulder', 'rock'], _rescue.ram.x - 26, _rescue.laneY[_rescue.ram.lane] - 26, 52, 52)) { c.fillStyle = '#8a7a5a'; c.beginPath(); c.arc(_rescue.ram.x, _rescue.laneY[_rescue.ram.lane], 24, 0, Math.PI * 2); c.fill(); } }
     else {
-      const rl = _rescue.laneY[_rescue.ram.lane];
-      // launcher barrel by Moses (empty once the sheep is out), ram charging right
-      if (!_pDrawFit(c, ['resBarrel'], _rescue.mosesX + 46, rl + 31, 66, 60)) _rescueDrawBarrel(c, _rescue.mosesX + 42, rl + 27, 36);
-      _pDrawFit(c, ['resRam', 'sheepRight', 'sheep'], _rescue.ram.x, rl + 27, 64, 56, true);
+      const rl = _rescue.laneY[_rescue.ram.lane], loading = (_rescue.ram.t || 0) < 0.22;
+      // at launch: the loaded barrel (sheep inside) bursts; then an empty barrel + the ram charging right
+      if (loading) { if (!_pDrawFit(c, ['resBarrelSheep'], _rescue.mosesX + 50, rl + 32, 78, 70)) _rescueDrawBarrel(c, _rescue.mosesX + 42, rl + 27, 36); }
+      else {
+        if (!_pDrawFit(c, ['resBarrel'], _rescue.mosesX + 46, rl + 31, 66, 60)) _rescueDrawBarrel(c, _rescue.mosesX + 42, rl + 27, 36);
+        _pDrawFit(c, ['resRam', 'sheepRight', 'sheep'], _rescue.ram.x, rl + 27, 64, 56, true);
+      }
     }
   }
   // kidnaps (a shepherd hauls a struggling daughter off to the right)
@@ -8840,7 +8860,16 @@ function _rescueFrame(now) {
     if (kd.t < 1.1) { c.globalAlpha = Math.max(0, 1 - kd.t / 1.1); c.font = 'bold 13px Fredoka, Georgia'; c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText('Help!', kd.x - 22 * sc, ly - 28 + wob); c.globalAlpha = 1; }
   }
   // Moses
-  if (_rescue.started) { const throwing = _rescue.throwAnim > 0; const mbob = Math.sin(now / 320) * 2; c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _rescue.mosesY + 50, 26, 8, 0, 0, Math.PI * 2); c.fill(); _pDrawFit(c, throwing ? ['resMosesThrow', 'mosesShove', 'mosesRight', 'moses'] : ['resMosesIdle', 'mosesRight', 'mosesPull', 'moses'], _rescue.mosesX + (throwing ? 6 : 0), _rescue.mosesY + 48 + (throwing ? 0 : mbob), 80, 108); }
+  if (_rescue.started) {
+    const throwing = _rescue.throwAnim > 0; const mbob = Math.sin(now / 320) * 2;
+    const wk = _rescue.weapon;
+    const pose = !throwing ? ['resMosesIdle', 'mosesRight', 'mosesPull', 'moses']
+      : (wk === 'sling' || wk === 'volley') ? ['resMosesSling', 'resMosesThrow', 'mosesShove', 'moses']
+      : (wk === 'torch') ? ['resMosesTorch', 'resMosesThrow', 'mosesShove', 'moses']
+      : ['resMosesBoth', 'resMosesThrow', 'mosesShove', 'moses'];
+    c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _rescue.mosesY + 50, 26, 8, 0, 0, Math.PI * 2); c.fill();
+    _pDrawFit(c, pose, _rescue.mosesX + (throwing ? 6 : 0), _rescue.mosesY + 48 + (throwing ? 0 : mbob), 80, 108);
+  }
   // shots
   for (const s of _rescue.shots) { const sy = s.baseY + s.arcY; if (s.kind === 'sling' || s.kind === 'volley') { c.save(); c.translate(s.x, sy); c.rotate(s.spin); if (!_pDrawFit(c, ['resPebble'], 0, 7, 16, 13)) { c.fillStyle = '#9a7a4a'; c.strokeStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.arc(0, 0, 6, 0, Math.PI * 2); c.fill(); c.stroke(); } c.restore(); } else if (s.kind === 'net') { c.save(); c.translate(s.x, sy); c.rotate(s.spin); if (!_pDrawFit(c, ['resNet', 'net'], 0, 14, 28, 26)) { c.strokeStyle = '#e8e8d0'; c.lineWidth = 1.5; for (let g = -10; g <= 10; g += 5) { c.beginPath(); c.moveTo(g, -10); c.lineTo(g, 10); c.moveTo(-10, g); c.lineTo(10, g); c.stroke(); } } c.restore(); } else { c.save(); c.translate(s.x, sy + 10); c.rotate(s.spin * 0.5); if (!_pDrawFit(c, ['waterPot', 'waterJar'], 0, 0, 24, 26)) { c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(0, 0, 8, 0, Math.PI * 2); c.fill(); } c.restore(); } }
   // fx
@@ -16956,7 +16985,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <!-- Rescue weapon-select (top-level so position:fixed escapes any transformed ancestor) -->
 <!-- intro / story + how-to screen (shown once when the game opens, before weapon-select) -->
-<div id="rescueIntro" style="display:none;position:fixed;inset:0;z-index:85;background:radial-gradient(circle at 50% 26%,rgba(72,48,22,0.96),rgba(14,9,3,0.99));align-items:center;justify-content:center;padding:18px;overflow:hidden;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
+<div id="rescueIntro" style="display:none;position:fixed;inset:0;z-index:85;background:radial-gradient(circle at 50% 26%,rgba(72,48,22,0.96),rgba(14,9,3,0.99));align-items:center;justify-content:center;padding:18px;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
   <!-- animated sprite backdrop: Jethro's daughters (left) cornered by rude shepherds (right) -->
   <div class="riScene" aria-hidden="true">
     <img class="riImg riWell" src="assets/images/midian%20well.png" alt="">
@@ -16966,7 +16995,7 @@ if ('serviceWorker' in navigator) {
     <img class="riImg riFoe riFoe1" src="assets/images/shepherd%20normal.png" alt="">
     <img class="riImg riFoe riFoe2" src="assets/images/shepherd%20brute.png" alt="">
   </div>
-  <div class="riContent" style="position:relative;z-index:2;max-width:680px;width:100%;text-align:center;color:#fff4e2;">
+  <div class="riContent" style="position:relative;z-index:2;max-width:680px;width:100%;margin:auto;padding:8px 0 30px;text-align:center;color:#fff4e2;">
     <div class="riKicker" style="font-size:13px;letter-spacing:2px;color:#ffd28a;">~ MIDIAN · THE WELL ~</div>
     <div class="riTitle" style="font-size:36px;font-weight:700;color:#ffe0a0;line-height:1.1;margin-top:4px;">🛡️ Rescue the Daughters</div>
     <p class="riStory" style="font-size:16px;line-height:1.5;color:#fff1d6;margin:12px auto 4px;max-width:560px;text-shadow:0 2px 8px rgba(0,0,0,.8);">Rude shepherds have stormed the well and are driving Jethro's <b>seven daughters</b> away! Stand beside Moses and <b>hold the line</b> — don't let a single shepherd reach the girls.</p>
@@ -16984,16 +17013,17 @@ if ('serviceWorker' in navigator) {
   #rescueIntro .riStep .riIco{font-size:34px;line-height:1;}
   #rescueIntro .riStep .riTx{font-size:13px;line-height:1.3;}
   #rescueIntro .riStep .riTx b{display:block;color:#ffd86a;font-size:15px;margin-bottom:2px;}
-  /* animated character backdrop */
-  #rescueIntro .riScene{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;}
+  /* animated character backdrop — fixed to the viewport so it never blocks scrolling or gets clipped */
+  #rescueIntro .riScene{position:fixed;inset:0;z-index:1;overflow:hidden;pointer-events:none;}
   #rescueIntro .riImg{position:absolute;bottom:0;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));image-rendering:auto;}
-  #rescueIntro .riWell{left:50%;transform:translateX(-50%);width:min(40vw,300px);opacity:.5;bottom:-2%;animation:riWellRise 1s ease-out both;}
-  #rescueIntro .riGirl{height:min(38vh,260px);opacity:.95;animation:riGirlIn .7s ease-out both,riHuddle 2.6s ease-in-out infinite;}
+  #rescueIntro .riWell{left:50%;transform:translateX(-50%);width:min(36vw,280px);opacity:.5;bottom:0;animation:riWellRise 1s ease-out both;}
+  #rescueIntro .riGirl{height:min(36vh,250px);opacity:.95;animation:riGirlIn .7s ease-out both,riHuddle 2.6s ease-in-out infinite;}
   #rescueIntro .riGirl1{left:3%;bottom:0;animation-delay:.05s,.7s;}
-  #rescueIntro .riGirl2{left:15%;bottom:-3%;height:min(34vh,230px);opacity:.9;animation-delay:.18s,.95s;}
-  #rescueIntro .riGirl3{left:27%;bottom:1%;height:min(30vh,200px);opacity:.82;animation-delay:.3s,1.2s;}
-  #rescueIntro .riFoe{right:3%;height:min(40vh,280px);opacity:.95;animation:riFoeIn .7s ease-out both,riLunge 1.8s ease-in-out infinite;}
-  #rescueIntro .riFoe2{right:17%;bottom:-2%;height:min(34vh,235px);opacity:.85;animation-delay:.2s,.6s;}
+  #rescueIntro .riGirl2{left:15%;bottom:0;height:min(32vh,220px);opacity:.9;animation-delay:.18s,.95s;}
+  #rescueIntro .riGirl3{left:27%;bottom:0;height:min(28vh,190px);opacity:.82;animation-delay:.3s,1.2s;}
+  #rescueIntro .riFoe{right:3%;bottom:0;height:min(38vh,270px);opacity:.95;animation:riFoeIn .7s ease-out both,riLunge 1.8s ease-in-out infinite;}
+  #rescueIntro .riFoe2{right:17%;bottom:0;height:min(32vh,225px);opacity:.85;animation-delay:.2s,.6s;}
+  @media (max-height:600px){#rescueIntro .riGirl,#rescueIntro .riGirl2,#rescueIntro .riGirl3,#rescueIntro .riFoe,#rescueIntro .riFoe2{height:26vh;}#rescueIntro .riWell{width:24vw;}}
   @keyframes riGirlIn{from{opacity:0;}to{opacity:.95;}}
   @keyframes riFoeIn{from{opacity:0;}to{opacity:.95;}}
   @keyframes riHuddle{0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(-6px) rotate(1deg);}}
