@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v17'; // v17: lane seclusion (in-lane sprite sizes), no-scroll fit, clearer active lane, bigger kidnap, intro diorama declutter (well visible)
+const CACHE_VERSION = 'bek-bundle-v18'; // v18: mini-game-specific pause, Moses lane-align, ram facing, framed modals, lost-modal kidnap decor
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
