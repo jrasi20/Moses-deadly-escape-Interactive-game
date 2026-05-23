@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v6'; // v6: oops.mp3 replaced (changed asset → invalidate cache)
+const CACHE_VERSION = 'bek-bundle-v7'; // v7: rescue mini-game assets (daughter/shepherd sprites + audio)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
