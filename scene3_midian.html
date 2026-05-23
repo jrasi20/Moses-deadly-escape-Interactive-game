@@ -2360,13 +2360,13 @@
     <div id="pulleyPausedOverlay" style="display:none;position:absolute;inset:0;z-index:4;background:rgba(8,20,36,0.82);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
       <div style="color:#ffe0a0;font-size:30px;font-weight:bold;letter-spacing:2px;">PAUSED</div>
       <button class="btn btn-gold" id="pulleyResumeBtn" style="font-size:20px;padding:12px 30px;">▶ Resume</button>
-      <button class="btn" id="pulleyQuitBtn" style="font-size:15px;padding:9px 22px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit mini-game</button>
+      <button class="btn" id="pulleyQuitBtn" style="font-size:15px;padding:9px 22px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit to Midian</button>
     </div>
     <div id="pulleyLoseOverlay" style="display:none;position:absolute;inset:0;z-index:5;background:rgba(20,8,8,0.86);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:0 16px;">
       <div style="color:#ff8a6a;font-size:26px;font-weight:bold;letter-spacing:1px;">Moses lost the race!</div>
       <div id="pulleyLoseMsg" style="color:#ffe0c0;font-size:16px;line-height:1.5;">The rude shepherd watered his flock first.</div>
       <button class="btn btn-gold" id="pulleyRetryBtn" style="font-size:20px;padding:12px 34px;">🔁 Retry</button>
-      <button class="btn" id="pulleyLoseQuitBtn" style="font-size:14px;padding:8px 20px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit to map</button>
+      <button class="btn" id="pulleyLoseQuitBtn" style="font-size:14px;padding:8px 20px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit to Midian</button>
     </div>
     <div id="pulleyWinOverlay" style="display:none;position:absolute;inset:0;z-index:5;background:radial-gradient(circle at 50% 40%,rgba(28,72,42,0.5),rgba(8,22,14,0.88));border-radius:16px;align-items:center;justify-content:center;text-align:center;padding:0 16px;">
       <div class="pWinCard">
@@ -2391,10 +2391,10 @@
     <canvas id="rescueCanvas" width="760" height="470" style="display:block;width:100%;height:auto;max-height:60vh;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#e8c890;"></canvas>
     <div id="rescueLaneCtl" style="display:flex;justify-content:center;align-items:center;gap:14px;margin:7px 0 1px;">
       <button id="rescueLaneUp" class="rwLaneBtn" aria-label="Move Moses up a lane">▲</button>
-      <span style="color:#ffe2b0;font-size:12px;font-weight:bold;letter-spacing:.5px;">MOVE MOSES</span>
+      <span style="color:#ffe2b0;font-size:14px;font-weight:bold;letter-spacing:.5px;">MOVE MOSES</span>
       <button id="rescueLaneDown" class="rwLaneBtn" aria-label="Move Moses down a lane">▼</button>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;color:#ffe2b0;font-size:13px;font-weight:bold;margin:7px 2px 4px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;color:#ffe2b0;font-size:14.5px;font-weight:bold;margin:8px 2px 5px;">
       <span id="rescueDaughters">👧 7/7</span>
       <span id="rescueCoins" style="color:#ffe07a;">💰 0</span>
       <span id="rescueFoes">Driven off: 0</span>
@@ -2404,7 +2404,7 @@
     <div style="color:#d8b890;font-size:12px;text-align:center;margin-top:4px;font-style:italic;">"Moses got up and came to their rescue." — Exodus 2:17</div>
     <!-- weapon-select / loadout screen (shown before each round) -->
     <style>
-      #rescueCardGrid .rwCard{background:linear-gradient(165deg,rgba(40,28,14,0.92),rgba(22,15,7,0.92));border:2.5px solid var(--tint,#6a4a2a);border-radius:14px;padding:0 0 9px;cursor:pointer;transition:transform .12s ease,box-shadow .15s;position:relative;text-align:center;color:#fff4e2;display:flex;flex-direction:column;}
+      #rescueCardGrid .rwCard{background:linear-gradient(165deg,rgba(40,28,14,0.92),rgba(22,15,7,0.92));border:2.5px solid var(--tint,#6a4a2a);border-radius:14px;padding:0 0 12px;cursor:pointer;transition:transform .12s ease,box-shadow .15s;position:relative;text-align:center;color:#fff4e2;display:flex;flex-direction:column;}
       #rescueCardGrid .rwCard:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 8px 20px rgba(0,0,0,.45);}
       #rescueCardGrid .rwCard.sel{box-shadow:0 0 0 3px #ffe07a inset,0 6px 18px rgba(255,200,80,0.45);}
       #rescueCardGrid .rwCard.sel .rwThumb{filter:brightness(1.12) saturate(1.15);}
@@ -2412,33 +2412,35 @@
       #rescueCardGrid .rwCard.locked .rwThumb{filter:grayscale(0.85) brightness(0.6);}
       #rescueCardGrid .rwCard.locked .rwName,#rescueCardGrid .rwCard.locked .rwDesc,#rescueCardGrid .rwCard.locked .rwStats,#rescueCardGrid .rwCard.locked .rwCost{opacity:0.5;}
       #rescueCardGrid .rwCard .rwThumb{height:62px;display:flex;align-items:center;justify-content:center;font-size:40px;background:radial-gradient(circle at 50% 38%,var(--tint,#6a4a2a),rgba(0,0,0,0.35));text-shadow:0 3px 8px rgba(0,0,0,.55);border-bottom:2px solid var(--tint,#6a4a2a);border-radius:11px 11px 0 0;}
-      #rescueCardGrid .rwCard .rwName{font-weight:bold;font-size:14px;margin:7px 6px 0;line-height:1.1;}
-      #rescueCardGrid .rwCard .rwDesc{font-size:10.5px;line-height:1.28;color:#e8d2b0;margin:4px 8px 6px;min-height:32px;}
+      #rescueCardGrid .rwCard .rwName{font-weight:bold;font-size:15px;margin:10px 7px 0;line-height:1.15;}
+      #rescueCardGrid .rwCard .rwDesc{font-size:11px;line-height:1.32;color:#e8d2b0;margin:6px 10px 8px;min-height:34px;}
       #rescueCardGrid .rwCard .rwStats{margin:0 9px;}
       #rescueCardGrid .rwCard .rwStat{font-size:10px;display:flex;justify-content:space-between;color:#cbb89c;}
       #rescueCardGrid .rwCard .rwStat b{letter-spacing:1px;font-size:11px;}
       #rescueCardGrid .rwCard .rwStat .rwSf{color:#ffd23a;}
       #rescueCardGrid .rwCard .rwStat .rwSe{color:#6a5a40;}
-      #rescueCardGrid .rwCard .rwCost{margin:7px 8px 0;font-size:13px;font-weight:bold;color:#fff;background:var(--tint,#6a4a2a);border-radius:8px;padding:3px 0;box-shadow:0 2px 5px rgba(0,0,0,.3);}
+      #rescueCardGrid .rwCard .rwCost{margin:9px 9px 2px;font-size:13px;font-weight:bold;color:#fff;background:var(--tint,#6a4a2a);border-radius:8px;padding:4px 0;box-shadow:0 2px 5px rgba(0,0,0,.3);}
       #rescueCardGrid .rwCard .rwBadge{position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;background:#ffe07a;color:#3a2a10;font-weight:bold;font-size:14px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);z-index:2;}
       #rescueCardGrid .rwCard .rwCheck{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:7px;background:rgba(0,0,0,0.38);border:2px solid rgba(255,255,255,0.55);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:bold;color:#fff;line-height:1;z-index:2;transition:background .12s,transform .12s;}
       #rescueCardGrid .rwCard.sel .rwCheck{background:#34c759;border-color:#fff;transform:scale(1.1);box-shadow:0 2px 8px rgba(40,180,80,0.6);}
       #rescueCardGrid .rwCard .rwLock{position:absolute;top:8px;right:8px;font-size:12px;font-weight:bold;background:rgba(10,6,2,0.82);color:#ffd23a;padding:3px 7px;border-radius:10px;z-index:2;}
-      #rescueWeaponBar .rwBtn{flex:1;min-width:0;position:relative;overflow:hidden;border:2px solid #2a6a9a;border-radius:9px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);color:#fff;padding:7px 2px 6px;cursor:pointer;text-align:center;line-height:1.1;}
+      #rescueWeaponBar{gap:8px !important;}
+      #rescueWeaponBar .rwBtn{flex:1;min-width:0;position:relative;overflow:hidden;border:2px solid #2a6a9a;border-radius:11px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);color:#fff;padding:10px 4px 9px;cursor:pointer;text-align:center;line-height:1.15;box-shadow:0 3px 0 #1d4a70,0 4px 8px rgba(0,0,0,.3);}
+      #rescueWeaponBar .rwBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #1d4a70;}
       #rescueWeaponBar .rwBtn.sel{border-color:#ffe9a8;box-shadow:0 0 0 2px #ffe9a8 inset;}
       #rescueWeaponBar .rwBtn.poor{filter:grayscale(0.6) brightness(0.7);}
       #rescueWeaponBar .rwBtn.cooling{opacity:0.55;filter:grayscale(0.5) brightness(0.8);pointer-events:none;}
-      #rescueWeaponBar .rwBtn .rwIco{font-size:21px;}
-      #rescueWeaponBar .rwBtn .rwLbl{font-size:10px;display:block;}
-      #rescueWeaponBar .rwBtn .rwPrice{font-size:10px;font-weight:bold;color:#ffe07a;display:block;}
+      #rescueWeaponBar .rwBtn .rwIco{font-size:26px;}
+      #rescueWeaponBar .rwBtn .rwLbl{font-size:13px;font-weight:700;display:block;margin-top:2px;}
+      #rescueWeaponBar .rwBtn .rwPrice{font-size:12.5px;font-weight:bold;color:#ffe07a;display:block;}
       #rescueWeaponBar .rwBtn .rwCd{position:absolute;left:0;bottom:0;width:100%;background:rgba(10,10,20,0.62);pointer-events:none;height:0;}
       #rescueLaneCtl .rwLaneBtn{width:58px;height:42px;border-radius:11px;border:2px solid #c8902a;background:linear-gradient(135deg,#ffd86a,#e0a83a);color:#5a3a08;font-size:22px;font-weight:bold;cursor:pointer;line-height:1;box-shadow:0 3px 0 #a9690f,0 4px 9px rgba(0,0,0,.35);touch-action:manipulation;}
       #rescueLaneCtl .rwLaneBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #a9690f;}
       /* kid-friendly font + clear directions */
       #rescueModal,#rescueLoadout,#rescueIntro{font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;}
       #rescueCardGrid{grid-template-columns:repeat(4,1fr);grid-auto-rows:max-content;}
-      #rescueHowTo{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:4px 0 9px;}
-      #rescueHowTo .htStep{flex:1;min-width:128px;max-width:240px;background:rgba(255,240,200,0.10);border:1.5px solid rgba(255,215,120,0.4);border-radius:12px;padding:7px 9px;display:flex;align-items:center;gap:8px;color:#ffeccb;}
+      #rescueHowTo{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:8px 0 13px;}
+      #rescueHowTo .htStep{flex:1;min-width:132px;max-width:250px;background:rgba(255,240,200,0.10);border:1.5px solid rgba(255,215,120,0.4);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px;color:#ffeccb;}
       #rescueHowTo .htStep .htIco{font-size:24px;line-height:1;flex:0 0 auto;}
       #rescueHowTo .htStep .htTx{font-size:12.5px;line-height:1.25;text-align:left;}
       #rescueHowTo .htStep .htTx b{color:#ffd86a;}
@@ -2448,8 +2450,8 @@
         #rescueCardGrid .rwCard .rwThumb{height:54px;font-size:36px;}
         #rescueCardGrid .rwCard .rwDesc{min-height:34px;}
         #rescueHowTo .htStep{min-width:0;}
-        #rescueWeaponBar .rwBtn .rwIco{font-size:18px;}
-        #rescueWeaponBar .rwBtn .rwLbl,#rescueWeaponBar .rwBtn .rwPrice{font-size:9px;}
+        #rescueWeaponBar .rwBtn .rwIco{font-size:22px;}
+        #rescueWeaponBar .rwBtn .rwLbl,#rescueWeaponBar .rwBtn .rwPrice{font-size:11px;}
       }
       /* phones */
       @media (max-width:430px){
@@ -2484,18 +2486,24 @@
     <div id="rescuePausedOverlay" style="display:none;position:fixed;inset:0;z-index:92;background:rgba(18,11,4,0.985);flex-direction:column;align-items:center;justify-content:center;gap:14px;">
       <div style="color:#ffe0a0;font-size:30px;font-weight:bold;letter-spacing:2px;">PAUSED</div>
       <button class="btn btn-gold" id="rescueResumeBtn" style="font-size:20px;padding:12px 30px;">▶ Resume</button>
-      <button class="btn" id="rescueQuitBtn" style="font-size:14px;padding:8px 20px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit mini-game</button>
+      <button class="btn" id="rescueQuitBtn" style="font-size:14px;padding:8px 20px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit to Midian</button>
     </div>
-    <div id="rescueLoseOverlay" style="display:none;position:fixed;inset:0;z-index:92;background:rgba(24,7,7,0.985);flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:0 16px;">
-      <div style="color:#ff8a6a;font-size:26px;font-weight:bold;">The shepherds drove them off!</div>
-      <div id="rescueLoseMsg" style="color:#ffe0c0;font-size:16px;line-height:1.5;">They carried the daughters away.</div>
-      <button class="btn btn-gold" id="rescueRetryBtn" style="font-size:20px;padding:12px 34px;">🔁 Retry</button>
-      <button class="btn" id="rescueLoseQuitBtn" style="font-size:14px;padding:8px 20px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit to map</button>
+    <div id="rescueLoseOverlay" style="display:none;position:fixed;inset:0;z-index:92;background:radial-gradient(circle at 50% 40%,rgba(70,12,12,0.985),rgba(18,5,5,0.99));flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 16px;">
+      <div class="rLoseCard">
+        <div class="rLoseIco">💔</div>
+        <div style="color:#ff8a6a;font-size:26px;font-weight:bold;text-shadow:0 2px 10px rgba(0,0,0,.6);">The shepherds drove them off!</div>
+        <div id="rescueLoseMsg" style="color:#ffe0c0;font-size:16px;line-height:1.5;">They carried the daughters away.</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2px;">
+          <button class="btn btn-gold" id="rescueRetryBtn" style="font-size:20px;padding:12px 34px;">🔁 Retry</button>
+          <button class="btn" id="rescueLoseQuitBtn" style="font-size:14px;padding:9px 20px;background:rgba(120,60,40,0.8);border:2px solid #e08a5a;">Quit to Midian</button>
+        </div>
+      </div>
     </div>
     <div id="rescueWinOverlay" style="display:none;position:fixed;inset:0;z-index:92;background:radial-gradient(circle at 50% 38%,rgba(58,42,20,0.975),rgba(13,8,3,0.995));align-items:center;justify-content:center;text-align:center;padding:0 16px;">
       <div class="pWinCard">
         <div class="pWinTitle" id="rescueWinTitle">🎉 The daughters are safe!</div>
         <div id="rescueStarRow" class="pStarRow"></div>
+        <div id="rescueWinDancers" class="rWinDancers"></div>
         <div id="rescueWinMsg" style="color:#fff3df;font-size:17px;font-family:Georgia,serif;font-style:italic;">Heroic!</div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:6px;">
           <button class="btn btn-goldline" id="rescueWinReplayBtn" style="font-size:15px;padding:10px 20px;">🔁 Replay for ⭐⭐⭐</button>
@@ -2535,6 +2543,19 @@
 .btn-gold{background:linear-gradient(135deg,#ffe585,#f4b536 55%,#d9881c)!important;color:#5a2d04!important;border:2px solid #ffeaa6!important;font-weight:bold;box-shadow:0 3px 0 #a9690f,0 5px 12px rgba(0,0,0,.4);}
 .btn-gold:active{transform:translateY(2px);box-shadow:0 1px 0 #a9690f,0 3px 8px rgba(0,0,0,.4);}
 .btn-goldline{background:rgba(30,60,90,.85)!important;color:#ffe39a!important;border:2px solid #ffd24a!important;font-weight:bold;}
+/* ---- rescue victory celebration ---- */
+@keyframes rConfettiFall{0%{transform:translateY(-30px) rotate(0);opacity:1}100%{transform:translateY(440px) rotate(720deg);opacity:0}}
+#rescueWinOverlay .rConfettiWrap{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+#rescueWinOverlay .rConfetti{position:absolute;top:-24px;width:11px;height:16px;border-radius:2px;animation:rConfettiFall linear forwards;}
+#rescueWinOverlay .pWinCard{position:relative;z-index:2;}
+@keyframes rWinDance{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-13px) rotate(4deg)}}
+#rescueWinOverlay .rWinDancers{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:2px;min-height:58px;}
+#rescueWinOverlay .rWinDancers img{height:56px;animation:rWinDance 1.05s ease-in-out infinite;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));}
+/* ---- rescue lose drama ---- */
+@keyframes rLoseShake{0%,100%{transform:translateX(0)}18%{transform:translateX(-10px) rotate(-1.5deg)}38%{transform:translateX(9px) rotate(1.5deg)}58%{transform:translateX(-6px)}78%{transform:translateX(5px)}}
+#rescueLoseOverlay .rLoseCard{animation:rLoseShake .62s ease-in-out both;display:flex;flex-direction:column;align-items:center;gap:14px;max-width:440px;}
+@keyframes rLoseSink{0%{transform:translateY(-16px) scale(.85);opacity:0}60%{transform:translateY(3px) scale(1.05)}100%{transform:translateY(0) scale(1);opacity:1}}
+#rescueLoseOverlay .rLoseIco{font-size:66px;line-height:1;animation:rLoseSink .55s ease-out both;}
 </style>
 
 <!-- ================ TOAST ================ -->
@@ -3150,6 +3171,13 @@ const IMG_SRC = {
   resShepFall:  'assets/images/shepherd%20fall.png',
   resShepWalk2: 'assets/images/shepherd%202%20walk%20left.png',  // extra "normal" variety
   resShep4Left: 'assets/images/shepherd%204%20left.png',
+  // Rescue mini-game: shepherd CARRYING a daughter off (dramatic kidnap poses, Jane drop 2026-05-22)
+  shepKidnapNormal: 'assets/images/shepherd%20normal%20kidnapping.png',
+  shepKidnap1:      'assets/images/shepherd%201%20kidnapping.png',
+  shepKidnap2:      'assets/images/shepherd%202%20kidnapping.png',
+  shepKidnap4:      'assets/images/shepherd%204%20kidnapping.png',
+  shepKidnapBoss:   'assets/images/shepherd%20boss%20kidnapping.png',
+  shepKidnapBoss3:  'assets/images/shepherd%20boss%203%20kidnapping.png',
   // Rescue mini-game: Moses (faces RIGHT, throws rightward) + per-weapon poses + boss phases
   resMosesIdle: 'assets/images/moses%20rescue%20idle.png',
   resMosesThrow:'assets/images/moses%20rescue%20throw.png',
@@ -8458,7 +8486,7 @@ const _RES_ROSTER = {
 const _RES_ORDER = ['staff', 'sling', 'pot', 'net', 'volley', 'torch', 'sheep', 'boulder'];
 // real art for the weapon cards / bar (falls back to the emoji icon when absent)
 const _RES_IMG = { staff: 'resStaffIcon', sling: 'resPebble', pot: 'waterPot', net: 'resNet', volley: 'resPebble', torch: 'resTorch', sheep: 'resRam' };
-function _resThumbHtml(key, big) { const ik = _RES_IMG[key]; const url = ik && IMG_SRC[ik]; return url ? '<img src="' + url + '" alt="" style="' + (big ? 'height:84%;max-width:88%' : 'height:26px;max-width:34px') + ';object-fit:contain;display:inline-block;vertical-align:middle;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));">' : _RES_ROSTER[key].icon; }
+function _resThumbHtml(key, big) { const ik = _RES_IMG[key]; const url = ik && IMG_SRC[ik]; return url ? '<img src="' + url + '" alt="" style="' + (big ? 'height:84%;max-width:88%' : 'height:31px;max-width:40px') + ';object-fit:contain;display:inline-block;vertical-align:middle;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));">' : _RES_ROSTER[key].icon; }
 const _rescue = {
   gate: null, rafId: null, last: 0, paused: false, over: false, win: false, started: false,
   LANES: 7, laneY: [54, 114, 174, 234, 294, 354, 414], lane: 3, mosesY: 234, mosesX: 84, GRABX: 116,
@@ -8497,6 +8525,22 @@ function _rescueDrawBarrel(c, cx, baseY, w) {
   c.strokeStyle = 'rgba(60,36,12,0.55)'; c.lineWidth = 1.4;
   for (let i = 1; i < 5; i++) { const sx = x + w * i / 5; c.beginPath(); c.moveTo(sx, y + 3); c.lineTo(sx, y + h - 3); c.stroke(); }
   c.fillStyle = '#5a3a18'; c.fillRect(x - 1, y + h * 0.16, w + 2, h * 0.11); c.fillRect(x - 1, y + h * 0.70, w + 2, h * 0.11);
+  c.restore();
+}
+// a little weapon/supply cache that sits behind each daughter — pots, a leaning staff and
+// pebbles to make the defended lane feel stocked and "epic". Drawn before the daughter so she overlaps it.
+function _rescueDrawCache(c, x, baseY) {
+  c.save();
+  // soft sandy mound under the cache
+  c.fillStyle = 'rgba(60,40,18,0.20)'; c.beginPath(); c.ellipse(x, baseY + 2, 22, 7, 0, 0, Math.PI * 2); c.fill();
+  // leaning staff
+  c.save(); c.translate(x + 13, baseY - 1); c.rotate(0.22); if (!_pDrawFit(c, ['resStaffIcon', 'shepherdStaff'], 0, 0, 13, 42)) { c.strokeStyle = '#9a6a32'; c.lineWidth = 3; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -38); c.stroke(); } c.restore();
+  // two stacked water pots
+  if (!_pDrawFit(c, ['waterPot', 'waterJar'], x - 7, baseY, 23, 25)) { c.fillStyle = '#2bb3a3'; c.beginPath(); c.arc(x - 7, baseY - 10, 9, 0, Math.PI * 2); c.fill(); }
+  _pDrawFit(c, ['waterPot', 'waterJar'], x + 5, baseY - 17, 19, 21);
+  // a couple of throwing pebbles at the base
+  if (!_pDrawFit(c, ['resPebble'], x - 14, baseY + 1, 12, 10)) { c.fillStyle = '#9a7a4a'; c.beginPath(); c.arc(x - 14, baseY - 3, 4, 0, Math.PI * 2); c.fill(); }
+  _pDrawFit(c, ['resPebble'], x - 5, baseY + 3, 10, 9);
   c.restore();
 }
 // ---------- loadout / weapon-select screen ----------
@@ -8545,6 +8589,10 @@ function _rescueAutoPick() {
 }
 function _rescueShowIntro() {
   const intro = document.getElementById('rescueIntro'); if (intro) intro.style.display = 'flex';
+  // soft music bed + a gentle sting under the story (continues into the loadout + round)
+  try { if (audio.puzzleBg) { audio.puzzleBg.volume = 0.16; audio.puzzleBg.currentTime = 0; audio.puzzleBg.loop = true; audio.puzzleBg.play().catch(()=>{}); } } catch(e){}
+  try { play('chime') || play('pop'); } catch(e){}
+  try { setTimeout(() => { try { play('girlScream'); } catch(e){} }, 520); } catch(e){}
 }
 function _rescueIntroContinue() {
   const intro = document.getElementById('rescueIntro'); if (intro) intro.style.display = 'none';
@@ -8590,6 +8638,7 @@ function _rescueReset() {
   _rescue.earned = 0; _rescue.trickleT = 0;
   _rescue.lane = 3; _rescue.mosesY = _rescue.laneY[3]; _rescue.throwAnim = 0; _rescue.cd = {};
   _rescue.shots = []; _rescue.foes = []; _rescue.cues = []; _rescue.fx = []; _rescue.fires = []; _rescue.ram = null; _rescue.kidnaps = []; _rescue.flyers = []; _rescue.coinPulse = 0;
+  _rescue.flashLane = null; _rescue.countdown = 0; _rescue.goFlash = 0; _rescue.confetti = [];
   _rescue.laneDaughter = [true, true, true, true, true, true, true]; _rescue.daughtersLost = 0;
   _rescue.foesDriven = 0; _rescue.spawned = 0; _rescue.spawnT = 2.0; _rescue.bossSpawned = false; _rescue.bossDown = false; _rescue._lulled = false; _rescue._breathed = false; _rescue.perfect = false;
   _rescue.shake = 0; _rescue.stars = 3; _rescue.over = false; _rescue.win = false; _rescue.paused = false; _rescue.winPanelShown = false; _rescue.started = false; _rescue._out = false;
@@ -8609,9 +8658,9 @@ function _rescueBegin() {
   const ov = document.getElementById('rescueLoadout'); if (ov) ov.style.display = 'none';
   const intro = document.getElementById('rescueIntro'); if (intro) intro.style.display = 'none';
   _rescueBuildBar();
-  _rescue.started = true; _rescue.last = 0;
+  _rescue.started = true; _rescue.last = 0; _rescue.countdown = 3.0; _rescue.goFlash = 0;
   try { if (audio.puzzleBg) { audio.puzzleBg.volume = 0.2; audio.puzzleBg.currentTime = 0; audio.puzzleBg.play().catch(()=>{}); } } catch(e){}
-  document.getElementById('rescueFeedback').textContent = 'Tap the lane under attack, then tap a weapon to throw!';
+  document.getElementById('rescueFeedback').textContent = 'Get ready — pick your lane!';
   _rescueHud(); _rescueUpdateBar();
   cancelAnimationFrame(_rescue.rafId); _rescue.rafId = requestAnimationFrame(_rescueFrame);
 }
@@ -8654,7 +8703,7 @@ function _rescueFire(key) {
   if (_rescue.coins < w.cost) { const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = 'Not enough 💰 — down more shepherds!'; try { play('error'); } catch(e){} return; }
   _rescue.coins -= w.cost; _rescue.cd[key] = w.cd; _rescue.weapon = key; _rescue.throwAnim = 0.2;
   const lane = _rescue.lane, ly = _rescue.laneY[lane];
-  if (w.ram) { _rescue.ram = { lane: lane, x: _rescue.mosesX + 12, vx: w.ram === 'boulder' ? 380 : 640, kind: w.ram, t: 0 }; _rescueCue((w.ram === 'boulder' ? 'BOULDER! 🪨' : 'CHARGE! 🐏'), _rescue.mosesX + 70, ly - 32, '#fff0b0', true); try { play(w.ram === 'boulder' ? 'boulderRumble' : 'sheepBleat') || play('pop'); } catch(e){} }
+  if (w.ram) { _rescue.ram = { lane: lane, x: _rescue.mosesX + 12, vx: w.ram === 'boulder' ? 300 : 440, kind: w.ram, t: 0 }; _rescueCue((w.ram === 'boulder' ? 'BOULDER! 🪨' : 'CHARGE! 🐏'), _rescue.mosesX + 70, ly - 32, '#fff0b0', true); try { play(w.ram === 'boulder' ? 'boulderRumble' : 'sheepBleat') || play('pop'); } catch(e){} }
   else if (w.melee) { let best = null, bd = 1e9; for (const f of _rescue.foes) { if (!f.dying && f.lane === lane && f.x > _rescue.mosesX) { const d = f.x - _rescue.mosesX; if (d < w.mrange && d < bd) { bd = d; best = f; } } } _rescueFx('dustPuff', _rescue.mosesX + 78, ly + 6, 48, 14); /* the swing is always visible */ if (best) { _rescueHurt(best, w.dmg); _rescueFx('dustPuff', best.x - 8, ly, 46, 16); } else { _rescueCue('swish!', _rescue.mosesX + 86, ly - 24, '#ffe8b8'); } try { play('sword') || play('pop'); } catch(e){} }
   else if (w.laneBurn) { _rescue.fires.push({ lane: lane, t: w.laneBurn, dmgT: 0 }); try { play('fireWhoosh') || play('pop'); } catch(e){} }
   else { const n = w.multi || 1, lob = (key === 'pot' || key === 'net'); for (let k = 0; k < n; k++) _rescue.shots.push({ lane: lane, x: _rescue.mosesX + 26, baseY: ly - 6 + (k - (n - 1) / 2) * 10, arcY: 0, vy: lob ? -320 : -90 - k * 10, g: lob ? 1150 : 900, vx: w.projSpeed, dmg: w.dmg, kind: key, snare: w.snare || 0, spin: 0 }); _rescueFx('dustPuff', _rescue.mosesX + 30, ly + 12, 22, 10); try { play('waterSkin') || play('pop'); } catch(e){} }
@@ -8684,11 +8733,19 @@ function _rescueSpawn() {
 }
 function _rescueGrab(foe) {
   if (_rescue.laneDaughter[foe.lane]) {
-    _rescue.laneDaughter[foe.lane] = false; _rescue.daughtersLost++; _rescue.shake = 14;
-    const fk = (foe.type === 'boss') ? ['resBoss', 'shepherdBoss'] : (foe.type === 'big' ? ['resShepBrute', 'shepHelpB', 'shepherdLeft'] : ['resShepNormal', 'shepherdLeft', 'shepPull']);
-    _rescue.kidnaps.push({ lane: foe.lane, x: _rescue.GRABX, idx: foe.lane, t: 0, scale: foe.scale || 1, fk: fk });
-    _rescueCue('Help! A daughter is taken!', 150, _rescue.laneY[foe.lane] - 22, '#ff7a6a', true);
+    _rescue.laneDaughter[foe.lane] = false; _rescue.daughtersLost++; _rescue.shake = 22;
+    // pick the matching "shepherd carrying a daughter over his shoulder" sprite (faces RIGHT, exits right)
+    const carry = (foe.type === 'boss')
+      ? ['shepKidnapBoss', 'shepKidnapBoss3', 'shepKidnapNormal']
+      : (foe.type === 'big')
+        ? ['shepKidnap2', 'shepKidnap4', 'shepKidnapNormal']
+        : ['shepKidnapNormal', 'shepKidnap1', 'shepKidnap4'];
+    _rescue.kidnaps.push({ lane: foe.lane, x: _rescue.GRABX, idx: foe.lane, t: 0, scale: (foe.scale || 1) * 1.12, carry: carry, flash: 0.55 });
+    _rescue.flashLane = { lane: foe.lane, t: 0.55 };               // red lane-flash on the loss
+    _rescueCue('💔 A daughter is taken!', 170, _rescue.laneY[foe.lane] - 26, '#ff6a5a', true);
+    // layered, dramatic loss audio: scream now, the haul-off whoosh a beat later
     try { play('girlScream') || play('oops') || play('error'); } catch(e){}
+    try { setTimeout(() => { try { play('stealWhoosh') || play('sandThud'); } catch(e){} }, 230); } catch(e){}
     // this lane is empty now — divert any other shepherds here toward lanes that still have a daughter
     const others = []; for (let i = 0; i < _rescue.LANES; i++) if (_rescue.laneDaughter[i]) others.push(i);
     if (others.length) { for (const f of _rescue.foes) { if (!f.dying && f.lane === foe.lane) f.lane = others[Math.floor(Math.random() * others.length)]; } }
@@ -8719,8 +8776,21 @@ function _rescueShowWinPanel() {
   const msg = document.getElementById('rescueWinMsg');
   if (msg) msg.innerHTML = (perfect ? 'Heroic! All seven daughters saved!' : 'Only <b>' + saved + '/7</b> daughters were rescued — replay to save them all!') + '<br><span style="font-size:14px;color:#ffe07a;">💰 ' + _rescue.earned + ' treasure earned' + (_rescue.bossDown ? ' &middot; Pass to the Flock unlocked!' : '') + '</span>';
   const rep = document.getElementById('rescueWinReplayBtn'); if (rep) rep.style.display = perfect ? 'none' : '';
-  try { setTimeout(() => play('coin'), 200); if (perfect) { setTimeout(() => play('coin'), 420); setTimeout(() => play('chime'), 640); } } catch(e){}
+  // the rescued daughters dance in celebration
+  const dz = document.getElementById('rescueWinDancers');
+  if (dz) { let h = ''; const m = Math.min(saved, 7); for (let i = 0; i < m; i++) { const dn = (i % 7) + 1; const u = IMG_SRC['daughterR' + dn] || IMG_SRC['daughter' + dn]; if (u) h += '<img src="' + u + '" alt="" style="animation-delay:' + (i * 0.12).toFixed(2) + 's">'; } dz.innerHTML = h; }
+  try { setTimeout(() => play('coin'), 200); if (perfect) { setTimeout(() => play('coin'), 420); setTimeout(() => play('chime'), 640); setTimeout(() => { try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){} }, 300); } } catch(e){}
   const ov = document.getElementById('rescueWinOverlay'); if (ov) ov.style.display = 'flex';
+  _rescueConfetti(perfect ? 64 : 30);   // confetti rains down on the win
+}
+function _rescueConfetti(n) {
+  const ov = document.getElementById('rescueWinOverlay'); if (!ov) return;
+  let wrap = ov.querySelector('.rConfettiWrap'); if (wrap) { try { wrap.remove(); } catch(e){} }
+  wrap = document.createElement('div'); wrap.className = 'rConfettiWrap';
+  const cols = ['#ffd24a', '#ff7a6a', '#6ad06a', '#5bbcff', '#c08aff', '#ffe07a', '#ff9ad0'];
+  for (let i = 0; i < n; i++) { const d = document.createElement('div'); d.className = 'rConfetti'; d.style.left = (Math.random() * 100) + '%'; d.style.background = cols[(Math.random() * cols.length) | 0]; d.style.animationDuration = (1.6 + Math.random() * 1.6) + 's'; d.style.animationDelay = (Math.random() * 0.8) + 's'; d.style.width = (7 + Math.random() * 7) + 'px'; d.style.height = (10 + Math.random() * 10) + 'px'; if (Math.random() < 0.5) d.style.borderRadius = '50%'; wrap.appendChild(d); }
+  ov.appendChild(wrap);
+  setTimeout(() => { try { wrap.remove(); } catch(e){} }, 4500);
 }
 function _rescueLose() {
   if (_rescue.over && !_rescue.win) return;
@@ -8737,7 +8807,7 @@ function _rescueLose() {
     ? '\u{1F494} That was Moses’s last heart — the rescue is lost.<br>You’ll start Scene 3 again.'
     : 'The shepherds carried the daughters off.<br>Moses lost a heart \u{2764}\u{FE0F} — try the rescue again!';
   const retry = document.getElementById('rescueRetryBtn'); if (retry) retry.style.display = out ? 'none' : '';
-  const quit = document.getElementById('rescueLoseQuitBtn'); if (quit) quit.textContent = out ? '\u{1F504} Restart Scene 3' : 'Quit to map';
+  const quit = document.getElementById('rescueLoseQuitBtn'); if (quit) quit.textContent = out ? '\u{1F504} Restart Scene 3' : 'Quit to Midian';
   const ov = document.getElementById('rescueLoseOverlay'); if (ov) ov.style.display = 'flex';
 }
 function _rescueLoseQuit() {
@@ -8801,12 +8871,17 @@ function _rescueFrame(now) {
 
   if (_rescue.started && !_rescue.over) {
     _rescue.mosesY += (_rescue.laneY[_rescue.lane] - _rescue.mosesY) * Math.min(1, dts * 12);
+    // 3·2·1·GO! countdown holds the assault until kids are ready
+    if (_rescue.countdown > 0) {
+      const p = Math.ceil(_rescue.countdown); _rescue.countdown = Math.max(0, _rescue.countdown - dts); const n = Math.ceil(_rescue.countdown);
+      if (n !== p) { if (n >= 1) { try { play('pop'); } catch(e){} } else { _rescue.goFlash = 0.85; try { play('chime') || play('pop'); } catch(e){} const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = 'Tap the lane under attack, then tap a weapon to throw!'; } }
+    } else if (_rescue.goFlash > 0) { _rescue.goFlash = Math.max(0, _rescue.goFlash - dts); }
     if (_rescue.throwAnim > 0) _rescue.throwAnim -= dts;
     for (const k in _rescue.cd) if (_rescue.cd[k] > 0) _rescue.cd[k] -= dts;
     // trickle income (a daughter slips Moses a few coins so he never fully stalls)
     _rescue.trickleT += dts; if (_rescue.trickleT >= 1.6) { _rescue.trickleT = 0; _rescue.coins += 4; }
-    // spawn
-    if (_rescue.spawned < _rescue.total) {
+    // spawn (held during the opening countdown)
+    if (_rescue.countdown <= 0 && _rescue.spawned < _rescue.total) {
       _rescue.spawnT -= dts;
       if (_rescue.spawnT <= 0) {
         const waveSize = Math.max(4, Math.ceil(_rescue.total / 4));
@@ -8841,8 +8916,9 @@ function _rescueFrame(now) {
       else f.x -= f.spd * dts;
       if (f.x <= _rescue.GRABX) { _rescue.foes.splice(i, 1); _rescueGrab(f); }
     }
-    // kidnap anim — the shepherd hauls the daughter off to the right and exits
-    for (let i = _rescue.kidnaps.length - 1; i >= 0; i--) { const kd = _rescue.kidnaps[i]; kd.t += dts; kd.x += (kd.t < 0.35 ? 60 : 190) * dts; if (kd.x > W + 60) _rescue.kidnaps.splice(i, 1); }
+    // kidnap anim — the shepherd hoists the daughter, struggles a beat, then hauls her off right
+    for (let i = _rescue.kidnaps.length - 1; i >= 0; i--) { const kd = _rescue.kidnaps[i]; kd.t += dts; if (kd.flash > 0) kd.flash -= dts; kd.x += (kd.t < 0.5 ? 34 : 150) * dts; if (kd.x > W + 70) _rescue.kidnaps.splice(i, 1); }
+    if (_rescue.flashLane) { _rescue.flashLane.t -= dts; if (_rescue.flashLane.t <= 0) _rescue.flashLane = null; }
     // treasure-bag flyers (cosmetic: bag flies to Moses's purse, then HUD coin pulses)
     for (let i = _rescue.flyers.length - 1; i >= 0; i--) { const fl = _rescue.flyers[i]; fl.t += dts; if (fl.t >= fl.life) { _rescue.flyers.splice(i, 1); const co = document.getElementById('rescueCoins'); if (co) { co.style.transition = 'transform .12s'; co.style.transform = 'scale(1.4)'; setTimeout(() => { co.style.transform = 'scale(1)'; }, 120); } try { play('coin'); } catch(e){} } }
     if (!_rescue.over && _rescue.spawned >= _rescue.total && _rescue.foes.length === 0 && !_rescue.ram) _rescueWin();
@@ -8860,9 +8936,13 @@ function _rescueFrame(now) {
     c.strokeStyle = 'rgba(40,24,10,0.16)'; c.lineWidth = 1; c.strokeRect(0, _rescue.laneY[i] - 29, W, 58);
     if (_rescue.started && i === _rescue.lane) { c.fillStyle = 'rgba(120,200,255,0.12)'; c.fillRect(0, _rescue.laneY[i] - 28, W, 56); c.strokeStyle = 'rgba(120,200,255,0.6)'; c.lineWidth = 2; c.strokeRect(2, _rescue.laneY[i] - 28, W - 4, 56); }
     const _dn = (i % 7) + 1; // daughters face right, toward the incoming shepherds
-    if (_rescue.laneDaughter[i]) _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 46, _rescue.laneY[i] + 26, 60, 86);
-    else { c.globalAlpha = 0.16; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 46, _rescue.laneY[i] + 26, 44, 62); c.globalAlpha = 1; }
+    // supply cache tucked behind the daughter (only while she's still here to defend)
+    if (_rescue.laneDaughter[i]) _rescueDrawCache(c, 16, _rescue.laneY[i] + 28);
+    if (_rescue.laneDaughter[i]) { const dgb = Math.sin(now / 360 + i) * 1.6; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 48, _rescue.laneY[i] + 27 + dgb, 72, 104); }
+    else { c.globalAlpha = 0.16; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 48, _rescue.laneY[i] + 26, 50, 70); c.globalAlpha = 1; }
   }
+  // red alarm flash over a lane where a daughter was just taken
+  if (_rescue.flashLane) { const fl = _rescue.flashLane, ly = _rescue.laneY[fl.lane], a = Math.max(0, fl.t / 0.55); c.fillStyle = 'rgba(220,40,30,' + (0.34 * a).toFixed(3) + ')'; c.fillRect(0, ly - 29, W, 58); }
   c.strokeStyle = 'rgba(120,200,120,0.4)'; c.setLineDash([6, 6]); c.lineWidth = 2; c.beginPath(); c.moveTo(_rescue.GRABX, 8); c.lineTo(_rescue.GRABX, H - 8); c.stroke(); c.setLineDash([]);
   // lane fires
   for (const fr of _rescue.fires) { const ly = _rescue.laneY[fr.lane]; for (let x = _rescue.GRABX; x < W; x += 34) { const fl = 10 + 8 * Math.sin((now / 90) + x); c.fillStyle = 'rgba(255,' + (120 + ((x % 60))) + ',40,0.5)'; c.beginPath(); c.moveTo(x, ly + 24); c.quadraticCurveTo(x + 8, ly + 24 - fl, x + 16, ly + 24); c.fill(); } }
@@ -8873,7 +8953,9 @@ function _rescueFrame(now) {
     if (f.dying) { const k = 1 - f.dying / (f.type === 'boss' ? 0.4 : 0.5); c.save(); c.globalAlpha = Math.max(0, 1 - k); c.translate(f.x, yb); c.rotate(k * 0.4); c.translate(-f.x, -yb + k * 20); _pDrawFit(c, ['resShepFall', 'shepherdFall', 'shepherdLeft'], f.x, yb, 70 * f.scale, 70 * f.scale); c.restore(); continue; }
     if (f.type === 'big' || f.type === 'boss') { c.fillStyle = 'rgba(180,30,20,' + (0.18 + 0.1 * Math.sin(now / 160)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 42 * f.scale, 38 * f.scale, 52 * f.scale, 0, 0, Math.PI * 2); c.fill(); }
     const bob = (f.snared > 0) ? 0 : Math.sin(now / 165 + f.x * 0.07) * 2.4 * f.scale;
-    const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = 58 * f.scale * (1 + sq * 0.12), sh = 76 * f.scale * (1 - sq * 0.1);
+    // "zoom" on the incoming threat: shepherds grow as they advance toward the daughters
+    const prox = Math.max(0, Math.min(1, (W - f.x) / (W - _rescue.GRABX))), zoom = 1 + prox * 0.22;
+    const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = 70 * f.scale * zoom * (1 + sq * 0.12), sh = 92 * f.scale * zoom * (1 - sq * 0.1);
     if (f.hitT > 0) { c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(now / 26); }
     const _bphase = f.type === 'boss' ? (f.hp / f.maxhp > 0.6 ? 'resBoss' : (f.hp / f.maxhp > 0.3 ? 'resBoss1' : 'resBoss2')) : null;
     const fk = f.type === 'boss' ? [_bphase, 'resBoss', 'shepherdBoss', 'shepHelpB'] : (f.fk || ['resShepNormal', 'shepherdLeft', 'shepPull']);
@@ -8892,26 +8974,35 @@ function _rescueFrame(now) {
     else {
       const rl = _rescue.laneY[_rescue.ram.lane], loading = (_rescue.ram.t || 0) < 0.22;
       // at launch: the loaded barrel (sheep inside) bursts; then an empty barrel + the ram charging right
-      if (loading) { if (!_pDrawFit(c, ['resBarrelSheep'], _rescue.mosesX + 50, rl + 32, 78, 70)) _rescueDrawBarrel(c, _rescue.mosesX + 42, rl + 27, 36); }
+      if (loading) { if (!_pDrawFit(c, ['resBarrelSheep'], _rescue.mosesX + 50, rl + 32, 88, 80)) _rescueDrawBarrel(c, _rescue.mosesX + 42, rl + 27, 40); }
       else {
-        if (!_pDrawFit(c, ['resBarrel'], _rescue.mosesX + 46, rl + 31, 66, 60)) _rescueDrawBarrel(c, _rescue.mosesX + 42, rl + 27, 36);
-        _pDrawFit(c, ['resRam', 'sheepRight', 'sheep'], _rescue.ram.x, rl + 27, 64, 56, true);
+        if (!_pDrawFit(c, ['resBarrel'], _rescue.mosesX + 46, rl + 31, 70, 64)) _rescueDrawBarrel(c, _rescue.mosesX + 42, rl + 27, 38);
+        // dust trail so the charge reads clearly even at speed
+        if ((now / 60 | 0) % 2 === 0) _rescueFx('dustPuff', _rescue.ram.x - 40, rl + 26, 34, 12);
+        const gallop = Math.abs(Math.sin((_rescue.ram.t || 0) * 22)) * 5;
+        _pDrawFit(c, ['resRam', 'sheepRight', 'sheep'], _rescue.ram.x, rl + 28 - gallop, 84, 74, true);
       }
     }
   }
-  // kidnaps (a shepherd hauls a struggling daughter off to the right)
+  // kidnaps — a shepherd hauls a daughter over his shoulder off to the right (single carry sprite)
   for (const kd of _rescue.kidnaps) {
     const ly = _rescue.laneY[kd.lane], sc = kd.scale || 1;
-    const stride = Math.abs(Math.sin(kd.t * 9)) * 3;            // walking bounce
-    const wob = Math.sin(kd.t * 17) * 4;                        // daughter struggling
-    c.fillStyle = 'rgba(20,10,4,0.22)'; c.beginPath(); c.ellipse(kd.x, ly + 30, 22 * sc, 7 * sc, 0, 0, Math.PI * 2); c.fill();
-    // shepherd strides off to the right (flipped to face the way he's going)
-    _pDrawFit(c, kd.fk || ['resShepNormal', 'shepherdLeft'], kd.x, ly + 28 - stride, 58 * sc, 76 * sc, true);
-    // the distressed daughter dragged stumbling just behind him
-    const _kn = (kd.idx % 7) + 1;
-    _pDrawFit(c, ['kidnap' + _kn, 'daughterR' + _kn, 'daughter' + _kn, 'daughter1'], kd.x - 34 * sc, ly + 27 + Math.abs(wob) * 0.4, 40 * sc, 56 * sc);
-    // little plea
-    if (kd.t < 1.1) { c.globalAlpha = Math.max(0, 1 - kd.t / 1.1); c.font = 'bold 13px Fredoka, Georgia'; c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText('Help!', kd.x - 22 * sc, ly - 28 + wob); c.globalAlpha = 1; }
+    const stride = Math.abs(Math.sin(kd.t * 10)) * 4;          // heavy walking bounce
+    const sway = Math.sin(kd.t * 6) * 0.05;                    // body sway
+    // a dramatic scale "pop" the instant he grabs her, easing to normal
+    const grabPop = kd.t < 0.3 ? (1 + (0.3 - kd.t) * 0.9) : 1;
+    c.fillStyle = 'rgba(20,10,4,0.26)'; c.beginPath(); c.ellipse(kd.x, ly + 32, 26 * sc, 8 * sc, 0, 0, Math.PI * 2); c.fill();
+    // dust kicks at his feet as he flees
+    if (kd.t > 0.32 && (kd.t * 60 | 0) % 6 === 0) _rescueFx('dustPuff', kd.x - 26 * sc, ly + 30, 26, 12);
+    c.save(); c.translate(kd.x, ly + 28 - stride); c.rotate(sway); c.scale(grabPop, grabPop); c.translate(-kd.x, -(ly + 28 - stride));
+    // carry sprite faces right (direction of escape) — no flip; fall back to plain shepherd + dragged girl
+    if (!_pDrawFit(c, kd.carry || ['shepKidnapNormal'], kd.x, ly + 28 - stride, 86 * sc, 104 * sc)) {
+      _pDrawFit(c, ['resShepNormal', 'shepherdLeft'], kd.x, ly + 28 - stride, 60 * sc, 80 * sc, true);
+      const _kn = (kd.idx % 7) + 1; _pDrawFit(c, ['kidnap' + _kn, 'daughterR' + _kn, 'daughter' + _kn, 'daughter1'], kd.x - 36 * sc, ly + 27, 42 * sc, 58 * sc);
+    }
+    c.restore();
+    // her desperate plea floats up
+    if (kd.t < 1.3) { const pa = Math.max(0, 1 - kd.t / 1.3); c.save(); c.globalAlpha = pa; c.font = 'bold 15px Fredoka, Georgia'; c.textAlign = 'center'; c.fillStyle = 'rgba(10,6,2,0.5)'; c.fillText('Help me!', kd.x + 1, ly - 40 - kd.t * 14 + 1); c.fillStyle = '#fff'; c.fillText('Help me!', kd.x, ly - 40 - kd.t * 14); c.restore(); }
   }
   // Moses
   if (_rescue.started) {
@@ -8921,8 +9012,8 @@ function _rescueFrame(now) {
       : (wk === 'sling' || wk === 'volley') ? ['resMosesSling', 'resMosesThrow', 'mosesShove', 'moses']
       : (wk === 'torch') ? ['resMosesTorch', 'resMosesThrow', 'mosesShove', 'moses']
       : ['resMosesBoth', 'resMosesThrow', 'mosesShove', 'moses'];
-    c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _rescue.mosesY + 50, 26, 8, 0, 0, Math.PI * 2); c.fill();
-    _pDrawFit(c, pose, _rescue.mosesX + (throwing ? 6 : 0), _rescue.mosesY + 48 + (throwing ? 0 : mbob), 80, 108);
+    c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _rescue.mosesY + 52, 30, 9, 0, 0, Math.PI * 2); c.fill();
+    _pDrawFit(c, pose, _rescue.mosesX + (throwing ? 6 : 0), _rescue.mosesY + 52 + (throwing ? 0 : mbob), 96, 128);
   }
   // shots
   for (const s of _rescue.shots) { const sy = s.baseY + s.arcY; if (s.kind === 'sling' || s.kind === 'volley') { c.save(); c.translate(s.x, sy); c.rotate(s.spin); if (!_pDrawFit(c, ['resPebble'], 0, 7, 16, 13)) { c.fillStyle = '#9a7a4a'; c.strokeStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.arc(0, 0, 6, 0, Math.PI * 2); c.fill(); c.stroke(); } c.restore(); } else if (s.kind === 'net') { c.save(); c.translate(s.x, sy); c.rotate(s.spin); if (!_pDrawFit(c, ['resNet', 'net'], 0, 14, 28, 26)) { c.strokeStyle = '#e8e8d0'; c.lineWidth = 1.5; for (let g = -10; g <= 10; g += 5) { c.beginPath(); c.moveTo(g, -10); c.lineTo(g, 10); c.moveTo(-10, g); c.lineTo(10, g); c.stroke(); } } c.restore(); } else { c.save(); c.translate(s.x, sy + 10); c.rotate(s.spin * 0.5); if (!_pDrawFit(c, ['waterPot', 'waterJar'], 0, 0, 24, 26)) { c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(0, 0, 8, 0, Math.PI * 2); c.fill(); } c.restore(); } }
@@ -8933,6 +9024,21 @@ function _rescueFrame(now) {
   // treasure-bag flyers (arc to the purse)
   for (const fl of _rescue.flyers) { if (fl.t < 0) continue; const k = Math.max(0, Math.min(1, fl.t / fl.life)), e = k * k * (3 - 2 * k); const cx = fl.x + (44 - fl.x) * e, cy = fl.y + (14 - fl.y) * e - Math.sin(k * Math.PI) * 48, sc = 1 + Math.sin(k * Math.PI) * 0.55; c.save(); c.globalAlpha = k > 0.82 ? Math.max(0, 1 - (k - 0.82) / 0.18) : 1; c.font = Math.round(19 * sc) + 'px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle'; if (!_pDraw(c, [fl.bag || 'treasureB', 'treasureG', 'treasureR'], cx - 12 * sc, cy - 12 * sc, 24 * sc, 24 * sc)) c.fillText('💰', cx, cy); c.restore(); }
   if (_rescue.over && _rescue.win) { c.fillStyle = 'rgba(255,230,120,' + (0.12 + 0.07 * Math.sin(now / 120)).toFixed(2) + ')'; c.fillRect(0, 0, W, H); }
+  // 3·2·1·GO! big countdown
+  if (_rescue.countdown > 0 || _rescue.goFlash > 0) {
+    c.save(); c.translate(W / 2, H / 2 - 8); c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = 'rgba(0,0,0,0.22)'; c.fillRect(-W / 2, -52, W, 104);
+    if (_rescue.countdown > 0) {
+      const cd = _rescue.countdown, n = Math.ceil(cd), frac = cd - (n - 1), sc = 1 + frac * 0.55;
+      c.globalAlpha = Math.min(1, 0.3 + frac * 1.5); c.font = 'bold ' + Math.round(134 * sc) + 'px Fredoka, Georgia';
+      c.lineWidth = 9; c.strokeStyle = 'rgba(20,10,4,0.6)'; c.strokeText(n, 0, 0); c.fillStyle = '#ffe07a'; c.fillText(n, 0, 0);
+    } else {
+      const k = _rescue.goFlash / 0.85, sc = 1 + (1 - k) * 0.85; c.globalAlpha = Math.min(1, k * 1.7);
+      c.font = 'bold ' + Math.round(122 * sc) + 'px Fredoka, Georgia';
+      c.lineWidth = 9; c.strokeStyle = 'rgba(10,30,8,0.6)'; c.strokeText('GO!', 0, 0); c.fillStyle = '#9fe06a'; c.fillText('GO!', 0, 0);
+    }
+    c.restore();
+  }
   c.restore();
 }
 function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: true }; }
@@ -17060,8 +17166,8 @@ if ('serviceWorker' in navigator) {
     <div class="riKicker" style="font-size:13px;letter-spacing:2px;color:#ffd28a;">~ MIDIAN · THE WELL ~</div>
     <div class="riTitle" style="font-size:36px;font-weight:700;color:#ffe0a0;line-height:1.1;margin-top:4px;">🛡️ Rescue the Daughters</div>
     <p class="riStory" style="font-size:16px;line-height:1.5;color:#fff1d6;margin:12px auto 4px;max-width:560px;text-shadow:0 2px 8px rgba(0,0,0,.8);">Rude shepherds have stormed the well and are driving Jethro's <b>seven daughters</b> away! Stand beside Moses and <b>hold the line</b> — don't let a single shepherd reach the girls.</p>
-    <div id="rescueIntroSteps" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:16px 0;">
-      <div class="riStep"><span class="riIco">👆</span><span class="riTx"><b>Move Moses</b>up &amp; down the lanes</span></div>
+    <div id="rescueIntroSteps" style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:24px 0;">
+      <div class="riStep"><span class="riIco">👆<span class="riArrows">▲▼</span></span><span class="riTx"><b>Move Moses</b>tap ▲ ▼ arrows, swipe, or arrow keys</span></div>
       <div class="riStep"><span class="riIco">🏺</span><span class="riTx"><b>Throw weapons</b>to drive shepherds back</span></div>
       <div class="riStep"><span class="riIco">👧</span><span class="riTx"><b>Save the girls</b>keep every lane safe</span></div>
     </div>
@@ -17070,12 +17176,14 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 <style>
-  #rescueIntro .riStep{flex:1;min-width:150px;max-width:200px;background:rgba(30,20,8,0.55);border:1.5px solid rgba(255,215,120,0.45);border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:7px;color:#ffeccb;backdrop-filter:blur(2px);}
-  #rescueIntro .riStep .riIco{font-size:34px;line-height:1;}
-  #rescueIntro .riStep .riTx{font-size:13px;line-height:1.3;}
-  #rescueIntro .riStep .riTx b{display:block;color:#ffd86a;font-size:15px;margin-bottom:2px;}
-  /* animated character backdrop — fixed to the viewport so it never blocks scrolling or gets clipped */
-  #rescueIntro .riScene{position:fixed;inset:0;z-index:1;overflow:hidden;pointer-events:none;}
+  #rescueIntro .riStep{flex:1;min-width:158px;max-width:215px;background:rgba(30,20,8,0.62);border:1.5px solid rgba(255,215,120,0.5);border-radius:16px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;color:#ffeccb;backdrop-filter:blur(2px);box-shadow:0 4px 14px rgba(0,0,0,.3);}
+  #rescueIntro .riStep .riIco{font-size:36px;line-height:1;}
+  #rescueIntro .riStep .riArrows{font-size:17px;color:#ffd86a;letter-spacing:3px;font-weight:bold;margin-left:3px;}
+  #rescueIntro .riStep .riTx{font-size:13.5px;line-height:1.4;}
+  #rescueIntro .riStep .riTx b{display:block;color:#ffd86a;font-size:15.5px;margin-bottom:3px;}
+  /* animated character backdrop — fixed to the viewport; lifted off the bottom edge so the
+     daughters' feet/legs are never clipped by the window edge or device chrome */
+  #rescueIntro .riScene{position:fixed;left:0;right:0;top:0;bottom:3vh;z-index:1;overflow:visible;pointer-events:none;}
   #rescueIntro .riImg{position:absolute;bottom:0;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));image-rendering:auto;}
   #rescueIntro .riWell{left:50%;transform:translateX(-50%);width:min(36vw,280px);opacity:.5;bottom:0;animation:riWellRise 1s ease-out both;}
   #rescueIntro .riGirl{height:min(36vh,250px);opacity:.95;animation:riGirlIn .7s ease-out both,riHuddle 2.6s ease-in-out infinite;}
@@ -17105,7 +17213,7 @@ if ('serviceWorker' in navigator) {
   }
   @media (prefers-reduced-motion:reduce){#rescueIntro .riImg,#rescueIntro .riContent *{animation:none !important;}}
 </style>
-<div id="rescueLoadout" style="display:none;position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:min(97vw,920px);max-height:100vh;z-index:80;background:linear-gradient(160deg,#2a1d10,#4a3320);box-shadow:0 0 0 100vmax rgba(0,0,0,0.6);border-radius:14px;flex-direction:column;padding:14px 16px;overflow:hidden;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
+<div id="rescueLoadout" style="display:none;position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:min(97vw,940px);max-height:100vh;z-index:80;background:linear-gradient(160deg,#2a1d10,#4a3320);box-shadow:0 0 0 100vmax rgba(0,0,0,0.6);border-radius:14px;flex-direction:column;padding:18px 20px;overflow:hidden;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
   <div style="color:#ffe0a0;text-align:center;font-size:20px;font-weight:bold;letter-spacing:.5px;text-shadow:0 2px 6px rgba(0,0,0,.5);">⚔️ Choose your weapons</div>
   <div style="display:flex;justify-content:center;gap:10px;margin:5px 0 3px;flex-wrap:wrap;">
     <span style="background:linear-gradient(135deg,#ffd86a,#e0a83a);color:#3a2a08;font-weight:bold;font-size:13px;padding:4px 12px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);" id="rescueWalletStars">⭐ 0</span>
@@ -17117,7 +17225,7 @@ if ('serviceWorker' in navigator) {
     <div class="htStep"><span class="htIco">🏺</span><span class="htTx"><b>2. Tap a weapon</b><br>to throw it (uses 💰)</span></div>
     <div class="htStep"><span class="htIco">👧</span><span class="htTx"><b>3. Save the girls!</b><br>stop shepherds reaching them</span></div>
   </div>
-  <div id="rescueCardGrid" style="flex:1;overflow-y:auto;display:grid;gap:9px;align-content:start;padding:2px;"></div>
+  <div id="rescueCardGrid" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:grid;gap:13px;align-content:start;padding:6px 4px;"></div>
   <div style="display:flex;gap:12px;align-items:center;justify-content:center;margin-top:10px;">
     <button class="btn" id="rescueAutoPickBtn" style="font-size:13px;padding:8px 16px;background:rgba(80,60,40,0.8);border:2px solid #c8a86a;">✨ Auto-pick</button>
     <button class="btn btn-gold" id="rescueStartBtn" disabled style="font-size:19px;padding:11px 32px;opacity:0.5;">Start Rescue ▶</button>

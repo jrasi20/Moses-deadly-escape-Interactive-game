@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v11'; // v11: rescue foe variety, waves, lane divert, win-tiers, 3-hearts lose model, cheaper weapons (invalidate stale v9 cache)
+const CACHE_VERSION = 'bek-bundle-v12'; // v12: rescue epic pass — kidnap carry sprites, 3-2-1 countdown, bigger sprites/fonts, lane weapon caches, confetti win + richer modals, Quit to Midian (invalidate stale v11)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
