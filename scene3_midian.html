@@ -2386,22 +2386,26 @@
 <div class="modal-overlay" id="rescueModal" style="z-index:50;display:none;">
   <div class="modal-content" style="background:linear-gradient(155deg,#3a2a1a,#5a3a22);border:3px solid #d8a86a;max-width:880px;width:min(96vw,880px);padding:16px 20px;position:relative;">
     <button id="rescuePauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:38px;height:38px;border-radius:10px;border:2px solid #d8a86a;background:rgba(40,24,10,0.7);color:#ffe0a0;font-size:18px;cursor:pointer;line-height:1;">⏸</button>
-    <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;padding:0 52px;">~ RESCUE THE DAUGHTERS ~</div>
-    <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;padding:0 52px;line-height:1.2;">Drive off the rude shepherds!</h2>
-    <canvas id="rescueCanvas" width="760" height="470" style="display:block;width:100%;height:auto;max-height:50vh;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#e8c890;"></canvas>
-    <div id="rescueLaneCtl" style="display:flex;justify-content:center;align-items:center;gap:14px;margin:7px 0 1px;">
-      <button id="rescueLaneUp" class="rwLaneBtn" aria-label="Move Moses up a lane">▲</button>
-      <span style="color:#ffe2b0;font-size:14px;font-weight:bold;letter-spacing:.5px;">MOVE MOSES</span>
-      <button id="rescueLaneDown" class="rwLaneBtn" aria-label="Move Moses down a lane">▼</button>
+    <div id="rescueKicker" style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;padding:0 52px;">~ RESCUE THE DAUGHTERS ~</div>
+    <h2 id="rescueH2" style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;padding:0 52px;line-height:1.2;">Drive off the rude shepherds!</h2>
+    <div id="rescuePlayArea">
+      <canvas id="rescueCanvas" width="760" height="470" style="display:block;width:100%;height:auto;max-height:50vh;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#e8c890;"></canvas>
+      <div id="rescueSidePanel">
+        <div id="rescueLaneCtl" style="display:flex;justify-content:center;align-items:center;gap:14px;margin:7px 0 1px;">
+          <button id="rescueLaneUp" class="rwLaneBtn" aria-label="Move Moses up a lane">▲</button>
+          <span style="color:#ffe2b0;font-size:14px;font-weight:bold;letter-spacing:.5px;">MOVE MOSES</span>
+          <button id="rescueLaneDown" class="rwLaneBtn" aria-label="Move Moses down a lane">▼</button>
+        </div>
+        <div id="rescueHudRow" style="display:flex;justify-content:space-between;align-items:center;color:#ffe2b0;font-size:14.5px;font-weight:bold;margin:8px 2px 5px;">
+          <span id="rescueDaughters">👧 7/7</span>
+          <span id="rescueCoins" style="color:#ffe07a;">💰 0</span>
+          <span id="rescueFoes">Driven off: 0</span>
+        </div>
+        <div id="rescueWeaponBar" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;"></div>
+        <div id="rescueFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:16px;font-weight:bold;">Tap a lane to move Moses, tap a weapon to throw it!</div>
+      </div>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;color:#ffe2b0;font-size:14.5px;font-weight:bold;margin:8px 2px 5px;">
-      <span id="rescueDaughters">👧 7/7</span>
-      <span id="rescueCoins" style="color:#ffe07a;">💰 0</span>
-      <span id="rescueFoes">Driven off: 0</span>
-    </div>
-    <div id="rescueWeaponBar" style="display:flex;gap:6px;flex-wrap:nowrap;justify-content:center;"></div>
-    <div id="rescueFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:16px;font-weight:bold;">Tap a lane to move Moses, tap a weapon to throw it!</div>
-    <div style="color:#d8b890;font-size:12px;text-align:center;margin-top:4px;font-style:italic;">"Moses got up and came to their rescue." — Exodus 2:17</div>
+    <div id="rescueVerse" style="color:#d8b890;font-size:12px;text-align:center;margin-top:4px;font-style:italic;">"Moses got up and came to their rescue." — Exodus 2:17</div>
     <!-- weapon-select / loadout screen (shown before each round) -->
     <style>
       #rescueCardGrid .rwCard{background:linear-gradient(165deg,rgba(40,28,14,0.92),rgba(22,15,7,0.92));border:2.5px solid var(--tint,#6a4a2a);border-radius:14px;padding:0 0 12px;cursor:pointer;transition:transform .12s ease,box-shadow .15s;position:relative;text-align:center;color:#fff4e2;display:flex;flex-direction:column;}
@@ -2472,10 +2476,22 @@
         #rescueCardGrid .rwCard .rwStat{font-size:10px;}
         #rescueCardGrid .rwCard .rwCost{font-size:12px;margin-top:6px;}
       }
-      /* short landscape: keep the playfield + controls on one screen, no scroll */
-      @media (max-height:540px) and (orientation:landscape){
-        #rescueCanvas{max-height:48vh !important;}
-        #rescueModal h2{font-size:15px !important;margin-bottom:3px !important;}
+      /* default (portrait + desktop): canvas on top, controls stacked below */
+      #rescuePlayArea{display:flex;flex-direction:column;align-items:stretch;}
+      #rescueSidePanel{display:flex;flex-direction:column;}
+      /* short landscape: canvas + controls SIDE BY SIDE so the canvas can be HEIGHT-driven
+         and stay big (no sprite shrink), and the whole game fits with no scroll. */
+      @media (orientation:landscape) and (max-height:560px){
+        #rescueModal .modal-content{padding:8px 12px !important;}
+        #rescueKicker, #rescueH2, #rescueVerse{display:none !important;}   /* free vertical room */
+        #rescuePlayArea{flex-direction:row;align-items:center;gap:12px;}
+        #rescueCanvas{height:min(88vh,440px) !important;width:auto !important;max-width:64% !important;max-height:none !important;margin:0 !important;}
+        #rescueSidePanel{flex:1;min-width:0;justify-content:center;gap:2px;}
+        #rescueLaneCtl{margin:2px 0 !important;}
+        #rescueHudRow{font-size:13px !important;margin:4px 2px !important;flex-wrap:wrap;gap:4px;justify-content:center;}
+        #rescueWeaponBar{gap:5px !important;}
+        #rescueFeedback{font-size:12px !important;margin-top:4px !important;min-height:0 !important;}
+        /* loadout screen on short landscape */
         #rescueHowTo{margin:2px 0 5px;}
         #rescueHowTo .htStep{padding:4px 7px;}
         #rescueCardGrid{grid-template-columns:repeat(4,1fr);}

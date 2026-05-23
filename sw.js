@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v20'; // v20: keep modal character sprites visible on landscape/short screens (shrink to a single row instead of hiding) (invalidate stale v19)
+const CACHE_VERSION = 'bek-bundle-v21'; // v21: landscape gameplay = canvas + controls side-by-side so the canvas stays big (no sprite shrink); short-landscape modals keep sprites in one row (invalidate stale v20)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
