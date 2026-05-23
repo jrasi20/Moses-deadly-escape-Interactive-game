@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v25'; // v25: bigger MOVE MOSES arrow buttons (invalidate stale v24)
+const CACHE_VERSION = 'bek-bundle-v26'; // v26: intro logo no longer clipped, pause hidden off-gameplay, click-sound on menus, cue stacking, smaller countdown, gold (not blue) lane marker, visible staff swing, bigger+sharper sprites, brighter buttons, Start-Rescue paints before countdown (invalidate stale v25)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
