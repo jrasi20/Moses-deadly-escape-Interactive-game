@@ -8588,7 +8588,7 @@ function _rescueReset() {
   _rescue.shots = []; _rescue.foes = []; _rescue.cues = []; _rescue.fx = []; _rescue.fires = []; _rescue.ram = null; _rescue.kidnaps = []; _rescue.flyers = []; _rescue.coinPulse = 0;
   _rescue.laneDaughter = [true, true, true, true, true, true, true]; _rescue.daughtersLost = 0;
   _rescue.foesDriven = 0; _rescue.spawned = 0; _rescue.spawnT = 2.0; _rescue.bossSpawned = false; _rescue.bossDown = false; _rescue._lulled = false;
-  _rescue.shake = 0; _rescue.stars = 3; _rescue.over = false; _rescue.win = false; _rescue.paused = false; _rescue.winPanelShown = false; _rescue.started = false;
+  _rescue.shake = 0; _rescue.stars = 3; _rescue.over = false; _rescue.win = false; _rescue.paused = false; _rescue.winPanelShown = false; _rescue.started = false; _rescue._out = false;
   ['rescuePausedOverlay', 'rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
 }
 function openRescueGame(gate) {
@@ -8612,7 +8612,7 @@ function _rescueBegin() {
   cancelAnimationFrame(_rescue.rafId); _rescue.rafId = requestAnimationFrame(_rescueFrame);
 }
 function _rescueHud() {
-  const d = document.getElementById('rescueDaughters'); if (d) { const lost = Math.min(3, _rescue.daughtersLost); d.textContent = '❤️'.repeat(3 - lost) + '🤍'.repeat(lost) + ' · 👧 ' + (7 - _rescue.daughtersLost) + ' safe'; }
+  const d = document.getElementById('rescueDaughters'); if (d) { const hp = Math.max(0, Math.min(3, (typeof game !== 'undefined' ? game.hearts : 3))); d.textContent = '👧 ' + (7 - _rescue.daughtersLost) + '/7  ·  ' + '❤️'.repeat(hp) + '🤍'.repeat(Math.max(0, 3 - hp)); }
   const co = document.getElementById('rescueCoins'); if (co) co.textContent = '💰 ' + Math.floor(_rescue.coins);
   const f = document.getElementById('rescueFoes'); if (f) f.textContent = 'Driven off: ' + _rescue.foesDriven + '/' + _rescue.total;
 }
@@ -8677,13 +8677,13 @@ function _rescueGrab(foe) {
     _rescueCue('Help! A daughter is taken!', 150, _rescue.laneY[foe.lane] - 22, '#ff7a6a', true);
     try { play('girlScream') || play('oops') || play('error'); } catch(e){}
     _rescueHud();
-    if (_rescue.daughtersLost >= 3) _rescueLose(); // 3 hearts: lose the 3rd daughter → game over
+    if (_rescue.daughtersLost >= 7) _rescueLose(); // lose the round when every daughter is taken
   }
 }
 function _rescueWin() {
   if (_rescue.over) return;
   _rescue.over = true; _rescue.win = true;
-  _rescue.stars = _rescue.daughtersLost === 0 ? 3 : (_rescue.daughtersLost === 1 ? 2 : 1);
+  _rescue.stars = _rescue.daughtersLost === 0 ? 3 : (_rescue.daughtersLost <= 2 ? 2 : 1);
   try { if (typeof game !== 'undefined') { game._wellGamePass = true; game.treasureBags = (game.treasureBags || 0) + _rescue.earned; } } catch(e){}
   const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = _rescue.bossDown ? '🎉 The mighty shepherd flees! The daughters are safe!' : '🎉 The shepherds are driven off!';
   try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
@@ -8704,12 +8704,31 @@ function _rescueLose() {
   if (_rescue.over && !_rescue.win) return;
   _rescue.over = true; _rescue.win = false; cancelAnimationFrame(_rescue.rafId);
   try { if (audio.puzzleBg) audio.puzzleBg.pause(); } catch(e){}
+  _rescueStopSfx();
+  // every daughter taken = one lost round = one world heart gone
   try { game.hearts = Math.max(0, game.hearts - 1); updateHudHearts(); game.perfectRun = false; } catch(e){}
-  try { play('sandThud') || play('pop'); } catch(e){}
-  const out = (game && game.hearts <= 0);
+  const out = (typeof game !== 'undefined' && game.hearts <= 0); // all 3 world hearts gone → Scene 3 is over
+  _rescue._out = out;
+  try { if (out) { play('gameOver') || play('sandThud'); } else { play('sandThud') || play('pop'); } } catch(e){}
   const m = document.getElementById('rescueLoseMsg');
-  if (m) m.innerHTML = out ? '\u{1F494} The shepherds won — and that was your last heart!' : 'The shepherds carried the daughters off.<br>Moses lost a heart \u{2764}\u{FE0F}';
+  if (m) m.innerHTML = out
+    ? '\u{1F494} That was Moses’s last heart — the rescue is lost.<br>You’ll start Scene 3 again.'
+    : 'The shepherds carried the daughters off.<br>Moses lost a heart \u{2764}\u{FE0F} — try the rescue again!';
+  const retry = document.getElementById('rescueRetryBtn'); if (retry) retry.style.display = out ? 'none' : '';
+  const quit = document.getElementById('rescueLoseQuitBtn'); if (quit) quit.textContent = out ? '\u{1F504} Restart Scene 3' : 'Quit to map';
   const ov = document.getElementById('rescueLoseOverlay'); if (ov) ov.style.display = 'flex';
+}
+function _rescueLoseQuit() {
+  // leave the mini-game; if all world hearts are gone, this is a full Scene-3 restart
+  const restart = !!_rescue._out;
+  _rescue.paused = false; _rescue.over = true; _rescue.started = false; cancelAnimationFrame(_rescue.rafId);
+  ['rescuePausedOverlay', 'rescueLoseOverlay', 'rescueWinOverlay', 'rescueLoadout', 'rescueIntro'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  const modal = document.getElementById('rescueModal'); if (modal) { modal.style.display = 'none'; modal.classList.remove('active'); }
+  try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
+  _rescue.gate = null;
+  if (restart) { try { game.state = 'playing'; } catch(e){} try { restartScene(); } catch(e){} return; }
+  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
+  try { game.state = 'playing'; } catch(e){}
 }
 function _rescueRetry() {
   ['rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
@@ -8912,7 +8931,7 @@ function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: t
     tap(document.getElementById('rescueResumeBtn'), _rescueResume);
     tap(document.getElementById('rescueQuitBtn'), _rescueQuit);
     tap(document.getElementById('rescueRetryBtn'), _rescueRetry);
-    tap(document.getElementById('rescueLoseQuitBtn'), _rescueQuit);
+    tap(document.getElementById('rescueLoseQuitBtn'), _rescueLoseQuit);
     tap(document.getElementById('rescueWinContinueBtn'), _rescueWinContinue);
     tap(document.getElementById('rescueWinReplayBtn'), _rescueRetry);
     tap(document.getElementById('rescueLaneUp'), () => _rescueMoveLane(-1));
