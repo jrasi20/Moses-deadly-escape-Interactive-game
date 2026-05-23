@@ -3167,6 +3167,13 @@ const IMG_SRC = {
   resBarrelSheep:'assets/images/sheep%20barrel%20with%20sheep.png',
   resStaffIcon: 'assets/images/shepherd%20staff.png',
   rescueBg2:    'assets/images/rescue%20background%201.png',
+  // Rescue mini-game: shepherds carrying a daughter off (face RIGHT) for the capture anim
+  resKidNormal: 'assets/images/shepherd%20normal%20kidnapping.png',
+  resKid1:      'assets/images/shepherd%201%20kidnapping.png',
+  resKid2:      'assets/images/shepherd%202%20kidnapping.png',
+  resKid4:      'assets/images/shepherd%204%20kidnapping.png',
+  resKidBoss:   'assets/images/shepherd%20boss%20kidnapping.png',
+  resKidBoss3:  'assets/images/shepherd%20boss%203%20kidnapping.png',
   jethroExisting:      'assets/images/jethro.png',
   jethroDaughter:      'assets/images/jethro%20daughter.png',
   // Midian pickups
@@ -8591,7 +8598,7 @@ function _rescueReset() {
   _rescue.lane = 3; _rescue.mosesY = _rescue.laneY[3]; _rescue.throwAnim = 0; _rescue.cd = {};
   _rescue.shots = []; _rescue.foes = []; _rescue.cues = []; _rescue.fx = []; _rescue.fires = []; _rescue.ram = null; _rescue.kidnaps = []; _rescue.flyers = []; _rescue.coinPulse = 0;
   _rescue.laneDaughter = [true, true, true, true, true, true, true]; _rescue.daughtersLost = 0;
-  _rescue.foesDriven = 0; _rescue.spawned = 0; _rescue.spawnT = 2.0; _rescue.bossSpawned = false; _rescue.bossDown = false; _rescue._lulled = false; _rescue._breathed = false; _rescue.perfect = false;
+  _rescue.foesDriven = 0; _rescue.spawned = 0; _rescue.spawnT = 2.0; _rescue.bossSpawned = false; _rescue.bossDown = false; _rescue._lulled = false; _rescue._breathed = false; _rescue.perfect = false; _rescue.cartSpawned = false;
   _rescue.shake = 0; _rescue.stars = 3; _rescue.over = false; _rescue.win = false; _rescue.paused = false; _rescue.winPanelShown = false; _rescue.started = false; _rescue._out = false;
   ['rescuePausedOverlay', 'rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
 }
@@ -8635,9 +8642,18 @@ function _rescueAward(foe) {
   _rescue.foesDriven++; const b = foe.bounty || 18; _rescue.coins += b; _rescue.earned += b;
   _rescueCue('+💰' + b, foe.x, _rescue.laneY[foe.lane] - 34, '#ffe07a');
   // wow: a treasure bag bursts from the shepherd and flies up to Moses's purse
-  const n = foe.type === 'boss' ? 5 : (foe.type === 'big' ? 3 : 1);
+  const n = (foe.type === 'boss' || foe.type === 'cartboss') ? 5 : (foe.type === 'big' ? 3 : 1);
   for (let i = 0; i < n; i++) _rescue.flyers.push({ x: foe.x + (Math.random() * 30 - 15), y: _rescue.laneY[foe.lane] - 8, t: -i * 0.06, life: 0.72, spin: Math.random() * 6, bag: ['treasureB', 'treasureG', 'treasureR'][(Math.random() * 3) | 0] });
   if (foe.type === 'boss') _rescue.bossDown = true;
+  // the bullock-cart boss rewards a heart when downed (capped at maxHearts)
+  if (foe.type === 'cartboss') {
+    try {
+      const maxH = (typeof game !== 'undefined' && game.maxHearts) || 5;
+      if (typeof game !== 'undefined' && game.hearts < maxH) { game.hearts++; updateHudHearts(); _rescueCue('💖 +1 Heart!', foe.x, _rescue.laneY[foe.lane] - 52, '#ff6a8a', true); }
+      else { _rescueCue('❤️ Hearts already full!', foe.x, _rescue.laneY[foe.lane] - 52, '#ff6a8a', true); }
+      _rescueHud(); play('levelUp') || play('chime') || play('coin');
+    } catch(e){}
+  }
   try { play('shepScream'); } catch(e){}
   _rescueHud();
 }
@@ -8664,6 +8680,7 @@ function _rescueSpawn() {
   const fs = _rescue.foeSpeed * (0.7 + 0.55 * _rescueRamp()); // foes start slower, get faster as the round builds
   let type = 'normal', hp = 1, spd = fs, scale = 1, bounty = 22;
   if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 150; _rescue.bossSpawned = true; _rescue.shake = 18; _rescueCue('⚠️ THE MIGHTY SHEPHERD!', 380, 40, '#ff7a4a', true); try { play('bossAlert') || play('alarm') || play('error'); } catch(e){} }
+  else if (!_rescue.cartSpawned && _rescue.spawned >= Math.floor(_rescue.total / 2)) { type = 'cartboss'; hp = Math.max(8, Math.round(_rescue.bossHp * 0.8)); spd = _rescue.foeSpeed * 0.4; scale = 1.8; bounty = 110; _rescue.cartSpawned = true; _rescue.shake = 14; _rescueCue('🐂 Bullock-cart boss — down him to WIN a heart ❤️', 380, 40, '#ffd23a', true); try { play('bossAlert') || play('alarm'); } catch(e){} }
   else {
     // a fresh wave of shepherds charges in: the first one, then again mid-assault
     if (_rescue.spawned === 0 || _rescue.spawned === Math.floor(_rescue.total * 0.45)) { try { play('waveShep'); } catch(e){} if (_rescue.spawned > 0) _rescueCue('Another wave!', 380, 40, '#ffd23a', true); }
@@ -8676,6 +8693,7 @@ function _rescueSpawn() {
   // sprite variety so the gang isn't all clones
   let fk;
   if (type === 'boss') fk = null;
+  else if (type === 'cartboss') fk = ['resBoss3', 'resBoss'];
   else if (type === 'big') fk = ['resShepBrute', 'shepHelpB', 'shepherdLeft'];
   else if (type === 'fast') fk = ['resShepFast', 'shepherdLeftAlt', 'shepherdLeft'];
   else { const pool = [['resShepNormal'], ['shepherdLeftAlt'], ['resShepWalk2'], ['resShep4Left']]; fk = pool[Math.floor(Math.random() * pool.length)].concat(['resShepNormal', 'shepherdLeft', 'shepPull']); }
@@ -8685,8 +8703,9 @@ function _rescueSpawn() {
 function _rescueGrab(foe) {
   if (_rescue.laneDaughter[foe.lane]) {
     _rescue.laneDaughter[foe.lane] = false; _rescue.daughtersLost++; _rescue.shake = 14;
-    const fk = (foe.type === 'boss') ? ['resBoss', 'shepherdBoss'] : (foe.type === 'big' ? ['resShepBrute', 'shepHelpB', 'shepherdLeft'] : ['resShepNormal', 'shepherdLeft', 'shepPull']);
-    _rescue.kidnaps.push({ lane: foe.lane, x: _rescue.GRABX, idx: foe.lane, t: 0, scale: foe.scale || 1, fk: fk });
+    // the shepherd hoists the daughter onto his back and carries her off (single combined sprite, faces right)
+    const carry = (foe.type === 'cartboss') ? ['resKidBoss3', 'resKidBoss'] : (foe.type === 'boss') ? ['resKidBoss', 'resKidNormal'] : [['resKidNormal', 'resKid1', 'resKid2', 'resKid4'][Math.floor(Math.random() * 4)], 'resKidNormal'];
+    _rescue.kidnaps.push({ lane: foe.lane, x: _rescue.GRABX, idx: foe.lane, t: 0, scale: (foe.type === 'cartboss' || foe.type === 'boss') ? 1.5 : (foe.scale || 1), carry: carry });
     _rescueCue('Help! A daughter is taken!', 150, _rescue.laneY[foe.lane] - 22, '#ff7a6a', true);
     try { play('girlScream') || play('oops') || play('error'); } catch(e){}
     // this lane is empty now — divert any other shepherds here toward lanes that still have a daughter
@@ -8871,9 +8890,11 @@ function _rescueFrame(now) {
     const yb = _rescue.laneY[f.lane] + 28;
     c.fillStyle = 'rgba(20,10,4,0.22)'; c.beginPath(); c.ellipse(f.x, yb + 2, 22 * f.scale, 7 * f.scale, 0, 0, Math.PI * 2); c.fill();
     if (f.dying) { const k = 1 - f.dying / (f.type === 'boss' ? 0.4 : 0.5); c.save(); c.globalAlpha = Math.max(0, 1 - k); c.translate(f.x, yb); c.rotate(k * 0.4); c.translate(-f.x, -yb + k * 20); _pDrawFit(c, ['resShepFall', 'shepherdFall', 'shepherdLeft'], f.x, yb, 70 * f.scale, 70 * f.scale); c.restore(); continue; }
-    if (f.type === 'big' || f.type === 'boss') { c.fillStyle = 'rgba(180,30,20,' + (0.18 + 0.1 * Math.sin(now / 160)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 42 * f.scale, 38 * f.scale, 52 * f.scale, 0, 0, Math.PI * 2); c.fill(); }
+    if (f.type === 'cartboss') { c.fillStyle = 'rgba(255,200,70,' + (0.20 + 0.12 * Math.sin(now / 150)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 44 * f.scale, 50 * f.scale, 50 * f.scale, 0, 0, Math.PI * 2); c.fill(); }
+    else if (f.type === 'big' || f.type === 'boss') { c.fillStyle = 'rgba(180,30,20,' + (0.18 + 0.1 * Math.sin(now / 160)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 42 * f.scale, 38 * f.scale, 52 * f.scale, 0, 0, Math.PI * 2); c.fill(); }
     const bob = (f.snared > 0) ? 0 : Math.sin(now / 165 + f.x * 0.07) * 2.4 * f.scale;
-    const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = 58 * f.scale * (1 + sq * 0.12), sh = 76 * f.scale * (1 - sq * 0.1);
+    const isCart = f.type === 'cartboss';
+    const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = (isCart ? 116 : 58) * f.scale * (1 + sq * 0.12), sh = (isCart ? 84 : 76) * f.scale * (1 - sq * 0.1);
     if (f.hitT > 0) { c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(now / 26); }
     const _bphase = f.type === 'boss' ? (f.hp / f.maxhp > 0.6 ? 'resBoss' : (f.hp / f.maxhp > 0.3 ? 'resBoss1' : 'resBoss2')) : null;
     const fk = f.type === 'boss' ? [_bphase, 'resBoss', 'shepherdBoss', 'shepHelpB'] : (f.fk || ['resShepNormal', 'shepherdLeft', 'shepPull']);
@@ -8885,6 +8906,7 @@ function _rescueFrame(now) {
     c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(bx - 1, by - 1, bw + 2, 6);
     c.fillStyle = r > 0.5 ? '#6ad06a' : (r > 0.25 ? '#e0c050' : '#e05050'); c.fillRect(bx, by, bw * r, 4);
     if (f.type === 'boss') { c.fillStyle = '#ffce4a'; c.font = 'bold 10px Georgia'; c.textAlign = 'center'; c.fillText('MIGHTY SHEPHERD', f.x, by - 5); }
+    else if (f.type === 'cartboss') { c.fillStyle = '#ffd86a'; c.font = 'bold 10px Georgia'; c.textAlign = 'center'; c.fillText('❤️ CART BOSS', f.x, by - 5); }
   }
   // ram
   if (_rescue.ram) {
@@ -8899,19 +8921,18 @@ function _rescueFrame(now) {
       }
     }
   }
-  // kidnaps (a shepherd hauls a struggling daughter off to the right)
+  // kidnaps — a shepherd carries the daughter off on his back (single combined sprite, faces right)
   for (const kd of _rescue.kidnaps) {
     const ly = _rescue.laneY[kd.lane], sc = kd.scale || 1;
     const stride = Math.abs(Math.sin(kd.t * 9)) * 3;            // walking bounce
-    const wob = Math.sin(kd.t * 17) * 4;                        // daughter struggling
-    c.fillStyle = 'rgba(20,10,4,0.22)'; c.beginPath(); c.ellipse(kd.x, ly + 30, 22 * sc, 7 * sc, 0, 0, Math.PI * 2); c.fill();
-    // shepherd strides off to the right (flipped to face the way he's going)
-    _pDrawFit(c, kd.fk || ['resShepNormal', 'shepherdLeft'], kd.x, ly + 28 - stride, 58 * sc, 76 * sc, true);
-    // the distressed daughter dragged stumbling just behind him
-    const _kn = (kd.idx % 7) + 1;
-    _pDrawFit(c, ['kidnap' + _kn, 'daughterR' + _kn, 'daughter' + _kn, 'daughter1'], kd.x - 34 * sc, ly + 27 + Math.abs(wob) * 0.4, 40 * sc, 56 * sc);
+    c.fillStyle = 'rgba(20,10,4,0.22)'; c.beginPath(); c.ellipse(kd.x, ly + 30, 26 * sc, 7 * sc, 0, 0, Math.PI * 2); c.fill();
+    if (!_pDrawFit(c, kd.carry || ['resKidNormal'], kd.x, ly + 30 - stride, 84 * sc, 90 * sc)) {
+      // fallback (older art): shepherd + daughter drawn separately
+      _pDrawFit(c, ['resShepNormal', 'shepherdLeft'], kd.x, ly + 28 - stride, 58 * sc, 76 * sc, true);
+      const _kn = (kd.idx % 7) + 1; _pDrawFit(c, ['kidnap' + _kn, 'daughterR' + _kn, 'daughter1'], kd.x - 34 * sc, ly + 27, 40 * sc, 56 * sc);
+    }
     // little plea
-    if (kd.t < 1.1) { c.globalAlpha = Math.max(0, 1 - kd.t / 1.1); c.font = 'bold 13px Fredoka, Georgia'; c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText('Help!', kd.x - 22 * sc, ly - 28 + wob); c.globalAlpha = 1; }
+    if (kd.t < 1.1) { c.globalAlpha = Math.max(0, 1 - kd.t / 1.1); c.font = 'bold 13px Fredoka, Georgia'; c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText('Help!', kd.x - 30 * sc, ly - 30); c.globalAlpha = 1; }
   }
   // Moses
   if (_rescue.started) {
