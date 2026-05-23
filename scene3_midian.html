@@ -4442,6 +4442,215 @@ function drawScene3Wolf(){
   ctx.restore();
 }
 
+/* ===== PHASE 2 — FREE JETHRO'S FLOCK FROM THE WOLVES (pasture, cols 23-33) =====
+   At dusk in the pasture, wolves stalk and pin Jethro's scattered sheep. Moses
+   frees a pinned sheep by getting close enough to drive the wolf off; each freed
+   sheep yields treasure bags (game.treasureBags) that fund the Rescue mini-game's
+   weapons (which unlock at bagReq 60-300). On harder levels a wolf left alone too
+   long drags the sheep off — lost treasure. Carries the "one world" essence:
+   respects the cross-scene ❄️ Guard Freeze power-up (wolves freeze) and benefits
+   from ⚡ Speed Burst (Moses reaches trapped sheep faster). Difficulty-scaled. */
+const SCENE3_FLOCK_CFG = {
+  easy:   { wolves: 2, sheep: 5, bagsPerSheep: 30, wolfSpeed: 0.018, loseMs: 0 },      // forgiving: sheep never lost
+  medium: { wolves: 3, sheep: 6, bagsPerSheep: 26, wolfSpeed: 0.024, loseMs: 14000 },
+  hard:   { wolves: 4, sheep: 7, bagsPerSheep: 22, wolfSpeed: 0.032, loseMs: 9000 },
+};
+const scene3Flock = {
+  spawned: false, done: false, introShown: false,
+  sheep: [], wolves: [], freed: 0, lost: 0, total: 0, cfg: null,
+};
+function resetScene3Flock(){
+  scene3Flock.spawned = false; scene3Flock.done = false; scene3Flock.introShown = false;
+  scene3Flock.sheep = []; scene3Flock.wolves = [];
+  scene3Flock.freed = 0; scene3Flock.lost = 0; scene3Flock.total = 0; scene3Flock.cfg = null;
+}
+function _flockWalkable(tx, ty){
+  return (typeof MAP !== 'undefined' && MAP[ty] && MAP[ty][tx] === 0);
+}
+function _flockRandPastureTile(){
+  for (let i = 0; i < 60; i++){
+    const tx = 24 + Math.floor(Math.random() * 9);   // cols 24-32
+    const ty = 14 + Math.floor(Math.random() * 8);   // rows 14-21 (south pasture)
+    if (_flockWalkable(tx, ty)) return { tx, ty };
+  }
+  return { tx: 27, ty: 18 };
+}
+function initScene3Flock(diff){
+  const cfg = SCENE3_FLOCK_CFG[diff] || SCENE3_FLOCK_CFG.easy;
+  scene3Flock.cfg = cfg;
+  scene3Flock.sheep = []; scene3Flock.wolves = [];
+  scene3Flock.freed = 0; scene3Flock.lost = 0; scene3Flock.done = false;
+  for (let i = 0; i < cfg.sheep; i++){
+    const t = _flockRandPastureTile();
+    scene3Flock.sheep.push({
+      id: i, tx: t.tx, ty: t.ty, px: t.tx * TILE, py: t.ty * TILE,
+      state: 'graze', dir: Math.random() < 0.5 ? -1 : 1,
+      wolf: null, pinnedAt: 0, wanderAt: 0, freedAt: 0, loseAt: 0,
+    });
+  }
+  scene3Flock.total = scene3Flock.sheep.length;
+  for (let i = 0; i < cfg.wolves; i++){
+    const ex = (29 + Math.floor(Math.random() * 5)) * TILE;   // enter from east/south
+    const ey = (MAP_H - 1) * TILE;
+    scene3Flock.wolves.push({ id: i, px: ex, py: ey, vx: 0, state: 'stalk', targetId: null, fleeUntil: 0, dir: -1 });
+  }
+  scene3Flock.spawned = true;
+}
+function _flockNearestGrazing(wx, wy){
+  let best = null, bestD = 1e9;
+  for (const s of scene3Flock.sheep){
+    if (s.state !== 'graze') continue;
+    const d = Math.hypot(s.px - wx, s.py - wy);
+    if (d < bestD){ bestD = d; best = s; }
+  }
+  return best;
+}
+function _flockFreeSheep(s){
+  s.state = 'freed'; s.freedAt = performance.now(); s.wolf = null;
+  scene3Flock.freed++;
+  const bags = (scene3Flock.cfg && scene3Flock.cfg.bagsPerSheep) || 28;
+  try { game.treasureBags = (game.treasureBags || 0) + bags; } catch(e){}
+  try { game.stars += 3; updateHudStars(); } catch(e){}
+  try { _addLifetimeTreasures(8); } catch(e){}
+  try { spawnGlitterBurstAtPlayer(14); } catch(e){}
+  try { if (audio.sheepBleat){ audio.sheepBleat.currentTime = 0; audio.sheepBleat.volume = 0.7; audio.sheepBleat.play().catch(()=>{}); } } catch(e){}
+  try { play('coin') || play('chime'); } catch(e){}
+  try { toast('🐑 Sheep freed! +' + bags + ' treasure for the rescue'); } catch(e){}
+}
+function _flockCheckDone(){
+  if (scene3Flock.done) return;
+  if (scene3Flock.freed + scene3Flock.lost >= scene3Flock.total && scene3Flock.total > 0){
+    scene3Flock.done = true;
+    try { play('success') || play('chime'); } catch(e){}
+    if (scene3Flock.lost === 0) toast('🎉 The whole flock is safe! ' + scene3Flock.freed + ' sheep freed — treasure ready for the rescue.');
+    else toast('Flock secured: ' + scene3Flock.freed + ' freed, ' + scene3Flock.lost + ' lost. Press on to the rescue!');
+  }
+}
+function updateScene3Flock(dt){
+  if (game.scene !== 2 || game.state !== 'playing') return;
+  // Lazy-spawn the moment Moses first steps into the pasture (col >= 23).
+  if (!scene3Flock.spawned){
+    if (player && player.tx >= 23){
+      initScene3Flock(game.difficulty || 'easy');
+      try { scene3Wolf.active = false; scene3Wolf.nextAt = performance.now() + 9e8; } catch(e){} // hush the lone ambient wolf
+      if (!scene3Flock.introShown){
+        scene3Flock.introShown = true;
+        try { if (audio.dog){ audio.dog.currentTime = 0; audio.dog.volume = 0.5; audio.dog.play().catch(()=>{}); } } catch(e){}
+        try { toast('🐺 Wolves are after Jethro\'s flock! Get close to a trapped sheep to drive the wolf off.'); } catch(e){}
+      }
+    }
+    return;
+  }
+  if (scene3Flock.done) return;
+  const now = performance.now();
+  const frozen = (window._guardFreezeUntil && now < window._guardFreezeUntil);
+  const shooR = TILE * 1.6;
+  for (const w of scene3Flock.wolves){
+    if (w.state === 'flee'){
+      w.py += 0.05 * dt; w.px += (w.vx || 0) * dt;
+      if (now >= w.fleeUntil){ w.state = 'stalk'; w.targetId = null; }
+      continue;
+    }
+    if (frozen) continue;
+    const dM = Math.hypot(player.px - w.px, player.py - w.py);
+    if (dM < shooR){
+      if (w.state === 'pinning' && w.targetId != null){
+        const s = scene3Flock.sheep[w.targetId];
+        if (s && s.state === 'pinned') _flockFreeSheep(s);
+      }
+      w.state = 'flee'; w.fleeUntil = now + 2600; w.targetId = null;
+      w.vx = (w.px < player.px ? -1 : 1) * 0.05;
+      try { if (audio.fox){ audio.fox.currentTime = 0; audio.fox.volume = 0.4; audio.fox.play().catch(()=>{}); } } catch(e){}
+      continue;
+    }
+    if (w.state === 'pinning'){
+      const s = scene3Flock.sheep[w.targetId];
+      if (!s || s.state !== 'pinned'){ w.state = 'stalk'; w.targetId = null; continue; }
+      w.px = s.px - TILE * 0.4; w.py = s.py;
+      if (scene3Flock.cfg.loseMs > 0 && now - s.pinnedAt > scene3Flock.cfg.loseMs){
+        s.state = 'lost'; s.loseAt = now; scene3Flock.lost++;
+        w.state = 'stalk'; w.targetId = null;
+        try { toast('A wolf dragged a sheep off! Be quicker next time.'); } catch(e){}
+        _flockCheckDone();
+      }
+      continue;
+    }
+    // stalk
+    const s = _flockNearestGrazing(w.px, w.py);
+    if (!s) continue;
+    const ang = Math.atan2(s.py - w.py, s.px - w.px);
+    const sp = scene3Flock.cfg.wolfSpeed * dt * TILE;
+    w.px += Math.cos(ang) * sp; w.py += Math.sin(ang) * sp;
+    w.dir = Math.cos(ang) < 0 ? -1 : 1;
+    if (Math.hypot(s.px - w.px, s.py - w.py) < TILE * 0.5){
+      s.state = 'pinned'; s.wolf = w; s.pinnedAt = now;
+      w.state = 'pinning'; w.targetId = s.id;
+      try { if (audio.sheepBleat){ audio.sheepBleat.currentTime = 0; audio.sheepBleat.volume = 0.6; audio.sheepBleat.play().catch(()=>{}); } } catch(e){}
+    }
+  }
+  for (const s of scene3Flock.sheep){
+    if (s.state === 'graze'){
+      if (now >= s.wanderAt){
+        s.wanderAt = now + 1200 + Math.random() * 2400;
+        const ntx = s.tx + (Math.random() < 0.5 ? -1 : 1);
+        if (_flockWalkable(ntx, s.ty)){ s.dir = ntx < s.tx ? -1 : 1; s.tx = ntx; }
+      }
+      s.px += (s.tx * TILE - s.px) * Math.min(1, dt / 220);
+      s.py += (s.ty * TILE - s.py) * Math.min(1, dt / 220);
+    } else if (s.state === 'freed'){
+      s.px += 0.06 * dt; s.dir = 1;
+      if (now - s.freedAt > 2600) s.state = 'gone';
+    } else if (s.state === 'lost'){
+      s.py += 0.07 * dt;
+      if (now - s.loseAt > 1800) s.state = 'gone';
+    }
+  }
+  _flockCheckDone();
+}
+function _drawFlockWolf(cx, cy, dir){
+  const sx = cx - camera.px, sy = cy - camera.py;
+  if (sx < -120 || sx > CANVAS_W + 120 || sy < -80 || sy > CANVAS_H + 80) return;
+  ctx.save();
+  const shimmer = 0.6 + 0.10 * Math.sin(performance.now() / 300);
+  if (dir > 0){ ctx.translate(sx, sy); ctx.scale(-1, 1); ctx.translate(-sx, -sy); }
+  ctx.fillStyle = `rgba(22,12,32,${shimmer})`;
+  ctx.beginPath(); ctx.ellipse(sx, sy, 20, 8, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(sx + 20, sy - 4, 8, 6, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(sx + 17, sy - 9); ctx.lineTo(sx + 20, sy - 15); ctx.lineTo(sx + 23, sy - 9); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(sx - 20, sy - 2); ctx.bezierCurveTo(sx - 28, sy - 6, sx - 30, sy - 2, sx - 26, sy + 4); ctx.lineTo(sx - 20, sy + 2); ctx.closePath(); ctx.fill();
+  ctx.fillRect(sx - 12, sy + 6, 2, 8); ctx.fillRect(sx - 4, sy + 7, 2, 8); ctx.fillRect(sx + 6, sy + 7, 2, 8); ctx.fillRect(sx + 13, sy + 6, 2, 8);
+  ctx.fillStyle = `rgba(255,200,80,${shimmer})`;
+  ctx.beginPath(); ctx.arc(sx + 24, sy - 5, 1.4, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawScene3Flock(){
+  if (game.scene !== 2 || !scene3Flock.spawned || typeof camera === 'undefined') return;
+  for (const s of scene3Flock.sheep){
+    if (s.state === 'gone') continue;
+    const dx = s.px - camera.px, dy = s.py - camera.py;
+    if (dx < -TILE || dx > CANVAS_W || dy < -TILE || dy > CANVAS_H) continue;
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath(); ctx.ellipse(dx + TILE/2, dy + TILE - 4, 12, 4, 0, 0, Math.PI*2); ctx.fill();
+    let img = IMG.sheep;
+    if (s.dir < 0 && IMG.sheepLeft) img = IMG.sheepLeft;
+    else if (s.dir > 0 && IMG.sheepRight) img = IMG.sheepRight;
+    const yoff = (s.state === 'pinned') ? Math.sin(performance.now() / 80) * 1.5 : 0;
+    if (img && img.complete && img.naturalWidth){
+      ctx.drawImage(img, dx, dy + yoff, TILE, TILE);
+    } else {
+      ctx.fillStyle = '#f2ead8'; ctx.fillRect(dx + 5, dy + 6, TILE - 10, TILE - 12);
+    }
+    if (s.state === 'pinned'){
+      ctx.fillStyle = '#ff5a4a'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('!', dx + TILE/2, dy - 2); ctx.textAlign = 'start';
+    }
+  }
+  for (const w of scene3Flock.wolves){
+    if (w.state === 'flee' && w.fleeUntil && performance.now() > w.fleeUntil + 4000) continue;
+    _drawFlockWolf(w.px + TILE * 0.5, w.py + TILE * 0.6, w.dir);
+  }
+}
+
 /* ===== PHASE C STEP 8 — RANDOM EVENTS ===== */
 
 /* --- 8A: Ram charge --- */
@@ -6928,6 +7137,7 @@ function startScene1() {
   if (typeof shufflePalaceLayout === 'function') shufflePalaceLayout();
   // v2.1: seed 9 mandatory challenges (4 zone checkpoints + 5 cliff ascents)
   seedChallenges(game.difficulty || 'easy');
+  try { resetScene3Flock(); } catch(e){}
   // v3.28: if a mid-game save exists, overwrite gate positions + scalars.
   try { _applyCheckpointAfterSeed(); } catch(e){}
   // v2.1: spawn Pharaoh pursuit scouts on west edge
@@ -7038,6 +7248,7 @@ function restartScene() {
   $('pulseVignette').classList.remove('alerted');
   // re-seed challenge gates (fresh questions!)
   seedChallenges(game.difficulty || 'easy');
+  try { resetScene3Flock(); } catch(e){}
   // v2.1 Scene 2: re-seed pursuit scouts + mirage traps + boulder schedule
   try { seedPursuitScouts(); } catch(e){}
   try { seedMirages(); } catch(e){}
@@ -14126,6 +14337,7 @@ function render(){
   try { drawStubbornGoat(); } catch(e){}
   // Scene 3: dusk wolf shadow — slinks along the south edge at twilight.
   try { drawScene3Wolf(); } catch(e){}
+  try { drawScene3Flock(); } catch(e){}
   // Scene 3: charging ram random event — dangerous pasture hazard.
   try { drawScene3Ram(); } catch(e){}
   // Scene 3: donkey caravan — marketplace ambience, gentle bump obstacle.
@@ -17209,6 +17421,7 @@ function loop(now){
     try { updateStubbornGoat(dt); } catch(e){}
     try { updateZipporahNPC(); } catch(e){}
     try { updateScene3Wolf(dt); } catch(e){}
+    try { updateScene3Flock(dt); } catch(e){}
     try { updateScene3Ram(dt); } catch(e){}
     try { _checkScene3JarDrop(); } catch(e){}
     try { updateScene3Caravan(dt); } catch(e){}
