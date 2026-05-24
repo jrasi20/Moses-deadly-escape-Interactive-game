@@ -10123,6 +10123,10 @@ function openChallenge(gate) {
       gate.bundleIndex = gi;
       try { play('success') || play('chime'); } catch(e){}
       try { spawnGlitterBurstAtPlayer(12); } catch(e){}
+      // Illusion of completion: a golden "checkpoint cleared" stamp appears above
+      // the modal (it fades on its own and never blocks taps), while the bonus
+      // game renders underneath — the kid still has to WIN it to claim the tile.
+      try { showCorrectAnswerFlash('✓ Checkpoint Cleared!'); } catch(e){}
       try { toast('🪶 Scribe\'s Wisdom — questions cleared! Now win the bonus game to claim your crystal tile.'); } catch(e){}
       // fall through — openChallenge now renders the 3rd-question mini-game.
     }

@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v27'; // v27: richer animated "wow" river (depth channel + caustics + sun-glints + bank foam + optional painted-texture hook); Scribe's Wisdom (Scene 3 only) fast-tracks to the checkpoint's bonus game — must win to claim the crystal; friendly river prompt (finish 3 checkpoints -> collect 3 tiles -> cross -> guide sheep); HUD crystal-tiles chip 💎 x/3
+const CACHE_VERSION = 'bek-bundle-v28'; // v28: Scribe's Wisdom shows a '✓ Checkpoint Cleared!' stamp (completion illusion) while dropping Moses into the bonus game — must still win to claim the crystal tile
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
