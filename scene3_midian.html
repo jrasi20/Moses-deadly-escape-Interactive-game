@@ -1068,6 +1068,44 @@
     .ch-sort-wrap { width:min(92vw, 520px); }
     .ch-sort-tile { width:clamp(40px,7vh,52px); height:clamp(40px,7vh,52px); font-size:clamp(20px,5vh,28px); }
   }
+
+  /* ---- Scene 3 Checkpoint-3 merge / 2048 (build the Moses story) ---- */
+  .ch-mg-wrap { width:min(78vw, 300px); margin:2px auto; }
+  .ch-mg-bar { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:0 2px 7px; font-size:clamp(11px,3.2vw,14px); color:#5a2b00; font-weight:800; }
+  .ch-mg-bar b { font-size:1.25em; }
+  .ch-mg-grid {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:clamp(4px,1.4vw,7px); width:100%; aspect-ratio:1/1;
+    background:linear-gradient(135deg,#caa06a,#b9854a); padding:clamp(4px,1.4vw,7px); border-radius:14px;
+    box-shadow:inset 0 2px 6px rgba(60,30,0,0.3);
+  }
+  .ch-mg-cell {
+    border-radius:10px; background:rgba(255,247,230,0.35); display:flex; align-items:center; justify-content:center;
+    font-size:clamp(20px,7vw,34px); line-height:1; box-shadow:inset 0 1px 2px rgba(0,0,0,0.12);
+  }
+  .ch-mg-cell.filled { box-shadow:0 2px 4px rgba(0,0,0,0.22), inset 0 2px 3px rgba(255,255,255,0.5); }
+  .ch-mg-cell.pop { animation:mgpop 0.16s ease; }
+  @keyframes mgpop { 0%{transform:scale(0.6);} 70%{transform:scale(1.12);} 100%{transform:scale(1);} }
+  .ch-mg-cell.tier1 { background:radial-gradient(circle at 35% 30%,#f3ffd9,#cde89a); }
+  .ch-mg-cell.tier2 { background:radial-gradient(circle at 35% 30%,#ffe9c9,#ffc78a); }
+  .ch-mg-cell.tier3 { background:radial-gradient(circle at 35% 30%,#ffe1ec,#ff9fc0); }
+  .ch-mg-cell.tier4 { background:radial-gradient(circle at 35% 30%,#d9f0ff,#8ec9ff); }
+  .ch-mg-cell.tier5 { background:radial-gradient(circle at 35% 30%,#f3e1ff,#c79cff); }
+  .ch-mg-cell.tier6 { background:radial-gradient(circle at 35% 30%,#fff6c8,#ffd84d); box-shadow:0 0 10px rgba(255,200,40,0.7), inset 0 2px 3px rgba(255,255,255,0.6); }
+  .ch-mg-cell.tier7 { background:radial-gradient(circle at 35% 30%,#ffe8c2,#ff9a3d); box-shadow:0 0 12px rgba(255,140,40,0.8), inset 0 2px 3px rgba(255,255,255,0.6); }
+  .ch-mg-pad { display:grid; grid-template-columns:repeat(3,1fr); grid-template-areas:". up ." "left down right"; gap:5px; width:min(64%,170px); margin:8px auto 0; }
+  .ch-mg-btn {
+    aspect-ratio:1/1; border:none; cursor:pointer; border-radius:12px; font-size:clamp(16px,5vw,22px); color:#fff;
+    background:linear-gradient(160deg,#3aa0d8,#2a78b8); box-shadow:0 2px 4px rgba(0,0,0,0.25), inset 0 2px 3px rgba(255,255,255,0.35);
+    transition:transform 0.1s;
+  }
+  .ch-mg-btn:active { transform:scale(0.9); }
+  .mg-up{grid-area:up;} .mg-left{grid-area:left;} .mg-down{grid-area:down;} .mg-right{grid-area:right;}
+  @media (orientation:landscape) and (max-height:520px) {
+    .ch-mg-wrap { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px; width:auto; }
+    .ch-mg-bar { flex-basis:100%; justify-content:center; gap:18px; }
+    .ch-mg-grid { width:min(46vh,260px); }
+    .ch-mg-pad { margin:0; width:min(28vh,150px); }
+  }
   /* -- COUNT: scene grid above, number buttons below -- */
   .ch-count-scene {
     display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
@@ -5971,7 +6009,7 @@ function _generateRandomChallengePositions(){
     // handler). Collect all 3 crystals to bridge the river at col 12.
     { col: [3, 7],   row: [8, 15], zone: 'market', label: 'Market Checkpoint', game3rd: 'match3' },
     { col: [5, 9],   row: [2, 8],  zone: 'market', label: 'Caravan Checkpoint', game3rd: 'sort' },
-    { col: [7, 11],  row: [15, 21], zone: 'market', label: 'West Bank Checkpoint' },
+    { col: [7, 11],  row: [15, 21], zone: 'market', label: 'West Bank Checkpoint', game3rd: 'merge' },
     // East bank (across the river) — the two mini-games, then Jethro's tent.
     { col: [15, 20], row: [9, 15], zone: 'well',    label: 'The Well — Water the Flock' },
     { col: [29, 33], row: [9, 15], zone: 'rescue',  label: 'Rescue the Daughters' },
@@ -9580,6 +9618,18 @@ function _buildScene3Game3rd(kind){
         items: items,
       };
     }
+    if (kind === 'merge') {
+      // 2048-style merge that retells Exodus 2: slide tiles to merge two of a
+      // kind up the story ladder (reeds -> basket -> baby Moses -> river ->
+      // princess -> crown -> palace). Reach the goal tier to win.
+      const goal = ({ easy: 5, medium: 6, hard: 7 })[game.difficulty] || 6;
+      return {
+        type: 'mergemoses',
+        q: 'Slide to merge! Join two matching tiles to climb the Moses story. Reach the goal tile to earn your crystal!',
+        correct: 0,
+        goal: goal,
+      };
+    }
   } catch(e){}
   return null;
 }
@@ -9820,6 +9870,136 @@ function renderSort(gate, q, container){
   }
 }
 
+// Checkpoint 3 — 2048-style MERGE that retells Exodus 2. Slide the 4x4 board
+// (arrow buttons / keyboard / swipe); equal neighbours merge up the story ladder
+// (reeds -> basket -> baby -> river -> princess -> crown -> palace). Reaching the
+// goal tier wins. Kid-friendly: a deadlocked board softly reshuffles (no penalty).
+function renderMerge2048(gate, q, container){
+  const SIZE = 4;
+  const TIERS = [ null,
+    {e:'🌾', n:'reeds'}, {e:'🧺', n:'basket'}, {e:'👶', n:'baby Moses'},
+    {e:'🌊', n:'river'}, {e:'👸', n:'princess'}, {e:'👑', n:'crown'}, {e:'🏛️', n:'palace'},
+  ];
+  const goal = Math.min(q.goal || 6, TIERS.length - 1);
+  let board = [], won = false, busy = false;
+  const empties = () => { const o=[]; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++) if(!board[r][c]) o.push([r,c]); return o; };
+  function spawn(){ const e=empties(); if(!e.length) return; const [r,c]=e[Math.floor(Math.random()*e.length)]; board[r][c]=Math.random()<0.85?1:2; }
+  function init(){ board=[]; for(let r=0;r<SIZE;r++){const row=[];for(let c=0;c<SIZE;c++)row.push(0);board.push(row);} spawn(); spawn(); }
+
+  function slide(line){ // toward index 0
+    const a=line.filter(v=>v);
+    for(let i=0;i<a.length-1;i++){ if(a[i]===a[i+1]){ a[i]++; a.splice(i+1,1); } }
+    while(a.length<SIZE) a.push(0);
+    return a;
+  }
+  function getLine(dir,i){
+    const L=[];
+    for(let k=0;k<SIZE;k++){
+      if(dir==='left')  L.push(board[i][k]);
+      if(dir==='right') L.push(board[i][SIZE-1-k]);
+      if(dir==='up')    L.push(board[k][i]);
+      if(dir==='down')  L.push(board[SIZE-1-k][i]);
+    }
+    return L;
+  }
+  function setLine(dir,i,L){
+    for(let k=0;k<SIZE;k++){
+      if(dir==='left')  board[i][k]=L[k];
+      if(dir==='right') board[i][SIZE-1-k]=L[k];
+      if(dir==='up')    board[k][i]=L[k];
+      if(dir==='down')  board[SIZE-1-k][i]=L[k];
+    }
+  }
+  function move(dir){
+    if(busy||won) return;
+    const before=JSON.stringify(board);
+    for(let i=0;i<SIZE;i++) setLine(dir,i,slide(getLine(dir,i)));
+    if(JSON.stringify(board)===before){ try{play('pop');}catch(e){} return; }
+    spawn();
+    try{play('tap');}catch(e){}
+    draw();
+    // win?
+    let best=0; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++) best=Math.max(best,board[r][c]);
+    if(best>=goal){ win(); return; }
+    if(!canMove()){ // soft reshuffle, no penalty
+      try{ toast('Board full — fresh tiles!'); }catch(e){}
+      const keep=[]; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++) if(board[r][c]) keep.push(board[r][c]);
+      keep.sort((a,b)=>b-a);
+      init();
+      // re-seed a couple of the best tiles so progress isn't fully lost
+      if(keep[0]) board[0][0]=keep[0]; if(keep[1]) board[SIZE-1][SIZE-1]=keep[1];
+      draw();
+    }
+  }
+  function canMove(){
+    if(empties().length) return true;
+    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+      if(c+1<SIZE && board[r][c]===board[r][c+1]) return true;
+      if(r+1<SIZE && board[r][c]===board[r+1][c]) return true;
+    }
+    return false;
+  }
+
+  container.innerHTML='';
+  const wrap=document.createElement('div'); wrap.className='ch-mg-wrap';
+  const bar=document.createElement('div'); bar.className='ch-mg-bar';
+  const goalChip=document.createElement('div'); goalChip.className='ch-mg-goal';
+  goalChip.innerHTML='Goal: <b>'+TIERS[goal].e+'</b> '+TIERS[goal].n;
+  const bestChip=document.createElement('div'); bestChip.className='ch-mg-best';
+  bar.appendChild(goalChip); bar.appendChild(bestChip); wrap.appendChild(bar);
+  const grid=document.createElement('div'); grid.className='ch-mg-grid'; wrap.appendChild(grid);
+  const pad=document.createElement('div'); pad.className='ch-mg-pad';
+  [['up','▲'],['left','◀'],['down','▼'],['right','▶']].forEach(([d,sym])=>{
+    const b=document.createElement('button'); b.className='ch-mg-btn mg-'+d; b.textContent=sym;
+    b.setAttribute('aria-label','slide '+d); b.addEventListener('click',()=>move(d)); pad.appendChild(b);
+  });
+  wrap.appendChild(pad); container.appendChild(wrap);
+
+  function draw(){
+    grid.innerHTML='';
+    let best=0;
+    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+      const v=board[r][c]; best=Math.max(best,v);
+      const cell=document.createElement('div'); cell.className='ch-mg-cell'+(v?(' filled tier'+v):'');
+      if(v){ cell.textContent=TIERS[v]?TIERS[v].e:'?'; cell.setAttribute('aria-label',TIERS[v]?TIERS[v].n:''); cell.classList.add('pop'); }
+      grid.appendChild(cell);
+    }
+    bestChip.innerHTML='Best: <b>'+(best&&TIERS[best]?TIERS[best].e:'–')+'</b>';
+  }
+  function win(){
+    won=true; busy=true; cleanup();
+    try{ play('levelUp')||play('success'); }catch(e){}
+    try{ if(typeof spawnGlitterBurstAtPlayer==='function') spawnGlitterBurstAtPlayer(34); }catch(e){}
+    setTimeout(()=>{ try{ handleChallengeAnswer(gate,0,wrap,{answerLabel:'STORY BUILT!'}); }catch(e){} }, 360);
+  }
+
+  // input: keyboard arrows + swipe on the grid
+  function onKey(e){
+    if(!document.body.contains(grid)){ cleanup(); return; }
+    const m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[e.key];
+    if(m){ e.preventDefault(); move(m); }
+  }
+  let tsx=0,tsy=0;
+  function onTS(e){ const t=e.changedTouches?e.changedTouches[0]:e; tsx=t.clientX; tsy=t.clientY; }
+  function onTE(e){ const t=e.changedTouches?e.changedTouches[0]:e; const dx=t.clientX-tsx, dy=t.clientY-tsy;
+    if(Math.max(Math.abs(dx),Math.abs(dy))<24) return;
+    move(Math.abs(dx)>Math.abs(dy) ? (dx>0?'right':'left') : (dy>0?'down':'up'));
+  }
+  function cleanup(){ document.removeEventListener('keydown',onKey); }
+  document.addEventListener('keydown',onKey);
+  grid.addEventListener('touchstart',onTS,{passive:true});
+  grid.addEventListener('touchend',onTE,{passive:true});
+
+  init(); draw();
+
+  // Truth Seeker power-up: gift a high tile (one below the goal) as a head start.
+  if (window._truthSeekerArmed){
+    window._truthSeekerArmed=false;
+    const e=empties(); if(e.length){ const [r,c]=e[0]; board[r][c]=Math.max(1,goal-1); draw(); }
+    try{ toast('📖 Truth Seeker: a powerful '+(TIERS[Math.max(1,goal-1)].e)+' tile appears!'); }catch(e){}
+  }
+}
+
 function openChallenge(gate) {
   // Phase C Step 7: Well gate → pulley mini-game instead of trivia
   if (gate && gate.zone === 'well') { openWellPulleyGame(gate); return; }
@@ -9953,6 +10133,7 @@ function openChallenge(gate) {
     else if (q.type === 'pictionary') { renderPictionary(gate, q, opts); }
     else if (q.type === 'm3moses')    { renderMatch3(gate, q, opts); }
     else if (q.type === 'sortmoses')  { renderSort(gate, q, opts); }
+    else if (q.type === 'mergemoses') { renderMerge2048(gate, q, opts); }
     else {
       // trivia / fill / tf -> MCQ-style buttons
       (q.options || []).forEach((opt, i) => {
@@ -10892,7 +11073,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
   // For trivia/fill/tf: correctness is index === q.correct
   // For unscramble/match/sequence: caller passes index=0 if correct, -1 if wrong
   let correct;
-  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count','slider','spotdiff','pictionary','m3moses','sortmoses','game3'];
+  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count','slider','spotdiff','pictionary','m3moses','sortmoses','mergemoses'];
   if (CUSTOM_TYPES.indexOf(q.type) !== -1) {
     correct = (index === 0);
   } else {
