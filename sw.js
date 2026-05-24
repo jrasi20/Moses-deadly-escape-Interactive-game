@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v25'; // v25: Scene 3 Checkpoint-3 3rd-question = 2048-style merge retelling Exodus 2 (reeds->basket->baby->river->princess->crown->palace); arrow/keyboard/swipe, scene-3 only, responsive
+const CACHE_VERSION = 'bek-bundle-v26'; // v26: fix portrait overflow on Scene-3 mini-games (container-relative widths, no right cutoff); add how-to-play clues to all 3 games; Scribe's Wisdom now skips ONE question (not whole checkpoint) so crystals always require real engagement
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
