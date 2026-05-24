@@ -4231,46 +4231,30 @@ function drawZipporahNPC() {
    the top cascades into the stream. Shepherds CANNOT cross the stream —
    when Moses triggers a chase, the stream becomes his escape route.
    ========================================================================== */
-const SCENE3_STREAM_COL = 12;
+const SCENE3_STREAM_COL = 12;          // centre column (waterfall + legacy refs)
+const SCENE3_STREAM_COL_MIN = 11;      // river now spans 3 columns (11,12,13)
+const SCENE3_STREAM_COL_MAX = 13;
 const SCENE3_STREAM_TOP = 1;
 const SCENE3_STREAM_BOT = 23;
-// Stepping stones — these specific (tx, ty) tiles let Moses (and only Moses)
-// cross the stream. Every other stream tile is impassable.
-// Phase C: 7 stones at rows 8-14 per thrill spec (stream crossing mini-game).
-// All 7 are passable now; Phase C step 3 will add the safe/sinking cycle.
-const SCENE3_STEPPING_STONES = [
-  { tx: 12, ty:  8 },
-  { tx: 12, ty:  9 },
-  { tx: 12, ty: 10 },
-  { tx: 12, ty: 11 },
-  { tx: 12, ty: 12 },
-  { tx: 12, ty: 13 },
-  { tx: 12, ty: 14 },
-];
-// Phase C Step 3 — safe/sinking cycle.
-// 3 pre-set patterns rotate every 4 s so kids can read the path before stepping.
-// Each pattern names the 2 stone INDICES (0-6) that will sink in that phase.
-const SCENE3_STONE_CYCLE_MS = 4000;
-const SCENE3_SINK_PATTERNS = [
-  [0, 4],  // rows 8 & 12 sink
-  [2, 5],  // rows 10 & 13 sink
-  [1, 6],  // rows 9 & 14 sink
-];
+// Stepping stones — these (tx,ty) tiles let Moses (and only Moses) cross once the
+// crossing is "built" (3 crystal tiles earned). The 3-wide river is forded by a
+// 3-row × 3-col band of stones (rows 11-13 across cols 11-13), centred on Moses's
+// start row (12). Open water shows above and below the ford for the "wow" look.
+const SCENE3_STEPPING_STONES = (function(){
+  const out = [];
+  for (let ty = 11; ty <= 13; ty++) for (let tx = SCENE3_STREAM_COL_MIN; tx <= SCENE3_STREAM_COL_MAX; tx++) out.push({ tx, ty });
+  return out;
+})();
 // Track whether we've shown the "read the path" Bible tip yet this run.
 let _scene3StoneTipShown = false;
-function _scene3SinkPhase() {
-  return Math.floor(performance.now() / SCENE3_STONE_CYCLE_MS) % SCENE3_SINK_PATTERNS.length;
-}
-function getScene3SinkingIndices() {
-  return SCENE3_SINK_PATTERNS[_scene3SinkPhase()];
-}
-function isScene3SinkingStone(tx, ty) {
-  const idx = SCENE3_STEPPING_STONES.findIndex(s => s.tx === tx && s.ty === ty);
-  if (idx === -1) return false;
-  return getScene3SinkingIndices().includes(idx);
-}
+// Scene 3's crossing is EARNED (3 crystals), so it is solid — no sinking-stone
+// penalty here (that was a Scene-2 chase thrill). Kept as a stub returning false
+// so the draw + crossing code can call it unchanged.
+function isScene3SinkingStone(tx, ty) { return false; }
+function getScene3SinkingIndices() { return []; }
 function isScene3StreamTile(tx, ty){
-  return (tx === SCENE3_STREAM_COL && ty >= SCENE3_STREAM_TOP && ty <= SCENE3_STREAM_BOT);
+  return (tx >= SCENE3_STREAM_COL_MIN && tx <= SCENE3_STREAM_COL_MAX &&
+          ty >= SCENE3_STREAM_TOP && ty <= SCENE3_STREAM_BOT);
 }
 function isScene3SteppingStone(tx, ty){
   for (const s of SCENE3_STEPPING_STONES) {
@@ -4289,6 +4273,19 @@ function isScene3StreamBlocker(tx, ty, allowSteppingStones){
   if (allowSteppingStones && isScene3SteppingStone(tx, ty) && _scene3CrystalCount() >= 3) return false;
   return true;
 }
+
+// Auto-load the OPTIONAL painted river texture if it exists, silently falling
+// back to the procedural water on 404 (no manifest edit needed). Drop a seamless,
+// vertically-tileable tile at assets/images/river water.png to upgrade the look.
+(function _loadRiverTexture(){
+  try {
+    if (typeof IMG === 'undefined') return;
+    const im = new Image();
+    im.onload  = () => { IMG.riverWater = im; };
+    im.onerror = () => {};
+    im.src = 'assets/images/river%20water.png';
+  } catch(e){}
+})();
 
 // Deterministic 0..1 pseudo-noise for twinkle/sparkle placement (no per-frame
 // allocation, stable per cell so glints don't jitter randomly each frame).
@@ -4313,12 +4310,14 @@ function drawScene3Stream(){
   const darkWater  = `rgba( 30,  80, 140, ${0.95})`;
   const foam       = `rgba(255, 255, 255, ${0.55})`;
   for (let ty = SCENE3_STREAM_TOP; ty <= SCENE3_STREAM_BOT; ty++) {
-    const tx = SCENE3_STREAM_COL;
+   for (let tx = SCENE3_STREAM_COL_MIN; tx <= SCENE3_STREAM_COL_MAX; tx++) {
     const dx = tx * TILE - camera.px;
     const dy = ty * TILE - camera.py;
     if (dx < -TILE*2 || dx > CANVAS_W + TILE) continue;
     if (dy < -TILE*2 || dy > CANVAS_H + TILE) continue;
     const isStone = isScene3SteppingStone(tx, ty);
+    const isLeftEdge  = (tx === SCENE3_STREAM_COL_MIN);  // west bank
+    const isRightEdge = (tx === SCENE3_STREAM_COL_MAX);  // east bank
     // ================================================================
     // WOW WATER — layered animated river (carved-channel depth + sky
     // reflection + additive caustics + twinkling sun-glints + bank foam).
@@ -4331,22 +4330,35 @@ function drawScene3Stream(){
     const wy = ty * TILE; // world-space y of this tile's top
 
     if (hasRiverTex) {
-      const off = (now / 26) % TILE;              // downstream scroll
+      // base flow: texture drawn twice for a seamless vertical scroll
+      const off = (now / 26) % TILE;
       ctx.drawImage(IMG.riverWater, dx, dy - TILE + off, TILE, TILE);
       ctx.drawImage(IMG.riverWater, dx, dy + off, TILE, TILE);
+      // parallax 2nd layer (slower + slightly scaled) -> shimmering depth
+      ctx.globalAlpha = 0.42;
+      const off2 = (now / 60) % TILE;
+      ctx.drawImage(IMG.riverWater, dx - TILE*0.06, dy - TILE + off2, TILE*1.12, TILE);
+      ctx.drawImage(IMG.riverWater, dx - TILE*0.06, dy + off2, TILE*1.12, TILE);
+      ctx.globalAlpha = 1;
+      // depth shade deepening toward the centre column
+      let s0, s1;
+      if (isLeftEdge)       { s0 = 0.0;  s1 = 0.30; }
+      else if (isRightEdge) { s0 = 0.30; s1 = 0.0;  }
+      else                  { s0 = 0.26; s1 = 0.26; }
+      const k = 0.6 + dusk * 0.5;
       const sh = ctx.createLinearGradient(dx, 0, dx + TILE, 0);
-      sh.addColorStop(0.0, 'rgba(8,36,66,0)');
-      sh.addColorStop(0.5, `rgba(8,36,66,${0.16 + dusk*0.18})`);
-      sh.addColorStop(1.0, 'rgba(8,36,66,0)');
+      sh.addColorStop(0.0, `rgba(8,36,66,${s0 * k})`);
+      sh.addColorStop(1.0, `rgba(8,36,66,${s1 * k})`);
       ctx.fillStyle = sh; ctx.fillRect(dx, dy, TILE, TILE);
     } else {
-      // carved channel: lighter at the banks, deep + dark down the middle
+      // cohesive 3-wide carved channel: light at the two outer banks, deep dark
+      // through the middle column. Each tile paints its slice of that gradient.
       const ch = ctx.createLinearGradient(dx, 0, dx + TILE, 0);
-      ch.addColorStop(0.0, lightWater);
-      ch.addColorStop(0.5, darkWater);
-      ch.addColorStop(1.0, lightWater);
+      if (isLeftEdge)       { ch.addColorStop(0.0, lightWater); ch.addColorStop(1.0, darkWater); }
+      else if (isRightEdge) { ch.addColorStop(0.0, darkWater);  ch.addColorStop(1.0, lightWater); }
+      else                  { ch.addColorStop(0.0, darkWater);  ch.addColorStop(0.5, darkWater); ch.addColorStop(1.0, darkWater); }
       ctx.fillStyle = ch; ctx.fillRect(dx, dy, TILE, TILE);
-      ctx.fillStyle = midWater; ctx.fillRect(dx + TILE*0.15, dy, TILE*0.70, TILE);
+      if (!isLeftEdge && !isRightEdge) { ctx.fillStyle = midWater; ctx.fillRect(dx + TILE*0.12, dy, TILE*0.76, TILE); }
     }
 
     // sky-reflection wash (cooler at dusk), subtle
@@ -4401,8 +4413,9 @@ function drawScene3Stream(){
     ctx.beginPath();
     for (let k = -1; k < 2; k++) {
       const yy = dy + fY + k * TILE * 0.5;
-      ctx.moveTo(dx + TILE*0.05, yy);      ctx.lineTo(dx + TILE*0.15, yy - 3);
-      ctx.moveTo(dx + TILE*0.85, yy + 4);  ctx.lineTo(dx + TILE*0.95, yy + 1);
+      // foam only along the two OUTER banks of the 3-wide river
+      if (isLeftEdge)  { ctx.moveTo(dx + TILE*0.05, yy);     ctx.lineTo(dx + TILE*0.15, yy - 3); }
+      if (isRightEdge) { ctx.moveTo(dx + TILE*0.85, yy + 4); ctx.lineTo(dx + TILE*0.95, yy + 1); }
     }
     ctx.stroke();
     ctx.restore();
@@ -4486,12 +4499,14 @@ function drawScene3Stream(){
       }
       ctx.restore();
     }
+   }
   }
   // ---- WATERFALL at the top of the stream (cascades from off-map row 0
   //      into row 1). Cascading lines + spray particles + spotlight halo.
-  const wfDx = SCENE3_STREAM_COL * TILE - camera.px;
   const wfDy = (SCENE3_STREAM_TOP - 1) * TILE - camera.py;
-  if (wfDx > -TILE*2 && wfDx < CANVAS_W + TILE && wfDy > -TILE*4 && wfDy < CANVAS_H) {
+  for (let wcol = SCENE3_STREAM_COL_MIN; wcol <= SCENE3_STREAM_COL_MAX; wcol++) {
+   const wfDx = wcol * TILE - camera.px;
+   if (wfDx > -TILE*2 && wfDx < CANVAS_W + TILE && wfDy > -TILE*4 && wfDy < CANVAS_H) {
     ctx.save();
     // halo behind the falls
     const halo = ctx.createRadialGradient(
@@ -4528,6 +4543,7 @@ function drawScene3Stream(){
       ctx.fill();
     }
     ctx.restore();
+   }
   }
 }
 
@@ -6084,7 +6100,7 @@ function _generateRandomChallengePositions(){
     // handler). Collect all 3 crystals to bridge the river at col 12.
     { col: [3, 7],   row: [8, 15], zone: 'market', label: 'Market Checkpoint', game3rd: 'match3' },
     { col: [5, 9],   row: [2, 8],  zone: 'market', label: 'Caravan Checkpoint', game3rd: 'sort' },
-    { col: [7, 11],  row: [15, 21], zone: 'market', label: 'West Bank Checkpoint', game3rd: 'merge' },
+    { col: [7, 10],  row: [15, 21], zone: 'market', label: 'West Bank Checkpoint', game3rd: 'merge' },
     // East bank (across the river) — the two mini-games, then Jethro's tent.
     { col: [15, 20], row: [9, 15], zone: 'well',    label: 'The Well — Water the Flock' },
     { col: [29, 33], row: [9, 15], zone: 'rescue',  label: 'Rescue the Daughters' },
@@ -6131,6 +6147,7 @@ function _generateRandomChallengePositions(){
       const ty = rMin + Math.floor(Math.random() * (rMax - rMin + 1));
       if (typeof MAP === 'undefined' || !MAP[ty]) continue;
       if (MAP[ty][tx] !== 0) continue;
+      if (typeof isScene3StreamTile === 'function' && isScene3StreamTile(tx, ty)) continue; // never on the river
       if (tooNear(tx, ty)) continue;
       pick = { tx, ty };
     }
@@ -6138,7 +6155,7 @@ function _generateRandomChallengePositions(){
     if (!pick) {
       for (let ty = rMin; ty <= rMax && !pick; ty++) {
         for (let tx = cMin; tx <= cMax && !pick; tx++) {
-          if (MAP[ty] && MAP[ty][tx] === 0) pick = { tx, ty };
+          if (MAP[ty] && MAP[ty][tx] === 0 && !(typeof isScene3StreamTile === 'function' && isScene3StreamTile(tx, ty))) pick = { tx, ty };
         }
       }
     }
@@ -6615,7 +6632,7 @@ function attemptMove(dir) {
           }
         }
       }
-      if (game.streamChaseActive && player.tx > SCENE3_STREAM_COL && !game._chaseEscaped) {
+      if (game.streamChaseActive && player.tx > SCENE3_STREAM_COL_MAX && !game._chaseEscaped) {
         game._chaseEscaped = true;
         game.streamChaseActive = false;
         for (const s of pursuitScouts) { s.chaseMode = false; }
@@ -14436,7 +14453,7 @@ const SCENE3_FLOCK = [
   { tx: 23, ty: 17, kind: 'lamb',  dir: 'right', alt: false },
   { tx: 26, ty: 19, kind: 'sheep', dir: 'left'  },
   { tx: 18, ty: 20, kind: 'lamb',  dir: 'down',  alt: true  },
-  { tx: 13, ty: 21, kind: 'sheep', dir: 'right' },
+  { tx: 15, ty: 21, kind: 'sheep', dir: 'right' },
 ];
 function drawScene3Flock(){
   if (typeof camera === 'undefined' || typeof TILE === 'undefined') return;
