@@ -991,6 +991,45 @@
   .ch-pair-tile img { width:50px; height:50px; object-fit:contain; pointer-events:none; }
   .ch-pair-tile:hover { transform:translateY(-3px); background:#fff1c2; }
   .ch-pair-tile:active { transform:scale(0.96); }
+
+  /* ---- Scene 3 Checkpoint-1 match-3 (Candy-Crush style, Moses-story tiles) ---- */
+  .ch-m3-wrap { width:min(92vw, 380px); margin:4px auto 2px; }
+  .ch-m3-bar { display:flex; align-items:center; gap:10px; margin:0 2px 8px; }
+  .ch-m3-score { font-weight:900; color:#5a2b00; font-size:clamp(13px,3.6vw,17px); white-space:nowrap; }
+  .ch-m3-prog { flex:1; height:12px; background:rgba(122,74,0,0.18); border-radius:99px; overflow:hidden; border:1px solid rgba(122,74,0,0.3); }
+  .ch-m3-prog-fill { height:100%; width:0%; border-radius:99px; background:linear-gradient(90deg,#36d1ff,#6ad7a0,#ffd34d); transition:width 0.35s ease; }
+  .ch-m3-grid {
+    display:grid; grid-template-columns:repeat(var(--m3-cols,6), 1fr);
+    gap:clamp(3px,1.2vw,6px); width:100%;
+    background:linear-gradient(135deg,#fff7e6,#ffe9c7);
+    padding:clamp(5px,1.6vw,9px); border-radius:14px; border:2px solid #c98a3a;
+    box-shadow:inset 0 2px 6px rgba(122,74,0,0.18);
+  }
+  .ch-m3-tile {
+    aspect-ratio:1/1; width:100%; padding:0; border:none; cursor:pointer;
+    border-radius:11px; font-size:clamp(16px,5.2vw,30px); line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 4px rgba(0,0,0,0.18), inset 0 -3px 6px rgba(0,0,0,0.12), inset 0 2px 3px rgba(255,255,255,0.55);
+    transition:transform 0.12s, box-shadow 0.12s, filter 0.12s;
+  }
+  .ch-m3-tile:active { transform:scale(0.9); }
+  .ch-m3-tile.t0 { background:radial-gradient(circle at 35% 30%,#eaf6ff,#9cd3ff); }
+  .ch-m3-tile.t1 { background:radial-gradient(circle at 35% 30%,#fff0cf,#ffcf6b); }
+  .ch-m3-tile.t2 { background:radial-gradient(circle at 35% 30%,#ffe2c4,#ff9f5a); }
+  .ch-m3-tile.t3 { background:radial-gradient(circle at 35% 30%,#e6f8c8,#a7df6b); }
+  .ch-m3-tile.t4 { background:radial-gradient(circle at 35% 30%,#f3e6ff,#c79cff); }
+  .ch-m3-tile.t5 { background:radial-gradient(circle at 35% 30%,#ffe0ea,#ff9bb6); }
+  .ch-m3-tile.sel { transform:scale(1.09); box-shadow:0 0 0 3px #ff5fa2, 0 3px 8px rgba(0,0,0,0.3); filter:brightness(1.08); z-index:2; }
+  .ch-m3-tile.hint { animation:m3hint 0.7s ease-in-out infinite; }
+  .ch-m3-tile.nudge { animation:m3nudge 0.22s ease; }
+  .ch-m3-tile.crush { animation:m3crush 0.26s ease forwards; }
+  @keyframes m3hint { 0%,100%{ box-shadow:0 0 0 2px #36d1ff; } 50%{ box-shadow:0 0 10px 4px #36d1ff; transform:scale(1.06);} }
+  @keyframes m3nudge { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);} }
+  @keyframes m3crush { 0%{transform:scale(1);} 40%{transform:scale(1.25) rotate(8deg); filter:brightness(1.7);} 100%{transform:scale(0); filter:brightness(2.2);} }
+  @media (orientation:landscape) and (max-height:520px) {
+    .ch-m3-wrap { width:min(58vh, 340px); }
+    .ch-m3-tile { font-size:clamp(14px,4vh,26px); }
+  }
   /* -- COUNT: scene grid above, number buttons below -- */
   .ch-count-scene {
     display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
@@ -5892,7 +5931,7 @@ function _generateRandomChallengePositions(){
     // West bank (market, cols 3-11) — the 3 Bible Checkpoints. Clearing each
     // awards a crystal stepping-stone + money bags (see the checkpoint-clear
     // handler). Collect all 3 crystals to bridge the river at col 12.
-    { col: [3, 7],   row: [8, 15], zone: 'market', label: 'Market Checkpoint' },
+    { col: [3, 7],   row: [8, 15], zone: 'market', label: 'Market Checkpoint', game3rd: 'match3' },
     { col: [5, 9],   row: [2, 8],  zone: 'market', label: 'Caravan Checkpoint' },
     { col: [7, 11],  row: [15, 21], zone: 'market', label: 'West Bank Checkpoint' },
     // East bank (across the river) — the two mini-games, then Jethro's tent.
@@ -5954,7 +5993,7 @@ function _generateRandomChallengePositions(){
     }
     // Last resort: band centre, so a stop is never silently dropped.
     if (!pick) pick = { tx: Math.round((cMin + cMax) / 2), ty: Math.round((rMin + rMax) / 2) };
-    out.push({ tx: pick.tx, ty: pick.ty, kind: 'zone', zone: s.zone, label: s.label });
+    out.push({ tx: pick.tx, ty: pick.ty, kind: 'zone', zone: s.zone, label: s.label, game3rd: s.game3rd || null });
   }
   return out;
 }
@@ -6093,8 +6132,15 @@ function seedChallenges(difficulty) {
     const q1 = cycle(knowledgeQueues); if (q1) bundle.push(q1);
     // slot 2: word challenge (fill/unscramble/match/sequence)
     const q2 = cycle(wordQueues); if (q2) bundle.push(q2);
-    // slot 3: visual challenge (pair/count/spot/memory/maze)
-    const q3 = cycle(visualQueues); if (q3) bundle.push(q3);
+    // slot 3: visual challenge (pair/count/spot/memory/maze) — EXCEPT Scene 3's
+    // tagged market checkpoints, which get a bespoke Exodus-themed mini-game
+    // (match-3 / sort / etc). This override is local to scene3_midian.html, so
+    // Scenes 1 & 2 keep their standard random-of-11 model untouched.
+    let q3;
+    const _g3 = gatePool[i] && gatePool[i].game3rd;
+    if (_g3 && typeof _buildScene3Game3rd === 'function') q3 = _buildScene3Game3rd(_g3);
+    if (!q3) q3 = cycle(visualQueues);
+    if (q3) bundle.push(q3);
     // If we ran out of any family, pad from the full pool.
     while (bundle.length < CHALLENGES_PER_GATE) {
       const all = [].concat(
@@ -9449,6 +9495,178 @@ function _scene3CrystalCount(){
   } catch(e){ return 0; }
 }
 
+// ======================================================================
+// SCENE 3 — bespoke 3rd-question mini-games (Exodus 1 & 2 themed).
+// One per west-bank market checkpoint, injected into seedChallenges slot 3.
+// These live in scene3_midian.html only, so Scenes 1 & 2 keep the standard
+// random-of-11 challenge model. On win each calls handleChallengeAnswer(gate,
+// 0, ...) — the unified "correct" path — which clears the 3rd question, finishes
+// the checkpoint, and awards the crystal stepping-stone + money bags.
+// ======================================================================
+function _buildScene3Game3rd(kind){
+  try {
+    if (kind === 'match3') {
+      const target = ({ easy: 6, medium: 9, hard: 12 })[game.difficulty] || 9;
+      return {
+        type: 'm3moses',
+        q: 'Match-3! Swap two neighbours to line up 3 of the same tile. Crush ' + target + ' tiles to earn your crystal!',
+        correct: 0,
+        target: target,
+      };
+    }
+  } catch(e){}
+  return null;
+}
+
+// Candy-Crush-style match-3 on Moses-story tiles (sheep, staff, basket, reeds,
+// crown, pyramid). Tap a tile then an adjacent tile to swap; 3-in-a-row crushes
+// with a glitter burst, tiles fall and refill (cascades count too). Reaching the
+// crush target wins. Kid-friendly: bad swaps just bounce back (no penalty).
+function renderMatch3(gate, q, container){
+  const ROWS = 6, COLS = 6;
+  const TYPES = [
+    { e:'🐑', name:'sheep' },
+    { e:'🦯', name:'shepherd staff' },
+    { e:'🧺', name:'papyrus basket' },
+    { e:'🌾', name:'reeds' },
+    { e:'👑', name:'crown' },
+    { e:'🔺', name:'pyramid' },
+  ];
+  const N = TYPES.length;
+  const target = q.target || 9;
+  let crushed = 0, sel = null, busy = false, board = [];
+  const rnd = () => Math.floor(Math.random() * N);
+
+  function gen(){
+    board = [];
+    for (let r=0;r<ROWS;r++){ const row=[]; for(let c=0;c<COLS;c++){
+      let t, guard=0;
+      do { t = rnd(); guard++; } while (guard<25 && (
+        (c>=2 && row[c-1]===t && row[c-2]===t) ||
+        (r>=2 && board[r-1][c]===t && board[r-2][c]===t)
+      ));
+      row.push(t);
+    } board.push(row); }
+  }
+  function findMatches(){
+    const hit = new Set();
+    for (let r=0;r<ROWS;r++){ let run=1; for(let c=1;c<=COLS;c++){
+      if (c<COLS && board[r][c]===board[r][c-1]) run++;
+      else { if (run>=3) for(let k=1;k<=run;k++) hit.add(r+','+(c-k)); run=1; }
+    }}
+    for (let c=0;c<COLS;c++){ let run=1; for(let r=1;r<=ROWS;r++){
+      if (r<ROWS && board[r][c]===board[r-1][c]) run++;
+      else { if (run>=3) for(let k=1;k<=run;k++) hit.add((r-k)+','+c); run=1; }
+    }}
+    return hit;
+  }
+  function collapse(){
+    for (let c=0;c<COLS;c++){
+      let write=ROWS-1;
+      for (let r=ROWS-1;r>=0;r--){ if (board[r][c]!==null){ board[write][c]=board[r][c]; if(write!==r) board[r][c]=null; write--; } }
+      for (let r=write;r>=0;r--) board[r][c]=rnd();
+    }
+  }
+  function resolve(){
+    let total=0, m=findMatches();
+    while (m.size){
+      total += m.size;
+      m.forEach(k=>{ const p=k.split(',').map(Number); board[p[0]][p[1]]=null; });
+      collapse();
+      m=findMatches();
+    }
+    return total;
+  }
+  function findHint(){
+    for (let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const tries=[];
+      if (c+1<COLS) tries.push([r,c,r,c+1]);
+      if (r+1<ROWS) tries.push([r,c,r+1,c]);
+      for (const t of tries){
+        const tmp=board[t[0]][t[1]]; board[t[0]][t[1]]=board[t[2]][t[3]]; board[t[2]][t[3]]=tmp;
+        const has=findMatches().size>0;
+        const tmp2=board[t[0]][t[1]]; board[t[0]][t[1]]=board[t[2]][t[3]]; board[t[2]][t[3]]=tmp2;
+        if (has) return { a:{r:t[0],c:t[1]}, b:{r:t[2],c:t[3]} };
+      }
+    }
+    return null;
+  }
+
+  container.innerHTML='';
+  const wrap = document.createElement('div'); wrap.className='ch-m3-wrap';
+  const bar = document.createElement('div'); bar.className='ch-m3-bar';
+  const score = document.createElement('div'); score.className='ch-m3-score';
+  const prog = document.createElement('div'); prog.className='ch-m3-prog';
+  const pfill = document.createElement('div'); pfill.className='ch-m3-prog-fill'; prog.appendChild(pfill);
+  bar.appendChild(score); bar.appendChild(prog); wrap.appendChild(bar);
+  const grid = document.createElement('div'); grid.className='ch-m3-grid';
+  grid.style.setProperty('--m3-cols', COLS);
+  wrap.appendChild(grid); container.appendChild(wrap);
+
+  gen(); let _g=0; while(!findHint() && _g++<10) gen();
+
+  const cellEl = (r,c) => grid.children[r*COLS+c];
+  function updBar(){
+    score.textContent = '💎 ' + Math.min(crushed,target) + ' / ' + target;
+    pfill.style.width = Math.min(100,(crushed/target)*100) + '%';
+  }
+  function draw(){
+    grid.innerHTML='';
+    for (let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const b=document.createElement('button');
+      b.className='ch-m3-tile t'+board[r][c]+(sel&&sel.r===r&&sel.c===c?' sel':'');
+      b.textContent=TYPES[board[r][c]].e;
+      b.setAttribute('aria-label',TYPES[board[r][c]].name);
+      b.addEventListener('click',()=>onTap(r,c));
+      grid.appendChild(b);
+    }
+    updBar();
+  }
+  function flashCrush(keys){ keys.forEach(k=>{ const p=k.split(',').map(Number); const el=cellEl(p[0],p[1]); if(el) el.classList.add('crush'); }); }
+  function win(){
+    busy=true;
+    try{ play('levelUp')||play('success'); }catch(e){}
+    try{ if(typeof spawnGlitterBurstAtPlayer==='function') spawnGlitterBurstAtPlayer(34); }catch(e){}
+    setTimeout(()=>{ try{ handleChallengeAnswer(gate,0,wrap,{answerLabel:'3 IN A ROW!'}); }catch(e){} }, 360);
+  }
+  function onTap(r,c){
+    if (busy) return;
+    if (!sel){ sel={r,c}; draw(); try{play('tap');}catch(e){} return; }
+    if (sel.r===r && sel.c===c){ sel=null; draw(); return; }
+    if ((Math.abs(sel.r-r)+Math.abs(sel.c-c))!==1){ sel={r,c}; draw(); try{play('tap');}catch(e){} return; }
+    const a=sel; busy=true; sel=null;
+    const sw=()=>{ const t=board[a.r][a.c]; board[a.r][a.c]=board[r][c]; board[r][c]=t; };
+    sw();
+    if (!findMatches().size){
+      sw(); draw(); try{play('pop');}catch(e){}
+      const e1=cellEl(a.r,a.c), e2=cellEl(r,c);
+      if(e1)e1.classList.add('nudge'); if(e2)e2.classList.add('nudge');
+      setTimeout(()=>{ busy=false; },240);
+      return;
+    }
+    draw(); try{play('chime')||play('correct');}catch(e){}
+    flashCrush(findMatches());
+    setTimeout(()=>{
+      const gained=resolve(); crushed+=gained; draw();
+      try{ if(typeof spawnGlitterBurstAtPlayer==='function') spawnGlitterBurstAtPlayer(Math.min(22,gained*3)); }catch(e){}
+      if (crushed>=target) { win(); return; }
+      let g=0; while(!findHint() && g++<10) gen();
+      draw(); busy=false;
+    }, 280);
+  }
+
+  draw();
+
+  // Truth Seeker power-up: glow a guaranteed winning swap as a hint.
+  if (window._truthSeekerArmed){
+    window._truthSeekerArmed=false;
+    const h=findHint();
+    if (h){ const e1=cellEl(h.a.r,h.a.c), e2=cellEl(h.b.r,h.b.c); if(e1)e1.classList.add('hint'); if(e2)e2.classList.add('hint');
+      try{ toast('📖 Truth Seeker: swap the glowing tiles to make a match!'); }catch(e){}
+    } else { try{ toast('📖 Truth Seeker: swap any neighbours to line up 3!'); }catch(e){} }
+  }
+}
+
 function openChallenge(gate) {
   // Phase C Step 7: Well gate → pulley mini-game instead of trivia
   if (gate && gate.zone === 'well') { openWellPulleyGame(gate); return; }
@@ -9580,6 +9798,7 @@ function openChallenge(gate) {
     else if (q.type === 'slider')     { renderSlider(gate, q, opts); }
     else if (q.type === 'spotdiff')   { renderSpotDiff(gate, q, opts); }
     else if (q.type === 'pictionary') { renderPictionary(gate, q, opts); }
+    else if (q.type === 'm3moses')    { renderMatch3(gate, q, opts); }
     else {
       // trivia / fill / tf -> MCQ-style buttons
       (q.options || []).forEach((opt, i) => {
@@ -10519,7 +10738,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
   // For trivia/fill/tf: correctness is index === q.correct
   // For unscramble/match/sequence: caller passes index=0 if correct, -1 if wrong
   let correct;
-  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count','slider','spotdiff','pictionary'];
+  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count','slider','spotdiff','pictionary','m3moses','sortmoses','game3'];
   if (CUSTOM_TYPES.indexOf(q.type) !== -1) {
     correct = (index === 0);
   } else {
