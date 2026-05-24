@@ -5885,11 +5885,15 @@ const challengeGates = [];  // populated once difficulty is chosen (legacy name 
 // the two mini-game gates carry zones 'well' / 'rescue'.
 function _generateRandomChallengePositions(){
   const STOPS = [
-    { col: [3, 10],  row: [8, 16], zone: 'marketplace', label: 'Marketplace Checkpoint' },
-    { col: [14, 20], row: [8, 15], zone: 'well',        label: 'The Well — Water the Flock' },
-    { col: [19, 23], row: [9, 16], zone: 'pasture',     label: 'Wadi Checkpoint' },
-    { col: [24, 30], row: [8, 16], zone: 'pasture',     label: 'Pasture Checkpoint' },
-    { col: [29, 33], row: [9, 15], zone: 'rescue',      label: 'Rescue the Daughters' },
+    // West bank (market, cols 3-11) — the 3 Bible Checkpoints. Clearing each
+    // awards a crystal stepping-stone + money bags (see the checkpoint-clear
+    // handler). Collect all 3 crystals to bridge the river at col 12.
+    { col: [3, 7],   row: [8, 15], zone: 'market', label: 'Market Checkpoint' },
+    { col: [5, 9],   row: [2, 8],  zone: 'market', label: 'Caravan Checkpoint' },
+    { col: [7, 11],  row: [15, 21], zone: 'market', label: 'West Bank Checkpoint' },
+    // East bank (across the river) — the two mini-games, then Jethro's tent.
+    { col: [15, 20], row: [9, 15], zone: 'well',    label: 'The Well — Water the Flock' },
+    { col: [29, 33], row: [9, 15], zone: 'rescue',  label: 'Rescue the Daughters' },
   ];
   const out = [];
   const startTile = (typeof findTileOfType === 'function') ? findTileOfType(8) : null;
@@ -6108,6 +6112,9 @@ function seedChallenges(difficulty) {
       tx: p.tx, ty: p.ty,
       // v2.1: kind drives scene-complete check + UI label on the modal
       kind: p.kind || 'zone',        // 'zone' | 'climb'
+      // zone routes the gate in openChallenge: 'well'/'rescue' -> mini-games,
+      // 'market' -> Bible Checkpoint that awards a crystal stepping-stone.
+      zone: p.zone || 'zone',
       step: p.step || 0,             // ascent step 1-5 for climb kind, 0 for zone
       label: p.label || 'Checkpoint',
       questions: bundles[i],
@@ -9412,6 +9419,17 @@ function _announceAllGatesCleared(){
   } catch(e){}
 }
 
+// River-crossing concept: how many crystal stepping-stones Moses has earned =
+// how many west-bank Bible Checkpoints (zone 'market') he has solved. Derived
+// (not a stored counter) so it stays correct across save/resume. He needs 3 to
+// bridge the river at SCENE3_STREAM_COL.
+function _scene3CrystalCount(){
+  try {
+    if (typeof challengeGates === 'undefined' || !challengeGates) return 0;
+    return challengeGates.filter(g => g && g.solved && g.zone === 'market').length;
+  } catch(e){ return 0; }
+}
+
 function openChallenge(gate) {
   // Phase C Step 7: Well gate → pulley mini-game instead of trivia
   if (gate && gate.zone === 'well') { openWellPulleyGame(gate); return; }
@@ -10557,6 +10575,16 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         gate.solved = true;
         const isClimb = (gate.kind === 'climb');
         const perfect = (gate.bundleCorrect === gate.questions.length && gate.strikes === 0);
+        // River-crossing concept: every gate that reaches this trivia path is one
+        // of the 3 west-bank Bible Checkpoints (the Well/Rescue mini-games route
+        // away in openChallenge). Clearing one awards a crystal stepping-stone +
+        // money bags, so Moses banks wealth for the Rescue's weapons and gathers
+        // the 3 crystals he needs to bridge the river at col 12. The crystal
+        // count is DERIVED from solved checkpoints so it survives save/resume.
+        const _crystalBags = ({ easy: 40, medium: 35, hard: 30 })[game.difficulty] || 35;
+        const _crystals = _scene3CrystalCount();
+        game.treasureBags = (game.treasureBags || 0) + _crystalBags;
+        try { if (typeof updateHudCrystals === 'function') updateHudCrystals(); } catch(e){}
         // Scene 3: if this gate is a rude-shepherd blockade (label contains
         // "Shepherd"), shove the nearest shepherd off-screen AND trigger the
         // stream-chase: every remaining shepherd breaks their patrol and
@@ -10597,11 +10625,9 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         if (perfect) {
           game.stars += 5;
           updateHudStars();
-          if (isClimb) toast('Desert Checkpoint ' + (gate.step || '') + ' cleared perfectly! +5 stars');
-          else toast('Checkpoint cleared perfectly! +5 stars');
+          toast('💎 Crystal stepping-stone earned! (' + _crystals + '/3) Perfect — +5 stars, +' + _crystalBags + ' treasure!');
         } else {
-          if (isClimb) toast('Desert Checkpoint ' + (gate.step || '') + ' cleared - Moses presses on!');
-          else toast('Checkpoint cleared!');
+          toast('💎 Crystal stepping-stone earned! (' + _crystals + '/3)  +' + _crystalBags + ' treasure for the rescue');
         }
         // v3.3 LANE 3 (Jane 2026-04-23): celebration on every gate clear —
         // particle burst + verse drift across the top so kids feel rewarded.

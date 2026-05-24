@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v20'; // v20: Scene 3 pasture — free Jethro's flock from wolves (treasure for the rescue), difficulty-scaled, Guard-Freeze/Speed-Burst aware
+const CACHE_VERSION = 'bek-bundle-v21'; // v21: Scene 3 river concept — 3 west-bank checkpoints award crystal stepping-stones + money bags; fix gate.zone propagation (Well/Rescue routing)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
