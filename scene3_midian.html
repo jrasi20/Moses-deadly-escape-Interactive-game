@@ -1030,6 +1030,44 @@
     .ch-m3-wrap { width:min(58vh, 340px); }
     .ch-m3-tile { font-size:clamp(14px,4vh,26px); }
   }
+
+  /* ---- Scene 3 Checkpoint-2 sorting (tap a picture, tap the right basket) ---- */
+  .ch-sort-wrap { width:min(94vw, 420px); margin:4px auto 2px; }
+  .ch-sort-tray {
+    display:flex; flex-wrap:wrap; gap:clamp(5px,1.6vw,9px); justify-content:center;
+    min-height:62px; padding:clamp(6px,2vw,10px); margin-bottom:10px;
+    background:linear-gradient(135deg,#fff7e6,#ffe9c7); border:2px dashed #c98a3a; border-radius:14px;
+  }
+  .ch-sort-empty { font-weight:900; color:#3a7a2a; font-size:clamp(15px,4.4vw,20px); padding:10px; }
+  .ch-sort-tile {
+    width:clamp(46px,13vw,60px); height:clamp(46px,13vw,60px); padding:0; border:none; cursor:pointer;
+    border-radius:12px; font-size:clamp(22px,7vw,32px); line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 35% 30%,#fffdf5,#ffe6a8);
+    box-shadow:0 2px 4px rgba(0,0,0,0.2), inset 0 -3px 6px rgba(0,0,0,0.12), inset 0 2px 3px rgba(255,255,255,0.6);
+    transition:transform 0.12s, box-shadow 0.12s;
+  }
+  .ch-sort-tile:active { transform:scale(0.9); }
+  .ch-sort-tile.sel { transform:scale(1.12) translateY(-3px); box-shadow:0 0 0 3px #ff5fa2, 0 4px 10px rgba(0,0,0,0.3); z-index:2; }
+  .ch-sort-tile.nudge { animation:m3nudge 0.22s ease; }
+  .ch-sort-bins { display:flex; gap:clamp(6px,2vw,12px); }
+  .ch-sort-bin {
+    flex:1; cursor:pointer; border-radius:14px; padding:clamp(6px,1.8vw,10px); min-height:84px;
+    display:flex; flex-direction:column; gap:6px; align-items:stretch;
+    border:3px solid transparent; transition:transform 0.12s, box-shadow 0.12s;
+  }
+  .ch-sort-bin.bin0 { background:linear-gradient(160deg,#e7f9e0,#bfeeb0); border-color:#5bbf57; }
+  .ch-sort-bin.bin1 { background:linear-gradient(160deg,#ffe6e6,#ffc0c0); border-color:#e07070; }
+  .ch-sort-bin:active { transform:scale(0.97); }
+  .ch-sort-bin.shake { animation:m3nudge 0.3s ease; }
+  .ch-sort-bin-cap { font-weight:900; font-size:clamp(12px,3.4vw,15px); color:#3a2a00; text-align:center; }
+  .ch-sort-bin-slot { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; align-content:flex-start; }
+  .ch-sort-chip { font-size:clamp(18px,5.5vw,26px); animation:sortpop 0.3s ease; }
+  @keyframes sortpop { 0%{transform:scale(0) rotate(-20deg);} 70%{transform:scale(1.3) rotate(8deg);} 100%{transform:scale(1) rotate(0);} }
+  @media (orientation:landscape) and (max-height:520px) {
+    .ch-sort-wrap { width:min(92vw, 520px); }
+    .ch-sort-tile { width:clamp(40px,7vh,52px); height:clamp(40px,7vh,52px); font-size:clamp(20px,5vh,28px); }
+  }
   /* -- COUNT: scene grid above, number buttons below -- */
   .ch-count-scene {
     display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
@@ -5932,7 +5970,7 @@ function _generateRandomChallengePositions(){
     // awards a crystal stepping-stone + money bags (see the checkpoint-clear
     // handler). Collect all 3 crystals to bridge the river at col 12.
     { col: [3, 7],   row: [8, 15], zone: 'market', label: 'Market Checkpoint', game3rd: 'match3' },
-    { col: [5, 9],   row: [2, 8],  zone: 'market', label: 'Caravan Checkpoint' },
+    { col: [5, 9],   row: [2, 8],  zone: 'market', label: 'Caravan Checkpoint', game3rd: 'sort' },
     { col: [7, 11],  row: [15, 21], zone: 'market', label: 'West Bank Checkpoint' },
     // East bank (across the river) — the two mini-games, then Jethro's tent.
     { col: [15, 20], row: [9, 15], zone: 'well',    label: 'The Well — Water the Flock' },
@@ -9514,6 +9552,34 @@ function _buildScene3Game3rd(kind){
         target: target,
       };
     }
+    if (kind === 'sort') {
+      // "In the Moses story" vs "Not in the story" — kids tap a picture then the
+      // basket it belongs in. IN = Exodus 1-2 elements; OUT = modern items that
+      // could never be in the story (gentle anachronism humour kids love).
+      const IN  = [
+        {e:'🐑',n:'sheep'}, {e:'🦯',n:'shepherd staff'}, {e:'🧺',n:'papyrus basket'},
+        {e:'🌾',n:'reeds'}, {e:'👑',n:'crown'}, {e:'🔺',n:'pyramid'},
+        {e:'🏺',n:'water jar'}, {e:'📜',n:'scroll'}, {e:'🐪',n:'camel'}, {e:'🔥',n:'fire'},
+      ];
+      const OUT = [
+        {e:'🚗',n:'car'}, {e:'📱',n:'phone'}, {e:'🍕',n:'pizza'}, {e:'🤖',n:'robot'},
+        {e:'✈️',n:'aeroplane'}, {e:'📺',n:'television'}, {e:'⚽',n:'football'}, {e:'🚀',n:'rocket'},
+        {e:'💻',n:'laptop'}, {e:'🚲',n:'bicycle'},
+      ];
+      const per = ({ easy: 3, medium: 4, hard: 5 })[game.difficulty] || 4;
+      const pick = (arr, k) => { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a.slice(0,k); };
+      const items = [];
+      pick(IN,  per).forEach(o => items.push({ e:o.e, n:o.n, bin:'in'  }));
+      pick(OUT, per).forEach(o => items.push({ e:o.e, n:o.n, bin:'out' }));
+      for (let i=items.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [items[i],items[j]]=[items[j],items[i]]; }
+      return {
+        type: 'sortmoses',
+        q: 'Sorting time! Tap a picture, then tap the basket it belongs in.',
+        correct: 0,
+        bins: [ {key:'in', label:'In the Moses story'}, {key:'out', label:'Not in the story'} ],
+        items: items,
+      };
+    }
   } catch(e){}
   return null;
 }
@@ -9667,6 +9733,93 @@ function renderMatch3(gate, q, container){
   }
 }
 
+// Checkpoint 2 — SORT the picture tiles into the right basket ("In the Moses
+// story" vs "Not in the story"). Tap a tile to pick it up, tap a basket to drop.
+// Correct drop locks the tile into the basket with a glitter pop; a wrong drop
+// just bounces (no penalty). Sorting them all wins. Power-ups: Truth Seeker
+// auto-sorts one tile; Scribe's Wisdom skips the whole checkpoint upstream.
+function renderSort(gate, q, container){
+  const items = (q.items || []).map((it, i) => ({ ...it, id:i, placed:false }));
+  const bins = q.bins || [ {key:'in', label:'In the Moses story'}, {key:'out', label:'Not in the story'} ];
+  let sel = null, done = 0, busy = false;
+
+  container.innerHTML = '';
+  const wrap = document.createElement('div'); wrap.className = 'ch-sort-wrap';
+  const tray = document.createElement('div'); tray.className = 'ch-sort-tray';
+  const binRow = document.createElement('div'); binRow.className = 'ch-sort-bins';
+  wrap.appendChild(tray); wrap.appendChild(binRow); container.appendChild(wrap);
+
+  const binEls = {};
+  bins.forEach((b, i) => {
+    const bin = document.createElement('button');
+    bin.className = 'ch-sort-bin bin' + i;
+    const cap = document.createElement('div'); cap.className = 'ch-sort-bin-cap'; cap.textContent = (i===0?'✔️ ':'✖️ ') + b.label;
+    const slot = document.createElement('div'); slot.className = 'ch-sort-bin-slot';
+    bin.appendChild(cap); bin.appendChild(slot);
+    bin.addEventListener('click', () => dropInto(b.key, bin, slot));
+    binRow.appendChild(bin);
+    binEls[b.key] = { bin, slot };
+  });
+
+  function tileBtn(it){
+    const b = document.createElement('button');
+    b.className = 'ch-sort-tile';
+    b.textContent = it.e; b.setAttribute('aria-label', it.n); b.dataset.id = it.id;
+    b.addEventListener('click', () => {
+      if (busy || it.placed) return;
+      if (sel === it.id) { sel = null; render(); return; }
+      sel = it.id; render(); try{ play('tap'); }catch(e){}
+    });
+    return b;
+  }
+  function render(){
+    tray.innerHTML = '';
+    items.filter(it => !it.placed).forEach(it => {
+      const b = tileBtn(it);
+      if (sel === it.id) b.classList.add('sel');
+      tray.appendChild(b);
+    });
+    if (!items.some(it => !it.placed)) tray.innerHTML = '<div class="ch-sort-empty">All sorted! 🎉</div>';
+  }
+  function dropInto(binKey, binEl, slotEl){
+    if (busy || sel === null) { if(sel===null){ binEl.classList.add('shake'); setTimeout(()=>binEl.classList.remove('shake'),300);} return; }
+    const it = items.find(x => x.id === sel);
+    if (!it || it.placed) return;
+    if (it.bin === binKey){
+      it.placed = true; sel = null; done++;
+      const chip = document.createElement('span'); chip.className = 'ch-sort-chip'; chip.textContent = it.e;
+      slotEl.appendChild(chip);
+      try{ play('chime') || play('correct'); }catch(e){}
+      try{ if (typeof spawnGlitterBurstAtPlayer === 'function') spawnGlitterBurstAtPlayer(8); }catch(e){}
+      render();
+      if (done >= items.length){
+        busy = true;
+        try{ play('levelUp') || play('success'); }catch(e){}
+        try{ if (typeof spawnGlitterBurstAtPlayer === 'function') spawnGlitterBurstAtPlayer(30); }catch(e){}
+        setTimeout(() => { try{ handleChallengeAnswer(gate, 0, wrap, {answerLabel:'ALL SORTED!'}); }catch(e){} }, 360);
+      }
+    } else {
+      try{ play('pop'); }catch(e){}
+      binEl.classList.add('shake'); setTimeout(()=>binEl.classList.remove('shake'), 320);
+      const t = tray.querySelector('.ch-sort-tile.sel'); if (t){ t.classList.remove('sel'); t.classList.add('nudge'); setTimeout(()=>t.classList.remove('nudge'),300); }
+    }
+  }
+
+  render();
+
+  // Truth Seeker power-up: auto-sort one tile into its correct basket as a clue.
+  if (window._truthSeekerArmed){
+    window._truthSeekerArmed = false;
+    const it = items.find(x => !x.placed);
+    if (it){
+      sel = it.id;
+      const tgt = binEls[it.bin];
+      try{ toast('📖 Truth Seeker: one picture sorted for you!'); }catch(e){}
+      setTimeout(() => { if (tgt) dropInto(it.bin, tgt.bin, tgt.slot); }, 250);
+    }
+  }
+}
+
 function openChallenge(gate) {
   // Phase C Step 7: Well gate → pulley mini-game instead of trivia
   if (gate && gate.zone === 'well') { openWellPulleyGame(gate); return; }
@@ -9799,6 +9952,7 @@ function openChallenge(gate) {
     else if (q.type === 'spotdiff')   { renderSpotDiff(gate, q, opts); }
     else if (q.type === 'pictionary') { renderPictionary(gate, q, opts); }
     else if (q.type === 'm3moses')    { renderMatch3(gate, q, opts); }
+    else if (q.type === 'sortmoses')  { renderSort(gate, q, opts); }
     else {
       // trivia / fill / tf -> MCQ-style buttons
       (q.options || []).forEach((opt, i) => {

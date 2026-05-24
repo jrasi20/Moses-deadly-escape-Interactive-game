@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v23'; // v23: Scene 3 Checkpoint-1 3rd-question = Candy-Crush match-3 on Moses-story tiles (scene-3 only, responsive, glittery, Truth-Seeker hint)
+const CACHE_VERSION = 'bek-bundle-v24'; // v24: Scene 3 Checkpoint-2 3rd-question = sort Moses-story pictures into "in the story" vs "not in the story" baskets (scene-3 only, responsive, Truth-Seeker auto-sort)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
