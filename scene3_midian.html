@@ -4158,7 +4158,11 @@ function isScene3SteppingStone(tx, ty){
 // stepping stone. Shepherds also can't step on stepping stones (water fear).
 function isScene3StreamBlocker(tx, ty, allowSteppingStones){
   if (!isScene3StreamTile(tx, ty)) return false;
-  if (allowSteppingStones && isScene3SteppingStone(tx, ty)) return false;
+  // River-crossing concept: the stepping stones only carry Moses once he has
+  // earned all 3 crystal stones from the west-bank Bible Checkpoints — i.e. the
+  // crossing is "built". Until then the whole stream is impassable. (Shepherds
+  // never cross regardless; they call this with allowSteppingStones=false.)
+  if (allowSteppingStones && isScene3SteppingStone(tx, ty) && _scene3CrystalCount() >= 3) return false;
   return true;
 }
 
@@ -6197,7 +6201,22 @@ function attemptMove(dir) {
   let nx = player.tx, ny = player.ty;
   if (dir === 'up') ny--; else if (dir === 'down') ny++;
   else if (dir === 'left') nx--; else if (dir === 'right') nx++;
-  if (!isWalkable(nx, ny)) { play('pop'); return; }
+  if (!isWalkable(nx, ny)) {
+    play('pop');
+    // River-crossing hint: if Moses is bumping the stream without his bridge,
+    // tell him to earn the 3 crystal stepping-stones first (throttled).
+    try {
+      if (typeof isScene3StreamTile === 'function' && isScene3StreamTile(nx, ny) && _scene3CrystalCount() < 3) {
+        const now = performance.now();
+        if (!window._riverHintAt || now - window._riverHintAt > 4000) {
+          window._riverHintAt = now;
+          const left = 3 - _scene3CrystalCount();
+          toast('🌊 The river is too deep! Clear ' + left + ' more checkpoint' + (left === 1 ? '' : 's') + ' to earn crystal stepping-stones and build a crossing.');
+        }
+      }
+    } catch(e){}
+    return;
+  }
   // v1.2 FIX (§3.2): In Scenes 2 & 3, NPCs and uncollected pickups are solid.
   // Kids must walk AROUND them and use Interact to pick up / talk.
   if (game.scene === 2 || game.scene === 3) {
@@ -10628,6 +10647,14 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
           toast('💎 Crystal stepping-stone earned! (' + _crystals + '/3) Perfect — +5 stars, +' + _crystalBags + ' treasure!');
         } else {
           toast('💎 Crystal stepping-stone earned! (' + _crystals + '/3)  +' + _crystalBags + ' treasure for the rescue');
+        }
+        // The 3rd crystal "builds" the river crossing — celebrate + point east.
+        if (_crystals >= 3) {
+          setTimeout(() => {
+            try { play('levelUp') || play('success'); } catch(e){}
+            try { spawnGlitterBurstAtPlayer(40); } catch(e){}
+            try { toast('🌉 Crossing built! Your 3 crystal stones bridge the river — cross east to the well!'); } catch(e){}
+          }, 1100);
         }
         // v3.3 LANE 3 (Jane 2026-04-23): celebration on every gate clear —
         // particle burst + verse drift across the top so kids feel rewarded.
