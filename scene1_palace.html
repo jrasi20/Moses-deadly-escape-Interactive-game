@@ -10745,6 +10745,8 @@ function startScene1() {
   window._speedBurstUntil      = 0;
   window._guardFreezeUntil     = 0;
   window._royalVisionUntil     = 0;
+  window._decoyUntil           = 0;
+  window._decoyTile            = null;
   window._truthSeekerArmed     = false;
   window._scribesWisdomArmed   = false;
   // 2026-05-09 PM15 v7 — fresh tutorial state per scene.
@@ -11406,6 +11408,8 @@ function restartScene() {
     window._speedBurstUntil    = 0;
     window._guardFreezeUntil   = 0;
     window._royalVisionUntil   = 0;
+    window._decoyUntil         = 0;
+    window._decoyTile          = null;
     window._truthSeekerArmed   = false;
     window._scribesWisdomArmed = false;
     if (typeof _refreshUnlockButtons === 'function') _refreshUnlockButtons();
@@ -15851,11 +15855,12 @@ const UNLOCK_TIERS = [
     label: '❄️ Foe Freeze',    cooldownMs: 35000,
     desc: 'All guards freeze in place for 5 seconds. Recharges every 35 s.' },
   { threshold:   4, resource: 'crowns',    key: 'royalVision',
-    label: '👁️ Royal Vision',    cooldownMs: 30000,
-    // 2026-05-12 PM18 (Jane: "how does royal vision help moses?"). Made
-    // the description concrete + actionable so kids understand the
-    // benefit: see the danger BEFORE you walk into it.
-    desc: 'Lights up every guard\'s sight cone in bright pink so you can plan a safe path around them. Lasts 8 seconds.' },
+    // 2026-05-26 (Jane): replaced the low-wow "Royal Vision" with a throwable
+    // DECOY (active offensive verb). localStorage key stays 'royalVision' so
+    // kids keep the unlock they already earned. Scene-agnostic name so it
+    // reads right in the desert + Midian too (foes, not just guards).
+    label: '🍷 Goblet Lure',    cooldownMs: 30000,
+    desc: 'Toss a golden goblet — nearby guards rush for the shiny prize for 5 seconds, clearing your path.' },
   { threshold: 350, resource: 'treasures', key: 'truthSeeker',
     label: '📖 Truth Seeker',    cooldownMs: 60000,
     desc: 'On the next Bible Gate: clue is free + 2 wrong options greyed out.' },
@@ -16049,10 +16054,28 @@ function _activatePowerup(key){
     // that fires from the shared activation path below.
     try { play('frozen'); } catch(e){}
     try { toast('❄️ GUARD FREEZE! Sneak past while they\'re stuck!'); } catch(e){}
-  } else if (key === 'royalVision') {
-    window._royalVisionUntil = now + 8000;
-    window._puActiveUntil[key] = now + 8000;
-    try { toast('👁️ ROYAL VISION! Guard sight cones revealed.'); } catch(e){}
+  } else if (key === 'royalVision') {   // key kept for unlock-state; effect is now the DECOY
+    // Toss a decoy ~3 tiles ahead in Moses's facing direction. Nearby foes
+    // rush to the "noise" for 5 s (handled in the guard-update loop), opening
+    // a path. Back off to the nearest walkable tile if the spot is a wall.
+    let _ddx = 0, _ddy = 0;
+    if      (player.dir === 'up')   _ddy = -3;
+    else if (player.dir === 'down') _ddy =  3;
+    else if (player.dir === 'left') _ddx = -3;
+    else                            _ddx =  3;
+    let _dtx = player.tx + _ddx, _dty = player.ty + _ddy;
+    if (!isWalkable(_dtx, _dty)) {
+      _dtx = player.tx; _dty = player.ty;
+      for (let s = 2; s >= 1; s--) {
+        const _tx = player.tx + Math.sign(_ddx) * s, _ty = player.ty + Math.sign(_ddy) * s;
+        if (isWalkable(_tx, _ty)) { _dtx = _tx; _dty = _ty; break; }
+      }
+    }
+    window._decoyTile = { x: _dtx, y: _dty };
+    window._decoyUntil = now + 5000;
+    try { for (const g of guards) g._decoyTimer = 0; } catch(e){}
+    window._puActiveUntil[key] = now + 5000;
+    try { toast('🍷 You toss the goblet — the guards scramble for it! Slip past!'); } catch(e){}
   } else if (key === 'truthSeeker') {
     // Sets a one-shot flag the next Bible-gate consumes.
     window._truthSeekerArmed = true;
@@ -16469,7 +16492,7 @@ function _renderJourneyPanel(){
   const _WJ_TIERS = [
     { th:75,  res:'treasures', key:'speedBurst',    label:'⚡ Speed Burst' },
     { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
-    { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
+    { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F377} Goblet Lure' },
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
     { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
@@ -17571,6 +17594,44 @@ function updateGuards(dt){
     }
     return;
   }
+  // 2026-05-26 — DECOY power-up: while active, foes within earshot of the
+  // thrown decoy abandon patrol/chase and rush toward the "noise" tile,
+  // opening Moses's path. They don't detect Moses while lured. Handled here;
+  // the main state machine below skips lured guards via g._decoyLured.
+  if (_now < (window._decoyUntil || 0) && window._decoyTile) {
+    const _dT = window._decoyTile, _DR = 7;
+    for (const g of guards) {
+      const _gd = Math.abs(g.tx - _dT.x) + Math.abs(g.ty - _dT.y);
+      if (_gd > _DR) { g._decoyLured = false; continue; }  // out of earshot — patrols normally below
+      g._decoyLured = true;
+      g.state = 'patrol';                 // sane state for when the decoy expires
+      g.swordOut = false; g.swordAnim = 0;
+      g._decoyTimer = (g._decoyTimer || 0) - dt;
+      if (g._decoyTimer > 0) continue;
+      g._decoyTimer = g.patrolMs || 480;
+      const _ex = _dT.x - g.tx, _ey = _dT.y - g.ty;
+      if (_gd <= 1) {                      // reached the noise — face it + wait
+        if (_ex > 0) g.dir = 'right'; else if (_ex < 0) g.dir = 'left';
+        else if (_ey > 0) g.dir = 'down'; else if (_ey < 0) g.dir = 'up';
+        continue;
+      }
+      const _step = (nx, ny, dir) => {
+        if (!isWalkable(nx, ny)) return false;
+        for (const cg of challengeGates) { if (!cg.solved && cg.tx === nx && cg.ty === ny) return false; }
+        if (player.tx === nx && player.ty === ny) return false;
+        g.tx = nx; g.ty = ny; g.dir = dir; return true;
+      };
+      if (Math.abs(_ex) >= Math.abs(_ey)) {
+        ((_ex > 0) ? _step(g.tx + 1, g.ty, 'right') : _step(g.tx - 1, g.ty, 'left'))
+          || (_ey !== 0 && _step(g.tx, g.ty + (_ey > 0 ? 1 : -1), _ey > 0 ? 'down' : 'up'));
+      } else {
+        ((_ey > 0) ? _step(g.tx, g.ty + 1, 'down') : _step(g.tx, g.ty - 1, 'up'))
+          || (_ex !== 0 && _step(g.tx + (_ex > 0 ? 1 : -1), g.ty, _ex > 0 ? 'right' : 'left'));
+      }
+    }
+  } else {
+    for (const g of guards) { if (g._decoyLured) g._decoyLured = false; }
+  }
   // 2026-05-09 PM15 v2 — secret-door buffer for guard patrol. Guards
   // must still traverse the row-7/12/18 gate gaps to patrol between
   // rooms (so we DO NOT add a chokepoint check here — that would break
@@ -17606,6 +17667,7 @@ function updateGuards(dt){
     return false;
   };
   for (const g of guards) {
+    if (g._decoyLured) continue;   // 2026-05-26: lured away by the Decoy power-up (handled above)
     g.timer -= dt;
     if (g.swordOut) g.swordAnim = Math.min(g.swordAnim + dt*0.003, 1);
 
@@ -18413,6 +18475,7 @@ function _renderInner(){
   // alcove / curtain / statue." Drawn BEFORE the decor sprites so the
   // halo sits on the floor under the prop, not on top of it.
   try { drawCoverHints(); } catch(e){}
+  try { _drawDecoyMarker(); } catch(e){}
   // 2026-05-04 immersion pivot: short floor decor only (amphora, side
   // table, goblet, table). Tall decor is dispatched in the Y-sorted
   // entity layer below.
@@ -18645,6 +18708,42 @@ function drawHidingBadge(){
 // _heartbeat.intensity (0..1) — at low intensity the rim is a soft amber
 // glow; at high intensity (or alerted), the rim is a deep red and the
 // pulse rate doubles. Cheap radial gradient drawn once per frame.
+// 2026-05-26 — Lure power-up marker: expanding "noise" ripples + the thrown
+// decoy object (scene-specific: golden goblet in the palace) at the decoy tile
+// while it's active, so the kid sees where the foes are being lured.
+// World-space (uses camera offset like other overlays).
+function _drawDecoyMarker(){
+  const until = window._decoyUntil || 0;
+  const dT = window._decoyTile;
+  if (!dT || performance.now() >= until) return;
+  const dx = dT.x * TILE - camera.px;
+  const dy = dT.y * TILE - camera.py;
+  if (dx < -TILE*2 || dx > CANVAS_W+TILE*2 || dy < -TILE*2 || dy > CANVAS_H+TILE*2) return;
+  const cx = dx + TILE/2, cy = dy + TILE/2;
+  const now = performance.now();
+  ctx.save();
+  for (let i = 0; i < 3; i++){
+    const phase = ((now/600) + i/3) % 1;
+    const rr = TILE * (0.3 + phase * 1.3);
+    ctx.beginPath();
+    ctx.arc(cx, cy, rr, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255, 210, 120, ' + (0.5 * (1 - phase)).toFixed(2) + ')';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+  const bob = Math.sin(now/180) * 2;
+  const sz = TILE * 0.85;
+  // PNG-first (canonical rule): draw the golden goblet asset; emoji fallback.
+  if (IMG.goblet && IMG.goblet.complete && IMG.goblet.naturalWidth) {
+    ctx.drawImage(IMG.goblet, cx - sz/2, cy - sz/2 + bob, sz, sz);
+  } else {
+    ctx.font = Math.round(TILE*0.7) + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('\u{1F377}', cx, cy + bob);
+  }
+  ctx.restore();
+}
+
 function drawHeartbeatVignette(){
   if (typeof _heartbeat === 'undefined' || !_heartbeat.active) return;
   const i = Math.max(0, Math.min(1, _heartbeat.intensity));
