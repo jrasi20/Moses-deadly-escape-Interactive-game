@@ -7929,7 +7929,9 @@ function startScene1() {
   player.dir = 'down'; player.crouched = false;
   // reset guards to starting states
   guards.length = 0;
-  _guardsInitial.forEach(g => guards.push(JSON.parse(JSON.stringify(g))));
+  // 2026-05-26 (Jane): NO Pharaoh guards in Midian — Moses has ESCAPED Egypt.
+  // Keep `guards` empty (updateGuards/drawGuards then no-op). Midian threats are
+  // the rude shepherds (pursuitScouts) + wolves only. Scene 3 is rescue, not stealth.
   applyDifficultyConfig(game.difficulty || 'easy');
   // reset pickup + servant one-time flags
   interactables.forEach(o => { o.used = false; o.collected = false; });
@@ -8019,7 +8021,7 @@ function restartScene() {
   player.dir = 'down'; player.crouched = false;
   // reset guards to starting states
   guards.length = 0;
-  _guardsInitial.forEach(g => guards.push(JSON.parse(JSON.stringify(g))));
+  // 2026-05-26 (Jane): NO Pharaoh guards in Midian (see startScene3) — keep empty.
   // v3.5: re-apply difficulty config so a restart with a different level
   // actually trims guards / adjusts hurdles / time / gate count.
   applyDifficultyConfig(game.difficulty || 'easy');
@@ -14348,12 +14350,8 @@ function drawPursuitScouts(ctx){
     const sy = s.ty * TILE - camera.py;
     // skip if off-screen
     if (sx < -TILE*2 || sx > CANVAS_W + TILE || sy < -TILE || sy > CANVAS_H + TILE) continue;
-    // v2.3 Jane: visible scout vision cone — scouts chasing Moses treated
-    // as "alerted" so kids see a red forward cone while they close in.
-    try {
-      const scoutState = (!player.crouched && !isMosesInCave()) ? 'alerted' : 'suspicious';
-      _drawVisionCone(sx + TILE/2, sy + TILE/2, s.dir || 'right', 3, scoutState);
-    } catch(e){}
+    // 2026-05-26 (Jane): Scene 3 is RESCUE, not stealth — rude shepherds have NO
+    // vision cone. They nag/shove on proximity; they don't hunt Moses by sight.
     // Shadow under feet
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.beginPath();
