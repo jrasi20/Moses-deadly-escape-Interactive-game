@@ -6607,8 +6607,10 @@ function _generateRandomChallengePositions(){
     { col: [5, 9],   row: [2, 8],  zone: 'market', label: 'Caravan Checkpoint', game3rd: 'sort' },
     { col: [7, 10],  row: [15, 21], zone: 'market', label: 'West Bank Checkpoint', game3rd: 'merge' },
     // East bank (across the river) — the two mini-games, then Jethro's tent.
-    { col: [15, 20], row: [9, 15], zone: 'well',    label: 'The Well — Water the Flock' },
-    { col: [29, 33], row: [9, 15], zone: 'rescue',  label: 'Rescue the Daughters' },
+    // Rescue comes FIRST on the west->east path (just east of the river crossing,
+    // at the well where the daughters draw water), THEN the well — Exodus 2:17.
+    { col: [14, 16], row: [9, 15], zone: 'rescue',  label: 'Rescue the Daughters' },
+    { col: [18, 22], row: [9, 15], zone: 'well',    label: 'The Well — Water the Flock' },
   ];
   const out = [];
   const startTile = (typeof findTileOfType === 'function') ? findTileOfType(8) : null;
@@ -10981,9 +10983,21 @@ function renderMerge2048(gate, q, container){
 }
 
 function openChallenge(gate) {
-  // Phase C Step 7: Well gate → pulley mini-game instead of trivia
-  if (gate && gate.zone === 'well') { openWellPulleyGame(gate); return; }
-  // Scene 3 epic: Rescue gate near Jethro's tent → lane-defense mini-game.
+  // Phase C Step 7: Well gate → pulley mini-game instead of trivia.
+  // Rescue-first ordering: the Well (water the flock) is LOCKED until the Rescue
+  // (drive off the shepherds) is cleared — matches Exodus 2:17 (Moses rescues the
+  // daughters, THEN waters the flock) and makes the two minis a connected sequence.
+  if (gate && gate.zone === 'well') {
+    const _rescueGate = (typeof challengeGates !== 'undefined' && challengeGates)
+      ? challengeGates.find(g => g && g.zone === 'rescue') : null;
+    if (_rescueGate && !_rescueGate.solved) {
+      try { toast('First drive off the rude shepherds and rescue the daughters!'); } catch(e){}
+      try { play('error') || play('dangerAlert'); } catch(e){}
+      return;
+    }
+    openWellPulleyGame(gate); return;
+  }
+  // Scene 3 epic: Rescue gate → lane-defense mini-game (the FIRST of the two).
   if (gate && gate.zone === 'rescue') { openRescueGame(gate); return; }
   // Scribe's Wisdom power: skip a trivia checkpoint (never a mini-game gate).
   // SCENE-3-ONLY behaviour: this whole file is the Scene 3 experience, and the
