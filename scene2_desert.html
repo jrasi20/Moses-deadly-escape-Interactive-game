@@ -754,6 +754,36 @@
     background: radial-gradient(circle at 50% 45%, rgba(255,235,170,0.55), rgba(255,210,90,0) 60%);
     animation: jigFlash 0.7s ease-out forwards; }
   @keyframes jigFlash { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+  /* 2026-05-26 (Jane: hints "without making it too deliberate"). A Hint button
+     that highlights WHICH scrap goes WHERE + nudges a rotate if it's turned
+     wrong — the kid still does the action. Button self-pulses only when stuck. */
+  .jigsaw-hint-btn { display:inline-flex; align-items:center; gap:6px; margin:6px auto 2px;
+    padding:7px 18px; border-radius:20px; cursor:pointer; user-select:none;
+    background:linear-gradient(180deg,#5a2f10,#3a1d08); color:#ffd976;
+    border:2px solid #ffd976; font-family:Georgia,serif; font-weight:bold; font-size:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.4); transition:transform 0.12s; }
+  .jigsaw-hint-btn:active { transform:scale(0.93); }
+  .jigsaw-hint-btn.nudge { animation: jigHintNudge 1.15s ease-in-out infinite; }
+  @keyframes jigHintNudge {
+    0%,100% { box-shadow:0 2px 8px rgba(0,0,0,0.4); transform:scale(1); }
+    50%     { box-shadow:0 0 18px rgba(255,217,118,0.95); transform:scale(1.07); }
+  }
+  .jigsaw-slot.hint-target { animation: jigHintGlow 0.85s ease-in-out infinite;
+    box-shadow:0 0 0 3px rgba(255,217,118,0.95), 0 0 24px rgba(255,217,118,0.85) !important; }
+  .jigsaw-piece.hint-piece { animation: jigHintGlow 0.85s ease-in-out infinite; z-index:25; }
+  @keyframes jigHintGlow {
+    0%,100% { filter: drop-shadow(0 0 4px rgba(255,217,118,0.7)); }
+    50%     { filter: drop-shadow(0 0 15px rgba(255,217,118,1)); }
+  }
+  .jigsaw-piece.hint-rotate { position:relative; }
+  .jigsaw-piece.hint-rotate::after { content:"\21BB tap to turn"; position:absolute; top:-12px; left:50%;
+    transform:translateX(-50%); background:#3a1d08; color:#ffd976; border:1.5px solid #ffd976;
+    border-radius:10px; font:bold 10px Georgia; padding:2px 8px; white-space:nowrap; z-index:27;
+    pointer-events:none; animation: jigRotateWiggle 0.7s ease-in-out infinite; }
+  @keyframes jigRotateWiggle {
+    0%,100% { transform:translateX(-50%) rotate(-5deg); }
+    50%     { transform:translateX(-50%) rotate(5deg); }
+  }
   /* when the whole route is revealed, every placed segment glows gold */
   .jigsaw-board.revealed .jigsaw-piece .map-ink .route-seg {
     stroke: #ffcf4a; stroke-dasharray: none;
@@ -3441,6 +3471,7 @@
     </div>
     <div class="jigsaw-footer">
       <div class="jigsaw-status" id="jigsawStatus">Place 3 pieces · Tap to rotate · Drag to slot</div>
+      <div class="jigsaw-hint-btn" id="jigsawHintBtn" role="button" tabindex="0">&#128161; Hint</div>
       <div class="jigsaw-verse" id="jigsawVerse">&#8220;Your word is a lamp for my feet, a light on my path.&#8221;<small>Psalm 119:105 (NIV)</small></div>
     </div>
   </div>
@@ -8337,6 +8368,12 @@ function _openJigsawModal(){
     game.state = 'puzzle';
   }
   modal.classList.add('active');
+  // 2026-05-26: reset + wire the hint system for this play.
+  _jigsawWrongCount = 0;
+  try { _clearJigsawHint(); } catch(_){}
+  try { _wireJigsawHintButton(); } catch(_){}
+  try { const _hb = document.getElementById('jigsawHintBtn'); if (_hb) _hb.classList.remove('nudge'); } catch(_){}
+  try { _jigsawArmStuckNudge(); } catch(_){}
   try {
     if (audio.puzzleBg) {
       audio.puzzleBg.currentTime = 0;
@@ -8353,6 +8390,71 @@ function _openJigsawModal(){
     if (audio.alerted) audio.alerted.pause();
   } catch(e){}
 }
+// 2026-05-26 (Jane): jigsaw HINT system — highlights the next scrap + its slot
+// and nudges a rotate when it's turned wrong, guiding without auto-solving. The
+// Hint button only self-pulses when the kid looks stuck (idle / repeated misses).
+let _jigsawHintTimer = null;
+let _jigsawIdleTimer = null;
+let _jigsawWrongCount = 0;
+function _clearJigsawHint(){
+  try {
+    document.querySelectorAll('#jigsawModal .hint-piece, #jigsawModal .hint-rotate')
+      .forEach(el => { el.classList.remove('hint-piece'); el.classList.remove('hint-rotate'); });
+    document.querySelectorAll('#jigsawBoard .jigsaw-slot.hint-target')
+      .forEach(el => el.classList.remove('hint-target'));
+  } catch(_){}
+  if (_jigsawHintTimer) { clearTimeout(_jigsawHintTimer); _jigsawHintTimer = null; }
+}
+function _jigsawHint(){
+  _clearJigsawHint();
+  const btn = document.getElementById('jigsawHintBtn');
+  if (btn) btn.classList.remove('nudge');
+  // Next still-empty slot, left -> right (matches the journey order).
+  let slotEl = null, slotIdx = -1;
+  for (const s of document.querySelectorAll('#jigsawBoard .jigsaw-slot')) {
+    if (!s.classList.contains('filled')) { slotEl = s; slotIdx = parseInt(s.dataset.slot, 10); break; }
+  }
+  if (!slotEl) return;
+  const wantPiece = _jigsawAssignments[slotIdx];
+  let pieceEl = null;
+  for (const p of document.querySelectorAll('#jigsawTray .jigsaw-piece')) {
+    if (p.classList.contains('locked')) continue;
+    if (parseInt(p.dataset.piece, 10) === wantPiece) { pieceEl = p; break; }
+  }
+  slotEl.classList.add('hint-target');
+  const status = document.getElementById('jigsawStatus');
+  if (pieceEl) {
+    pieceEl.classList.add('hint-piece');
+    const rot = parseInt(pieceEl.dataset.rotation, 10) || 0;
+    if (rot !== 0) {
+      pieceEl.classList.add('hint-rotate');
+      if (status) status.textContent = 'Drag the glowing scrap to the glowing spot — then tap it to turn it upright.';
+    } else if (status) {
+      status.textContent = 'Drag the glowing scrap onto the glowing spot!';
+    }
+  }
+  try { play('clickSound') || play('click'); } catch(_){}
+  _jigsawHintTimer = setTimeout(_clearJigsawHint, 4500);
+}
+// Pulse the Hint button after a stretch of no progress so stuck kids notice it,
+// but never shove it in their face otherwise.
+function _jigsawArmStuckNudge(){
+  if (_jigsawIdleTimer) { clearTimeout(_jigsawIdleTimer); _jigsawIdleTimer = null; }
+  _jigsawIdleTimer = setTimeout(() => {
+    const modal = document.getElementById('jigsawModal');
+    if (!modal || !modal.classList.contains('active') || game.jigsawSolved) return;
+    const btn = document.getElementById('jigsawHintBtn');
+    if (btn) btn.classList.add('nudge');
+  }, 11000);
+}
+function _wireJigsawHintButton(){
+  const btn = document.getElementById('jigsawHintBtn');
+  if (!btn || btn.dataset.wired) return;
+  btn.dataset.wired = '1';
+  const go = () => { _jigsawHint(); };
+  btn.addEventListener('click', go);
+  btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+}
 function _wireJigsawPiece(pieceEl){
   let startX = 0, startY = 0, downX = 0, downY = 0;
   let dragging = false, moved = false;
@@ -8360,6 +8462,11 @@ function _wireJigsawPiece(pieceEl){
   pieceEl.addEventListener('pointerdown', e => {
     if (pieceEl.classList.contains('locked')) return;
     e.preventDefault();
+    // 2026-05-26: kid is engaging — drop any active hint glow + re-arm the
+    // stuck-nudge timer + stop the button pulsing.
+    try { _clearJigsawHint(); } catch(_){}
+    try { const _hb = document.getElementById('jigsawHintBtn'); if (_hb) _hb.classList.remove('nudge'); } catch(_){}
+    try { _jigsawArmStuckNudge(); } catch(_){}
     try { pieceEl.setPointerCapture(e.pointerId); } catch(_){}
     homeRect = pieceEl.getBoundingClientRect();
     downX = e.clientX; downY = e.clientY;
@@ -8451,6 +8558,13 @@ function _wireJigsawPiece(pieceEl){
       if (status) status.textContent = rightSlot
         ? 'So close! This is the right spot — tap the scrap to turn it upright.'
         : 'Not quite — try this scrap on a different spot of the map.';
+      // 2026-05-26: after a couple of misses, gently pulse the Hint button so a
+      // stuck kid notices help is there (without auto-showing the answer).
+      _jigsawWrongCount++;
+      if (_jigsawWrongCount >= 2) {
+        try { const _hb = document.getElementById('jigsawHintBtn'); if (_hb) _hb.classList.add('nudge'); } catch(_){}
+      }
+      try { _jigsawArmStuckNudge(); } catch(_){}
       return;
     }
     // Correct slot + upright! Snap into place.
@@ -8461,6 +8575,9 @@ function _wireJigsawPiece(pieceEl){
     pieceEl.style.height = slotRect.height + 'px';
     pieceEl.classList.add('locked');
     pieceEl.classList.add('snapped');
+    // 2026-05-26: correct placement — clear hints, reset the miss counter, stop
+    // the nudge, and re-arm the idle timer for the next piece.
+    try { _clearJigsawHint(); _jigsawWrongCount = 0; const _hb = document.getElementById('jigsawHintBtn'); if (_hb) _hb.classList.remove('nudge'); _jigsawArmStuckNudge(); } catch(_){}
     // 2026-05-26 JUICE: squash-pop the piece + a VISIBLE sparkle burst at the
     // slot (canvas glitter-at-Moses is hidden behind the full-screen modal).
     try { pieceEl.classList.remove('snap-pop'); void pieceEl.offsetWidth; pieceEl.classList.add('snap-pop'); } catch(_){}
@@ -8482,6 +8599,10 @@ function _wireJigsawPiece(pieceEl){
 function _onJigsawSolved(){
   game.jigsawSolved = true;
   try { _saveCheckpoint(); } catch(e){}
+  // 2026-05-26: tidy up the hint system on solve.
+  try { _clearJigsawHint(); } catch(_){}
+  try { if (_jigsawIdleTimer) { clearTimeout(_jigsawIdleTimer); _jigsawIdleTimer = null; } } catch(_){}
+  try { const _hb = document.getElementById('jigsawHintBtn'); if (_hb) _hb.classList.remove('nudge'); } catch(_){}
   // 2026-05-19 (Jane: "make it epic"). Don't snap the modal shut — play
   // the REVEAL beat first: the three placed segments light gold, a golden
   // caravan route draws itself START→MIDIAN, a footprint walks the trail,
