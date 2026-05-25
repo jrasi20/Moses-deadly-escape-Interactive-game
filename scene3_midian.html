@@ -3963,8 +3963,11 @@ const interactables = [
     name:'A Royal Circlet',
     body:'Moses finds the golden circlet from his old palace life, half-buried in the sand. By faith he refuses to be known as the son of Pharaoh\u2019s daughter. He leaves it behind - God\u2019s people matter more than Egypt\u2019s gold! +50 stars for choosing faith.',
     used:false, reward:'stars50' },
-  // === MID-SCENE TRUTH CHEST (appears near the exit, opens with the reveal animation) ===
-  { tx: 36, ty: 21,  kind:'truthchest', icon:'[TC]',
+  // === MID-SCENE TRUTH CHEST (on the exit approach, opens with the reveal animation) ===
+  // Was at (36,21) — off the 35-wide map, so it could never be reached. Moved onto
+  // the row-12 path to Jethro's tent so every player collects the truth to carry
+  // into Midian (matches Scene 1's truth-card moment for "one world" parity).
+  { tx: 32, ty: 12,  kind:'truthchest', icon:'[TC]',
     name:'A Mysterious Cedar Box',
     body:'Moses finds a small cedar box half-buried near a rock. Inside - a scroll wrapped in cloth with a truth to carry into Midian.',
     used:false, reward:'truthcard' },

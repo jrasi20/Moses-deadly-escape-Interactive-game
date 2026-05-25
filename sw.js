@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v33'; // v33: Scene-3 urgency — rude shepherd raids the flock while you lead it (Speed Burst to hurry, Foe Freeze to stop him, river = safe); FIX Foe Freeze now also freezes the rude shepherds (was wolves-only); verified all 6 powers fire in scene 3
+const CACHE_VERSION = 'bek-bundle-v34'; // v34: FIX Scene-3 truth card was unreachable (chest placed off-map at col 36 on a 35-wide map) — moved onto the row-12 exit approach so it's collectible; restores the Truth Card Keeper badge + Truth Library entry for one-world parity
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
