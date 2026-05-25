@@ -1972,52 +1972,65 @@
        power-ups + 3 buttons"). Controls FLOAT so the canvas is full-screen.
        D-pad = floating cross bottom-left; power rack + actions in a slim
        brown PILL bottom-right. (Parity with scenes 1 & 2.) */
+    /* 2026-05-26 (Jane): reverted the floating overlay to an IN-FLOW brown bar
+       at the bottom (parity with Scene 1). Canvas-wrapper sizes ABOVE the bar
+       so controls never overlap the play area; d-pad + power-ups + actions all
+       live ON the bar. */
     .controls {
-      position: fixed !important;
-      bottom: 6px; right: 6px; left: auto; top: auto;
-      z-index: 40;
+      position: static !important;
+      width: 100% !important;
+      z-index: auto;
       display: flex !important;
       flex-direction: row !important;
       align-items: center;
-      justify-content: flex-end !important;
+      justify-content: space-between !important;
       gap: 8px !important;
-      width: auto;
-      max-width: calc(100vw - 168px);
-      min-height: 0;
-      padding: 5px 10px !important;
+      max-width: none !important;
+      min-height: 0; max-height: none;
+      flex-shrink: 0;
+      padding: 6px 10px !important;
+      padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
       flex-wrap: nowrap;
-      background: linear-gradient(0deg, rgba(42,14,3,0.96) 0%, rgba(74,28,10,0.94) 100%) !important;
-      border: 2px solid #5a1d06 !important;
-      border-radius: 14px !important;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
-      opacity: 0.9;            /* see game content behind the pill */
+      background: linear-gradient(0deg, #2a0e03 0%, #3a1508 100%) !important;
+      border: none !important;
+      border-top: 2px solid #ffd976 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
       pointer-events: auto;
     }
     .dpad {
-      position: fixed !important;
-      left: 10px; bottom: 10px; right: auto; top: auto;
-      z-index: 41;
-      opacity: 0.85;           /* see game content behind the dpad */
+      position: static !important;
+      z-index: auto;
+      opacity: 1 !important;
+      order: 0 !important;             /* d-pad FAR LEFT (left thumb) */
+      margin-right: auto !important;   /* push actions + power-ups to the RIGHT */
       display: grid !important;
-      grid-template-columns: repeat(3, 44px);
-      grid-template-rows: repeat(2, 40px);
+      grid-template-columns: repeat(3, 46px);
+      grid-template-rows: repeat(2, 44px);   /* WCAG: ≥44px touch targets */
       width: auto;
       gap: 4px;
+      flex: 0 0 auto;
       pointer-events: auto;
     }
     .dpad-spacer { display: none !important; }
     .dpad-btn {
       position: static !important;
-      width: 44px; height: 40px; min-width: 44px;
-      border-radius: 50%;
+      width: 46px; height: 44px; min-width: 44px;
+      border-radius: 10px;            /* rounded-RECT so the direction label fits (was a circle that clipped it) */
       font-size: 18px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      line-height: 1.0; padding: 0;
       flex: 0 0 auto;
     }
     .dpad-btn[data-dir="up"]    { grid-column: 2; grid-row: 1; }
     .dpad-btn[data-dir="left"]  { grid-column: 1; grid-row: 2; }
     .dpad-btn[data-dir="down"]  { grid-column: 2; grid-row: 2; }
     .dpad-btn[data-dir="right"] { grid-column: 3; grid-row: 2; }
-    .dpad-text { display: none !important; }
+    /* 2026-05-26 (Jane: "the text on the arrows are missing"). Labels were
+       display:none + clipped by the circular buttons — now shown on the rect. */
+    .dpad-text { display: block !important; font-size: 9px; font-weight: 700; letter-spacing: 0.2px; opacity: 0.92; margin-top: 1px; }
     .game-page > #hudPowerups { display: none !important; }
     .controls #hudPowerups {
       order: 1;
@@ -2072,8 +2085,8 @@
   }
   @media (max-height: 620px) and (orientation: landscape) and (min-height: 501px) {
     .controls { min-height:unset; padding:4px 10px; }
-    .dpad-btn { height:38px; }
-    .action-btn { height:36px; }
+    .dpad-btn { height:44px; }   /* WCAG floor (was 38px) */
+    .action-btn { height:40px; }
   }
   /* ==== PROXIMITY TIP POPUP (one-world coaching, ported from Scene 1) ==== */
   .tip-popup-overlay { position:fixed; inset:0; z-index:56; background:rgba(8,4,2,0.55); display:none; align-items:flex-end; justify-content:center; padding-bottom:14%; }

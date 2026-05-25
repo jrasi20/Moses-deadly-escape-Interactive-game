@@ -3238,6 +3238,10 @@
     z-index:80;
   }
   .toast.show { opacity:1; transform:translate(-50%, 0); }
+  /* 2026-05-25: while the cover page is up, anchor toasts to the BOTTOM so the
+     muted-audio toast ("No sound?…") can never cover the cover title. In-game
+     toasts are unaffected (cover is display:none then). */
+  .toast.toast-cover { top:auto; bottom:max(20px, env(safe-area-inset-bottom)); }
 
   /* Wave 5 (2026-05-09 PM14): heart-pulse animations for the HUD.
      Loss = red shake + scale-down spike. Gain = green pop.
@@ -4034,45 +4038,56 @@
        power-ups + 3 buttons"). Controls FLOAT so the canvas is full-screen
        (≈9 rows). D-pad = floating cross bottom-left; power rack + actions in
        a slim brown PILL bottom-right. (Parity with scene 2.) */
+    /* 2026-05-26 (Jane: "put the brown pane at the bottom; let the d-pad, power-
+       unlock buttons, and Interact/Hint/Menu be ON that bar — the floating
+       d-pad was in the way of the gameplay; I liked how it used to be").
+       REVERTED the floating `position:fixed` overlay back to an IN-FLOW brown
+       bar pinned at the BOTTOM of the flex column. The canvas-wrapper (flex:1)
+       sizes ABOVE the bar, so controls NEVER overlap the play area.
+       One bar holds everything: [d-pad] | [power-ups] | [Interact/Hint/Menu]. */
     .controls {
-      position: fixed !important;
-      bottom: 6px; right: 6px; left: auto; top: auto;
-      z-index: 40;
+      position: static !important;
+      width: 100% !important;
+      z-index: auto;
       display: flex !important;
       flex-direction: row !important;
       align-items: center;
-      justify-content: flex-end !important;
+      justify-content: space-between !important;
       gap: 8px;
-      width: auto;
-      max-width: calc(100vw - 168px);
+      max-width: none !important;
       min-height: 0; max-height: none;
-      padding: 5px 10px !important;
+      flex-shrink: 0;
+      padding: 6px 10px !important;
+      padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
       overflow: visible;
       flex-wrap: nowrap;
-      background: linear-gradient(0deg, rgba(42,14,3,0.96) 0%, rgba(74,28,10,0.94) 100%) !important;
-      border: 2px solid #5a1d06 !important;
-      border-radius: 14px !important;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
-      opacity: 0.9;            /* see game content behind the pill */
+      background: linear-gradient(0deg, #2a0e03 0%, #3a1508 100%) !important;
+      border: none !important;
+      border-top: 2px solid #ffd976 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
       pointer-events: auto;
     }
     .dpad {
-      position: fixed !important;
-      left: 10px; bottom: 10px; right: auto; top: auto;
-      z-index: 41;
-      opacity: 0.85;           /* see game content behind the dpad */
+      position: static !important;
+      order: 0 !important;             /* d-pad FAR LEFT (left thumb) */
+      margin-right: auto !important;   /* push actions + power-ups to the RIGHT */
+      z-index: auto;
+      opacity: 1 !important;
       display: grid !important;
-      grid-template-columns: repeat(3, 44px);
-      grid-template-rows: repeat(2, 40px);
+      grid-template-columns: repeat(3, 46px);
+      grid-template-rows: repeat(2, 44px);   /* WCAG: ≥44px touch targets */
       gap: 4px;
       width: auto;
+      flex: 0 0 auto;
       pointer-events: auto;
     }
     .dpad-spacer { display: none !important; }
     .dpad-btn {
       position: static !important;
       z-index: auto;
-      width: 44px; height: 40px; min-width: 44px;
+      width: 46px; height: 44px; min-width: 44px;
       border-radius: 10px;
       font-size: 19px;
       padding: 0;
@@ -4091,7 +4106,7 @@
     .dpad-btn[data-dir="right"] { grid-column: 3; grid-row: 2; }
     .dpad-text {
       display: block !important;
-      font-size: 7px; letter-spacing: 0.2px; font-weight: 700; opacity: 0.8; margin-top: 0;
+      font-size: 9px; letter-spacing: 0.2px; font-weight: 700; opacity: 0.92; margin-top: 1px;
     }
     .game-page > #hudPowerups { display: none !important; }
     .controls #hudPowerups {
@@ -4148,9 +4163,11 @@
     .hud-hearts { font-size:13px; }
     .pause-btn { width:32px; height:32px; font-size:12px; }
     .controls { min-height: 52px; padding:4px 8px !important; }
-    .action-btn { height:36px; font-size:10.5px; min-width:0; padding:0 6px; }
-    .dpad-btn { width:40px; height:40px; min-width:40px; font-size:17px; border-radius:8px; }
-    .dpad-text { font-size:7px; }
+    .action-btn { height:40px; font-size:10.5px; min-width:0; padding:0 8px; }
+    /* WCAG: keep the d-pad at the 44px touch-target floor even on tiny landscape;
+       legible 9px direction labels (Jane: the arrow text cues were missing/too small). */
+    .dpad-btn { width:44px; height:44px; min-width:44px; font-size:18px; border-radius:10px; }
+    .dpad-text { font-size:9px; opacity:0.92; }
     .controls #hudPowerups .hud-pu-btn { width:38px !important; height:38px !important; font-size:16px !important; }
   }
   .preload-overlay {
@@ -21976,6 +21993,14 @@ function _drainToastQueue(){
   el.textContent = msg;
   // Reset any stale top-offset from previous overlap-aware logic.
   el.style.top = '';
+  // 2026-05-25: outside active gameplay (gate / cover / transition) anchor the
+  // toast to the BOTTOM so the muted-audio toast ("No sound?…") never lands on
+  // the cover title. The top:18% position is only wanted in-game (over canvas).
+  try {
+    const _gp = document.getElementById('gamePage');
+    const _inGame = !!(_gp && getComputedStyle(_gp).display !== 'none');
+    el.classList.toggle('toast-cover', !_inGame);
+  } catch(e){}
   el.classList.add('show');
   _toastShowing = true;
   clearTimeout(toastTimer);

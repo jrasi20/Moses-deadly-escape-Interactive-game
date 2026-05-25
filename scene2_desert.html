@@ -43,7 +43,7 @@
     -webkit-overflow-scrolling:touch;
     display:flex; flex-direction:column; align-items:center;
     padding:22px 16px 40px;
-    min-height:100vh; height:auto;
+    min-height:100vh; min-height:100dvh; height:auto;  /* 2026-05-25: dvh parity (Android URL-bar jump) */
     z-index:10;
   }
   .cover-page .logo {
@@ -227,8 +227,11 @@
     position:fixed; inset:0;
     background:#0a0501;
     display:none;
-    flex-direction:column; align-items:center; justify-content:center;
-    padding:18px;
+    /* 2026-05-25: matched to Scene 1 (source of truth for narration panels) —
+       flex-start + bottom scroll padding so the panel starts at the TOP and
+       nothing (image or controls) ever clips on any orientation. */
+    flex-direction:column; align-items:center; justify-content:flex-start;
+    padding:18px 18px 40px;
     z-index:40;
     overflow-y:auto;
   }
@@ -248,9 +251,12 @@
   }
   .cin-panel .cin-art {
     width:100%;
+    /* 2026-05-25: matched to Scene 1 — cap art height; object-fit:contain on
+       the img so the WHOLE illustration shows (no crop) on every orientation. */
     aspect-ratio: 16/9;
+    max-height:70vh;
     border-radius:10px;
-    margin-bottom:14px;
+    margin:0 auto 10px;
     background:
       radial-gradient(ellipse at 30% 30%, #d9a05a 0%, #824012 60%, #2b0c02 100%);
     display:flex; align-items:center; justify-content:center;
@@ -258,8 +264,8 @@
     overflow:hidden;
   }
   .cin-panel .cin-art .cin-scene-img {
-    width:100%; height:100%; object-fit:cover; display:block;
-    filter: brightness(0.75) sepia(0.2);
+    width:100%; height:100%; object-fit:contain; display:block;
+    filter: brightness(0.95);
   }
   .cin-panel .cin-art .cin-overlay {
     position:absolute; inset:0;
@@ -277,6 +283,50 @@
   }
   .cin-progress {
     color:#ffd976; font-size:12px; opacity:0.7; margin-top:12px; letter-spacing:2px;
+  }
+  /* 2026-05-25: narration-panel responsive tiers — ported VERBATIM from
+     Scene 1 (the source of truth Jane approved on all orientations).
+     Replaces the earlier band-aid that cropped the art + wasted bottom space.
+       1. landscape phones/tablets → panel capped by viewport height, art 58vh
+       2. portrait phones/tablets → 4:3 art, contain, no crop
+       3. desktop ≥900px → larger panel
+       4. extra-wide ≥1400px → largest */
+  @media (orientation: landscape) and (max-width: 899px) {
+    .cin-panel { width: min(720px, 92vw); padding: 10px 14px; max-height: 96vh; overflow-y: auto; }
+    .cin-panel .cin-art { max-height: 58vh; margin: 0 auto 6px; }
+    .cin-text { font-size: 14.5px; line-height: 1.45; }
+  }
+  @media (orientation: portrait) and (max-width: 899px) {
+    .cin-panel {
+      width: min(640px, 96vw);
+      padding: 14px 16px;
+      max-height: 96vh;
+      max-height: 96dvh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .cin-panel .cin-art {
+      aspect-ratio: 4 / 3;
+      width: 100%;
+      max-height: 55vh;
+      margin: 0 auto 12px;
+      flex: 0 0 auto;
+    }
+    .cin-panel .cin-art .cin-scene-img { width: 100%; height: 100%; object-fit: contain; }
+    .cin-text { font-size: 15px; line-height: 1.5; padding: 0 4px; }
+    .cin-controls { margin-top: 12px; }
+  }
+  @media (min-width: 900px) {
+    .cin-panel { width: min(920px, 90vw); padding: 26px 32px; }
+    .cin-panel .cin-art { max-height: 70vh; margin-bottom: 20px; }
+    .cin-text  { font-size: 20px; line-height: 1.6; }
+    .cin-caption { font-size: 14px; }
+  }
+  @media (min-width: 1400px) {
+    .cin-panel { width: min(1100px, 80vw); padding: 32px 40px; }
+    .cin-panel .cin-art { max-height: 72vh; }
+    .cin-text  { font-size: 22px; }
   }
 
   /* ============ GAME PAGE ============ */
@@ -2925,47 +2975,53 @@
        full-screen (≈9 rows). D-pad = floating cross bottom-left (over the
        game). Power rack + action buttons sit in a slim brown PILL bottom-
        right. Nothing steals vertical space from the play area. */
+    /* 2026-05-26 (Jane): reverted the floating overlay to an IN-FLOW brown bar
+       at the bottom (parity with Scene 1). Canvas-wrapper sizes ABOVE the bar
+       so controls never overlap the play area; d-pad + power-ups + actions all
+       live ON the bar. */
     .controls {
-      position: fixed !important;
-      bottom: 6px; right: 6px; left: auto; top: auto;
-      z-index: 40;
+      position: static !important;
+      width: 100% !important;
+      z-index: auto;
       display: flex !important;
       flex-direction: row !important;
       align-items: center;
-      justify-content: flex-end !important;
+      justify-content: space-between !important;
       gap: 8px;
-      width: auto;
-      max-width: calc(100vw - 168px); /* keep the bottom-left clear for the dpad */
+      max-width: none !important;
       min-height: 0; max-height: none;
-      padding: 5px 10px !important;
+      flex-shrink: 0;
+      padding: 6px 10px !important;
+      padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
       overflow: visible;
       flex-wrap: nowrap;
-      background: linear-gradient(0deg, rgba(42,14,3,0.96) 0%, rgba(74,28,10,0.94) 100%) !important;
-      border: 2px solid #5a1d06 !important;
-      border-top: 2px solid #5a1d06 !important;
-      border-radius: 14px !important;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important;
-      opacity: 0.9;            /* see game content behind the pill */
+      background: linear-gradient(0deg, #2a0e03 0%, #3a1508 100%) !important;
+      border: none !important;
+      border-top: 2px solid #ffd976 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
       pointer-events: auto;
     }
-    /* D-pad floats as a cross bottom-left, OVER the full-screen game */
     .dpad {
-      position: fixed !important;
-      left: 10px; bottom: 10px; right: auto; top: auto;
-      z-index: 41;
-      opacity: 0.85;           /* see game content behind the dpad */
+      position: static !important;
+      z-index: auto;
+      opacity: 1 !important;
+      order: 0 !important;             /* d-pad FAR LEFT (left thumb) */
+      margin-right: auto !important;   /* push actions + power-ups to the RIGHT */
       display: grid !important;
-      grid-template-columns: repeat(3, 44px);
-      grid-template-rows: repeat(2, 40px);
+      grid-template-columns: repeat(3, 46px);
+      grid-template-rows: repeat(2, 44px);   /* WCAG: ≥44px touch targets */
       gap: 4px;
       width: auto;
+      flex: 0 0 auto;
       pointer-events: auto;
     }
     .dpad-spacer { display: none !important; }
     .dpad-btn {
       position: static !important;
       z-index: auto;
-      width: 44px; height: 40px; min-width: 44px;
+      width: 46px; height: 44px; min-width: 44px;
       border-radius: 10px;
       font-size: 19px;
       padding: 0;
@@ -2984,7 +3040,7 @@
     .dpad-btn[data-dir="right"] { grid-column: 3; grid-row: 2; }
     .dpad-text {
       display: block !important;
-      font-size: 7px; letter-spacing: 0.2px; font-weight: 700; opacity: 0.8; margin-top: 0;
+      font-size: 9px; letter-spacing: 0.2px; font-weight: 700; opacity: 0.92; margin-top: 1px;
     }
     /* Power rack — single horizontal row inside the pill */
     .game-page > #hudPowerups { display: none !important; }
@@ -3043,8 +3099,8 @@
     .pause-btn { width:32px; height:32px; font-size:12px; }
     .controls { min-height: 52px; padding:4px 8px !important; }
     .action-btn { height:36px; font-size:10.5px; min-width:0; padding:0 6px; }
-    .dpad-btn { width:40px; height:40px; min-width:40px; font-size:17px; border-radius:8px; }
-    .dpad-text { font-size:7px; }
+    .dpad-btn { width:44px; height:44px; min-width:44px; font-size:18px; border-radius:10px; }
+    .dpad-text { font-size:9px; opacity:0.92; }
     .controls #hudPowerups .hud-pu-btn { width:38px !important; height:38px !important; font-size:16px !important; }
   }
 </style>
