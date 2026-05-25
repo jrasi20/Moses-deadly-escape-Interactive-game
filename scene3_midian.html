@@ -4876,13 +4876,13 @@ const SCENE3_HERD_REST = [
   {tx:17,ty:12}, {tx:16,ty:11}, {tx:18,ty:11}, {tx:16,ty:13}, {tx:18,ty:13}, {tx:17,ty:14}, {tx:15,ty:12},
 ];
 const scene3Herd = {
-  spawned:false, done:false, builtToastShown:false, nearHintShown:false,
+  spawned:false, done:false, builtToastShown:false, nearHintShown:false, raidToastShown:false,
   sheep:[], total:0, across:0, trail:[], slotNext:0,
   _ltx:0, _lty:0, idleMs:0, celebrateAt:0,
 };
 function resetScene3Herd(){
   scene3Herd.spawned=false; scene3Herd.done=false; scene3Herd.builtToastShown=false;
-  scene3Herd.nearHintShown=false; scene3Herd.sheep=[]; scene3Herd.total=0; scene3Herd.across=0;
+  scene3Herd.nearHintShown=false; scene3Herd.raidToastShown=false; scene3Herd.sheep=[]; scene3Herd.total=0; scene3Herd.across=0;
   scene3Herd.trail=[]; scene3Herd.slotNext=0; scene3Herd._ltx=0; scene3Herd._lty=0; scene3Herd.idleMs=0; scene3Herd.celebrateAt=0;
 }
 function _herdWalkable(tx,ty){ return (typeof MAP!=='undefined' && MAP[ty] && MAP[ty][tx]===0); }
@@ -5000,6 +5000,42 @@ function updateScene3Herd(dt){
       if (Math.abs(odx)>0.6) s.dir = odx<0?-1:1;
       s.tx=Math.round(s.px/TILE); s.ty=Math.round(s.py/TILE);
       s.hop=0;
+    }
+  }
+  // ── URGENCY: rude-shepherd flock raid ────────────────────────────────────
+  // While Moses is actively leading the flock, the west-post rude shepherd rushes
+  // to scatter it. A sheep still on the WEST bank that he reaches is scared back
+  // to grazing (must be re-led) — so HURRY (⚡ Speed Burst), FREEZE him (❄️ Foe
+  // Freeze), or get the sheep onto the stones (shepherds can't cross the river).
+  // Pure setback, no hearts lost — keeps the gentle scene kid-friendly.
+  if (built && !scene3Herd.done){
+    let raider = null;
+    try {
+      if (typeof pursuitScouts !== 'undefined' && pursuitScouts.length){
+        raider = pursuitScouts.find(p => !p.shovedOff && !p.caught && p.postTx <= SCENE3_STREAM_COL_MIN);
+      }
+    } catch(e){}
+    const anyFollow = scene3Herd.sheep.some(s => s.state === 'follow');
+    if (raider && anyFollow){
+      raider.chaseMode = true;            // existing AI now drives him toward Moses (capped west of the river)
+      if (!scene3Herd.raidToastShown){
+        scene3Herd.raidToastShown = true;
+        try { toast('⚠️ A rude shepherd is rushing to scatter your flock — get them across, quick!'); } catch(e){}
+        try { if (audio.alerted){ audio.alerted.currentTime=0; audio.alerted.volume=0.4; audio.alerted.play().catch(()=>{}); } } catch(e){}
+      }
+      const frozen = (window._guardFreezeUntil && now < window._guardFreezeUntil);
+      if (!frozen){
+        const rpx = raider.tx*TILE, rpy = raider.ty*TILE;
+        for (const s of scene3Herd.sheep){
+          if (s.state !== 'follow') continue;
+          if (s.tx >= SCENE3_STREAM_COL_MIN) continue;        // on the stones / east bank = safe
+          if (Math.hypot(rpx - s.px, rpy - s.py) < TILE*1.4){
+            s.state = 'graze'; s.hop = 0; s.wanderAt = 0;      // scattered — re-herd it
+            try{ if(audio.sheepBleat){audio.sheepBleat.currentTime=0;audio.sheepBleat.volume=0.6;audio.sheepBleat.play().catch(()=>{});} }catch(e){}
+            try{ toast('🐑 A shepherd scattered a sheep! Lead it across again.'); }catch(e){}
+          }
+        }
+      }
     }
   }
 }
@@ -13322,6 +13358,9 @@ let _scoutCloseWarnAt = 0;   // v2.2 hoofbeat/scout-alert cooldown (ms)
 let _scene3LastShepherdToastShown = false;
 function updateRudeShepherds(dt) {
   const now = performance.now();
+  // ❄️ Foe Freeze power: the rude shepherds are the main Scene-3 threat, so they
+  // must freeze too (previously only wolves/legacy guards honored this).
+  if (window._guardFreezeUntil && now < window._guardFreezeUntil) return;
   const moses_hidden = !!player.crouched || (typeof isMosesInCave === 'function' && isMosesInCave());
   let anyCaughtThisFrame = false;
   let allCaught = true;
