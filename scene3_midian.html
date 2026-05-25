@@ -5107,6 +5107,20 @@ function drawScene3Herd(){
     g.addColorStop(1,'rgba(255,230,150,0)');
     ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
   }
+  // Eagle Eye (royalVision) power: beacon over the hidden crown so it's findable.
+  if (window._royalVisionUntil && now < window._royalVisionUntil && !game.crownFound){
+    const cx=33.5*TILE-camera.px, cy=16.5*TILE-camera.py;
+    if (cx>-TILE*2 && cx<CANVAS_W+TILE*2 && cy>-TILE*2 && cy<CANVAS_H+TILE*2){
+      const pulse=0.5+0.5*Math.sin(now/180);
+      const R=TILE*(1.0+0.5*pulse);
+      const g=ctx.createRadialGradient(cx,cy,2,cx,cy,R);
+      g.addColorStop(0,'rgba(255,225,120,'+(0.45+0.25*pulse)+')');
+      g.addColorStop(1,'rgba(255,225,120,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
+      ctx.font='bold '+Math.round(TILE*0.9)+'px Georgia'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('👑', cx, cy - TILE*1.1 - pulse*4);
+    }
+  }
 }
 
 /* ===== PHASE C STEP 8 — RANDOM EVENTS ===== */
@@ -7017,9 +7031,27 @@ document.querySelectorAll('.difficulty-btn').forEach(btn => {
     game.difficulty = btn.dataset.diff;
     // v3.5: apply full difficulty config (guards, hazards, time, gate count)
     applyDifficultyConfig(game.difficulty);
+    // "One world": remember the choice so it carries across all three scenes
+    try { localStorage.setItem('bek.lastDifficulty', game.difficulty); } catch(e){}
     play('click');
   });
 });
+// "One world": honour the difficulty the player picked earlier in the bundle —
+// preselect it on the Scene-3 cover so they can just tap Start (still changeable).
+(function _preselectWorldDifficulty(){
+  try {
+    const saved = localStorage.getItem('bek.lastDifficulty');
+    if (saved === 'easy' || saved === 'medium' || saved === 'hard') {
+      const btn = document.querySelector('.difficulty-btn[data-diff="' + saved + '"]');
+      if (btn) {
+        document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        game.difficulty = saved;
+        try { applyDifficultyConfig(saved); } catch(e){}
+      }
+    }
+  } catch(e){}
+})();
 $('startBtn').addEventListener('click', () => {
   unlockAudio();
   if (!document.querySelector('.difficulty-btn.selected')) {
@@ -7724,6 +7756,7 @@ function restartScene() {
   game.guardAlertActive = false;
   // v3.3 resets
   game.crownFound = false;
+  window._godsGraceUsedScene3 = false;   // God's Grace re-arms each scene run
   game.truthCardCollected = false;
   game.midSceneTruth = null;
   game.peeksLeft = 2;
@@ -8014,6 +8047,10 @@ function triggerInteractable(obj){
   } else if (obj.reward === 'stars50') {
     game.stars += 50;
     game.crownFound = true;
+    // "One world": the hidden crown feeds the cross-scene crown total that
+    // unlocks Eagle Eye (royalVision) at 4 crowns — same as scenes 1 & 2.
+    try { _addLifetimeCrowns(1); } catch(e){}
+    try { _refreshUnlockButtons(); } catch(e){}
     updateHudStars();
     try { play('collectCrown'); } catch(e){}  // v2.2.7 crown-specific fanfare
     try { play('win') || play('success'); } catch(e){}
@@ -11771,9 +11808,10 @@ const _UNLOCKS_KEY            = 'bek.bundle1.unlocks';
 const UNLOCK_TIERS = [
   { threshold:  75, resource: 'treasures', key: 'speedBurst',    label: '⚡ Speed Burst',     cooldownMs: 25000, desc: 'Moses sprints 2× for 5 seconds. Tap any time — recharges every 25 s.' },
   { threshold: 175, resource: 'treasures', key: 'guardFreeze',   label: '❄️ Foe Freeze',      cooldownMs: 35000, desc: 'Shepherds AND wolves freeze in place for 5 seconds. Recharges every 35 s.' },
-  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '🦅 Eagle Eye',       cooldownMs: 30000, desc: 'Marks every river stone safe (✓) or sinking (✗) so you cross without stumbling. Lasts 8 seconds.' },
+  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '🦅 Eagle Eye',       cooldownMs: 30000, desc: 'Lights up the safe stepping-stone crossing AND reveals the hidden crown with a beacon. Lasts 8 seconds.' },
   { threshold: 350, resource: 'treasures', key: 'truthSeeker',   label: '📖 Truth Seeker',    cooldownMs: 60000, desc: 'On the next checkpoint: clue is free + 2 wrong options greyed out.' },
   { threshold:   5, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000, desc: 'Skip the Bible questions and jump straight to the checkpoint\'s bonus game — win it to claim the crystal. Recharges every 90 s.' },
+  { threshold: 600, resource: 'treasures', key: 'pharaohsMercy', label: '🙏 God\'s Grace',     cooldownMs: 0,     desc: 'When Moses is down to his last heart, God restores one — automatically, once per scene. He is always watching over you.' },
 ];
 function _loadLifetimeTreasures(){ try { return parseInt(localStorage.getItem(_LIFETIME_TREASURES_KEY) || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadLifetimeCrowns(){    try { return parseInt(localStorage.getItem(_LIFETIME_CROWNS_KEY)    || '0', 10) || 0; } catch(e){ return 0; } }
@@ -11815,7 +11853,7 @@ function _activatePowerup(key){
   } else if (key === 'royalVision') {
     window._royalVisionUntil = now + 8000;
     window._puActiveUntil[key] = now + 8000;
-    try { toast('🦅 EAGLE EYE! Safe stones ✓ and sinking stones ✗ revealed.'); } catch(e){}
+    try { toast('🦅 EAGLE EYE! The stepping-stone crossing glows — and the hidden crown is revealed.'); } catch(e){}
   } else if (key === 'truthSeeker') {
     window._truthSeekerArmed = true;
     window._puActiveUntil[key] = now + 1500;
@@ -11824,6 +11862,12 @@ function _activatePowerup(key){
     window._scribesWisdomArmed = true;
     window._puActiveUntil[key] = now + 1500;
     try { toast('🪶 SCRIBE\'S WISDOM armed — next checkpoint skipped.'); } catch(e){}
+  } else if (key === 'pharaohsMercy') {
+    // Passive power — it heals automatically (see _maybeGodsGrace). Tapping just explains it.
+    try { toast(window._godsGraceUsedScene3
+      ? '🙏 God\'s Grace already lifted Moses up this scene.'
+      : '🙏 God\'s Grace watches over Moses — it restores a heart by itself when he\'s down to his last.'); } catch(e){}
+    return;
   }
   if (tier.cooldownMs && tier.cooldownMs > 0) window._puCooldownUntil[key] = now + tier.cooldownMs;
   try { play('powerSpell') || play('magicSfx') || play('chime') || play('success'); } catch(e){}
@@ -11831,6 +11875,22 @@ function _activatePowerup(key){
   _refreshUnlockButtons();
   if (window._puActiveUntil[key]) setTimeout(_refreshUnlockButtons, Math.max(60, window._puActiveUntil[key] - performance.now() + 50));
   if (tier.cooldownMs && tier.cooldownMs > 0) setTimeout(_refreshUnlockButtons, tier.cooldownMs + 100);
+}
+// God's Grace (pharaohsMercy): when Moses is down to his last heart, God restores
+// one — automatically, once per scene. Mirrors scenes 1 & 2's auto-heal power.
+function _maybeGodsGrace(){
+  try {
+    if (window._godsGraceUsedScene3) return;
+    if (typeof game === 'undefined' || game.hearts !== 1) return;
+    if (!_hasUnlock('pharaohsMercy')) return;
+    window._godsGraceUsedScene3 = true;
+    game.hearts = Math.min(3, game.hearts + 1);
+    try { updateHudHearts(); } catch(e){}
+    try { play('levelUp') || play('chime') || play('success'); } catch(e){}
+    try { spawnGlitterBurstAtPlayer(22); } catch(e){}
+    try { toast('🙏 GOD\'S GRACE! Moses was down to his last heart — and God restored one.'); } catch(e){}
+    try { _refreshUnlockButtons(); } catch(e){}
+  } catch(e){}
 }
 function _refreshUnlockButtons(){
   try {
@@ -18421,6 +18481,7 @@ function loop(now){
     try { updateScene3Wolf(dt); } catch(e){}
     try { updateScene3Flock(dt); } catch(e){}
     try { updateScene3Herd(dt); } catch(e){}
+    try { _maybeGodsGrace(); } catch(e){}
     try { updateScene3Ram(dt); } catch(e){}
     try { _checkScene3JarDrop(); } catch(e){}
     try { updateScene3Caravan(dt); } catch(e){}

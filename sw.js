@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v31'; // v31: fix drawScene3Flock name collision (wolf-rescue flock now renders); add river+flock tutorial step; herd pen now uses the stone sheep-pen-wall sprite
+const CACHE_VERSION = 'bek-bundle-v32'; // v32: one-world unification pass 1 — difficulty persists/loads from bek.lastDifficulty; hidden crown feeds cross-scene crown total (unlocks Eagle Eye); add God's Grace (pharaohsMercy) auto-heal power; repurpose Eagle Eye (reveals crossing + crown beacon) now that stones never sink; add river/flock tutorial step; ASSET_PROMPTS doc
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
