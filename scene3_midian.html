@@ -8910,7 +8910,8 @@ function _pulleyResolveSteal(saved) {
   const fb = document.getElementById('pulleyFeedback');
   const pot = _pulley.steal ? _pulley.steal.pot : null;
   if (saved) {
-    _pulley.shepStun = 2.0; _pulley.shake = 6; _pulley.shoveT = 0.6;
+    _pulley.shepStun = 2.0; _pulley.shake = 8; _pulley.shoveT = 0.6;
+    _pulleyFlash(120, 235, 150, 0.42);   // green save flash
     if (pot) _pulleyCue('SAVED! \u{1F4AA}', pot.x, pot.y - 54, '#9affb0', true);
     _pulleySay('mosesSay', 'Leave it be!', 'voLeaveItBe');
     if (fb) fb.textContent = 'Saved it! He has to wait now.';
@@ -8918,7 +8919,8 @@ function _pulleyResolveSteal(saved) {
     _pulley.steal = null; _pulley.nextSteal = _pulleyNextStealDelay();
   } else if (pot) {
     pot.fill = 0; pot.done = false; pot.pop = 0;
-    _pulley.shake = 12; _pulleySpawnDrops(8, pot.x, pot.y - 26, 40);
+    _pulley.shake = 14; _pulleyFlash(220, 70, 50, 0.5);   // red "stolen!" flash
+    _pulleySpawnDrops(8, pot.x, pot.y - 26, 40);
     _pulleyCue('stole it!', pot.x, pot.y - 54, '#ff7a6a', true);
     _pulley.potsLostToSteal = (_pulley.potsLostToSteal || 0) + 1;
     _pulleySay('shepSay', 'Ha ha ha! Got it!', 'voHaha');
@@ -8938,7 +8940,8 @@ function _pulleyResolveSteal(saved) {
 function _pulleyWin() {
   if (_pulley.over) return;
   _pulley.over = true; _pulley.win = true; _pulley.celebrate = 0; _pulley.steal = null; _pulley.proj = null;
-  _pulley.zoomTarget = 1.05;
+  _pulley.zoom = 1.22; _pulley.zoomTarget = 1.05; _pulley.shake = 11;   // victory punch-in
+  _pulleyFlash(255, 226, 120, 0.55);                                    // gold win flash
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F389} All pots filled! The flock comes to drink!';
   _pulley.shepCarry = null; _pulley.shoveT = 0; _pulley.mosesRun = null;
@@ -9009,6 +9012,7 @@ function _pulleyLose() {
 function _pulleyStartGame() {
   const intro = document.getElementById('pulleyIntroOverlay'); if (intro) intro.style.display = 'none';
   _pulley.intro = false; _pulley.lastFrame = 0;
+  _pulley.zoom = 1.16; _pulley.zoomTarget = 1; _pulley.shake = 7;   // cinematic entry punch-in (parity with rescue)
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = 'Drag back from Moses, then let go to splash water in!';
   try { play('click') || play('pop'); } catch(e){}
   // now (and only now) start the music bed, opening banter and the game loop
@@ -9024,6 +9028,7 @@ function _pulleyRetry() {
   cancelAnimationFrame(_pulley.rafId);
   _pulley.lastFrame = 0;
   _pulleyReset(); _pulleyUpdateHud();
+  _pulley.zoom = 1.16; _pulley.zoomTarget = 1; _pulley.shake = 7;   // entry punch-in on replay too
   document.getElementById('pulleyFeedback').textContent = 'Go again — fill every pot before the shepherd!';
   try { if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
@@ -9195,6 +9200,9 @@ function _pPot(c, p, now) {
     if (Math.random() < 0.12) _pulley.drops.push({ x: p.x + (Math.random() - 0.5) * 24, y: y - pop, vx: (Math.random() - 0.5) * 1.4, vy: -0.8 - Math.random(), t: 0, life: 22 });
   }
 }
+// full-canvas color flash (juice): red on a stolen pot, green on a save, gold on
+// the win, cyan on a pot filled. Decays each frame in the draw.
+function _pulleyFlash(r, g, b, a) { _pulley.flash = { r: r, g: g, b: b, a: a || 0.5 }; }
 function _pulleyFrame(now) {
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
   const canvas = document.getElementById('pulleyCanvas');
@@ -9298,6 +9306,7 @@ function _pulleyFrame(now) {
         try { play('oasisWater') || play('chime'); } catch(e){}
         if (hit.fill >= 100 && !hit.done) {
           hit.done = true; hit.pop = 1; _pulleyUpdateHud();
+          _pulley.shake = Math.max(_pulley.shake, 5); _pulleyFlash(130, 205, 255, 0.22);   // satisfying fill pop
           _pulleyCue('POT FILLED! ✓', hit.x, hit.y - 54, '#7fe0a0');
           try { play('potFill') || play('coin'); } catch(e){}
           if (fb) fb.textContent = 'Pot filled! ' + (_pulleyMine().length - _pulleyDone(true)) + ' to go.';
@@ -9616,6 +9625,15 @@ function _pulleyFrame(now) {
     c.fillStyle = 'rgba(255,230,120,' + (0.12 + 0.07 * Math.sin(now / 120)).toFixed(2) + ')'; c.fillRect(0, 0, W, H);
   }
   c.restore();
+
+  // full-canvas color flash (screen-space, drawn after the camera transform so it
+  // covers everything) — punches up steals/saves/fills/win, then fades fast.
+  if (_pulley.flash && _pulley.flash.a > 0.02) {
+    const f = _pulley.flash;
+    c.fillStyle = 'rgba(' + f.r + ',' + f.g + ',' + f.b + ',' + f.a.toFixed(3) + ')';
+    c.fillRect(0, 0, W, H);
+    f.a *= 0.85;
+  }
 }
 
 // Wire up the SHOO button + the canvas aim (drag to set angle/power, release to fire)
