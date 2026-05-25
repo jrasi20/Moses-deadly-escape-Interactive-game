@@ -1047,6 +1047,9 @@
   .ch-m3-tile.sel { transform:scale(1.09); box-shadow:0 0 0 3px #ff5fa2, 0 3px 8px rgba(0,0,0,0.3); filter:brightness(1.08); z-index:2; }
   .ch-m3-tile.hint { animation:m3hint 0.7s ease-in-out infinite; }
   .ch-m3-tile.nudge { animation:m3nudge 0.22s ease; }
+  /* Show-Me idle hint (mini-games): pulses a suggested move when a kid is stuck. */
+  .ch-hint-glow { outline:3px solid rgba(255,215,90,0.95) !important; box-shadow:0 0 0 3px rgba(255,215,90,0.85), 0 0 16px rgba(255,200,60,0.8) !important; animation:chHintPulse 0.9s ease-in-out infinite; z-index:3; }
+  @keyframes chHintPulse { 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.1);} }
   .ch-m3-tile.crush { animation:m3crush 0.26s ease forwards; }
   @keyframes m3hint { 0%,100%{ box-shadow:0 0 0 2px #36d1ff; } 50%{ box-shadow:0 0 10px 4px #36d1ff; transform:scale(1.06);} }
   @keyframes m3nudge { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);} }
@@ -8025,15 +8028,14 @@ function restartScene() {
 }
 
 /* ---------- TUTORIAL ---------- */
-// Crisp, scannable onboarding \u2014 one short line each. Kids can't read paragraphs,
-// so the detail is delivered just-in-time by the in-world proximity tips, the
-// glowing checkpoint markers, and the move-prompts during mini-games.
+// Canonical onboarding = 3 crisp modal steps; everything else is taught
+// just-in-time by the in-world proximity tips (river / flock / shepherds), the
+// glowing checkpoint markers, the EXIT beacon, and the mini-game Show-Me hints.
+// Kids can't read paragraphs, so each slide is ONE short line.
 const TUT_STEPS = [
-  { icon:'\u{1F463}', title:'Move Moses',      body:'Tap the arrows (or swipe) to move Moses east.' },
-  { icon:'\u{1F334}', title:'Hide',            body:'Stand by palms, rocks, or jars to hide from rude shepherds.' },
-  { icon:'\u{1F4DC}', title:'Checkpoints',     body:'Walk into a glowing \u2753 scroll and answer to earn a crystal.' },
-  { icon:'\u{1F309}', title:'Cross the River', body:'3 crystals build a bridge \u2014 then lead the sheep across.' },
-  { icon:'\u{26FA}',  title:'Reach the Tent',  body:'Clear every stop, then reach Jethro\u2019s tent to win!' },
+  { icon:'\u{1F463}', title:'Move Moses',  body:'Tap the arrows (or swipe) to move Moses east.' },
+  { icon:'\u{1F334}', title:'Hide',        body:'Stand by palms, rocks, or jars to hide from rude shepherds.' },
+  { icon:'\u{1F4DC}', title:'Checkpoints', body:'Walk into a glowing \u2753 scroll and answer \u2014 3 crystals build the river bridge!' },
 ];
 function showTutorial(step){
   game.tutorialStep = step;
@@ -10648,6 +10650,22 @@ function renderMatch3(gate, q, container){
 
   draw();
 
+  // Show-Me idle hint — if the kid hasn't acted in ~5s, glow a winning swap and
+  // (once) explain the goal in plain words. Repeats every ~5s of inactivity.
+  let _m3LastAct = performance.now(), _m3Shown = false;
+  const _m3OrigTap = onTap;
+  onTap = function(r,c){ _m3LastAct = performance.now(); return _m3OrigTap(r,c); };
+  const _m3HintTimer = setInterval(() => {
+    if (!document.body.contains(grid)) { clearInterval(_m3HintTimer); return; }
+    if (busy || performance.now() - _m3LastAct < 5000) return;
+    const h = findHint();
+    if (h){ const e1=cellEl(h.a.r,h.a.c), e2=cellEl(h.b.r,h.b.c);
+      if(e1)e1.classList.add('hint'); if(e2)e2.classList.add('hint');
+      setTimeout(()=>{ if(e1)e1.classList.remove('hint'); if(e2)e2.classList.remove('hint'); }, 2400); }
+    if (!_m3Shown){ _m3Shown=true; try{ toast('👆 Tap two tiles next to each other to line up 3 of a kind!'); }catch(e){} }
+    _m3LastAct = performance.now();
+  }, 1500);
+
   // Truth Seeker power-up: glow a guaranteed winning swap as a hint.
   if (window._truthSeekerArmed){
     window._truthSeekerArmed=false;
@@ -10666,7 +10684,7 @@ function renderMatch3(gate, q, container){
 function renderSort(gate, q, container){
   const items = (q.items || []).map((it, i) => ({ ...it, id:i, placed:false }));
   const bins = q.bins || [ {key:'in', label:'In the Moses story'}, {key:'out', label:'Not in the story'} ];
-  let sel = null, done = 0, busy = false;
+  let sel = null, done = 0, busy = false, _sortLastAct = performance.now(), _sortShown = false;
 
   container.innerHTML = '';
   const wrap = document.createElement('div'); wrap.className = 'ch-sort-wrap';
@@ -10692,6 +10710,7 @@ function renderSort(gate, q, container){
     b.textContent = it.e; b.setAttribute('aria-label', it.n); b.dataset.id = it.id;
     b.addEventListener('click', () => {
       if (busy || it.placed) return;
+      _sortLastAct = performance.now();
       if (sel === it.id) { sel = null; render(); return; }
       sel = it.id; render(); try{ play('tap'); }catch(e){}
     });
@@ -10707,6 +10726,7 @@ function renderSort(gate, q, container){
     if (!items.some(it => !it.placed)) tray.innerHTML = '<div class="ch-sort-empty">All sorted! 🎉</div>';
   }
   function dropInto(binKey, binEl, slotEl){
+    _sortLastAct = performance.now();
     if (busy || sel === null) { if(sel===null){ binEl.classList.add('shake'); setTimeout(()=>binEl.classList.remove('shake'),300);} return; }
     const it = items.find(x => x.id === sel);
     if (!it || it.placed) return;
@@ -10731,6 +10751,23 @@ function renderSort(gate, q, container){
   }
 
   render();
+
+  // Show-Me idle hint — if stuck ~5s, glow an unsorted picture + the basket it
+  // belongs in, and (once) explain the goal in plain words.
+  const _sortHintTimer = setInterval(() => {
+    if (!document.body.contains(wrap)) { clearInterval(_sortHintTimer); return; }
+    if (busy || performance.now() - _sortLastAct < 5000) return;
+    const it = items.find(x => !x.placed);
+    if (it){
+      const tEl = tray.querySelector('[data-id="' + it.id + '"]');
+      const bEl = binEls[it.bin] && binEls[it.bin].bin;
+      if (tEl) tEl.classList.add('ch-hint-glow');
+      if (bEl) bEl.classList.add('ch-hint-glow');
+      setTimeout(()=>{ if(tEl)tEl.classList.remove('ch-hint-glow'); if(bEl)bEl.classList.remove('ch-hint-glow'); }, 2400);
+    }
+    if (!_sortShown){ _sortShown=true; try{ toast('👆 Tap a picture, then tap the basket it belongs in.'); }catch(e){} }
+    _sortLastAct = performance.now();
+  }, 1500);
 
   // Truth Seeker power-up: auto-sort one tile into its correct basket as a clue.
   if (window._truthSeekerArmed){
@@ -10866,6 +10903,32 @@ function renderMerge2048(gate, q, container){
   grid.addEventListener('touchend',onTE,{passive:true});
 
   init(); draw();
+
+  // Show-Me idle hint — if stuck ~5s, pulse the best arrow to swipe (prefers a
+  // direction that MERGES two tiles) and (once) explain the goal in plain words.
+  let _mgLastAct = performance.now(), _mgShown = false;
+  const _mgOrigMove = move;
+  move = function(dir){ _mgLastAct = performance.now(); return _mgOrigMove(dir); };
+  function _mgScoreDir(dir){
+    let changed = false, merged = false;
+    for (let i=0;i<SIZE;i++){
+      const L = getLine(dir,i), s = slide(L.slice());
+      const nzL = L.filter(v=>v).length, nzS = s.filter(v=>v).length;
+      for (let k=0;k<SIZE;k++) if (L[k]!==s[k]) changed = true;
+      if (nzS < nzL) merged = true;
+    }
+    return merged ? 2 : (changed ? 1 : 0);
+  }
+  const _mgHintTimer = setInterval(() => {
+    if (!document.body.contains(grid)) { clearInterval(_mgHintTimer); cleanup(); return; }
+    if (busy || won || performance.now() - _mgLastAct < 5000) return;
+    let bestDir = null, bestScore = 0;
+    for (const d of ['left','up','right','down']){ const sc=_mgScoreDir(d); if (sc>bestScore){ bestScore=sc; bestDir=d; } }
+    if (bestDir){ const b = pad.querySelector('.mg-'+bestDir);
+      if (b){ b.classList.add('ch-hint-glow'); setTimeout(()=>b.classList.remove('ch-hint-glow'), 2400); } }
+    if (!_mgShown){ _mgShown=true; try{ toast('👆 Tap an arrow to push the tiles. Two of the SAME join into the next picture!'); }catch(e){} }
+    _mgLastAct = performance.now();
+  }, 1500);
 
   // Truth Seeker power-up: gift a high tile (one below the goal) as a head start.
   if (window._truthSeekerArmed){
