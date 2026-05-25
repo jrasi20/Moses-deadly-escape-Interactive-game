@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v26'; // v26: intro logo no longer clipped, pause hidden off-gameplay, click-sound on menus, cue stacking, smaller countdown, gold (not blue) lane marker, visible staff swing, bigger+sharper sprites, brighter buttons, Start-Rescue paints before countdown (invalidate stale v25)
+const CACHE_VERSION = 'bek-bundle-v27'; // v27: weapons page decluttered (tutorial merged into intro), one big cue at a time, bigger fast-shepherd, fire stays in-lane, bigger lose-modal sprites, replay clears game canvas, bg music restarts at GO, ONE currency (treasure unlocks weapons — stars removed), visible reload bar that gates firing, animated win treasure-bag burst + coin spray (invalidate stale v26)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
