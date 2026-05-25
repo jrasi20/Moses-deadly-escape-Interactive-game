@@ -2243,6 +2243,7 @@
     </div>
     <div class="hud-group">
       <button class="pause-btn" id="peekMapBtn" aria-label="Peek Map" title="Peek the map (2 uses)" style="background:linear-gradient(145deg,#2a4a8a,#3a5ea8);border-color:#ffd976;color:#ffd976;margin-right:6px;">MAP <span id="peekCount" style="font-size:10px;">(2)</span></button>
+      <button class="pause-btn" id="hudSoundBtn" aria-label="Sound on (tap to mute)" aria-pressed="false" title="Sound on/off" style="margin-right:6px;">&#128266;</button>
       <button class="pause-btn" id="pauseBtn" aria-label="Pause">| |</button>
     </div>
   </div>
@@ -3194,6 +3195,36 @@ function unlockAudio() {
 // v2.3.1 (Jane): single source-of-truth music switcher. Pauses every looping
 // track except the one requested, so we never hear two musics at once.
 const _LOOP_TRACKS = ['bgm','narration','alerted'];
+// ---- Master SOUND mute (canonical A1) ----------------------------------------
+// Persisted in the cross-scene key bek.bundle1.soundOn. We mute by toggling the
+// HTMLMediaElement `.muted` flag on EVERY track, so even beds started by a direct
+// .play() (wellMusic, puzzleBg, the rescue/well minis) go silent — not just the
+// ones routed through play()/setMusic().
+const _SOUND_KEY = 'bek.bundle1.soundOn';
+let _soundOn = true;
+try { _soundOn = localStorage.getItem(_SOUND_KEY) !== '0'; } catch(e){}
+function _applyMuteToAllAudio(){
+  try { for (const k in audio){ const a = audio[k]; if (a) a.muted = !_soundOn; } } catch(e){}
+}
+function _refreshSoundBtn(){
+  const b = document.getElementById('hudSoundBtn');
+  if (b){ b.textContent = _soundOn ? '\u{1F50A}' : '\u{1F507}'; b.setAttribute('aria-label', _soundOn ? 'Sound on (tap to mute)' : 'Sound off (tap to unmute)'); b.setAttribute('aria-pressed', _soundOn ? 'false' : 'true'); }
+}
+function _setSoundOn(on){
+  _soundOn = !!on;
+  try { localStorage.setItem(_SOUND_KEY, _soundOn ? '1' : '0'); } catch(e){}
+  _applyMuteToAllAudio();
+  _refreshSoundBtn();
+}
+// Canonical A17: hard-stop every music/narration/ambient bed (pause + rewind).
+// Used on transitions (menu return, win, pause, scene end) so no loop bleeds
+// across screens regardless of which code path started it.
+function _killAllGameMusic(){
+  const tracks = ['bgm','narration','alerted','cinNarrate','closeNarrate','epilNarrate','wellMusic','coverMusic','puzzleBg'];
+  tracks.forEach(k => { const a = audio[k]; if (!a) return; try { a.pause(); a.currentTime = 0; } catch(e){} });
+}
+try { window._killAllGameMusic = _killAllGameMusic; } catch(e){}
+try { _applyMuteToAllAudio(); } catch(e){}   // honor the saved mute state from load
 function setMusic(which /* 'bgm' | 'narration' | 'alerted' | null */){
   _LOOP_TRACKS.forEach(k => {
     const a = audio[k]; if (!a) return;
@@ -3235,6 +3266,7 @@ function play(name) {
   // first-available FALLBACK (previously it always returned undefined, so every name in
   // the chain played at once — e.g. 4 layered sounds on a loss).
   const a = audio[name]; if (!a) return false;
+  if (typeof _soundOn !== 'undefined' && !_soundOn) return false;   // master mute (A1)
   if (PLAY_ONLY_WHILE_PLAYING[name] && (typeof game === 'undefined' || game.state !== 'playing')) return false;
   if (MODAL_AUDIO_DENY.has(name) && _anyBlockingModalOpen()) return false;
   const now = performance.now();
@@ -12842,6 +12874,7 @@ $('winReplayBtn').addEventListener('click', () => {
 const _winMenuBtn = $('winMenuBtn');
 if (_winMenuBtn) _winMenuBtn.addEventListener('click', () => {
   play('click');
+  try { _killAllGameMusic(); } catch(e){}   // A17: no bed bleeds onto the cover page
   // Return to the cover page without a full reload (keeps access unlock intact)
   $('winModal').classList.remove('active');
   $('gamePage').classList.remove('active');
@@ -12928,6 +12961,7 @@ $('dangerRetryBtn').addEventListener('click', () => {
 });
 $('dangerMenuBtn').addEventListener('click', () => {
   play('click');
+  try { _killAllGameMusic(); } catch(e){}   // A17: no bed bleeds onto the cover page
   $('dangerModal').classList.remove('active');
   $('gamePage').classList.remove('active');
   $('coverPage').style.display = '';
@@ -13581,6 +13615,13 @@ if (_peekBtn) _peekBtn.addEventListener('click', (e) => {
   toggleMapPeek();
 });
 
+/* ---------- SOUND (master mute, canonical A1) ---------- */
+(function _wireSoundBtn(){
+  const b = document.getElementById('hudSoundBtn');
+  if (b) b.addEventListener('click', () => { _setSoundOn(!_soundOn); if (_soundOn) { try { play('click'); } catch(e){} } });
+  try { _refreshSoundBtn(); } catch(e){}
+})();
+
 /* ---------- PAUSE ---------- */
 $('pauseBtn').addEventListener('click', () => { unlockAudio(); togglePause(); });
 $('resumeBtn').addEventListener('click', () => { play('click'); togglePause(); });
@@ -13591,6 +13632,7 @@ $('restartBtn').addEventListener('click', () => {
 });
 $('quitBtn').addEventListener('click', () => {
   play('click');
+  try { _killAllGameMusic(); } catch(e){}   // A17: no bed bleeds onto the cover page
   $('pauseModal').classList.remove('active');
   $('gamePage').classList.remove('active');
   $('coverPage').style.display = '';
