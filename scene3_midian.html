@@ -8790,9 +8790,10 @@ function _rescueReset() {
   // ONE treasure pool: the round opens with the kid's real banked treasure. Spending a
   // weapon deducts from it live, downing a shepherd adds to it, and the net is committed
   // back to game.treasureBags when the round ends (never below where they started).
-  _rescue.startBags = Math.max(0, Math.round((typeof game !== 'undefined' && game.treasureBags) || 0));
-  _rescue.coins = _rescue.startBags;
-  _rescue.earned = 0; _rescue.trickleT = 0;
+  _rescue.startBags = Math.max(0, Math.round((typeof game !== 'undefined' && game.treasureBags) || 0));   // permanent BANK — unlocks weapons; grows by treasure collected, never shrinks
+  _rescue.coins = cfg.coins;   // per-round PURSE — a fixed spending budget for THIS round, topped up by downing shepherds
+  _rescue.earned = 0; _rescue.trickleT = 0; _rescue.combo = 0; _rescue.comboT = 0;
+  _rescue.laneWarn = [0, 0, 0, 0, 0, 0, 0]; _rescue._lastWarnSfx = 0;
   _rescue.lane = 3; _rescue.mosesY = _rescue.laneY[3]; _rescue.throwAnim = 0; _rescue.cd = {};
   _rescue.shots = []; _rescue.foes = []; _rescue.cues = []; _rescue.fx = []; _rescue.fires = []; _rescue.ram = null; _rescue.kidnaps = []; _rescue.flyers = []; _rescue.coinPulse = 0;
   _rescue.flashLane = null; _rescue.countdown = 0; _rescue.goFlash = 0; _rescue.confetti = []; _rescue.swing = null;
@@ -8834,7 +8835,7 @@ function _rescueBegin() {
 }
 function _rescueHud() {
   const d = document.getElementById('rescueDaughters'); if (d) { const hp = Math.max(0, Math.min(3, (typeof game !== 'undefined' ? game.hearts : 3))); d.textContent = '👧 ' + (7 - _rescue.daughtersLost) + '/7  ·  ' + '❤️'.repeat(hp) + '🤍'.repeat(Math.max(0, 3 - hp)); }
-  const co = document.getElementById('rescueCoins'); if (co) co.textContent = '💰 ' + Math.floor(_rescue.coins);
+  const co = document.getElementById('rescueCoins'); if (co) co.textContent = 'Purse 💰 ' + Math.floor(_rescue.coins);
   const f = document.getElementById('rescueFoes'); if (f) f.textContent = 'Driven off: ' + _rescue.foesDriven + '/' + _rescue.total;
 }
 // ---------- input ----------
@@ -8851,6 +8852,9 @@ function _rescueMoveLane(delta) { if (_rescue.over || _rescue.paused || !_rescue
 function _rescueAward(foe) {
   _rescue.foesDriven++; const b = foe.bounty || 18; _rescue.coins += b; _rescue.earned += b;
   _rescueCue('+💰' + b, foe.x, _rescue.laneY[foe.lane] - 34, '#ffe07a');
+  // streak: chain downs within ~2.2s for a Combo bonus (purse + bank)
+  _rescue.combo = (_rescue.combo || 0) + 1; _rescue.comboT = 2.2;
+  if (_rescue.combo >= 3) { const bonus = Math.min(40, _rescue.combo * 3); _rescue.coins += bonus; _rescue.earned += bonus; _rescueCue('Combo ×' + _rescue.combo + '!  +💰' + bonus, foe.x, _rescue.laneY[foe.lane] - 52, '#ffd24a', true); try { play('comboPop') || play('coin') || play('pop'); } catch(e){} }
   // wow: a treasure bag bursts from the shepherd and flies up to Moses's purse
   const n = (foe.type === 'boss' || foe.type === 'cartboss') ? 5 : (foe.type === 'big' ? 3 : 1);
   for (let i = 0; i < n; i++) _rescue.flyers.push({ x: foe.x + (Math.random() * 30 - 15), y: _rescue.laneY[foe.lane] - 8, t: -i * 0.06, life: 0.72, spin: Math.random() * 6, bag: ['treasureB', 'treasureG', 'treasureR'][(Math.random() * 3) | 0] });
@@ -8896,10 +8900,26 @@ function _rescueSpawn() {
     if (_rescue.spawned === 0 || _rescue.spawned === Math.floor(_rescue.total * 0.45)) { try { play('waveShep'); } catch(e){} if (_rescue.spawned > 0) _rescueCue('Another wave!', 380, 40, '#ffd23a', true); }
     const r = Math.random(); if (r < _rescue.bigChance) { type = 'big'; hp = 4; spd = fs * 0.55; scale = 1.34; bounty = 48; } else if (r < _rescue.bigChance + _rescue.fastChance) { type = 'fast'; hp = 1; spd = fs * 1.7; scale = 1.02; bounty = 18; }
   }
-  // only charge lanes that still have a daughter to grab (no point storming an empty lane)
-  let avail = []; for (let i = 0; i < _rescue.LANES; i++) if (_rescue.laneDaughter[i]) avail.push(i);
-  if (!avail.length) avail = [Math.floor(Math.random() * _rescue.LANES)];
-  const lane = avail[Math.floor(Math.random() * avail.length)];
+  // ---- which lane does he charge? (only lanes that still have a daughter) ----
+  const withD = []; for (let i = 0; i < _rescue.LANES; i++) if (_rescue.laneDaughter[i]) withD.push(i);
+  let pool = withD.length ? withD : [Math.floor(Math.random() * _rescue.LANES)];
+  let lane;
+  if (_rescue.spawned === 0) {
+    // GENTLE OPENER: one slow shepherd straight down the middle so kids learn move-then-throw
+    lane = _rescue.laneDaughter[3] ? 3 : pool[Math.floor(pool.length / 2)];
+    spd = Math.min(spd, _rescue.foeSpeed * 0.5); type = 'normal'; hp = 1; scale = 1; bounty = 22;
+  } else {
+    // EARLY DIFFICULTY TUNING: cap how many lanes are threatened at once (2 early, 3 mid,
+    // all lanes late) so small phones aren't overwhelming; once capped, stack onto a lane
+    // that is already under attack instead of opening a fresh one.
+    const ramp = _rescueRamp(), maxLanes = ramp < 0.34 ? 2 : (ramp < 0.66 ? 3 : _rescue.LANES);
+    const active = {}; for (const f of _rescue.foes) if (!f.dying) active[f.lane] = true;
+    const activeD = pool.filter(l => active[l]), freshD = pool.filter(l => !active[l]);
+    if (activeD.length >= maxLanes) pool = activeD;          // cap reached → reinforce an attacked lane
+    else if (freshD.length) pool = freshD;                   // otherwise open a new lane
+    lane = pool[Math.floor(Math.random() * pool.length)];
+    if (_rescue.spawned < 3) spd = Math.min(spd, _rescue.foeSpeed * 0.7);   // ease the first few in
+  }
   // sprite variety so the gang isn't all clones
   let fk;
   if (type === 'boss') fk = null;
@@ -8944,7 +8964,7 @@ function _rescueWin() {
   // commit the round's treasure: net of what was earned vs spent, but never below the
   // bank they started with — so a kid's riches only ever GROW each time they play
   _rescue._before = _rescue.startBags || 0;
-  _rescue._after = Math.max(_rescue._before, Math.max(0, Math.round(_rescue.coins)));
+  _rescue._after = _rescue._before + Math.max(0, Math.round(_rescue.earned));   // bank grows by the treasure COLLECTED this round (purse is just ammo money, not banked)
   try { if (typeof game !== 'undefined') { game._wellGamePass = true; game.treasureBags = _rescue._after; } } catch(e){}
   const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = _rescue.perfect ? '🎉 Every daughter is safe!' : ('The shepherds are driven off — ' + saved + '/7 daughters safe.');
   try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
@@ -9003,8 +9023,8 @@ function _rescueConfetti(n) {
 function _rescueLose() {
   if (_rescue.over && !_rescue.win) return;
   _rescue.over = true; _rescue.win = false; cancelAnimationFrame(_rescue.rafId);
-  // bank whatever treasure they came out with, but never less than they started with
-  try { if (typeof game !== 'undefined') game.treasureBags = Math.max(_rescue.startBags || 0, Math.max(0, Math.round(_rescue.coins))); } catch(e){}
+  // still bank the treasure collected before losing (bank only ever grows)
+  try { if (typeof game !== 'undefined') game.treasureBags = (_rescue.startBags || 0) + Math.max(0, Math.round(_rescue.earned)); } catch(e){}
   try { if (audio.puzzleBg) audio.puzzleBg.pause(); } catch(e){}
   _rescueStopSfx();
   // every daughter taken = one lost round = one world heart gone
@@ -9098,7 +9118,8 @@ function _rescueFrame(now) {
     } else if (_rescue.goFlash > 0) { _rescue.goFlash = Math.max(0, _rescue.goFlash - dts); }
     if (_rescue.throwAnim > 0) _rescue.throwAnim -= dts;
     for (const k in _rescue.cd) if (_rescue.cd[k] > 0) _rescue.cd[k] -= dts;
-    // (no trickle income — treasure only changes when you DOWN a shepherd (+) or THROW a weapon (-))
+    if (_rescue.comboT > 0) { _rescue.comboT -= dts; if (_rescue.comboT <= 0) _rescue.combo = 0; }   // streak window lapsed
+    // (no trickle income — purse only changes when you DOWN a shepherd (+) or THROW a weapon (-))
     // spawn (held during the opening countdown)
     if (_rescue.countdown <= 0 && _rescue.spawned < _rescue.total) {
       _rescue.spawnT -= dts;
@@ -9113,6 +9134,17 @@ function _rescueFrame(now) {
           _rescue._breathed = false; _rescueSpawn(); _rescue.spawnT = Math.max(0.6, _rescue.spawnEvery * (1.5 - 0.7 * _rescueRamp()));
         }
       }
+    }
+    // LANE THREAT WARNING: a shepherd is closing on a daughter — ramp that lane's alarm glow
+    // and play one soft, debounced alert so kids can send Moses there BEFORE the grab
+    { const dz = _rescue.GRABX + 175; let anyNew = false;
+      for (let i = 0; i < _rescue.LANES; i++) {
+        let near = false;
+        if (_rescue.laneDaughter[i]) { for (const f of _rescue.foes) { if (!f.dying && f.lane === i && f.x <= dz) { near = true; break; } } }
+        if (near) { if (!(_rescue.laneWarn[i] > 0)) anyNew = true; _rescue.laneWarn[i] = Math.min(1, (_rescue.laneWarn[i] || 0) + dts * 4); }
+        else _rescue.laneWarn[i] = Math.max(0, (_rescue.laneWarn[i] || 0) - dts * 3);
+      }
+      if (anyNew && now - (_rescue._lastWarnSfx || 0) > 1500) { _rescue._lastWarnSfx = now; try { play('dangerAlert') || play('scoutAlert') || play('pop'); } catch(e){} }
     }
     // shots
     for (let i = _rescue.shots.length - 1; i >= 0; i--) {
@@ -9160,6 +9192,14 @@ function _rescueFrame(now) {
     const ly = _rescue.laneY[i], arrowH = Math.min(15, gap * 0.24);
     c.fillStyle = (i % 2 === 0) ? 'rgba(60,40,18,0.18)' : 'rgba(255,245,215,0.08)'; c.fillRect(0, ly - halfLane, W, gap);
     c.strokeStyle = 'rgba(40,24,10,0.16)'; c.lineWidth = 1; c.strokeRect(0, ly - halfLane, W, gap);
+    // THREAT WARNING: a danger glow sweeps in from the daughter's edge + a pulsing ⚠ when a shepherd is closing on this lane
+    const _wv = (_rescue.laneWarn && _rescue.laneWarn[i]) || 0;
+    if (_rescue.started && _wv > 0.05) {
+      const pulse = 0.55 + 0.45 * Math.sin(now / 90);
+      const grad = c.createLinearGradient(0, 0, 150, 0); grad.addColorStop(0, 'rgba(235,55,35,' + (0.5 * _wv * pulse).toFixed(3) + ')'); grad.addColorStop(1, 'rgba(235,55,35,0)');
+      c.fillStyle = grad; c.fillRect(0, ly - halfLane + 1, 150, gap - 2);
+      c.save(); c.globalAlpha = _wv * (0.65 + 0.35 * pulse); c.fillStyle = '#ffd23a'; c.font = 'bold ' + Math.round(Math.min(24, gap * 0.42)) + 'px Fredoka, Georgia'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText('⚠', 5, ly - gap * 0.16); c.restore();
+    }
     if (_rescue.started && i === _rescue.lane) { c.fillStyle = 'rgba(255,236,170,0.09)'; c.fillRect(0, ly - halfLane + 1, W, gap - 2); c.strokeStyle = 'rgba(255,224,150,0.5)'; c.lineWidth = 2; c.strokeRect(2, ly - halfLane + 1, W - 4, gap - 2); c.fillStyle = 'rgba(255,224,150,0.9)'; c.beginPath(); c.moveTo(2, ly - arrowH); c.lineTo(16, ly); c.lineTo(2, ly + arrowH); c.fill(); }
     const _dn = [3, 4, 5, 6, 7, 3, 4][i]; // use only daughters that have a RIGHT-facing pose (3-7) so none show front-on
     // supply cache tucked behind the daughter (only while she's still here to defend)
@@ -17427,7 +17467,7 @@ if ('serviceWorker' in navigator) {
     <p class="riStory">Rude shepherds have stormed the well and are driving Jethro's <b>seven daughters</b> away! Stand beside Moses and <b>hold the line</b> — don't let a single shepherd reach the girls.</p>
     <div id="rescueIntroSteps">
       <div class="riStep"><span class="riIco">👆<span class="riArrows">▲▼</span></span><span class="riTx"><b>Move Moses</b>Tap a lane, swipe, or use ▲ ▼ / arrow keys</span></div>
-      <div class="riStep"><span class="riIco">🏺</span><span class="riTx"><b>Throw weapons</b>Tap a weapon to drive shepherds back — each throw costs 💰 treasure</span></div>
+      <div class="riStep"><span class="riIco">🏺</span><span class="riTx"><b>Throw weapons</b>Tap a weapon to drive shepherds back — each throw spends 💰 from your purse (down shepherds to refill it!)</span></div>
       <div class="riStep"><span class="riIco">👧</span><span class="riTx"><b>Save the girls</b>Stop every shepherd before he reaches a daughter</span></div>
     </div>
     <button class="btn btn-gold riBtn" id="rescueIntroBtn">Choose Weapons ▶</button>
