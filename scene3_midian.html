@@ -2267,6 +2267,7 @@
       <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/5</span>
       <!-- Scene 3: crystal river-tiles. Collect all 3 (one per checkpoint) to build the crossing. -->
       <span class="hud-chip" id="hudCrystalChip" title="Crystal tiles — collect 3 to cross the river">&#128142; <span id="hudCrystals">0</span>/3</span>
+      <span class="hud-chip" id="hudFlockChip" style="display:none;background:linear-gradient(145deg,#3a5a2a,#5b8a3a);border-color:#cdeeb0;color:#eaffd6;" title="Sheep safe from the wolves">🐑 <span id="hudFlockSafe">0</span>/<span id="hudFlockTotal">0</span></span>
       <span class="hud-chip" id="hudTimer">3:00</span>
     </div>
     <div class="hud-group">
@@ -4935,6 +4936,7 @@ function initScene3Flock(diff){
     scene3Flock.wolves.push({ id: i, px: ex, py: ey, vx: 0, state: 'stalk', targetId: null, fleeUntil: 0, dir: -1 });
   }
   scene3Flock.spawned = true;
+  try { updateHudFlock(); } catch(e){}
 }
 function _flockNearestGrazing(wx, wy){
   let best = null, bestD = 1e9;
@@ -4948,6 +4950,7 @@ function _flockNearestGrazing(wx, wy){
 function _flockFreeSheep(s){
   s.state = 'freed'; s.freedAt = performance.now(); s.wolf = null;
   scene3Flock.freed++;
+  try { updateHudFlock(); } catch(e){}
   const bags = (scene3Flock.cfg && scene3Flock.cfg.bagsPerSheep) || 28;
   try { game.treasureBags = (game.treasureBags || 0) + bags; } catch(e){}
   try { game.stars += 3; updateHudStars(); } catch(e){}
@@ -5010,7 +5013,8 @@ function updateScene3Flock(dt){
       if (scene3Flock.cfg.loseMs > 0 && now - s.pinnedAt > scene3Flock.cfg.loseMs){
         s.state = 'lost'; s.loseAt = now; scene3Flock.lost++;
         w.state = 'stalk'; w.targetId = null;
-        try { toast('A wolf dragged a sheep off! Be quicker next time.'); } catch(e){}
+        try { toast('💔 A wolf dragged a sheep off! Reach them faster — try ⚡ Speed Burst.'); } catch(e){}
+        try { updateHudFlock(); } catch(e){}
         _flockCheckDone();
       }
       continue;
@@ -8222,6 +8226,24 @@ function updateHudHearts(){
   $('hudHearts').innerHTML = s;
 }
 function updateHudStars(){ $('hudStars').textContent = game.stars; try { updateHudCrystals(); } catch(e){} }
+// 2026-05-26 (Jane): 🐑 flock-safe HUD counter — the rescue STAKE. Shows sheep
+// freed vs total while the pasture/wolf segment is live; flashes red on a loss.
+function updateHudFlock(){
+  try {
+    const chip = document.getElementById('hudFlockChip'); if (!chip) return;
+    const active = (typeof scene3Flock !== 'undefined') && scene3Flock.spawned && scene3Flock.total > 0;
+    if (!active) { chip.style.display = 'none'; return; }
+    chip.style.display = '';
+    const safeEl = document.getElementById('hudFlockSafe'), totEl = document.getElementById('hudFlockTotal');
+    if (safeEl) safeEl.textContent = scene3Flock.freed;
+    if (totEl)  totEl.textContent  = scene3Flock.total;
+    if (scene3Flock.lost > (chip._lastLost || 0)) {   // brief red flash on a loss
+      chip._lastLost = scene3Flock.lost;
+      chip.style.transition = 'none'; chip.style.background = 'linear-gradient(145deg,#7a2a2a,#b54a4a)';
+      setTimeout(() => { chip.style.transition = 'background 0.8s'; chip.style.background = 'linear-gradient(145deg,#3a5a2a,#5b8a3a)'; }, 60);
+    }
+  } catch(e){}
+}
 // Scene 3: live "crystal tiles X/3" readout. Derived from solved market gates so
 // it stays correct across save/resume. Glows gold once all 3 are collected.
 function updateHudCrystals(){
