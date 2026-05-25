@@ -3448,6 +3448,11 @@ const IMG_SRC = {
   shepGrab:  'assets/images/rude%20shepherd%20grabbing.png',          // bending to grab a pot
   shepPotLeft:  'assets/images/rude%20shepherd%20with%20pot%20facing%20left.png',
   shepPotRight: 'assets/images/rude%20shepherd%20with%20pot%20facing%20right.png',
+  // Per-gang-member steal poses (each rogue shepherd grabs + carries off with his OWN art)
+  shep2Grab: 'assets/images/shepherd%202%20bending.png',
+  shep2Pot:  'assets/images/shepherd%202%20back%20with%20water%20pot.png',
+  shep4Grab: 'assets/images/shepherd%204%20bending.png',
+  shep4Pot:  'assets/images/shepherd%204%20walk%20back%20with%20waterpot.png',
   mosesShove:   'assets/images/moses%20shoving%20right.png',          // Moses shoves him off
   // SHEPHERD 2 — front view only (used at 2nd patrol post for visual variety):
   shepherd2Front: 'assets/images/shepherd%202%20front.png',
@@ -8923,8 +8928,8 @@ function _pulleyResolveSteal(saved) {
     const rivalTodo = _pulley.pots.find(p => !p.mine && !p.done);
     if (rivalTodo) { rivalTodo.fill = 100; rivalTodo.done = true; rivalTodo.pop = 1; }
     _pulleyUpdateHud();
-    // shepherd carries the pot back to his side (getaway sprite)
-    _pulley.shepCarry = { t: 0, fromX: pot.x + 8 };
+    // shepherd carries the pot back to his side (getaway sprite — same gang member)
+    _pulley.shepCarry = { t: 0, fromX: pot.x + 8, who: (_pulley.steal ? _pulley.steal.who : 0) };
     _pulley.steal = null;
   } else {
     _pulley.steal = null; _pulley.nextSteal = _pulleyNextStealDelay();
@@ -9221,6 +9226,7 @@ function _pulleyFrame(now) {
     if (_pulley.shepStun > 0) _pulley.shepStun -= dts;
     else if (!_pulley.steal && !_pulley.shepCarry) {
       const rp = _pulley.pots.filter(p => !p.mine && !p.done);
+      _pulley.shepPourTarget = rp.length ? rp[0] : null;
       if (rp.length) {
         const target = rp[0];
         target.fill = Math.min(100, target.fill + _pulley.shepRate * dts);
@@ -9393,8 +9399,20 @@ function _pulleyFrame(now) {
   };
   // top anchor = the well's pulley beam (well art spans y≈86..236, beam near the top);
   // Moses heaves forward-and-down, the rude shepherd reaches up — so their hand anchors differ.
-  if (!_pulley.mosesRun) _rope(116, 108, mIdleX + 74, mIdleY + 30);
-  if (!_pulley.steal && !_pulley.shepCarry) _rope(512, 108, sIdleX + 48, sIdleY + 40);
+  // Moses' rope runs from the pulley beam down to the DRAW-BUCKET at the launch point L —
+  // the aim dots + water projectile both originate from THIS bucket, so the trickle reads
+  // as connected to the rope instead of floating in mid-air.
+  const _drawBucket = (bx, by, flip) => {
+    if (!_pDraw(c, ['wellBucket'], bx - 15, by - 16, 30, 30, !!flip)) {
+      c.fillStyle = '#6a4a26'; c.beginPath();
+      c.moveTo(bx-11,by-12); c.lineTo(bx+11,by-12); c.lineTo(bx+8,by+8); c.lineTo(bx-8,by+8); c.closePath(); c.fill();
+      c.strokeStyle = '#caa86a'; c.lineWidth = 2; c.stroke();
+    }
+  };
+  if (!_pulley.mosesRun) { _rope(116, 106, _pulley.L.x, _pulley.L.y - 8); _drawBucket(_pulley.L.x, _pulley.L.y, false); }
+  // Rival's rope + draw-bucket mirror Moses' so he visibly works his OWN well/bucket.
+  const _RL = { x: 500, y: 176 };
+  if (!_pulley.steal && !_pulley.shepCarry) { _rope(512, 106, _RL.x, _RL.y - 8); _drawBucket(_RL.x, _RL.y, true); }
   c.lineCap = 'butt';
 
   // helper rogue shepherds (the gang) — on the LEFT side of the shepherd's well so
@@ -9422,16 +9440,24 @@ function _pulleyFrame(now) {
   } else {
     _pDraw(c, ['mosesHeave', 'mosesPull', 'mosesRight', 'moses'], mIdleX, mIdleY, 130, 140);
   }
-  // characters — rude shepherd (idle heave / walking to steal / grabbing / carrying off)
+  // characters — rude shepherd (idle heave / walking to steal / grabbing / carrying off).
+  // Each gang member (who 0/1/2) steals + carries off with his OWN art so it reads as
+  // a whole gang taking turns, not one shepherd cloned.
   let shepKeys, shepFlip = false;
-  if (_pulley.shepCarry) { shepKeys = ['shepPotRight', 'shepPull']; }
+  if (_pulley.shepCarry) {
+    const cw = _pulley.shepCarry.who || 0;
+    shepKeys = cw === 1 ? ['shep2Pot', 'shepPotRight', 'shepPull']
+             : cw === 2 ? ['shep4Pot', 'shepPotRight', 'shepPull']
+             :            ['shepPotRight', 'shepPull'];
+  }
   else if (_pulley.steal) {
     const nearPot = Math.abs(sIdleX - (_pulley.steal.pot.x + 18)) < 28;
     const who = _pulley.steal.who || 0; // which gang member is lunging this turn
     const base = who === 1 ? ['shepHelpA', 'shepherd2Front', 'shepherdLeft', 'shepPull']
                : who === 2 ? ['shepHelpB', 'shepherd3Front', 'shepherdLeft', 'shepPull']
                :             ['shepherdLeft', 'shepPull'];
-    shepKeys = nearPot ? ['shepGrab'].concat(base) : base;
+    const grab = who === 1 ? ['shep2Grab', 'shepGrab'] : who === 2 ? ['shep4Grab', 'shepGrab'] : ['shepGrab'];
+    shepKeys = nearPot ? grab.concat(base) : base;
   } else { shepKeys = ['shepHeave', 'shepPull', 'shepherdLeft', 'shepherdFront']; }
   _pDraw(c, shepKeys, sIdleX, sIdleY, 130, 140, shepFlip);
 
@@ -9500,6 +9526,26 @@ function _pulleyFrame(now) {
     for (const tp of _pulley.proj.trail) { c.fillStyle = 'rgba(120,200,255,0.45)'; c.beginPath(); c.arc(tp.x, tp.y, 2.2, 0, Math.PI * 2); c.fill(); }
     c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(_pulley.proj.x, _pulley.proj.y, 6.5, 0, Math.PI * 2); c.fill();
     c.fillStyle = 'rgba(255,255,255,0.8)'; c.beginPath(); c.arc(_pulley.proj.x - 2, _pulley.proj.y - 2, 2.2, 0, Math.PI * 2); c.fill();
+  }
+
+  // RIVAL POUR STREAM — the shepherd is "playing" too: a dotted water arc runs
+  // from his bucket to the pot he's currently filling, and a bright glob travels
+  // along it on every heave/pour beat (mirrors Moses' own throw so it reads as a
+  // real opponent rather than a number quietly ticking up).
+  if (!_pulley.over && _pulley.shepPourTarget && !_pulley.shepPourTarget.done
+      && _pulley.shepStun <= 0 && !_pulley.steal && !_pulley.shepCarry && !_pulley.mosesRun) {
+    const tg = _pulley.shepPourTarget, bx = 500, by = 168, tx = tg.x, ty = tg.y - 30;
+    for (let i = 0; i <= 11; i++) {
+      const u = i / 11, x = bx + (tx - bx) * u, y = by + (ty - by) * u - 46 * Math.sin(Math.PI * u);
+      c.fillStyle = 'rgba(20,60,110,0.45)'; c.beginPath(); c.arc(x, y, 3.0, 0, Math.PI * 2); c.fill();   // dark halo for contrast on bright sand
+      c.fillStyle = 'rgba(150,215,255,0.9)'; c.beginPath(); c.arc(x, y, 2.2, 0, Math.PI * 2); c.fill();
+    }
+    if (_pulley.shepHeave > 0) {
+      const u = Math.max(0, Math.min(1, 1 - _pulley.shepHeave / 0.35));
+      const x = bx + (tx - bx) * u, y = by + (ty - by) * u - 46 * Math.sin(Math.PI * u);
+      c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(x, y, 5, 0, Math.PI * 2); c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.85)'; c.beginPath(); c.arc(x - 2, y - 2, 2, 0, Math.PI * 2); c.fill();
+    }
   }
 
   // banter
