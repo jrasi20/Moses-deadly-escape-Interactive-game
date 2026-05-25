@@ -1608,6 +1608,73 @@
     font-size:13px; color:#ffeeb5;
   }
   .win-scorebox strong { color:#fff; font-size:15px; }
+  /* 2026-05-26 (Jane: "apply the same [Scene 1->2 journey tracker] for scene 2
+     to scene 3 transition to bring in the 1 world feel"). World-map journey
+     screen ported verbatim from scene1_palace.html (the Moses-figurine walks
+     Desert -> Midian pin). Shown after the 2->3 narration panels. */
+  .world-map-overlay {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at top, #c77d3a 0%, #7a3a13 55%, #1a0a00 100%);
+    z-index: 60; display: none; align-items: center; justify-content: center;
+    padding: 18px; animation: wm-fade 0.5s ease-out;
+  }
+  .world-map-overlay.active { display: flex; }
+  @keyframes wm-fade { from { opacity: 0; } to { opacity: 1; } }
+  .world-map-box {
+    background: linear-gradient(180deg, #f5e4b7 0%, #e9cf8a 48%, #d6b369 100%);
+    border: 4px solid #8a5a22; border-radius: 18px; padding: 26px 24px;
+    width: min(980px, 96%); max-height: 94svh; overflow-y: auto;
+    box-shadow: 0 0 36px rgba(80,40,10,0.6), inset 0 0 0 2px #c59754, inset 0 0 24px rgba(120,70,20,0.25);
+    color: #3a1a00; text-align: center;
+  }
+  .world-map-title {
+    font-family: Georgia, serif; font-size: clamp(22px, 5.2vw, 30px); color: #5a2a05;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5); margin-bottom: 6px; letter-spacing: 0.5px;
+  }
+  .world-map-sub { font-size: 14px; color: #6a3a18; margin-bottom: 16px; font-style: italic; }
+  .world-map-canvas {
+    background:
+      radial-gradient(ellipse at 12% 65%, rgba(180,40,20,0.25) 0%, transparent 30%),
+      radial-gradient(ellipse at 50% 65%, rgba(220,170,80,0.30) 0%, transparent 35%),
+      radial-gradient(ellipse at 85% 55%, rgba(40,120,170,0.25) 0%, transparent 30%),
+      linear-gradient(180deg, #e8c878 0%, #d4a868 60%, #b88a4a 100%);
+    border: 3px solid rgba(138,90,34,0.7); border-radius: 14px; padding: 18px 14px 16px;
+    margin-bottom: 16px; box-shadow: inset 0 0 36px rgba(120,70,20,0.35), 0 4px 14px rgba(80,40,10,0.45);
+    position: relative; overflow: hidden;
+  }
+  .world-map-canvas::before {
+    content: '✦'; position: absolute; top: 10px; right: 14px; font-size: 22px;
+    color: rgba(255,217,118,0.55); text-shadow: 0 0 8px rgba(255,217,118,0.4); pointer-events: none;
+  }
+  .world-map-svg { width: 100%; height: auto; max-height: 520px; display: block; position: relative; z-index: 1; }
+  .wm-pin-active circle { animation: wm-pin-pulse 1.4s ease-in-out infinite; }
+  @keyframes wm-pin-pulse { 0%, 100% { transform: scale(1.0); } 50% { transform: scale(1.22); } }
+  /* Scene 2: Moses figurine starts at the DESERT pin (320,250) and walks to
+     the MIDIAN pin (540,220) on .arrived. */
+  .wm-moses { transform: translate(320px, 250px); transition: transform 2.6s cubic-bezier(0.4, 0.0, 0.2, 1.0); }
+  .wm-moses.arrived { transform: translate(540px, 220px); }
+  .wm-moses-glow { animation: wm-moses-pulse 1.2s ease-in-out infinite; }
+  @keyframes wm-moses-pulse { 0%, 100% { opacity: 0.5; r: 38; } 50% { opacity: 0.9; r: 46; } }
+  .world-map-caption { font-size: 15px; color: #3a1a00; font-weight: 700; margin-bottom: 18px; min-height: 22px; }
+  .world-map-btn {
+    background: linear-gradient(180deg, #ffd976 0%, #e0a544 100%); color: #3a1505;
+    border: 3px solid #8a5a22; border-radius: 30px; padding: 14px 28px;
+    font-family: Georgia, serif; font-size: clamp(15px, 3.6vw, 18px); font-weight: 800;
+    letter-spacing: 0.5px; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(80,40,10,0.5), inset 0 -3px 0 rgba(0,0,0,0.18);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .world-map-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(80,40,10,0.6), inset 0 -3px 0 rgba(0,0,0,0.18); }
+  .world-map-btn:active { transform: translateY(0); }
+  @media (orientation: landscape) and (max-height: 600px) {
+    .world-map-box { padding: 14px 16px; max-height: 96svh; }
+    .world-map-title { font-size: 20px; margin-bottom: 4px; }
+    .world-map-sub { font-size: 12px; margin-bottom: 10px; }
+    .world-map-canvas { padding: 10px 8px 6px; margin-bottom: 10px; }
+    .world-map-svg { max-height: 40svh; }
+    .world-map-caption { font-size: 13px; margin-bottom: 10px; }
+    .world-map-btn { padding: 10px 22px; font-size: 14px; }
+  }
   /* 2026-05-19 (Jane: cross-scene "Your Journey" tally) */
   .win-journey {
     background: linear-gradient(180deg, rgba(60,30,8,0.55), rgba(40,18,4,0.5));
@@ -3632,6 +3699,71 @@
     <button class="btn" id="winNextBtn">Continue Adventure -></button>
     <button class="btn ghost" id="winReplayBtn">Replay Scene 2</button>
     <button class="btn ghost" id="winMenuBtn">Main Menu</button>
+  </div>
+</div>
+
+<!-- ================ WORLD-MAP JOURNEY SCREEN (Scene 2 -> Scene 3) ================
+     2026-05-26 (Jane: "apply the same [Scene 1->2 journey tracker] for scene 2
+     to scene 3 transition to bring in the 1 world feel"). Ported from
+     scene1_palace.html. Shown AFTER the 2->3 narration panels: the Moses
+     figurine walks from the DESERT pin to the MIDIAN pin, then Continue ->
+     scene3_midian.html. Palace + Desert are DONE; Midian is now ACTIVE. -->
+<div class="world-map-overlay" id="worldMapOverlay" role="dialog" aria-modal="true" aria-labelledby="worldMapTitle">
+  <div class="world-map-box">
+    <h2 class="world-map-title" id="worldMapTitle">Moses's Journey</h2>
+    <p class="world-map-sub">From Egypt to Midian — one step at a time.</p>
+    <div class="world-map-canvas" aria-hidden="true">
+      <svg class="world-map-svg" viewBox="0 0 760 380" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <text x="100" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(140,40,20,0.65)" letter-spacing="3">EGYPT</text>
+        <text x="320" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(180,100,30,0.7)" letter-spacing="3">DESERT</text>
+        <text x="610" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(30,80,140,0.65)" letter-spacing="3">MIDIAN</text>
+        <path d="M 130 250 Q 220 130, 320 250 Q 430 370, 540 220 Q 620 130, 690 220"
+              fill="none" stroke="#5a2d05" stroke-width="5" stroke-dasharray="14 10" opacity="0.75" stroke-linecap="round"/>
+        <!-- Palace pin (DONE) -->
+        <g class="wm-pin wm-pin-done" transform="translate(130, 250)">
+          <circle r="56" fill="#fffbe6" stroke="#1a4830" stroke-width="6"/>
+          <image href="assets/images/color%20palace.png" x="-46" y="-46" width="92" height="92"
+                 preserveAspectRatio="xMidYMid slice" clip-path="circle(46px at 46px 46px)" onerror="this.style.display='none'"/>
+          <circle cx="38" cy="-38" r="18" fill="#3a8a5e" stroke="#1a4830" stroke-width="2.5"/>
+          <text x="38" y="-32" text-anchor="middle" font-size="22" fill="#fff" font-weight="900">✓</text>
+          <text x="0" y="-78" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="800">Palace</text>
+        </g>
+        <!-- Desert pin (DONE — Scene 2 just completed) -->
+        <g class="wm-pin wm-pin-done" transform="translate(320, 250)">
+          <circle r="58" fill="#fffbe6" stroke="#1a4830" stroke-width="6"/>
+          <image href="assets/images/palm%20shadow.png" x="-48" y="-48" width="96" height="96"
+                 preserveAspectRatio="xMidYMid slice" clip-path="circle(48px at 48px 48px)" onerror="this.style.display='none'"/>
+          <circle cx="40" cy="-40" r="18" fill="#3a8a5e" stroke="#1a4830" stroke-width="2.5"/>
+          <text x="40" y="-34" text-anchor="middle" font-size="22" fill="#fff" font-weight="900">✓</text>
+          <text x="0" y="-80" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="800">Desert</text>
+        </g>
+        <!-- Midian pin (ACTIVE — Scene 3 entry) -->
+        <g class="wm-pin wm-pin-active" transform="translate(540, 220)">
+          <circle r="54" fill="#fffbe6" stroke="#7a4509" stroke-width="6"/>
+          <image href="assets/images/newmidian.png" x="-44" y="-44" width="88" height="88"
+                 preserveAspectRatio="xMidYMid slice" clip-path="circle(44px at 44px 44px)"
+                 onerror="this.setAttribute('href','assets/images/midian%201.png'); this.onerror=null;"/>
+          <circle cx="36" cy="-36" r="17" fill="#e8a83a" stroke="#7a4509" stroke-width="2.5"/>
+          <text x="36" y="-29" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="900">▸</text>
+          <text x="0" y="-74" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="800">Midian</text>
+        </g>
+        <!-- Jethro's tent (Scene 3 destination, locked) -->
+        <g class="wm-pin wm-pin-lock" transform="translate(690, 220)">
+          <circle r="50" fill="#fffbe6" stroke="#555" stroke-width="5"/>
+          <image href="assets/images/jethro%20tent.png" x="-40" y="-40" width="80" height="80"
+                 preserveAspectRatio="xMidYMid slice" clip-path="circle(40px at 40px 40px)" opacity="0.85" onerror="this.style.display='none'"/>
+          <text x="0" y="-68" text-anchor="middle" font-size="18" fill="#3a1505" font-weight="800" opacity="0.7">Jethro's Tent</text>
+        </g>
+        <!-- Moses figurine — walks Desert -> Midian via the .arrived class -->
+        <g id="wmMoses" class="wm-moses">
+          <circle class="wm-moses-glow" r="46" fill="rgba(255,217,118,0.65)"/>
+          <circle r="38" fill="#5a2510" stroke="#ffd976" stroke-width="4"/>
+          <image href="assets/images/moses.png" x="-32" y="-32" width="64" height="64" preserveAspectRatio="xMidYMid meet" onerror="this.style.display='none'"/>
+        </g>
+      </svg>
+    </div>
+    <div class="world-map-caption" id="worldMapCaption">The desert is behind you, Moses.</div>
+    <button class="world-map-btn" id="worldMapContinueBtn" type="button">Begin Midian →</button>
   </div>
 </div>
 
@@ -11672,11 +11804,72 @@ function openTransCinematic2() {
     _transStep2++;
     if (_transStep2 >= TRANS_2TO3_PANELS.length) {
       _stopTransAudio2();
-      window.location.href = 'scene3_midian.html';
+      // 2026-05-26: after the narration panels, show the world-map JOURNEY
+      // screen (Moses walks Desert -> Midian), matching Scene 1->2, instead of
+      // jumping straight to Scene 3.
+      _enterWorldMap2();
     } else { showTransPanel2(); }
   });
   const skip = $('transSkipBtn');
-  if (skip) skip.addEventListener('click', () => { play('click'); _stopTransAudio2(); window.location.href = 'scene3_midian.html'; });
+  // Skip fast-forwards the narration but STILL shows the journey screen so the
+  // one-world progression beat is never lost.
+  if (skip) skip.addEventListener('click', () => { play('click'); _stopTransAudio2(); _enterWorldMap2(); });
+})();
+// 2026-05-26 (Jane: "apply the same [Scene 1->2 journey tracker] for scene 2 to
+// scene 3 transition to bring in the 1 world feel"). World-map journey screen,
+// ported from scene1_palace.html's _showWorldMap. The Moses figurine walks from
+// the Desert pin to the Midian pin, then Continue -> scene3_midian.html.
+function _enterWorldMap2(){
+  try { $('transCinematic').classList.remove('active'); } catch(e){}
+  _showWorldMap2();
+}
+function _showWorldMap2(){
+  const overlay = document.getElementById('worldMapOverlay');
+  if (!overlay) { try { location.href = 'scene3_midian.html'; } catch(e){} return; }
+  overlay.style.opacity = '';
+  const moses = document.getElementById('wmMoses');
+  if (moses) moses.classList.remove('arrived');
+  const caption = document.getElementById('worldMapCaption');
+  if (caption) caption.textContent = 'The desert is behind you, Moses.';
+  overlay.classList.add('active');
+  // Stop any leftover music so the journey ambience doesn't layer.
+  try {
+    if (audio.bgm) { audio.bgm.pause(); audio.bgm.currentTime = 0; }
+    if (audio.transNarrate) { audio.transNarrate.pause(); audio.transNarrate.currentTime = 0; }
+    if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; }
+    if (audio.winMusic) { audio.winMusic.pause(); audio.winMusic.currentTime = 0; }
+  } catch(e){}
+  // Kick off the figurine travel (CSS transition does the move) + caption beats.
+  setTimeout(() => { if (moses) moses.classList.add('arrived'); }, 400);
+  setTimeout(() => { if (caption) caption.textContent = 'Sand behind, green hills ahead. Press on, Moses.'; }, 1500);
+  setTimeout(() => { if (caption) caption.textContent = 'Midian is near. God is with you.'; }, 3000);
+  // Journey-tracker ambience — prefer palm-shadow, fall back gracefully.
+  try {
+    const a = audio.palmShadow || audio.egyptianCover || audio.coverMusic;
+    if (a) { a.currentTime = 0; a.volume = 0.55; a.loop = true; a.play().catch(()=>{}); }
+  } catch(e){}
+}
+(function _wireWorldMapContinue2(){
+  const _wire = () => {
+    const btn = document.getElementById('worldMapContinueBtn');
+    if (!btn || btn._wired) return;
+    btn._wired = true;
+    btn.addEventListener('click', () => {
+      try { play('click'); } catch(e){}
+      try {
+        if (audio.palmShadow)    { audio.palmShadow.pause();    audio.palmShadow.loop    = false; audio.palmShadow.currentTime    = 0; }
+        if (audio.egyptianCover) { audio.egyptianCover.pause(); audio.egyptianCover.loop = false; audio.egyptianCover.currentTime = 0; }
+        if (audio.coverMusic)    { audio.coverMusic.pause();    audio.coverMusic.loop    = false; audio.coverMusic.currentTime    = 0; }
+      } catch(e){}
+      try { const overlay = document.getElementById('worldMapOverlay'); if (overlay) overlay.style.opacity = '0'; } catch(e){}
+      setTimeout(() => {
+        try { location.href = 'scene3_midian.html'; }
+        catch(e) { try { window.location.assign('scene3_midian.html'); } catch(err){} }
+      }, 280);
+    });
+  };
+  document.addEventListener('DOMContentLoaded', _wire);
+  setTimeout(_wire, 0);
 })();
 $('winNextBtn').addEventListener('click', () => {
   play('click');
