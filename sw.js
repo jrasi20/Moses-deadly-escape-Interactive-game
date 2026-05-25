@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v27'; // v27: weapons page decluttered (tutorial merged into intro), one big cue at a time, bigger fast-shepherd, fire stays in-lane, bigger lose-modal sprites, replay clears game canvas, bg music restarts at GO, ONE currency (treasure unlocks weapons — stars removed), visible reload bar that gates firing, animated win treasure-bag burst + coin spray (invalidate stale v26)
+const CACHE_VERSION = 'bek-bundle-v28'; // v28: tutorial steps capitalized; ONE live treasure pool (round opens with real banked treasure, no trickle, spend deducts / down adds, net banked at end and never shrinks); win modal shows bank old→new and Replay is always offered; staff is now a thrown short-range spinning projectile that lands on the shepherd; HP meters + boss banner clamped so they never clip on the top lane; full 5-weapon squad required before Start; field background always paints a green base so the playfield never renders bare (invalidate stale v27)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
