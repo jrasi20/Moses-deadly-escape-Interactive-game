@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v37'; // v37: MERGE of scene3-epic (5-stop journey, river crossing, lost-flock herding, checkpoint mini-games, proximity tutorial popups) WITH the polished rescue mini-game (capped PURSE economy vs permanent BANK, lane threat warning, combo bonus, gentle on-ramp, thrown staff, reload bar, win treasure burst, clip + render fixes) (invalidate stale v29/v36)
+const CACHE_VERSION = 'bek-bundle-v38'; // v38: merge of scene3-epic + polished rescue mini-game, PLUS new scene-3 art (crystal/flock/market/river/wolves) wired, cinematic camera punch-in on wave/boss entry + boss looms larger, Start-Rescue paints the field before the countdown audio (double-rAF) with a loading-bar safety net so a restart never opens on blank sprites, and the Well-tried modal now uses cover-page music + well-tried sting (invalidate stale v37)
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.

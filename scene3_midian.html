@@ -2893,6 +2893,8 @@
 <audio id="audSandThud"         preload="auto" src="assets/audio/sand%20thud.mp3"></audio>
 <audio id="audStealWhoosh"      preload="auto" src="assets/audio/steal%20whoosh.mp3"></audio>
 <audio id="audWellCheer"        preload="auto" src="assets/audio/well%20win%20cheer.mp3"></audio>
+<audio id="audWellTried"        preload="auto" src="assets/audio/well%20tried.mp3"></audio>
+<audio id="audCoverMusic"       preload="auto" src="assets/audio/cover%20page%20music.mp3"></audio>
 <audio id="audSheepBleat"       preload="auto" src="assets/audio/sheep%20bleat.mp3"></audio>
 <audio id="audGameOver"         preload="auto" src="assets/audio/game%20over%202.mp3"></audio>
 <audio id="audVoJethro"         preload="auto" src="assets/audio/this%20water%20is%20for%20jethro.mp3"></audio>
@@ -3055,6 +3057,8 @@ const audio = {
   sandThud:      $('audSandThud'),       // a shot misses onto the sand
   stealWhoosh:   $('audStealWhoosh'),    // shepherd lunges to steal
   wellCheer:     $('audWellCheer'),      // win the race
+  wellTried:     $('audWellTried'),      // rescue: "well tried" outcome sting (not a perfect rescue)
+  coverMusic:    $('audCoverMusic'),     // cover-page music, reused as the gentle "well tried" modal bed
   voJethro:      $('audVoJethro'),       // Moses: "This water is for Jethro's flock!"
   voSeeAbout:    $('audVoSeeAbout'),     // shepherd: "We'll see about that!"
   voMine:        $('audVoMine'),         // shepherd: "That water is mine!"
@@ -9695,6 +9699,7 @@ function _rescueReset() {
   _rescue.coins = cfg.coins;   // per-round PURSE — a fixed spending budget for THIS round, topped up by downing shepherds
   _rescue.earned = 0; _rescue.trickleT = 0; _rescue.combo = 0; _rescue.comboT = 0;
   _rescue.laneWarn = [0, 0, 0, 0, 0, 0, 0]; _rescue._lastWarnSfx = 0;
+  _rescue.camZoom = 1;   // cinematic camera punch-in (spikes on a boss/wave entry, eases back to 1)
   _rescue.lane = 3; _rescue.mosesY = _rescue.laneY[3]; _rescue.throwAnim = 0; _rescue.cd = {};
   _rescue.shots = []; _rescue.foes = []; _rescue.cues = []; _rescue.fx = []; _rescue.fires = []; _rescue.ram = null; _rescue.kidnaps = []; _rescue.flyers = []; _rescue.coinPulse = 0;
   _rescue.flashLane = null; _rescue.countdown = 0; _rescue.goFlash = 0; _rescue.confetti = []; _rescue.swing = null;
@@ -9702,6 +9707,7 @@ function _rescueReset() {
   _rescue.foesDriven = 0; _rescue.spawned = 0; _rescue.spawnT = 2.0; _rescue.bossSpawned = false; _rescue.cartSpawned = false; _rescue.bossDown = false; _rescue._lulled = false; _rescue._breathed = false; _rescue.perfect = false;
   _rescue.shake = 0; _rescue.stars = 3; _rescue.over = false; _rescue.win = false; _rescue.paused = false; _rescue.winPanelShown = false; _rescue.started = false; _rescue._out = false;
   if (_rescue._winCount) { try { clearInterval(_rescue._winCount); } catch(e){} _rescue._winCount = null; }   // stop any in-flight treasure count-up
+  try { if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; } } catch(e){}   // stop the well-tried modal bed
   ['rescuePausedOverlay', 'rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
   { const pb = document.getElementById('rescuePauseBtn'); if (pb) pb.style.display = 'none'; }   // pause hidden until the round starts
 }
@@ -9724,15 +9730,44 @@ function _rescueBegin() {
   const intro = document.getElementById('rescueIntro'); if (intro) intro.style.display = 'none';
   const pb = document.getElementById('rescuePauseBtn'); if (pb) pb.style.display = 'block';   // pause only appears once the round is live
   _rescueBuildBar();
-  _rescue.started = true; _rescue.last = 0; _rescue.countdown = 3.0; _rescue.goFlash = 0;
-  document.getElementById('rescueFeedback').textContent = 'Get ready — pick your lane!';
-  // cut the menu music bed now — it restarts from the beginning when the round goes (after 3-2-1)
-  try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
-  _rescueHud(); _rescueUpdateBar();
-  // paint the playfield FIRST, then start the countdown beeps — avoids the lag where the
-  // countdown sfx played while the weapons page was still on screen.
-  cancelAnimationFrame(_rescue.rafId); _rescue.rafId = requestAnimationFrame(_rescueFrame);
-  setTimeout(() => { try { play('raceCountdown'); } catch(e){} }, 70);
+  const _go = () => {
+    _rescue.started = true; _rescue.last = 0; _rescue.countdown = 3.0; _rescue.goFlash = 0;
+    const fb0 = document.getElementById('rescueFeedback'); if (fb0) fb0.textContent = 'Get ready — pick your lane!';
+    // cut the menu music bed now — it restarts from the beginning when the round goes (after 3-2-1)
+    try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
+    _rescueHud(); _rescueUpdateBar();
+    // PAINT the playfield first — two rAFs guarantee a real on-screen frame — THEN start the
+    // countdown beeps. Kids never hear the countdown while the weapons page is still up, and a
+    // restart never opens on a blank (sprite-less) field.
+    cancelAnimationFrame(_rescue.rafId); _rescue.rafId = requestAnimationFrame(_rescueFrame);
+    requestAnimationFrame(() => requestAnimationFrame(() => { try { play('raceCountdown'); } catch(e){} }));
+  };
+  // SAFETY NET: if (rarely) a sprite is still decoding, show a quick loading bar and wait so
+  // the round never starts on a blank field (fixes the intermittent "no sprites on restart").
+  if (typeof imagesReady !== 'undefined' && typeof imagesTotal !== 'undefined' && imagesReady < imagesTotal) _rescueShowLoadingBar(_go);
+  else _go();
+}
+function _rescueShowLoadingBar(cb) {
+  const root = document.getElementById('rescueGameRoot') || document.body;
+  let ov = document.getElementById('rescueLoadBar');
+  if (!ov) {
+    ov = document.createElement('div'); ov.id = 'rescueLoadBar';
+    ov.style.cssText = 'position:absolute;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(160deg,#2a1d10,#4a3320);color:#ffe0a0;font-family:Fredoka,Georgia,sans-serif;text-align:center;padding:20px;';
+    ov.innerHTML = '<div style="font-size:18px;font-weight:bold;">Loading the rescue…</div><div style="width:min(70%,320px);height:16px;border-radius:9px;background:rgba(0,0,0,0.4);border:2px solid #d8a86a;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.4);"><div id="rescueLoadFill" style="height:100%;width:0%;background:linear-gradient(90deg,#ffd86a,#e0a83a);transition:width .15s;"></div></div>';
+    root.appendChild(ov);
+  }
+  ov.style.display = 'flex';
+  const fill = document.getElementById('rescueLoadFill');
+  let waited = 0;
+  const tick = () => {
+    const r = (typeof imagesReady !== 'undefined') ? imagesReady : imagesTotal;
+    const pct = imagesTotal ? Math.round(100 * r / imagesTotal) : 100;
+    if (fill) fill.style.width = pct + '%';
+    waited += 120;
+    if (r >= imagesTotal || waited > 12000) { ov.style.display = 'none'; cb(); }   // proceed when ready (or give up waiting after 12s)
+    else setTimeout(tick, 120);
+  };
+  tick();
 }
 function _rescueHud() {
   const d = document.getElementById('rescueDaughters'); if (d) { const hp = Math.max(0, Math.min(3, (typeof game !== 'undefined' ? game.hearts : 3))); d.textContent = '👧 ' + (7 - _rescue.daughtersLost) + '/7  ·  ' + '❤️'.repeat(hp) + '🤍'.repeat(Math.max(0, 3 - hp)); }
@@ -9794,11 +9829,11 @@ function _rescueFire(key) {
 function _rescueSpawn() {
   const fs = _rescue.foeSpeed * (0.7 + 0.55 * _rescueRamp()); // foes start slower, get faster as the round builds
   let type = 'normal', hp = 1, spd = fs, scale = 1, bounty = 22;
-  if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 150; _rescue.bossSpawned = true; _rescue.shake = 18; _rescueCue('⚠️ THE MIGHTY SHEPHERD!', 380, 40, '#ff7a4a', true); try { play('bossAlert') || play('alarm') || play('error'); } catch(e){} try { setTimeout(() => { try { play('villainLaugh'); } catch(e){} }, 350); } catch(e){} }
-  else if (!_rescue.cartSpawned && _rescue.spawned >= Math.floor(_rescue.total / 2)) { type = 'cartboss'; hp = Math.max(8, Math.round(_rescue.bossHp * 0.8)); spd = _rescue.foeSpeed * 0.4; scale = 1.8; bounty = 110; _rescue.cartSpawned = true; _rescue.shake = 14; _rescueCue('🐂 Bullock-cart boss — down him to WIN a heart ❤️', 380, 40, '#ffd23a', true); try { play('bossAlert') || play('alarm'); } catch(e){} }
+  if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 150; _rescue.bossSpawned = true; _rescue.shake = 18; _rescue.camZoom = 1.12; _rescueCue('⚠️ THE MIGHTY SHEPHERD!', 380, 40, '#ff7a4a', true); try { play('bossAlert') || play('alarm') || play('error'); } catch(e){} try { setTimeout(() => { try { play('villainLaugh'); } catch(e){} }, 350); } catch(e){} }
+  else if (!_rescue.cartSpawned && _rescue.spawned >= Math.floor(_rescue.total / 2)) { type = 'cartboss'; hp = Math.max(8, Math.round(_rescue.bossHp * 0.8)); spd = _rescue.foeSpeed * 0.4; scale = 1.8; bounty = 110; _rescue.cartSpawned = true; _rescue.shake = 14; _rescue.camZoom = 1.10; _rescueCue('🐂 Bullock-cart boss — down him to WIN a heart ❤️', 380, 40, '#ffd23a', true); try { play('bossAlert') || play('alarm'); } catch(e){} }
   else {
     // a fresh wave of shepherds charges in: the first one, then again mid-assault
-    if (_rescue.spawned === 0 || _rescue.spawned === Math.floor(_rescue.total * 0.45)) { try { play('waveShep'); } catch(e){} if (_rescue.spawned > 0) _rescueCue('Another wave!', 380, 40, '#ffd23a', true); }
+    if (_rescue.spawned === 0 || _rescue.spawned === Math.floor(_rescue.total * 0.45)) { try { play('waveShep'); } catch(e){} if (_rescue.spawned > 0) { _rescue.camZoom = 1.05; _rescueCue('Another wave!', 380, 40, '#ffd23a', true); } }
     const r = Math.random(); if (r < _rescue.bigChance) { type = 'big'; hp = 4; spd = fs * 0.55; scale = 1.34; bounty = 48; } else if (r < _rescue.bigChance + _rescue.fastChance) { type = 'fast'; hp = 1; spd = fs * 1.7; scale = 1.02; bounty = 18; }
   }
   // ---- which lane does he charge? (only lanes that still have a daughter) ----
@@ -9899,7 +9934,15 @@ function _rescueShowWinPanel() {
     const cnt = tz.querySelector('.rwCount'); const target = gain;
     if (cnt) { if (_rescue._winCount) clearInterval(_rescue._winCount); let v = 0; const step = Math.max(1, Math.round(target / 22)); _rescue._winCount = setInterval(() => { v = Math.min(target, v + step); cnt.textContent = '+💰 ' + v; if (v >= target) { clearInterval(_rescue._winCount); _rescue._winCount = null; } }, 34); }
   }
-  try { setTimeout(() => play('coin'), 200); if (perfect) { setTimeout(() => play('coin'), 420); setTimeout(() => play('chime'), 640); setTimeout(() => { try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){} }, 300); } } catch(e){}
+  try {
+    setTimeout(() => play('coin'), 200);
+    if (perfect) { setTimeout(() => play('coin'), 420); setTimeout(() => play('chime'), 640); setTimeout(() => { try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){} }, 300); }
+    else {
+      // WELL TRIED (not a perfect rescue): a gentle cover-page music bed + the "well tried" sting
+      setTimeout(() => { try { play('wellTried') || play('chime') || play('pop'); } catch(e){} }, 260);
+      try { if (audio.coverMusic) { audio.coverMusic.loop = true; audio.coverMusic.volume = 0.32; audio.coverMusic.currentTime = 0; const _cp = audio.coverMusic.play(); if (_cp && _cp.catch) _cp.catch(()=>{}); } } catch(e){}
+    }
+  } catch(e){}
   const ov = document.getElementById('rescueWinOverlay'); if (ov) ov.style.display = 'flex';
   _rescueConfetti(perfect ? 64 : 30);   // confetti rains down on the win
   _rescueCoinSpray(perfect ? 18 : 11);  // coins fan out from the centre of the card
@@ -9955,6 +9998,7 @@ function _rescueLoseQuit() {
 }
 function _rescueRetry() {
   ['rescueLoseOverlay', 'rescueWinOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  try { if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; } } catch(e){}
   if (!_rescue.gate) return;
   cancelAnimationFrame(_rescue.rafId); _rescueReset(); _rescueHud();
   _rescueShowLoadout();
@@ -9967,10 +10011,11 @@ function _rescueQuit() {
   ['rescuePausedOverlay', 'rescueLoseOverlay', 'rescueWinOverlay', 'rescueLoadout'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
   const modal = document.getElementById('rescueModal'); modal.style.display = 'none'; modal.classList.remove('active');
   try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
+  try { if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; } } catch(e){}
   try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
   _rescue.gate = null; try { game.state = 'playing'; } catch(e){}
 }
-function _rescueWinContinue() { const ov = document.getElementById('rescueWinOverlay'); if (ov) ov.style.display = 'none'; _closeRescue(); }
+function _rescueWinContinue() { const ov = document.getElementById('rescueWinOverlay'); if (ov) ov.style.display = 'none'; try { if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; } } catch(e){} _closeRescue(); }
 function _closeRescue() {
   cancelAnimationFrame(_rescue.rafId); _rescue.started = false;
   const modal = document.getElementById('rescueModal'); modal.style.display = 'none'; modal.classList.remove('active');
@@ -10021,6 +10066,7 @@ function _rescueFrame(now) {
     if (_rescue.throwAnim > 0) _rescue.throwAnim -= dts;
     for (const k in _rescue.cd) if (_rescue.cd[k] > 0) _rescue.cd[k] -= dts;
     if (_rescue.comboT > 0) { _rescue.comboT -= dts; if (_rescue.comboT <= 0) _rescue.combo = 0; }   // streak window lapsed
+    _rescue.camZoom = (_rescue.camZoom || 1) + (1 - (_rescue.camZoom || 1)) * Math.min(1, dts * 5);   // camera punch eases back to 1
     // (no trickle income — purse only changes when you DOWN a shepherd (+) or THROW a weapon (-))
     // spawn (held during the opening countdown)
     if (_rescue.countdown <= 0 && _rescue.spawned < _rescue.total) {
@@ -10028,7 +10074,7 @@ function _rescueFrame(now) {
       if (_rescue.spawnT <= 0) {
         const waveSize = Math.max(4, Math.ceil(_rescue.total / 4));
         if (_rescue.spawned === _rescue.total - 1 && !_rescue._lulled) {
-          _rescue._lulled = true; _rescue.spawnT = 2.6; _rescueCue('⚔️ FINAL WAVE!', 380, 64, '#ffd23a', true); try { play('dangerAlert') || play('error'); } catch(e){}
+          _rescue._lulled = true; _rescue.spawnT = 2.6; _rescue.camZoom = 1.07; _rescueCue('⚔️ FINAL WAVE!', 380, 64, '#ffd23a', true); try { play('dangerAlert') || play('error'); } catch(e){}
         } else if (_rescue.spawned > 0 && _rescue.spawned % waveSize === 0 && !_rescue._breathed && _rescue.foes.length <= 1) {
           // wave cleared — a short breather so kids can regroup
           _rescue._breathed = true; _rescue.spawnT = 2.8; _rescueCue('Wave cleared — catch your breath!', 380, 64, '#9fe06a', true);
@@ -10084,6 +10130,9 @@ function _rescueFrame(now) {
 
   // ---------- draw ----------
   c.save(); c.translate(sx, 0);
+  // CINEMATIC camera punch-in: briefly zoom the whole field (around its centre) on a boss or
+  // wave entry for an intense, gripping beat. Visual only — lane math + hit detection unaffected.
+  { const cz = _rescue.camZoom || 1; if (cz > 1.001) { c.translate(W / 2, H / 2); c.scale(cz, cz); c.translate(-W / 2, -H / 2); } }
   // ALWAYS lay down a green field base first, THEN the field image on top. If the image is
   // missing/slow/broken the playfield still looks like a field (never bare canvas stripes).
   { const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#9ad06a'); g.addColorStop(1, '#6aa84a'); c.fillStyle = g; c.fillRect(-4, -4, W + 8, H + 8); }
@@ -10137,7 +10186,8 @@ function _rescueFrame(now) {
     else if (f.type === 'big' || f.type === 'boss') { c.fillStyle = 'rgba(180,30,20,' + (0.18 + 0.1 * Math.sin(now / 160)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 42 * f.scale * mag, 38 * f.scale * mag, 52 * f.scale * mag, 0, 0, Math.PI * 2); c.fill(); }
     const bob = (f.snared > 0) ? 0 : Math.sin(now / 165 + f.x * 0.07) * 2.4 * f.scale;
     // "zoom" on the incoming threat: shepherds grow as they advance toward the daughters
-    const prox = Math.max(0, Math.min(1, (W - f.x) / (W - _rescue.GRABX))), zoom = 1 + prox * 0.1;
+    // the boss/cart-boss LOOMS dramatically as it bears down; lesser shepherds grow only a little
+    const prox = Math.max(0, Math.min(1, (W - f.x) / (W - _rescue.GRABX))), zoom = 1 + prox * ((f.type === 'boss' || f.type === 'cartboss') ? 0.34 : 0.1);
     const isCart = f.type === 'cartboss';
     // sized to sit WITHIN a lane; mag scales sprites up as the lanes spread to fill the screen
     const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = (isCart ? 120 : 62) * f.scale * mag * zoom * (1 + sq * 0.12), sh = (isCart ? 98 : 82) * f.scale * mag * zoom * (1 - sq * 0.1);
