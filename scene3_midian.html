@@ -9539,8 +9539,9 @@ function _rescueCfg() {
   // Thrilling-but-doable: the assault RAMPS over the round (see _rescueRampMul) — it
   // opens slow with few shepherds and speeds up. spawnEvery/foeSpeed below are the
   // mid-round baseline; the ramp eases them at the start and pushes them at the end.
-  if (d === 'hard')   return { total: 34, spawnEvery: 1.15, foeSpeed: 52, bigChance: 0.26, fastChance: 0.34, coins: 120, bossHp: 44 };
-  if (d === 'medium') return { total: 28, spawnEvery: 1.35, foeSpeed: 46, bigChance: 0.22, fastChance: 0.30, coins: 140, bossHp: 34 };
+  // coins = the per-round PURSE (spending budget for THIS round only — NOT the player's bank)
+  if (d === 'hard')   return { total: 34, spawnEvery: 1.15, foeSpeed: 52, bigChance: 0.26, fastChance: 0.34, coins: 100, bossHp: 44 };
+  if (d === 'medium') return { total: 28, spawnEvery: 1.35, foeSpeed: 46, bigChance: 0.22, fastChance: 0.30, coins: 130, bossHp: 34 };
   return { total: 22, spawnEvery: 1.6,  foeSpeed: 40, bigChance: 0.18, fastChance: 0.26, coins: 160, bossHp: 24 }; // easy
 }
 // assault ramp: 0 at round start → 1 by the time the boss is near. Eases the spawn
@@ -9790,7 +9791,7 @@ function _rescueAward(foe) {
   _rescueCue('+💰' + b, foe.x, _rescue.laneY[foe.lane] - 34, '#ffe07a');
   // streak: chain downs within ~2.2s for a Combo bonus (purse + bank)
   _rescue.combo = (_rescue.combo || 0) + 1; _rescue.comboT = 2.2;
-  if (_rescue.combo >= 3) { const bonus = Math.min(40, _rescue.combo * 3); _rescue.coins += bonus; _rescue.earned += bonus; _rescueCue('Combo ×' + _rescue.combo + '!  +💰' + bonus, foe.x, _rescue.laneY[foe.lane] - 52, '#ffd24a', true); try { play('comboPop') || play('coin') || play('pop'); } catch(e){} }
+  if (_rescue.combo >= 3) { const bonus = Math.min(15, _rescue.combo * 2); _rescue.coins += bonus; _rescue.earned += bonus; _rescueCue('Combo ×' + _rescue.combo + '!  +💰' + bonus, foe.x, _rescue.laneY[foe.lane] - 52, '#ffd24a', true); try { play('comboPop') || play('coin') || play('pop'); } catch(e){} }
   // wow: a treasure bag bursts from the shepherd and flies up to Moses's purse
   const n = (foe.type === 'boss' || foe.type === 'cartboss') ? 5 : (foe.type === 'big' ? 3 : 1);
   for (let i = 0; i < n; i++) _rescue.flyers.push({ x: foe.x + (Math.random() * 30 - 15), y: _rescue.laneY[foe.lane] - 8, t: -i * 0.06, life: 0.72, spin: Math.random() * 6, bag: ['treasureB', 'treasureG', 'treasureR'][(Math.random() * 3) | 0] });
@@ -9828,13 +9829,15 @@ function _rescueFire(key) {
 }
 function _rescueSpawn() {
   const fs = _rescue.foeSpeed * (0.7 + 0.55 * _rescueRamp()); // foes start slower, get faster as the round builds
-  let type = 'normal', hp = 1, spd = fs, scale = 1, bounty = 22;
-  if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 150; _rescue.bossSpawned = true; _rescue.shake = 18; _rescue.camZoom = 1.12; _rescueCue('⚠️ THE MIGHTY SHEPHERD!', 380, 40, '#ff7a4a', true); try { play('bossAlert') || play('alarm') || play('error'); } catch(e){} try { setTimeout(() => { try { play('villainLaugh'); } catch(e){} }, 350); } catch(e){} }
-  else if (!_rescue.cartSpawned && _rescue.spawned >= Math.floor(_rescue.total / 2)) { type = 'cartboss'; hp = Math.max(8, Math.round(_rescue.bossHp * 0.8)); spd = _rescue.foeSpeed * 0.4; scale = 1.8; bounty = 110; _rescue.cartSpawned = true; _rescue.shake = 14; _rescue.camZoom = 1.10; _rescueCue('🐂 Bullock-cart boss — down him to WIN a heart ❤️', 380, 40, '#ffd23a', true); try { play('bossAlert') || play('alarm'); } catch(e){} }
+  // Bounties tuned so a kill ~breaks even against weapon costs (tight earn-and-spend purse);
+  // the permanent BANK is rewarded separately by end-of-round performance, not these.
+  let type = 'normal', hp = 1, spd = fs, scale = 1, bounty = 8;
+  if (_rescue.spawned >= _rescue.total - 1 && !_rescue.bossSpawned) { type = 'boss'; hp = _rescue.bossHp; spd = _rescue.foeSpeed * 0.42; scale = 1.7; bounty = 40; _rescue.bossSpawned = true; _rescue.shake = 18; _rescue.camZoom = 1.12; _rescueCue('⚠️ THE MIGHTY SHEPHERD!', 380, 40, '#ff7a4a', true); try { play('bossAlert') || play('alarm') || play('error'); } catch(e){} try { setTimeout(() => { try { play('villainLaugh'); } catch(e){} }, 350); } catch(e){} }
+  else if (!_rescue.cartSpawned && _rescue.spawned >= Math.floor(_rescue.total / 2)) { type = 'cartboss'; hp = Math.max(8, Math.round(_rescue.bossHp * 0.8)); spd = _rescue.foeSpeed * 0.4; scale = 1.8; bounty = 30; _rescue.cartSpawned = true; _rescue.shake = 14; _rescue.camZoom = 1.10; _rescueCue('🐂 Bullock-cart boss — down him to WIN a heart ❤️', 380, 40, '#ffd23a', true); try { play('bossAlert') || play('alarm'); } catch(e){} }
   else {
     // a fresh wave of shepherds charges in: the first one, then again mid-assault
     if (_rescue.spawned === 0 || _rescue.spawned === Math.floor(_rescue.total * 0.45)) { try { play('waveShep'); } catch(e){} if (_rescue.spawned > 0) { _rescue.camZoom = 1.05; _rescueCue('Another wave!', 380, 40, '#ffd23a', true); } }
-    const r = Math.random(); if (r < _rescue.bigChance) { type = 'big'; hp = 4; spd = fs * 0.55; scale = 1.34; bounty = 48; } else if (r < _rescue.bigChance + _rescue.fastChance) { type = 'fast'; hp = 1; spd = fs * 1.7; scale = 1.02; bounty = 18; }
+    const r = Math.random(); if (r < _rescue.bigChance) { type = 'big'; hp = 4; spd = fs * 0.55; scale = 1.34; bounty = 16; } else if (r < _rescue.bigChance + _rescue.fastChance) { type = 'fast'; hp = 1; spd = fs * 1.7; scale = 1.02; bounty = 6; }
   }
   // ---- which lane does he charge? (only lanes that still have a daughter) ----
   const withD = []; for (let i = 0; i < _rescue.LANES; i++) if (_rescue.laneDaughter[i]) withD.push(i);
@@ -9843,7 +9846,7 @@ function _rescueSpawn() {
   if (_rescue.spawned === 0) {
     // GENTLE OPENER: one slow shepherd straight down the middle so kids learn move-then-throw
     lane = _rescue.laneDaughter[3] ? 3 : pool[Math.floor(pool.length / 2)];
-    spd = Math.min(spd, _rescue.foeSpeed * 0.5); type = 'normal'; hp = 1; scale = 1; bounty = 22;
+    spd = Math.min(spd, _rescue.foeSpeed * 0.5); type = 'normal'; hp = 1; scale = 1; bounty = 8;
   } else {
     // EARLY DIFFICULTY TUNING: cap how many lanes are threatened at once (2 early, 3 mid,
     // all lanes late) so small phones aren't overwhelming; once capped, stack onto a lane
@@ -9897,10 +9900,13 @@ function _rescueWin() {
   const saved = 7 - _rescue.daughtersLost;
   _rescue.perfect = (_rescue.daughtersLost === 0);   // all seven saved = true victory
   _rescue.stars = _rescue.daughtersLost === 0 ? 3 : (_rescue.daughtersLost <= 2 ? 2 : 1);
-  // commit the round's treasure: net of what was earned vs spent, but never below the
-  // bank they started with — so a kid's riches only ever GROW each time they play
+  // commit the round's BANK reward by PERFORMANCE (not the tight in-round purse): the more
+  // shepherds driven off + daughters saved + stars, the more your riches grow — and the bank
+  // only ever GROWS each time they play
+  const _saved = 7 - _rescue.daughtersLost;
+  const _bankGain = Math.max(0, (_rescue.foesDriven || 0) * 4 + _saved * 15 + (_rescue.stars || 0) * 20);
   _rescue._before = _rescue.startBags || 0;
-  _rescue._after = _rescue._before + Math.max(0, Math.round(_rescue.earned));   // bank grows by the treasure COLLECTED this round (purse is just ammo money, not banked)
+  _rescue._after = _rescue._before + _bankGain;
   try { if (typeof game !== 'undefined') { game._wellGamePass = true; game.treasureBags = _rescue._after; } } catch(e){}
   const fb = document.getElementById('rescueFeedback'); if (fb) fb.textContent = _rescue.perfect ? '🎉 Every daughter is safe!' : ('The shepherds are driven off — ' + saved + '/7 daughters safe.');
   try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
@@ -9967,8 +9973,8 @@ function _rescueConfetti(n) {
 function _rescueLose() {
   if (_rescue.over && !_rescue.win) return;
   _rescue.over = true; _rescue.win = false; cancelAnimationFrame(_rescue.rafId);
-  // still bank the treasure collected before losing (bank only ever grows)
-  try { if (typeof game !== 'undefined') game.treasureBags = (_rescue.startBags || 0) + Math.max(0, Math.round(_rescue.earned)); } catch(e){}
+  // even a lost round banks a little for the shepherds driven off (bank only ever grows)
+  try { if (typeof game !== 'undefined') game.treasureBags = (_rescue.startBags || 0) + Math.max(0, (_rescue.foesDriven || 0) * 4); } catch(e){}
   try { if (audio.puzzleBg) audio.puzzleBg.pause(); } catch(e){}
   _rescueStopSfx();
   // every daughter taken = one lost round = one world heart gone
