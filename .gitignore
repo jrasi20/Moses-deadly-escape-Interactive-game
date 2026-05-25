@@ -1,0 +1,7 @@
+# Local Playwright test harnesses for Scene 3 dev (not part of the game build)
+_*.mjs
+
+# Local dev / OS / editor noise
+node_modules/
+.DS_Store
+*.log

@@ -308,6 +308,13 @@
     flex: 0 0 auto;
   }
   .hud-chip img { width:18px; height:18px; }
+  /* Scene 3 crystal-tiles chip: cool gem tint, then a gold celebratory glow at 3/3. */
+  #hudCrystalChip { background:linear-gradient(145deg,#15506e,#1f7fa6); border-color:#7fe7ff; color:#dffaff; }
+  #hudCrystalChip.hud-crystal-done {
+    background:linear-gradient(145deg,#7a5a12,#caa12e); border-color:#ffe27a; color:#fff7d6;
+    box-shadow:0 0 10px rgba(255,210,80,0.85); animation:crystalDone 1.1s ease-in-out infinite;
+  }
+  @keyframes crystalDone { 0%,100%{ box-shadow:0 0 8px rgba(255,210,80,0.6);} 50%{ box-shadow:0 0 16px rgba(255,210,80,1);} }
   .pause-btn {
     background:#ffd976; color:#5a1d06; width:36px; height:36px; border-radius:50%;
     font-weight:900; font-size:17px;
@@ -869,6 +876,24 @@
     70%  { transform:translateY(0) scale(1.05) rotate(-2deg); }
     100% { opacity:1; transform:translateY(0) scale(1) rotate(0); }
   }
+  /* ==== POWER-UP DOCK: first-tap pulse + "TAP" arrow (parity with Scene 1) ==== */
+  @keyframes puFirstTapPulse {
+    0%, 100% { transform: scale(1);    box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 0 0  rgba(255,217,118,0.95); }
+    50%      { transform: scale(1.08); box-shadow: 0 6px 18px rgba(0,0,0,0.55), 0 0 0 12px rgba(255,217,118,0); }
+  }
+  .pu-first-tap-pulse { animation: puFirstTapPulse 1.4s ease-out infinite; }
+  .pu-tap-arrow {
+    position:absolute; left:50%; top:-22px; transform:translateX(-50%);
+    background:linear-gradient(180deg,#fff5cd,#ffd976); color:#3a1708;
+    border:2px solid #c79a3a; border-radius:14px; padding:2px 8px;
+    font-family:Georgia, serif; font-size:10px; font-weight:800; letter-spacing:0.6px;
+    white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,0.4); pointer-events:none; z-index:6;
+    animation:puArrowBob 1.2s ease-in-out infinite;
+  }
+  @keyframes puArrowBob {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-4px); }
+  }
   /* ==== SLOW-MO CAPTURE (screen freeze + shake) ==== */
   .capture-freeze { filter:grayscale(0.55) brightness(0.85) blur(1.2px) !important; }
   .capture-shake  { animation: captureShake 1.4s cubic-bezier(.36,.07,.19,.97); }
@@ -991,6 +1016,121 @@
   .ch-pair-tile img { width:50px; height:50px; object-fit:contain; pointer-events:none; }
   .ch-pair-tile:hover { transform:translateY(-3px); background:#fff1c2; }
   .ch-pair-tile:active { transform:scale(0.96); }
+
+  /* ---- Scene 3 Checkpoint-1 match-3 (Candy-Crush style, Moses-story tiles) ---- */
+  .ch-m3-wrap { width:100%; max-width:380px; margin:4px auto 2px; }
+  .ch-m3-bar { display:flex; align-items:center; gap:10px; margin:0 2px 8px; }
+  .ch-m3-score { font-weight:900; color:#5a2b00; font-size:clamp(13px,3.6vw,17px); white-space:nowrap; }
+  .ch-m3-prog { flex:1; height:12px; background:rgba(122,74,0,0.18); border-radius:99px; overflow:hidden; border:1px solid rgba(122,74,0,0.3); }
+  .ch-m3-prog-fill { height:100%; width:0%; border-radius:99px; background:linear-gradient(90deg,#36d1ff,#6ad7a0,#ffd34d); transition:width 0.35s ease; }
+  .ch-m3-grid {
+    display:grid; grid-template-columns:repeat(var(--m3-cols,6), 1fr);
+    gap:clamp(3px,1.2vw,6px); width:100%;
+    background:linear-gradient(135deg,#fff7e6,#ffe9c7);
+    padding:clamp(5px,1.6vw,9px); border-radius:14px; border:2px solid #c98a3a;
+    box-shadow:inset 0 2px 6px rgba(122,74,0,0.18);
+  }
+  .ch-m3-tile {
+    aspect-ratio:1/1; width:100%; padding:0; border:none; cursor:pointer;
+    border-radius:11px; font-size:clamp(16px,5.2vw,30px); line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 4px rgba(0,0,0,0.18), inset 0 -3px 6px rgba(0,0,0,0.12), inset 0 2px 3px rgba(255,255,255,0.55);
+    transition:transform 0.12s, box-shadow 0.12s, filter 0.12s;
+  }
+  .ch-m3-tile:active { transform:scale(0.9); }
+  .ch-m3-tile.t0 { background:radial-gradient(circle at 35% 30%,#eaf6ff,#9cd3ff); }
+  .ch-m3-tile.t1 { background:radial-gradient(circle at 35% 30%,#fff0cf,#ffcf6b); }
+  .ch-m3-tile.t2 { background:radial-gradient(circle at 35% 30%,#ffe2c4,#ff9f5a); }
+  .ch-m3-tile.t3 { background:radial-gradient(circle at 35% 30%,#e6f8c8,#a7df6b); }
+  .ch-m3-tile.t4 { background:radial-gradient(circle at 35% 30%,#f3e6ff,#c79cff); }
+  .ch-m3-tile.t5 { background:radial-gradient(circle at 35% 30%,#ffe0ea,#ff9bb6); }
+  .ch-m3-tile.sel { transform:scale(1.09); box-shadow:0 0 0 3px #ff5fa2, 0 3px 8px rgba(0,0,0,0.3); filter:brightness(1.08); z-index:2; }
+  .ch-m3-tile.hint { animation:m3hint 0.7s ease-in-out infinite; }
+  .ch-m3-tile.nudge { animation:m3nudge 0.22s ease; }
+  .ch-m3-tile.crush { animation:m3crush 0.26s ease forwards; }
+  @keyframes m3hint { 0%,100%{ box-shadow:0 0 0 2px #36d1ff; } 50%{ box-shadow:0 0 10px 4px #36d1ff; transform:scale(1.06);} }
+  @keyframes m3nudge { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);} }
+  @keyframes m3crush { 0%{transform:scale(1);} 40%{transform:scale(1.25) rotate(8deg); filter:brightness(1.7);} 100%{transform:scale(0); filter:brightness(2.2);} }
+  @media (orientation:landscape) and (max-height:520px) {
+    .ch-m3-wrap { width:min(58vh, 340px); }
+    .ch-m3-tile { font-size:clamp(14px,4vh,26px); }
+  }
+
+  /* ---- Scene 3 Checkpoint-2 sorting (tap a picture, tap the right basket) ---- */
+  .ch-sort-wrap { width:100%; max-width:420px; margin:4px auto 2px; }
+  .ch-sort-tray {
+    display:flex; flex-wrap:wrap; gap:clamp(5px,1.6vw,9px); justify-content:center;
+    min-height:62px; padding:clamp(6px,2vw,10px); margin-bottom:10px;
+    background:linear-gradient(135deg,#fff7e6,#ffe9c7); border:2px dashed #c98a3a; border-radius:14px;
+  }
+  .ch-sort-empty { font-weight:900; color:#3a7a2a; font-size:clamp(15px,4.4vw,20px); padding:10px; }
+  .ch-sort-tile {
+    width:clamp(46px,13vw,60px); height:clamp(46px,13vw,60px); padding:0; border:none; cursor:pointer;
+    border-radius:12px; font-size:clamp(22px,7vw,32px); line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 35% 30%,#fffdf5,#ffe6a8);
+    box-shadow:0 2px 4px rgba(0,0,0,0.2), inset 0 -3px 6px rgba(0,0,0,0.12), inset 0 2px 3px rgba(255,255,255,0.6);
+    transition:transform 0.12s, box-shadow 0.12s;
+  }
+  .ch-sort-tile:active { transform:scale(0.9); }
+  .ch-sort-tile.sel { transform:scale(1.12) translateY(-3px); box-shadow:0 0 0 3px #ff5fa2, 0 4px 10px rgba(0,0,0,0.3); z-index:2; }
+  .ch-sort-tile.nudge { animation:m3nudge 0.22s ease; }
+  .ch-sort-bins { display:flex; gap:clamp(6px,2vw,12px); }
+  .ch-sort-bin {
+    flex:1; cursor:pointer; border-radius:14px; padding:clamp(6px,1.8vw,10px); min-height:84px;
+    display:flex; flex-direction:column; gap:6px; align-items:stretch;
+    border:3px solid transparent; transition:transform 0.12s, box-shadow 0.12s;
+  }
+  .ch-sort-bin.bin0 { background:linear-gradient(160deg,#e7f9e0,#bfeeb0); border-color:#5bbf57; }
+  .ch-sort-bin.bin1 { background:linear-gradient(160deg,#ffe6e6,#ffc0c0); border-color:#e07070; }
+  .ch-sort-bin:active { transform:scale(0.97); }
+  .ch-sort-bin.shake { animation:m3nudge 0.3s ease; }
+  .ch-sort-bin-cap { font-weight:900; font-size:clamp(12px,3.4vw,15px); color:#3a2a00; text-align:center; }
+  .ch-sort-bin-slot { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; align-content:flex-start; }
+  .ch-sort-chip { font-size:clamp(18px,5.5vw,26px); animation:sortpop 0.3s ease; }
+  @keyframes sortpop { 0%{transform:scale(0) rotate(-20deg);} 70%{transform:scale(1.3) rotate(8deg);} 100%{transform:scale(1) rotate(0);} }
+  @media (orientation:landscape) and (max-height:520px) {
+    .ch-sort-wrap { width:100%; max-width:520px; }
+    .ch-sort-tile { width:clamp(40px,7vh,52px); height:clamp(40px,7vh,52px); font-size:clamp(20px,5vh,28px); }
+  }
+
+  /* ---- Scene 3 Checkpoint-3 merge / 2048 (build the Moses story) ---- */
+  .ch-mg-wrap { width:100%; max-width:300px; margin:2px auto; }
+  .ch-mg-bar { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:0 2px 7px; font-size:clamp(11px,3.2vw,14px); color:#5a2b00; font-weight:800; }
+  .ch-mg-bar b { font-size:1.25em; }
+  .ch-mg-grid {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:clamp(4px,1.4vw,7px); width:100%; aspect-ratio:1/1;
+    background:linear-gradient(135deg,#caa06a,#b9854a); padding:clamp(4px,1.4vw,7px); border-radius:14px;
+    box-shadow:inset 0 2px 6px rgba(60,30,0,0.3);
+  }
+  .ch-mg-cell {
+    border-radius:10px; background:rgba(255,247,230,0.35); display:flex; align-items:center; justify-content:center;
+    font-size:clamp(20px,7vw,34px); line-height:1; box-shadow:inset 0 1px 2px rgba(0,0,0,0.12);
+  }
+  .ch-mg-cell.filled { box-shadow:0 2px 4px rgba(0,0,0,0.22), inset 0 2px 3px rgba(255,255,255,0.5); }
+  .ch-mg-cell.pop { animation:mgpop 0.16s ease; }
+  @keyframes mgpop { 0%{transform:scale(0.6);} 70%{transform:scale(1.12);} 100%{transform:scale(1);} }
+  .ch-mg-cell.tier1 { background:radial-gradient(circle at 35% 30%,#f3ffd9,#cde89a); }
+  .ch-mg-cell.tier2 { background:radial-gradient(circle at 35% 30%,#ffe9c9,#ffc78a); }
+  .ch-mg-cell.tier3 { background:radial-gradient(circle at 35% 30%,#ffe1ec,#ff9fc0); }
+  .ch-mg-cell.tier4 { background:radial-gradient(circle at 35% 30%,#d9f0ff,#8ec9ff); }
+  .ch-mg-cell.tier5 { background:radial-gradient(circle at 35% 30%,#f3e1ff,#c79cff); }
+  .ch-mg-cell.tier6 { background:radial-gradient(circle at 35% 30%,#fff6c8,#ffd84d); box-shadow:0 0 10px rgba(255,200,40,0.7), inset 0 2px 3px rgba(255,255,255,0.6); }
+  .ch-mg-cell.tier7 { background:radial-gradient(circle at 35% 30%,#ffe8c2,#ff9a3d); box-shadow:0 0 12px rgba(255,140,40,0.8), inset 0 2px 3px rgba(255,255,255,0.6); }
+  .ch-mg-pad { display:grid; grid-template-columns:repeat(3,1fr); grid-template-areas:". up ." "left down right"; gap:5px; width:min(64%,170px); margin:8px auto 0; }
+  .ch-mg-btn {
+    aspect-ratio:1/1; border:none; cursor:pointer; border-radius:12px; font-size:clamp(16px,5vw,22px); color:#fff;
+    background:linear-gradient(160deg,#3aa0d8,#2a78b8); box-shadow:0 2px 4px rgba(0,0,0,0.25), inset 0 2px 3px rgba(255,255,255,0.35);
+    transition:transform 0.1s;
+  }
+  .ch-mg-btn:active { transform:scale(0.9); }
+  .mg-up{grid-area:up;} .mg-left{grid-area:left;} .mg-down{grid-area:down;} .mg-right{grid-area:right;}
+  @media (orientation:landscape) and (max-height:520px) {
+    .ch-mg-wrap { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:14px; width:auto; }
+    .ch-mg-bar { flex-basis:100%; justify-content:center; gap:18px; }
+    .ch-mg-grid { width:min(46vh,260px); }
+    .ch-mg-pad { margin:0; width:min(28vh,150px); }
+  }
   /* -- COUNT: scene grid above, number buttons below -- */
   .ch-count-scene {
     display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
@@ -1932,6 +2072,16 @@
     .dpad-btn { height:38px; }
     .action-btn { height:36px; }
   }
+  /* ==== PROXIMITY TIP POPUP (one-world coaching, ported from Scene 1) ==== */
+  .tip-popup-overlay { position:fixed; inset:0; z-index:56; background:rgba(8,4,2,0.55); display:none; align-items:flex-end; justify-content:center; padding-bottom:14%; }
+  .tip-popup-overlay.active { display:flex; }
+  .tip-popup-card { background:linear-gradient(160deg,#3a1508,#5a2510); border:3px solid #ffd976; border-radius:14px; padding:18px 22px; max-width:min(440px,90vw); max-height:80vh; overflow-y:auto; color:#fff8e7; box-shadow:0 8px 32px rgba(0,0,0,0.55),0 0 24px rgba(255,217,118,0.35); text-align:center; font-family:Georgia,serif; animation:tipPopIn 0.32s cubic-bezier(.2,1.4,.4,1.0); }
+  .tip-popup-icon { font-size:30px; line-height:1; margin-bottom:6px; }
+  .tip-popup-title { font-size:17px; font-weight:800; color:#ffd976; margin-bottom:6px; }
+  .tip-popup-body { font-size:14.5px; line-height:1.45; color:#fff5d8; margin-bottom:14px; }
+  .tip-popup-btn { background:#ffd976; color:#5a1d06; border:none; border-radius:10px; font-family:Georgia,serif; font-weight:800; font-size:15px; padding:10px 24px; cursor:pointer; min-width:110px; min-height:44px; box-shadow:0 3px 10px rgba(0,0,0,0.4); }
+  @media (orientation:landscape) and (max-height:500px){ .tip-popup-overlay{ padding-bottom:5%; } .tip-popup-card{ padding:10px 16px; max-width:min(380px,70vw); } .tip-popup-icon{font-size:24px;} .tip-popup-title{font-size:15px;} .tip-popup-body{font-size:13px;} }
+  @keyframes tipPopIn { 0% { transform:translateY(40px) scale(0.85); opacity:0; } 100% { transform:translateY(0) scale(1); opacity:1; } }
 </style>
 </head>
 <body>
@@ -2084,6 +2234,8 @@
       <span class="hud-chip"><img src="assets/images/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span>/<span id="hudTreasureTotal">0</span></span>
       <!-- v2.1 Scene 2: altitude chip (shown only on scene 2, updated by updateHudAltitude) -->
       <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/5</span>
+      <!-- Scene 3: crystal river-tiles. Collect all 3 (one per checkpoint) to build the crossing. -->
+      <span class="hud-chip" id="hudCrystalChip" title="Crystal tiles — collect 3 to cross the river">&#128142; <span id="hudCrystals">0</span>/3</span>
       <span class="hud-chip" id="hudTimer">3:00</span>
     </div>
     <div class="hud-group">
@@ -2263,6 +2415,15 @@
 </div>
 
 <!-- ================ MID-SCENE TRUTH CHEST MODAL ================ -->
+<!-- ============ PROXIMITY TIP POPUP (one-world coaching) ============ -->
+<div class="tip-popup-overlay" id="tipPopupOverlay" role="dialog" aria-modal="true" aria-labelledby="tipPopupTitle">
+  <div class="tip-popup-card">
+    <div class="tip-popup-icon" id="tipPopupIcon" aria-hidden="true">👋</div>
+    <div class="tip-popup-title" id="tipPopupTitle">Tip</div>
+    <div class="tip-popup-body" id="tipPopupBody">…</div>
+    <button class="tip-popup-btn" id="tipPopupBtn">Got it!</button>
+  </div>
+</div>
 <div class="modal-overlay" id="truthChestModal" style="z-index:42;">
   <div class="modal-content" style="background:linear-gradient(155deg,#2a0a4a,#4a1080 55%,#7b1fa2);border:3px solid #ffd700;max-width:420px;">
     <div style="color:#ffd700;font-size:12px;letter-spacing:1.5px;text-align:center;">~ A TREASURE CHEST APPEARS ~</div>
@@ -3924,8 +4085,11 @@ const interactables = [
     name:'A Royal Circlet',
     body:'Moses finds the golden circlet from his old palace life, half-buried in the sand. By faith he refuses to be known as the son of Pharaoh\u2019s daughter. He leaves it behind - God\u2019s people matter more than Egypt\u2019s gold! +50 stars for choosing faith.',
     used:false, reward:'stars50' },
-  // === MID-SCENE TRUTH CHEST (appears near the exit, opens with the reveal animation) ===
-  { tx: 36, ty: 21,  kind:'truthchest', icon:'[TC]',
+  // === MID-SCENE TRUTH CHEST (on the exit approach, opens with the reveal animation) ===
+  // Was at (36,21) — off the 35-wide map, so it could never be reached. Moved onto
+  // the row-12 path to Jethro's tent so every player collects the truth to carry
+  // into Midian (matches Scene 1's truth-card moment for "one world" parity).
+  { tx: 32, ty: 12,  kind:'truthchest', icon:'[TC]',
     name:'A Mysterious Cedar Box',
     body:'Moses finds a small cedar box half-buried near a rock. Inside - a scroll wrapped in cloth with a truth to carry into Midian.',
     used:false, reward:'truthcard' },
@@ -4192,46 +4356,30 @@ function drawZipporahNPC() {
    the top cascades into the stream. Shepherds CANNOT cross the stream —
    when Moses triggers a chase, the stream becomes his escape route.
    ========================================================================== */
-const SCENE3_STREAM_COL = 12;
+const SCENE3_STREAM_COL = 12;          // centre column (waterfall + legacy refs)
+const SCENE3_STREAM_COL_MIN = 11;      // river now spans 3 columns (11,12,13)
+const SCENE3_STREAM_COL_MAX = 13;
 const SCENE3_STREAM_TOP = 1;
 const SCENE3_STREAM_BOT = 23;
-// Stepping stones — these specific (tx, ty) tiles let Moses (and only Moses)
-// cross the stream. Every other stream tile is impassable.
-// Phase C: 7 stones at rows 8-14 per thrill spec (stream crossing mini-game).
-// All 7 are passable now; Phase C step 3 will add the safe/sinking cycle.
-const SCENE3_STEPPING_STONES = [
-  { tx: 12, ty:  8 },
-  { tx: 12, ty:  9 },
-  { tx: 12, ty: 10 },
-  { tx: 12, ty: 11 },
-  { tx: 12, ty: 12 },
-  { tx: 12, ty: 13 },
-  { tx: 12, ty: 14 },
-];
-// Phase C Step 3 — safe/sinking cycle.
-// 3 pre-set patterns rotate every 4 s so kids can read the path before stepping.
-// Each pattern names the 2 stone INDICES (0-6) that will sink in that phase.
-const SCENE3_STONE_CYCLE_MS = 4000;
-const SCENE3_SINK_PATTERNS = [
-  [0, 4],  // rows 8 & 12 sink
-  [2, 5],  // rows 10 & 13 sink
-  [1, 6],  // rows 9 & 14 sink
-];
+// Stepping stones — these (tx,ty) tiles let Moses (and only Moses) cross once the
+// crossing is "built" (3 crystal tiles earned). The 3-wide river is forded by a
+// 3-row × 3-col band of stones (rows 11-13 across cols 11-13), centred on Moses's
+// start row (12). Open water shows above and below the ford for the "wow" look.
+const SCENE3_STEPPING_STONES = (function(){
+  const out = [];
+  for (let ty = 11; ty <= 13; ty++) for (let tx = SCENE3_STREAM_COL_MIN; tx <= SCENE3_STREAM_COL_MAX; tx++) out.push({ tx, ty });
+  return out;
+})();
 // Track whether we've shown the "read the path" Bible tip yet this run.
 let _scene3StoneTipShown = false;
-function _scene3SinkPhase() {
-  return Math.floor(performance.now() / SCENE3_STONE_CYCLE_MS) % SCENE3_SINK_PATTERNS.length;
-}
-function getScene3SinkingIndices() {
-  return SCENE3_SINK_PATTERNS[_scene3SinkPhase()];
-}
-function isScene3SinkingStone(tx, ty) {
-  const idx = SCENE3_STEPPING_STONES.findIndex(s => s.tx === tx && s.ty === ty);
-  if (idx === -1) return false;
-  return getScene3SinkingIndices().includes(idx);
-}
+// Scene 3's crossing is EARNED (3 crystals), so it is solid — no sinking-stone
+// penalty here (that was a Scene-2 chase thrill). Kept as a stub returning false
+// so the draw + crossing code can call it unchanged.
+function isScene3SinkingStone(tx, ty) { return false; }
+function getScene3SinkingIndices() { return []; }
 function isScene3StreamTile(tx, ty){
-  return (tx === SCENE3_STREAM_COL && ty >= SCENE3_STREAM_TOP && ty <= SCENE3_STREAM_BOT);
+  return (tx >= SCENE3_STREAM_COL_MIN && tx <= SCENE3_STREAM_COL_MAX &&
+          ty >= SCENE3_STREAM_TOP && ty <= SCENE3_STREAM_BOT);
 }
 function isScene3SteppingStone(tx, ty){
   for (const s of SCENE3_STEPPING_STONES) {
@@ -4243,58 +4391,157 @@ function isScene3SteppingStone(tx, ty){
 // stepping stone. Shepherds also can't step on stepping stones (water fear).
 function isScene3StreamBlocker(tx, ty, allowSteppingStones){
   if (!isScene3StreamTile(tx, ty)) return false;
-  if (allowSteppingStones && isScene3SteppingStone(tx, ty)) return false;
+  // River-crossing concept: the stepping stones only carry Moses once he has
+  // earned all 3 crystal stones from the west-bank Bible Checkpoints — i.e. the
+  // crossing is "built". Until then the whole stream is impassable. (Shepherds
+  // never cross regardless; they call this with allowSteppingStones=false.)
+  if (allowSteppingStones && isScene3SteppingStone(tx, ty) && _scene3CrystalCount() >= 3) return false;
   return true;
+}
+
+// Auto-load the OPTIONAL painted river texture if it exists, silently falling
+// back to the procedural water on 404 (no manifest edit needed). Drop a seamless,
+// vertically-tileable tile at assets/images/river water.png to upgrade the look.
+(function _loadRiverTexture(){
+  try {
+    if (typeof IMG === 'undefined') return;
+    const im = new Image();
+    im.onload  = () => { IMG.riverWater = im; };
+    im.onerror = () => {};
+    im.src = 'assets/images/river%20water.png';
+  } catch(e){}
+})();
+
+// Deterministic 0..1 pseudo-noise for twinkle/sparkle placement (no per-frame
+// allocation, stable per cell so glints don't jitter randomly each frame).
+function _riverHash(a, b){
+  const n = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
+  return n - Math.floor(n);
 }
 
 function drawScene3Stream(){
   if (typeof camera === 'undefined' || typeof TILE === 'undefined') return;
   const now = performance.now();
   const dusk = _scene3DuskT();
+  // Optional painted water texture. Drop a SEAMLESS (vertically tileable) image
+  // at assets/images/river water.png and register it in the manifest as
+  // `riverWater:'assets/images/river%20water.png'` — it then becomes the base
+  // layer (scrolled for flow) and the caustics/sparkles/foam animate on top.
+  const _okImg = (typeof _ok === 'function') ? _ok : (i => i && i.complete && i.naturalWidth);
+  const hasRiverTex = _okImg(IMG.riverWater);
   // Water deepens in color as twilight progresses (less sky reflection).
   const lightWater = `rgba(120, 180, 220, ${0.85 - dusk*0.25})`;
   const midWater   = `rgba( 60, 140, 200, ${0.80 - dusk*0.20})`;
   const darkWater  = `rgba( 30,  80, 140, ${0.95})`;
   const foam       = `rgba(255, 255, 255, ${0.55})`;
   for (let ty = SCENE3_STREAM_TOP; ty <= SCENE3_STREAM_BOT; ty++) {
-    const tx = SCENE3_STREAM_COL;
+   for (let tx = SCENE3_STREAM_COL_MIN; tx <= SCENE3_STREAM_COL_MAX; tx++) {
     const dx = tx * TILE - camera.px;
     const dy = ty * TILE - camera.py;
     if (dx < -TILE*2 || dx > CANVAS_W + TILE) continue;
     if (dy < -TILE*2 || dy > CANVAS_H + TILE) continue;
     const isStone = isScene3SteppingStone(tx, ty);
-    // 1) Dark base water
-    ctx.fillStyle = darkWater;
-    ctx.fillRect(dx, dy, TILE, TILE);
-    // 2) Mid-band lighter water
-    ctx.fillStyle = midWater;
-    ctx.fillRect(dx + TILE*0.1, dy, TILE*0.8, TILE);
-    // 3) Animated flowing ripples — diagonal lines drifting downward
+    const isLeftEdge  = (tx === SCENE3_STREAM_COL_MIN);  // west bank
+    const isRightEdge = (tx === SCENE3_STREAM_COL_MAX);  // east bank
+    // ================================================================
+    // WOW WATER — layered animated river (carved-channel depth + sky
+    // reflection + additive caustics + twinkling sun-glints + bank foam).
+    // Everything is clipped to the tile and keyed off WORLD-y so the flow
+    // is seamless from tile to tile. If a painted texture is supplied it
+    // becomes the scrolling base and these layers shimmer on top of it.
+    // ================================================================
     ctx.save();
-    ctx.strokeStyle = lightWater;
-    ctx.lineWidth = Math.max(1, TILE * 0.06);
-    ctx.beginPath();
-    const flow = (now / 280) % TILE;
-    for (let i = -1; i < 3; i++) {
-      const ry = dy + (i * TILE * 0.45) + flow;
-      if (ry < dy - 4 || ry > dy + TILE + 4) continue;
-      ctx.moveTo(dx + TILE*0.18, ry);
-      ctx.bezierCurveTo(
-        dx + TILE*0.40, ry + TILE*0.06,
-        dx + TILE*0.60, ry - TILE*0.06,
-        dx + TILE*0.82, ry
-      );
+    ctx.beginPath(); ctx.rect(dx, dy, TILE, TILE); ctx.clip();
+    const wy = ty * TILE; // world-space y of this tile's top
+
+    if (hasRiverTex) {
+      // base flow: texture drawn twice for a seamless vertical scroll
+      const off = (now / 26) % TILE;
+      ctx.drawImage(IMG.riverWater, dx, dy - TILE + off, TILE, TILE);
+      ctx.drawImage(IMG.riverWater, dx, dy + off, TILE, TILE);
+      // parallax 2nd layer (slower + slightly scaled) -> shimmering depth
+      ctx.globalAlpha = 0.42;
+      const off2 = (now / 60) % TILE;
+      ctx.drawImage(IMG.riverWater, dx - TILE*0.06, dy - TILE + off2, TILE*1.12, TILE);
+      ctx.drawImage(IMG.riverWater, dx - TILE*0.06, dy + off2, TILE*1.12, TILE);
+      ctx.globalAlpha = 1;
+      // depth shade deepening toward the centre column
+      let s0, s1;
+      if (isLeftEdge)       { s0 = 0.0;  s1 = 0.30; }
+      else if (isRightEdge) { s0 = 0.30; s1 = 0.0;  }
+      else                  { s0 = 0.26; s1 = 0.26; }
+      const k = 0.6 + dusk * 0.5;
+      const sh = ctx.createLinearGradient(dx, 0, dx + TILE, 0);
+      sh.addColorStop(0.0, `rgba(8,36,66,${s0 * k})`);
+      sh.addColorStop(1.0, `rgba(8,36,66,${s1 * k})`);
+      ctx.fillStyle = sh; ctx.fillRect(dx, dy, TILE, TILE);
+    } else {
+      // cohesive 3-wide carved channel: light at the two outer banks, deep dark
+      // through the middle column. Each tile paints its slice of that gradient.
+      const ch = ctx.createLinearGradient(dx, 0, dx + TILE, 0);
+      if (isLeftEdge)       { ch.addColorStop(0.0, lightWater); ch.addColorStop(1.0, darkWater); }
+      else if (isRightEdge) { ch.addColorStop(0.0, darkWater);  ch.addColorStop(1.0, lightWater); }
+      else                  { ch.addColorStop(0.0, darkWater);  ch.addColorStop(0.5, darkWater); ch.addColorStop(1.0, darkWater); }
+      ctx.fillStyle = ch; ctx.fillRect(dx, dy, TILE, TILE);
+      if (!isLeftEdge && !isRightEdge) { ctx.fillStyle = midWater; ctx.fillRect(dx + TILE*0.12, dy, TILE*0.76, TILE); }
     }
-    ctx.stroke();
-    // 4) Foam wisps near the edges of the stream
+
+    // sky-reflection wash (cooler at dusk), subtle
+    const refl = ctx.createLinearGradient(dx, dy, dx, dy + TILE);
+    refl.addColorStop(0.0, `rgba(${(180-dusk*120)|0},${(212-dusk*120)|0},255,0.12)`);
+    refl.addColorStop(1.0, 'rgba(18,40,70,0.10)');
+    ctx.fillStyle = refl; ctx.fillRect(dx, dy, TILE, TILE);
+
+    // ---- CAUSTICS: bright wavy light strands, ADDITIVE, two scroll speeds ----
+    ctx.globalCompositeOperation = 'lighter';
+    for (let layer = 0; layer < 2; layer++) {
+      const speed = layer === 0 ? 0.018 : 0.034;      // downstream px/ms factor
+      const amp   = layer === 0 ? TILE*0.12 : TILE*0.07;
+      const a     = (layer === 0 ? 0.18 : 0.11) * (1 - dusk*0.25);
+      ctx.strokeStyle = `rgba(205,245,255,${a})`;
+      ctx.lineWidth = Math.max(1, TILE * (layer === 0 ? 0.05 : 0.03));
+      ctx.beginPath();
+      const span = TILE * 0.85;
+      const flow = (now * speed) % span;
+      for (let i = -1; i < 3; i++) {
+        const ry = dy + ((i * span) + flow);
+        if (ry < dy - TILE || ry > dy + TILE) continue;
+        const ph = (wy + ry) * 0.045 + now / 380 + layer;
+        ctx.moveTo(dx,            ry + Math.sin(ph) * amp);
+        ctx.bezierCurveTo(
+          dx + TILE*0.34, ry + amp,
+          dx + TILE*0.66, ry - amp,
+          dx + TILE,      ry + Math.sin(ph + 1.4) * amp
+        );
+      }
+      ctx.stroke();
+    }
+
+    // ---- SUN GLINTS: twinkling additive sparkles drifting downstream ----
+    for (let s = 0; s < 3; s++) {
+      const h  = _riverHash(tx * 7 + s * 13, ty * 5 + s * 3);
+      const gx = dx + (0.18 + 0.64 * h) * TILE;
+      const gy = dy + ((h * TILE + now / 13) % TILE);
+      const tw = 0.5 + 0.5 * Math.sin(now / (150 + s * 45) + h * 6.283);
+      if (tw > 0.6) {
+        const r = TILE * 0.05 * tw;
+        ctx.fillStyle = `rgba(255,255,255,${(tw - 0.6) * 2.0})`;
+        ctx.beginPath(); ctx.arc(gx, gy, r, 0, 6.283); ctx.fill();
+      }
+    }
+
+    // ---- BANK FOAM: animated wisps where water meets the two banks ----
+    ctx.globalCompositeOperation = 'source-over';
     ctx.strokeStyle = foam;
-    ctx.lineWidth = Math.max(1, TILE * 0.04);
-    const foamY = dy + ((now / 200) % TILE);
+    ctx.lineWidth = Math.max(1, TILE * 0.045);
+    const fY = (now / 165) % TILE;
     ctx.beginPath();
-    ctx.moveTo(dx + TILE*0.13, foamY);
-    ctx.lineTo(dx + TILE*0.20, foamY - 3);
-    ctx.moveTo(dx + TILE*0.78, foamY + 5);
-    ctx.lineTo(dx + TILE*0.85, foamY + 2);
+    for (let k = -1; k < 2; k++) {
+      const yy = dy + fY + k * TILE * 0.5;
+      // foam only along the two OUTER banks of the 3-wide river
+      if (isLeftEdge)  { ctx.moveTo(dx + TILE*0.05, yy);     ctx.lineTo(dx + TILE*0.15, yy - 3); }
+      if (isRightEdge) { ctx.moveTo(dx + TILE*0.85, yy + 4); ctx.lineTo(dx + TILE*0.95, yy + 1); }
+    }
     ctx.stroke();
     ctx.restore();
     // 5) STEPPING STONE on top — safe = gold glow, sinking = dim + wobble
@@ -4377,12 +4624,14 @@ function drawScene3Stream(){
       }
       ctx.restore();
     }
+   }
   }
   // ---- WATERFALL at the top of the stream (cascades from off-map row 0
   //      into row 1). Cascading lines + spray particles + spotlight halo.
-  const wfDx = SCENE3_STREAM_COL * TILE - camera.px;
   const wfDy = (SCENE3_STREAM_TOP - 1) * TILE - camera.py;
-  if (wfDx > -TILE*2 && wfDx < CANVAS_W + TILE && wfDy > -TILE*4 && wfDy < CANVAS_H) {
+  for (let wcol = SCENE3_STREAM_COL_MIN; wcol <= SCENE3_STREAM_COL_MAX; wcol++) {
+   const wfDx = wcol * TILE - camera.px;
+   if (wfDx > -TILE*2 && wfDx < CANVAS_W + TILE && wfDy > -TILE*4 && wfDy < CANVAS_H) {
     ctx.save();
     // halo behind the falls
     const halo = ctx.createRadialGradient(
@@ -4419,6 +4668,7 @@ function drawScene3Stream(){
       ctx.fill();
     }
     ctx.restore();
+   }
   }
 }
 
@@ -4525,6 +4775,507 @@ function drawScene3Wolf(){
   ctx.arc(sx + 28, sy - 5, 1.1, 0, Math.PI*2);
   ctx.fill();
   ctx.restore();
+}
+
+/* ===== PHASE 2 — FREE JETHRO'S FLOCK FROM THE WOLVES (pasture, cols 23-33) =====
+   At dusk in the pasture, wolves stalk and pin Jethro's scattered sheep. Moses
+   frees a pinned sheep by getting close enough to drive the wolf off; each freed
+   sheep yields treasure bags (game.treasureBags) that fund the Rescue mini-game's
+   weapons (which unlock at bagReq 60-300). On harder levels a wolf left alone too
+   long drags the sheep off — lost treasure. Carries the "one world" essence:
+   respects the cross-scene ❄️ Foe Freeze power-up (wolves freeze) and benefits
+   from ⚡ Speed Burst (Moses reaches trapped sheep faster). Difficulty-scaled. */
+const SCENE3_FLOCK_CFG = {
+  easy:   { wolves: 2, sheep: 5, bagsPerSheep: 30, wolfSpeed: 0.018, loseMs: 0 },      // forgiving: sheep never lost
+  medium: { wolves: 3, sheep: 6, bagsPerSheep: 26, wolfSpeed: 0.024, loseMs: 14000 },
+  hard:   { wolves: 4, sheep: 7, bagsPerSheep: 22, wolfSpeed: 0.032, loseMs: 9000 },
+};
+const scene3Flock = {
+  spawned: false, done: false, introShown: false,
+  sheep: [], wolves: [], freed: 0, lost: 0, total: 0, cfg: null,
+};
+function resetScene3Flock(){
+  scene3Flock.spawned = false; scene3Flock.done = false; scene3Flock.introShown = false;
+  scene3Flock.sheep = []; scene3Flock.wolves = [];
+  scene3Flock.freed = 0; scene3Flock.lost = 0; scene3Flock.total = 0; scene3Flock.cfg = null;
+}
+function _flockWalkable(tx, ty){
+  return (typeof MAP !== 'undefined' && MAP[ty] && MAP[ty][tx] === 0);
+}
+function _flockRandPastureTile(){
+  for (let i = 0; i < 60; i++){
+    const tx = 24 + Math.floor(Math.random() * 9);   // cols 24-32
+    const ty = 14 + Math.floor(Math.random() * 8);   // rows 14-21 (south pasture)
+    if (_flockWalkable(tx, ty)) return { tx, ty };
+  }
+  return { tx: 27, ty: 18 };
+}
+function initScene3Flock(diff){
+  const cfg = SCENE3_FLOCK_CFG[diff] || SCENE3_FLOCK_CFG.easy;
+  scene3Flock.cfg = cfg;
+  scene3Flock.sheep = []; scene3Flock.wolves = [];
+  scene3Flock.freed = 0; scene3Flock.lost = 0; scene3Flock.done = false;
+  for (let i = 0; i < cfg.sheep; i++){
+    const t = _flockRandPastureTile();
+    scene3Flock.sheep.push({
+      id: i, tx: t.tx, ty: t.ty, px: t.tx * TILE, py: t.ty * TILE,
+      state: 'graze', dir: Math.random() < 0.5 ? -1 : 1,
+      wolf: null, pinnedAt: 0, wanderAt: 0, freedAt: 0, loseAt: 0,
+    });
+  }
+  scene3Flock.total = scene3Flock.sheep.length;
+  for (let i = 0; i < cfg.wolves; i++){
+    const ex = (29 + Math.floor(Math.random() * 5)) * TILE;   // enter from east/south
+    const ey = (MAP_H - 1) * TILE;
+    scene3Flock.wolves.push({ id: i, px: ex, py: ey, vx: 0, state: 'stalk', targetId: null, fleeUntil: 0, dir: -1 });
+  }
+  scene3Flock.spawned = true;
+}
+function _flockNearestGrazing(wx, wy){
+  let best = null, bestD = 1e9;
+  for (const s of scene3Flock.sheep){
+    if (s.state !== 'graze') continue;
+    const d = Math.hypot(s.px - wx, s.py - wy);
+    if (d < bestD){ bestD = d; best = s; }
+  }
+  return best;
+}
+function _flockFreeSheep(s){
+  s.state = 'freed'; s.freedAt = performance.now(); s.wolf = null;
+  scene3Flock.freed++;
+  const bags = (scene3Flock.cfg && scene3Flock.cfg.bagsPerSheep) || 28;
+  try { game.treasureBags = (game.treasureBags || 0) + bags; } catch(e){}
+  try { game.stars += 3; updateHudStars(); } catch(e){}
+  try { _addLifetimeTreasures(8); } catch(e){}
+  try { spawnGlitterBurstAtPlayer(14); } catch(e){}
+  try { if (audio.sheepBleat){ audio.sheepBleat.currentTime = 0; audio.sheepBleat.volume = 0.7; audio.sheepBleat.play().catch(()=>{}); } } catch(e){}
+  try { play('coin') || play('chime'); } catch(e){}
+  try { toast('🐑 Sheep freed! +' + bags + ' treasure for the rescue'); } catch(e){}
+}
+function _flockCheckDone(){
+  if (scene3Flock.done) return;
+  if (scene3Flock.freed + scene3Flock.lost >= scene3Flock.total && scene3Flock.total > 0){
+    scene3Flock.done = true;
+    try { play('success') || play('chime'); } catch(e){}
+    if (scene3Flock.lost === 0) toast('🎉 The whole flock is safe! ' + scene3Flock.freed + ' sheep freed — treasure ready for the rescue.');
+    else toast('Flock secured: ' + scene3Flock.freed + ' freed, ' + scene3Flock.lost + ' lost. Press on to the rescue!');
+  }
+}
+function updateScene3Flock(dt){
+  if (game.scene !== 2 || game.state !== 'playing') return;
+  // Lazy-spawn the moment Moses first steps into the pasture (col >= 23).
+  if (!scene3Flock.spawned){
+    if (player && player.tx >= 23){
+      initScene3Flock(game.difficulty || 'easy');
+      try { scene3Wolf.active = false; scene3Wolf.nextAt = performance.now() + 9e8; } catch(e){} // hush the lone ambient wolf
+      if (!scene3Flock.introShown){
+        scene3Flock.introShown = true;
+        try { if (audio.dog){ audio.dog.currentTime = 0; audio.dog.volume = 0.5; audio.dog.play().catch(()=>{}); } } catch(e){}
+        try { toast('🐺 Wolves are after Jethro\'s flock! Get close to a trapped sheep to drive the wolf off.'); } catch(e){}
+      }
+    }
+    return;
+  }
+  if (scene3Flock.done) return;
+  const now = performance.now();
+  const frozen = (window._guardFreezeUntil && now < window._guardFreezeUntil);
+  const shooR = TILE * 1.6;
+  for (const w of scene3Flock.wolves){
+    if (w.state === 'flee'){
+      w.py += 0.05 * dt; w.px += (w.vx || 0) * dt;
+      if (now >= w.fleeUntil){ w.state = 'stalk'; w.targetId = null; }
+      continue;
+    }
+    if (frozen) continue;
+    const dM = Math.hypot(player.px - w.px, player.py - w.py);
+    if (dM < shooR){
+      if (w.state === 'pinning' && w.targetId != null){
+        const s = scene3Flock.sheep[w.targetId];
+        if (s && s.state === 'pinned') _flockFreeSheep(s);
+      }
+      w.state = 'flee'; w.fleeUntil = now + 2600; w.targetId = null;
+      w.vx = (w.px < player.px ? -1 : 1) * 0.05;
+      try { if (audio.fox){ audio.fox.currentTime = 0; audio.fox.volume = 0.4; audio.fox.play().catch(()=>{}); } } catch(e){}
+      continue;
+    }
+    if (w.state === 'pinning'){
+      const s = scene3Flock.sheep[w.targetId];
+      if (!s || s.state !== 'pinned'){ w.state = 'stalk'; w.targetId = null; continue; }
+      w.px = s.px - TILE * 0.4; w.py = s.py;
+      if (scene3Flock.cfg.loseMs > 0 && now - s.pinnedAt > scene3Flock.cfg.loseMs){
+        s.state = 'lost'; s.loseAt = now; scene3Flock.lost++;
+        w.state = 'stalk'; w.targetId = null;
+        try { toast('A wolf dragged a sheep off! Be quicker next time.'); } catch(e){}
+        _flockCheckDone();
+      }
+      continue;
+    }
+    // stalk
+    const s = _flockNearestGrazing(w.px, w.py);
+    if (!s) continue;
+    const ang = Math.atan2(s.py - w.py, s.px - w.px);
+    const sp = scene3Flock.cfg.wolfSpeed * dt * TILE;
+    w.px += Math.cos(ang) * sp; w.py += Math.sin(ang) * sp;
+    w.dir = Math.cos(ang) < 0 ? -1 : 1;
+    if (Math.hypot(s.px - w.px, s.py - w.py) < TILE * 0.5){
+      s.state = 'pinned'; s.wolf = w; s.pinnedAt = now;
+      w.state = 'pinning'; w.targetId = s.id;
+      try { if (audio.sheepBleat){ audio.sheepBleat.currentTime = 0; audio.sheepBleat.volume = 0.6; audio.sheepBleat.play().catch(()=>{}); } } catch(e){}
+    }
+  }
+  for (const s of scene3Flock.sheep){
+    if (s.state === 'graze'){
+      if (now >= s.wanderAt){
+        s.wanderAt = now + 1200 + Math.random() * 2400;
+        const ntx = s.tx + (Math.random() < 0.5 ? -1 : 1);
+        if (_flockWalkable(ntx, s.ty)){ s.dir = ntx < s.tx ? -1 : 1; s.tx = ntx; }
+      }
+      s.px += (s.tx * TILE - s.px) * Math.min(1, dt / 220);
+      s.py += (s.ty * TILE - s.py) * Math.min(1, dt / 220);
+    } else if (s.state === 'freed'){
+      s.px += 0.06 * dt; s.dir = 1;
+      if (now - s.freedAt > 2600) s.state = 'gone';
+    } else if (s.state === 'lost'){
+      s.py += 0.07 * dt;
+      if (now - s.loseAt > 1800) s.state = 'gone';
+    }
+  }
+  _flockCheckDone();
+}
+function _drawFlockWolf(cx, cy, dir){
+  const sx = cx - camera.px, sy = cy - camera.py;
+  if (sx < -120 || sx > CANVAS_W + 120 || sy < -80 || sy > CANVAS_H + 80) return;
+  ctx.save();
+  const shimmer = 0.6 + 0.10 * Math.sin(performance.now() / 300);
+  if (dir > 0){ ctx.translate(sx, sy); ctx.scale(-1, 1); ctx.translate(-sx, -sy); }
+  ctx.fillStyle = `rgba(22,12,32,${shimmer})`;
+  ctx.beginPath(); ctx.ellipse(sx, sy, 20, 8, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(sx + 20, sy - 4, 8, 6, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(sx + 17, sy - 9); ctx.lineTo(sx + 20, sy - 15); ctx.lineTo(sx + 23, sy - 9); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(sx - 20, sy - 2); ctx.bezierCurveTo(sx - 28, sy - 6, sx - 30, sy - 2, sx - 26, sy + 4); ctx.lineTo(sx - 20, sy + 2); ctx.closePath(); ctx.fill();
+  ctx.fillRect(sx - 12, sy + 6, 2, 8); ctx.fillRect(sx - 4, sy + 7, 2, 8); ctx.fillRect(sx + 6, sy + 7, 2, 8); ctx.fillRect(sx + 13, sy + 6, 2, 8);
+  ctx.fillStyle = `rgba(255,200,80,${shimmer})`;
+  ctx.beginPath(); ctx.arc(sx + 24, sy - 5, 1.4, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawScene3RescueFlock(){
+  if (game.scene !== 2 || !scene3Flock.spawned || typeof camera === 'undefined') return;
+  for (const s of scene3Flock.sheep){
+    if (s.state === 'gone') continue;
+    const dx = s.px - camera.px, dy = s.py - camera.py;
+    if (dx < -TILE || dx > CANVAS_W || dy < -TILE || dy > CANVAS_H) continue;
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath(); ctx.ellipse(dx + TILE/2, dy + TILE - 4, 12, 4, 0, 0, Math.PI*2); ctx.fill();
+    let img = IMG.sheep;
+    if (s.dir < 0 && IMG.sheepLeft) img = IMG.sheepLeft;
+    else if (s.dir > 0 && IMG.sheepRight) img = IMG.sheepRight;
+    const yoff = (s.state === 'pinned') ? Math.sin(performance.now() / 80) * 1.5 : 0;
+    if (img && img.complete && img.naturalWidth){
+      ctx.drawImage(img, dx, dy + yoff, TILE, TILE);
+    } else {
+      ctx.fillStyle = '#f2ead8'; ctx.fillRect(dx + 5, dy + 6, TILE - 10, TILE - 12);
+    }
+    if (s.state === 'pinned'){
+      ctx.fillStyle = '#ff5a4a'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('!', dx + TILE/2, dy - 2); ctx.textAlign = 'start';
+    }
+  }
+  for (const w of scene3Flock.wolves){
+    if (w.state === 'flee' && w.fleeUntil && performance.now() > w.fleeUntil + 4000) continue;
+    _drawFlockWolf(w.px + TILE * 0.5, w.py + TILE * 0.6, w.dir);
+  }
+}
+
+/* ============================================================================
+   SCENE 3 — LEAD THE LOST FLOCK ACROSS THE RIVER  (Exodus 2:16-17)
+   A small flock is stranded on the WEST bank. Once Moses has BUILT the crossing
+   (earned all 3 crystal stones), he can lead them: each sheep he walks near falls
+   into a following line that hugs his EXACT path (a breadcrumb trail), so they
+   cross the stepping stones safely and gather in a PEN on the east bank. When the
+   whole flock is across, a short cinematic blessing plays + bonus reward.
+   Purely ADDITIVE / non-blocking — skipping it never softlocks the scene.
+   ========================================================================== */
+const SCENE3_HERD_PEN = { x0: 15, y0: 10, x1: 19, y1: 15 };   // east-bank pen (tiles)
+// distinct rest spots inside the pen so arrived sheep spread into a tidy flock
+const SCENE3_HERD_REST = [
+  {tx:17,ty:12}, {tx:16,ty:11}, {tx:18,ty:11}, {tx:16,ty:13}, {tx:18,ty:13}, {tx:17,ty:14}, {tx:15,ty:12},
+];
+const scene3Herd = {
+  spawned:false, done:false, builtToastShown:false, nearHintShown:false, raidToastShown:false,
+  sheep:[], total:0, across:0, trail:[], slotNext:0,
+  _ltx:0, _lty:0, idleMs:0, celebrateAt:0,
+};
+function resetScene3Herd(){
+  scene3Herd.spawned=false; scene3Herd.done=false; scene3Herd.builtToastShown=false;
+  scene3Herd.nearHintShown=false; scene3Herd.raidToastShown=false; scene3Herd.sheep=[]; scene3Herd.total=0; scene3Herd.across=0;
+  scene3Herd.trail=[]; scene3Herd.slotNext=0; scene3Herd._ltx=0; scene3Herd._lty=0; scene3Herd.idleMs=0; scene3Herd.celebrateAt=0;
+}
+function _herdWalkable(tx,ty){ return (typeof MAP!=='undefined' && MAP[ty] && MAP[ty][tx]===0); }
+function _herdCrossingBuilt(){ try{ return _scene3CrystalCount()>=3; }catch(e){ return false; } }
+function _herdInPen(tx,ty){ const p=SCENE3_HERD_PEN; return tx>=p.x0&&tx<=p.x1&&ty>=p.y0&&ty<=p.y1; }
+function initScene3Herd(){
+  scene3Herd.sheep=[];
+  // a stranded cluster on the WEST bank, a few tiles from the river
+  const spots=[
+    {tx:7,ty:10,kind:'sheep'}, {tx:6,ty:12,kind:'sheep'}, {tx:8,ty:13,kind:'lamb',alt:false},
+    {tx:7,ty:14,kind:'sheep'}, {tx:9,ty:11,kind:'lamb',alt:true},
+  ];
+  for (let i=0;i<spots.length;i++){
+    const s=spots[i];
+    const tx=_herdWalkable(s.tx,s.ty)?s.tx:7;
+    const ty=_herdWalkable(s.tx,s.ty)?s.ty:(10+i);
+    scene3Herd.sheep.push({
+      id:i, kind:s.kind, alt:!!s.alt, px:tx*TILE, py:ty*TILE, tx, ty,
+      state:'graze', dir:1, slot:0, wanderAt:0, hop:0, arrivedAt:0,
+      jx:(Math.random()*2-1)*TILE*0.16, jy:(Math.random()*2-1)*TILE*0.10,
+    });
+  }
+  scene3Herd.total=scene3Herd.sheep.length; scene3Herd.across=0; scene3Herd.spawned=true;
+}
+function _herdComplete(){
+  if (scene3Herd.done) return;
+  scene3Herd.done=true; scene3Herd.celebrateAt=performance.now();
+  try{ play('success')||play('levelUp')||play('chime'); }catch(e){}
+  try{ game.stars+=5; updateHudStars(); }catch(e){}
+  try{ game.treasureBags=(game.treasureBags||0)+40; }catch(e){}
+  try{ if(typeof _addLifetimeTreasures==='function') _addLifetimeTreasures(6); }catch(e){}
+  try{
+    const r=canvas.getBoundingClientRect(); const p=SCENE3_HERD_PEN;
+    const cx=((p.x0+p.x1+1)/2)*TILE-camera.px, cy=((p.y0+p.y1+1)/2)*TILE-camera.py;
+    spawnGlitterBurst(r.left+cx, r.top+cy, 28);
+  }catch(e){}
+  try{ toast('🎉 The whole flock is safe across! "Moses got up and came to their rescue, and watered their flock." — Exodus 2:17'); }catch(e){}
+}
+function updateScene3Herd(dt){
+  if (game.scene!==2 || game.state!=='playing') return;
+  if (!scene3Herd.spawned){ if (typeof TILE!=='undefined' && player) initScene3Herd(); return; }
+  const now=performance.now();
+  const built=_herdCrossingBuilt();
+  if (built && !scene3Herd.builtToastShown){
+    scene3Herd.builtToastShown=true;
+    try{ toast('🐑 The crossing is ready! Walk up to the lost flock and lead them across to the pen.'); }catch(e){}
+  }
+  // Record Moses' breadcrumb trail in SHORT segments so the line hugs his path.
+  const ddx=player.px-scene3Herd._ltx, ddy=player.py-scene3Herd._lty;
+  let grew=false;
+  if (ddx*ddx+ddy*ddy >= (TILE*0.30)*(TILE*0.30)){
+    scene3Herd.trail.push({x:player.px,y:player.py});
+    scene3Herd._ltx=player.px; scene3Herd._lty=player.py; grew=true;
+    if (scene3Herd.trail.length>280) scene3Herd.trail.shift();
+  }
+  // When Moses idles, collapse the spacing so stragglers gather to him (and into
+  // the pen if he's parked there); when he moves the line stretches back out.
+  scene3Herd.idleMs = grew ? 0 : (scene3Herd.idleMs + dt);
+  const trail=scene3Herd.trail;
+  const GAP = scene3Herd.idleMs > 350 ? 2 : 7;
+  for (const s of scene3Herd.sheep){
+    if (s.state==='graze'){
+      if (built){
+        const d=Math.hypot(player.px-s.px, player.py-s.py);
+        if (d < TILE*2.3){
+          s.state='follow'; s.slot=scene3Herd.slotNext++;
+          try{ if(audio.sheepBleat){audio.sheepBleat.currentTime=0;audio.sheepBleat.volume=0.55;audio.sheepBleat.play().catch(()=>{});} }catch(e){}
+          try{ const r=canvas.getBoundingClientRect(); spawnGlitterBurst(r.left+(s.px-camera.px)+TILE/2, r.top+(s.py-camera.py)+TILE/2, 8); }catch(e){}
+        }
+      }
+      if (now>=s.wanderAt){ s.wanderAt=now+1400+Math.random()*2600; const ntx=s.tx+(Math.random()<0.5?-1:1); if(_herdWalkable(ntx,s.ty)){ s.dir=ntx<s.tx?-1:1; s.tx=ntx; } }
+      s.px += (s.tx*TILE - s.px)*Math.min(1,dt/240);
+      s.py += (s.ty*TILE - s.py)*Math.min(1,dt/240);
+      s.hop=0;
+    } else if (s.state==='follow'){
+      let tgt;
+      if (scene3Herd.idleMs > 500){
+        // Shepherd is waiting — stragglers gather straight to him (and into the
+        // pen if he's parked there) so the objective always resolves.
+        tgt = trail[trail.length-1] || {x:player.px,y:player.py};
+      } else {
+        const idx=trail.length-1 - s.slot*GAP;
+        tgt = idx>=0 ? trail[idx] : (trail[0]||{x:player.px,y:player.py});
+      }
+      const tx=tgt.x + s.jx, ty=tgt.y + s.jy;
+      const k=Math.min(1, dt/170);
+      const odx=tx-s.px;
+      s.px += odx*k; s.py += (ty-s.py)*k;
+      if (Math.abs(odx)>0.4) s.dir = odx<0?-1:1;
+      s.tx=Math.round(s.px/TILE); s.ty=Math.round(s.py/TILE);
+      s.hop = (typeof isScene3StreamTile==='function' && isScene3StreamTile(s.tx,s.ty)) ? Math.abs(Math.sin(now/110 + s.id))*3 : 0;
+      if (s.tx>SCENE3_STREAM_COL_MAX && _herdInPen(s.tx,s.ty)){
+        s.state='arrived'; s.arrivedAt=now; scene3Herd.across++;
+        const spot=SCENE3_HERD_REST[(scene3Herd.across-1)%SCENE3_HERD_REST.length];
+        s.penTx=spot.tx; s.penTy=spot.ty;
+        try{ if(audio.sheepBleat){audio.sheepBleat.currentTime=0;audio.sheepBleat.volume=0.7;audio.sheepBleat.play().catch(()=>{});} }catch(e){}
+        try{ const r=canvas.getBoundingClientRect(); spawnGlitterBurst(r.left+(s.px-camera.px)+TILE/2, r.top+(s.py-camera.py)+TILE/2, 10); }catch(e){}
+        try{ game.stars+=2; updateHudStars(); }catch(e){}
+        try{ play('coin')||play('chime'); }catch(e){}
+        if (scene3Herd.across>=scene3Herd.total) _herdComplete();
+        else { try{ toast('🐑 Safe across! ('+scene3Herd.across+'/'+scene3Herd.total+')'); }catch(e){} }
+      }
+    } else if (s.state==='arrived'){
+      // settle into a distinct rest spot so the flock spreads tidily in the pen
+      const tgx=s.penTx*TILE, tgy=s.penTy*TILE;
+      const odx=tgx-s.px;
+      s.px += odx*Math.min(1,dt/300);
+      s.py += (tgy-s.py)*Math.min(1,dt/300);
+      if (Math.abs(odx)>0.6) s.dir = odx<0?-1:1;
+      s.tx=Math.round(s.px/TILE); s.ty=Math.round(s.py/TILE);
+      s.hop=0;
+    }
+  }
+  // ── URGENCY: rude-shepherd flock raid ────────────────────────────────────
+  // While Moses is actively leading the flock, the west-post rude shepherd rushes
+  // to scatter it. A sheep still on the WEST bank that he reaches is scared back
+  // to grazing (must be re-led) — so HURRY (⚡ Speed Burst), FREEZE him (❄️ Foe
+  // Freeze), or get the sheep onto the stones (shepherds can't cross the river).
+  // Pure setback, no hearts lost — keeps the gentle scene kid-friendly.
+  if (built && !scene3Herd.done){
+    let raider = null;
+    try {
+      if (typeof pursuitScouts !== 'undefined' && pursuitScouts.length){
+        raider = pursuitScouts.find(p => !p.shovedOff && !p.caught && p.postTx <= SCENE3_STREAM_COL_MIN);
+      }
+    } catch(e){}
+    const anyFollow = scene3Herd.sheep.some(s => s.state === 'follow');
+    if (raider && anyFollow){
+      raider.chaseMode = true;            // existing AI now drives him toward Moses (capped west of the river)
+      if (!scene3Herd.raidToastShown){
+        scene3Herd.raidToastShown = true;
+        try { toast('⚠️ A rude shepherd is rushing to scatter your flock — get them across, quick!'); } catch(e){}
+        try { if (audio.alerted){ audio.alerted.currentTime=0; audio.alerted.volume=0.4; audio.alerted.play().catch(()=>{}); } } catch(e){}
+      }
+      const frozen = (window._guardFreezeUntil && now < window._guardFreezeUntil);
+      if (!frozen){
+        const rpx = raider.tx*TILE, rpy = raider.ty*TILE;
+        for (const s of scene3Herd.sheep){
+          if (s.state !== 'follow') continue;
+          if (s.tx >= SCENE3_STREAM_COL_MIN) continue;        // on the stones / east bank = safe
+          if (Math.hypot(rpx - s.px, rpy - s.py) < TILE*1.4){
+            s.state = 'graze'; s.hop = 0; s.wanderAt = 0;      // scattered — re-herd it
+            try{ if(audio.sheepBleat){audio.sheepBleat.currentTime=0;audio.sheepBleat.volume=0.6;audio.sheepBleat.play().catch(()=>{});} }catch(e){}
+            try{ toast('🐑 A shepherd scattered a sheep! Lead it across again.'); }catch(e){}
+          }
+        }
+      }
+    }
+  }
+}
+function _drawOneSheep(px,py,dir,kind,alt,extraY){
+  const dx=px-camera.px, dy=py-camera.py;
+  if (dx<-TILE*2||dx>CANVAS_W+TILE||dy<-TILE*2||dy>CANVAS_H+TILE) return;
+  const okI=(im)=>im&&im.complete&&im.naturalWidth;
+  ctx.fillStyle='rgba(0,0,0,0.28)';
+  ctx.beginPath(); ctx.ellipse(dx+TILE/2, dy+TILE*0.88, TILE*0.28, 3, 0, 0, Math.PI*2); ctx.fill();
+  let img=null, mirror=false;
+  if (kind==='lamb'){
+    img=(alt&&okI(IMG.lambAlt))?IMG.lambAlt:(okI(IMG.lamb)?IMG.lamb:(okI(IMG.lambAlt)?IMG.lambAlt:null));
+    mirror=(dir<0);
+  } else {
+    if (dir<0 && okI(IMG.sheepLeft)) img=IMG.sheepLeft;
+    else if (dir>0 && okI(IMG.sheepRight)) img=IMG.sheepRight;
+    else if (okI(IMG.sheep)){ img=IMG.sheep; mirror=(dir<0); }
+  }
+  const scale=(kind==='lamb')?0.85:1.05;
+  const drawH=Math.round(TILE*scale);
+  if (img){
+    const ar=(img.naturalWidth||1)/(img.naturalHeight||1);
+    const drawW=Math.round(drawH*ar);
+    const ox=Math.round(dx+TILE/2-drawW/2);
+    const oy=Math.round(dy+TILE-drawH-extraY);
+    if (mirror){ ctx.save(); ctx.translate(ox+drawW,oy); ctx.scale(-1,1); ctx.drawImage(img,0,0,drawW,drawH); ctx.restore(); }
+    else ctx.drawImage(img,ox,oy,drawW,drawH);
+  } else {
+    const cx=dx+TILE/2, cy=dy+TILE*0.55-extraY, bodyR=TILE*scale*0.30;
+    ctx.fillStyle='#fafafa'; ctx.beginPath();
+    ctx.arc(cx-bodyR*0.35,cy,bodyR*0.70,0,Math.PI*2); ctx.arc(cx,cy-bodyR*0.20,bodyR*0.80,0,Math.PI*2);
+    ctx.arc(cx+bodyR*0.35,cy,bodyR*0.70,0,Math.PI*2); ctx.arc(cx,cy+bodyR*0.25,bodyR*0.65,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#4a3a2a'; ctx.beginPath(); ctx.ellipse(cx+bodyR*0.95*(dir<0?-1:1),cy,bodyR*0.32,bodyR*0.26,0,0,Math.PI*2); ctx.fill();
+  }
+}
+function _drawHerdPen(now){
+  const p=SCENE3_HERD_PEN;
+  const x=p.x0*TILE-camera.px, y=p.y0*TILE-camera.py;
+  const w=(p.x1-p.x0+1)*TILE, h=(p.y1-p.y0+1)*TILE;
+  if (x>CANVAS_W||x+w<0||y>CANVAS_H||y+h<0) return;
+  ctx.save();
+  // soft grass tint marks the pen footprint
+  ctx.fillStyle='rgba(120,180,90,0.10)'; ctx.fillRect(x,y,w,h);
+  const okI=(im)=>im&&im.complete&&im.naturalWidth;
+  if (okI(IMG.sheepPenWall)){
+    // Real stone-pen enclosure sprite: gate opening faces WEST (toward the river
+    // and the incoming flock). Drawn a touch taller so the curved back wall sits
+    // behind the pen; sheep draw afterward and so appear inside it.
+    ctx.drawImage(IMG.sheepPenWall, x, y - h*0.12, w, h*1.12);
+  } else {
+    // vector fallback — dashed rope fence with a west gate gap + corner posts
+    ctx.strokeStyle='rgba(120,80,40,0.85)'; ctx.lineWidth=Math.max(2,TILE*0.07);
+    ctx.setLineDash([TILE*0.5, TILE*0.22]);
+    ctx.beginPath();
+    ctx.moveTo(x,y); ctx.lineTo(x+w,y); ctx.lineTo(x+w,y+h); ctx.lineTo(x,y+h);
+    ctx.lineTo(x,y+h*0.62); ctx.moveTo(x,y+h*0.38); ctx.lineTo(x,y);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#6b4a2a';
+    const post=(px,py)=>ctx.fillRect(px-3,py-10,6,16);
+    post(x,y); post(x+w,y); post(x,y+h); post(x+w,y+h);
+  }
+  ctx.restore();
+}
+function _drawHerdCounter(txt){
+  ctx.save();
+  ctx.font='bold 15px sans-serif';
+  const w=ctx.measureText(txt).width+30, x=CANVAS_W/2-w/2, y=14, h=28;
+  ctx.fillStyle='rgba(20,30,50,0.80)';
+  if (ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x,y,w,h,14); ctx.fill(); ctx.strokeStyle='rgba(255,210,90,0.7)'; ctx.lineWidth=1.5; ctx.stroke(); }
+  else ctx.fillRect(x,y,w,h);
+  ctx.fillStyle='#ffe7a0'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(txt, CANVAS_W/2, y+h/2+1);
+  ctx.textAlign='start'; ctx.textBaseline='alphabetic';
+  ctx.restore();
+}
+function drawScene3Herd(){
+  if (game.scene!==2 || !scene3Herd.spawned || typeof camera==='undefined') return;
+  const now=performance.now();
+  const built=_herdCrossingBuilt();
+  _drawHerdPen(now);
+  for (const s of scene3Herd.sheep){
+    const bob=Math.sin(now/620 + s.id*1.3)*1.4;
+    _drawOneSheep(s.px, s.py, s.dir, s.kind, s.alt, bob + (s.hop||0));
+    if (built && s.state==='graze'){
+      const cx=s.px-camera.px+TILE/2, top=s.py-camera.py;
+      const pulse=0.5+0.5*Math.sin(now/360 + s.id);
+      ctx.save();
+      ctx.strokeStyle='rgba(255,210,90,'+(0.30+0.30*pulse)+')'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.ellipse(cx, s.py-camera.py+TILE*0.9, TILE*0.42, TILE*0.16, 0,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle='rgba(255,225,120,'+(0.55+0.40*pulse)+')';
+      const ay=top-8-pulse*3;
+      ctx.beginPath(); ctx.moveTo(cx-5,ay); ctx.lineTo(cx+5,ay); ctx.lineTo(cx,ay+6); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+  if (built && !scene3Herd.done && scene3Herd.total>0){
+    _drawHerdCounter('🐑 Flock across: '+scene3Herd.across+'/'+scene3Herd.total);
+  }
+  if (scene3Herd.done && now-scene3Herd.celebrateAt<1500){
+    const t=(now-scene3Herd.celebrateAt)/1500, p=SCENE3_HERD_PEN;
+    const cx=((p.x0+p.x1+1)/2)*TILE-camera.px, cy=((p.y0+p.y1+1)/2)*TILE-camera.py;
+    const R=TILE*6*(0.4+t*0.8);
+    const g=ctx.createRadialGradient(cx,cy,2,cx,cy,R);
+    g.addColorStop(0,'rgba(255,230,150,'+(0.5*(1-t))+')');
+    g.addColorStop(1,'rgba(255,230,150,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
+  }
+  // Eagle Eye (royalVision) power: beacon over the hidden crown so it's findable.
+  if (window._royalVisionUntil && now < window._royalVisionUntil && !game.crownFound){
+    const cx=33.5*TILE-camera.px, cy=16.5*TILE-camera.py;
+    if (cx>-TILE*2 && cx<CANVAS_W+TILE*2 && cy>-TILE*2 && cy<CANVAS_H+TILE*2){
+      const pulse=0.5+0.5*Math.sin(now/180);
+      const R=TILE*(1.0+0.5*pulse);
+      const g=ctx.createRadialGradient(cx,cy,2,cx,cy,R);
+      g.addColorStop(0,'rgba(255,225,120,'+(0.45+0.25*pulse)+')');
+      g.addColorStop(1,'rgba(255,225,120,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
+      ctx.font='bold '+Math.round(TILE*0.9)+'px Georgia'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('👑', cx, cy - TILE*1.1 - pulse*4);
+    }
+  }
 }
 
 /* ===== PHASE C STEP 8 — RANDOM EVENTS ===== */
@@ -5748,19 +6499,30 @@ const CHALLENGE_POSITIONS = [
 ];
 const challengeGates = [];  // populated once difficulty is chosen (legacy name preserved for downstream code)
 
-// v3.28 (Scene 3 port — CANONICAL §4): random 3×3 region-grid checkpoint
-// placement so the layout feels different each play. Bands tuned to
-// Scene 3's MAP_W=35 and the proposed zone split:
-//   Marketplace north  cols  1-11  (12 wide)
-//   Well center        cols 12-22  (11 wide)
-//   Pasture / Jethro   cols 23-33  (11 wide)
-// Row bands stay 3-tier like Scene 2.  The min Chebyshev 2 from caves +
-// 1 from oases avoidance comes in via tooNear (Bug 73). Falls back to
-// CHALLENGE_POSITIONS hardcoded list if a region fails (rare).
+// Scene 3 — REFUGE IN MIDIAN. Five mandatory stops along Moses' west→east
+// journey to Jethro's tent (the sealed EXIT on the east edge):
+//   1. Marketplace  — Bible Checkpoint (trivia)
+//   2. The Well     — MINI-GAME: Race to Water the Flock  (zone 'well')
+//   3. Wadi edge    — Bible Checkpoint (trivia)
+//   4. Pasture      — Bible Checkpoint (trivia)
+//   5. Jethro's tent— MINI-GAME: Rescue the Daughters     (zone 'rescue')
+// Each stop is jittered within a column/row band every play so the layout
+// feels fresh, but the COUNT, ORDER, and ZONES are fixed. Trivia gates use
+// non-mini-game zones so openChallenge() routes them to the question bundle;
+// the two mini-game gates carry zones 'well' / 'rescue'.
 function _generateRandomChallengePositions(){
+  const STOPS = [
+    // West bank (market, cols 3-11) — the 3 Bible Checkpoints. Clearing each
+    // awards a crystal stepping-stone + money bags (see the checkpoint-clear
+    // handler). Collect all 3 crystals to bridge the river at col 12.
+    { col: [3, 7],   row: [8, 15], zone: 'market', label: 'Market Checkpoint', game3rd: 'match3' },
+    { col: [5, 9],   row: [2, 8],  zone: 'market', label: 'Caravan Checkpoint', game3rd: 'sort' },
+    { col: [7, 10],  row: [15, 21], zone: 'market', label: 'West Bank Checkpoint', game3rd: 'merge' },
+    // East bank (across the river) — the two mini-games, then Jethro's tent.
+    { col: [15, 20], row: [9, 15], zone: 'well',    label: 'The Well — Water the Flock' },
+    { col: [29, 33], row: [9, 15], zone: 'rescue',  label: 'Rescue the Daughters' },
+  ];
   const out = [];
-  const colBands = [[1, 11], [12, 22], [23, 33]];
-  const rowBands = [[1,  8], [9,  16], [17, 23]];
   const startTile = (typeof findTileOfType === 'function') ? findTileOfType(8) : null;
   const exitTile  = (typeof findTileOfType === 'function') ? findTileOfType(7) : null;
   const sx = startTile ? startTile.x : 1;
@@ -5769,9 +6531,9 @@ function _generateRandomChallengePositions(){
   const ey = exitTile  ? exitTile.y  : 12;
   const tooNear = (tx, ty) => {
     if (Math.abs(tx - sx) + Math.abs(ty - sy) < 3) return true;
-    if (Math.abs(tx - ex) + Math.abs(ty - ey) < 3) return true;
+    if (Math.abs(tx - ex) + Math.abs(ty - ey) < 2) return true;
     for (const p of out) {
-      if (Math.abs(tx - p.tx) + Math.abs(ty - p.ty) < 4) return true;
+      if (Math.abs(tx - p.tx) + Math.abs(ty - p.ty) < 3) return true;
     }
     // Min Chebyshev 2 from caves; min 1 from oases.
     try {
@@ -5792,41 +6554,31 @@ function _generateRandomChallengePositions(){
     } catch(e){}
     return false;
   };
-  const labelFor = (tx) => (
-    tx <= 11 ? { name: 'Marketplace', zone: 'marketplace' } :
-    tx <= 22 ? { name: 'Well',        zone: 'well'        } :
-               { name: 'Pasture',     zone: 'pasture'     }
-  );
-  for (let ri = 0; ri < 3; ri++) {
-    for (let ci = 0; ci < 3; ci++) {
-      const [cMin, cMax] = colBands[ci];
-      const [rMin, rMax] = rowBands[ri];
-      let pick = null;
-      for (let attempt = 0; attempt < 80 && !pick; attempt++) {
-        const tx = cMin + Math.floor(Math.random() * (cMax - cMin + 1));
-        const ty = rMin + Math.floor(Math.random() * (rMax - rMin + 1));
-        if (typeof MAP === 'undefined' || !MAP[ty]) continue;
-        if (MAP[ty][tx] !== 0) continue;
-        if (tooNear(tx, ty)) continue;
-        pick = { tx, ty };
-      }
-      if (pick) {
-        const z = labelFor(pick.tx);
-        out.push({
-          tx: pick.tx, ty: pick.ty,
-          kind: 'zone',
-          zone: z.zone,
-          label: z.name + ' Checkpoint ' + (out.length + 1),
-        });
+  for (const s of STOPS) {
+    const cMin = s.col[0], cMax = s.col[1];
+    const rMin = s.row[0], rMax = s.row[1];
+    let pick = null;
+    // Preferred: a walkable, well-spaced tile inside the band.
+    for (let attempt = 0; attempt < 120 && !pick; attempt++) {
+      const tx = cMin + Math.floor(Math.random() * (cMax - cMin + 1));
+      const ty = rMin + Math.floor(Math.random() * (rMax - rMin + 1));
+      if (typeof MAP === 'undefined' || !MAP[ty]) continue;
+      if (MAP[ty][tx] !== 0) continue;
+      if (typeof isScene3StreamTile === 'function' && isScene3StreamTile(tx, ty)) continue; // never on the river
+      if (tooNear(tx, ty)) continue;
+      pick = { tx, ty };
+    }
+    // Fallback: any walkable tile in the band (ignore spacing).
+    if (!pick) {
+      for (let ty = rMin; ty <= rMax && !pick; ty++) {
+        for (let tx = cMin; tx <= cMax && !pick; tx++) {
+          if (MAP[ty] && MAP[ty][tx] === 0 && !(typeof isScene3StreamTile === 'function' && isScene3StreamTile(tx, ty))) pick = { tx, ty };
+        }
       }
     }
-  }
-  // Pad fallback: if any region failed, top up from hardcoded list.
-  let fbIdx = 0;
-  while (out.length < 9 && fbIdx < CHALLENGE_POSITIONS.length) {
-    const fb = CHALLENGE_POSITIONS[fbIdx++];
-    if (out.some(p => p.tx === fb.tx && p.ty === fb.ty)) continue;
-    out.push({ ...fb });
+    // Last resort: band centre, so a stop is never silently dropped.
+    if (!pick) pick = { tx: Math.round((cMin + cMax) / 2), ty: Math.round((rMin + rMax) / 2) };
+    out.push({ tx: pick.tx, ty: pick.ty, kind: 'zone', zone: s.zone, label: s.label, game3rd: s.game3rd || null });
   }
   return out;
 }
@@ -5965,8 +6717,15 @@ function seedChallenges(difficulty) {
     const q1 = cycle(knowledgeQueues); if (q1) bundle.push(q1);
     // slot 2: word challenge (fill/unscramble/match/sequence)
     const q2 = cycle(wordQueues); if (q2) bundle.push(q2);
-    // slot 3: visual challenge (pair/count/spot/memory/maze)
-    const q3 = cycle(visualQueues); if (q3) bundle.push(q3);
+    // slot 3: visual challenge (pair/count/spot/memory/maze) — EXCEPT Scene 3's
+    // tagged market checkpoints, which get a bespoke Exodus-themed mini-game
+    // (match-3 / sort / etc). This override is local to scene3_midian.html, so
+    // Scenes 1 & 2 keep their standard random-of-11 model untouched.
+    let q3;
+    const _g3 = gatePool[i] && gatePool[i].game3rd;
+    if (_g3 && typeof _buildScene3Game3rd === 'function') q3 = _buildScene3Game3rd(_g3);
+    if (!q3) q3 = cycle(visualQueues);
+    if (q3) bundle.push(q3);
     // If we ran out of any family, pad from the full pool.
     while (bundle.length < CHALLENGES_PER_GATE) {
       const all = [].concat(
@@ -5988,6 +6747,9 @@ function seedChallenges(difficulty) {
       tx: p.tx, ty: p.ty,
       // v2.1: kind drives scene-complete check + UI label on the modal
       kind: p.kind || 'zone',        // 'zone' | 'climb'
+      // zone routes the gate in openChallenge: 'well'/'rescue' -> mini-games,
+      // 'market' -> Bible Checkpoint that awards a crystal stepping-stone.
+      zone: p.zone || 'zone',
       step: p.step || 0,             // ascent step 1-5 for climb kind, 0 for zone
       label: p.label || 'Checkpoint',
       questions: bundles[i],
@@ -6070,7 +6832,32 @@ function attemptMove(dir) {
   let nx = player.tx, ny = player.ty;
   if (dir === 'up') ny--; else if (dir === 'down') ny++;
   else if (dir === 'left') nx--; else if (dir === 'right') nx++;
-  if (!isWalkable(nx, ny)) { play('pop'); return; }
+  if (!isWalkable(nx, ny)) {
+    play('pop');
+    // River-crossing hint: if Moses is bumping the stream without his bridge,
+    // tell him to earn the 3 crystal stepping-stones first (throttled).
+    try {
+      if (typeof isScene3StreamTile === 'function' && isScene3StreamTile(nx, ny) && _scene3CrystalCount() < 3) {
+        const now = performance.now();
+        if (!window._riverHintAt || now - window._riverHintAt > 4000) {
+          window._riverHintAt = now;
+          const have = _scene3CrystalCount();
+          const left = 3 - have;
+          // First time Moses reaches the river, give the full friendly briefing;
+          // after that, short progress nudges so it never nags.
+          if (!window._riverIntroShown) {
+            window._riverIntroShown = true;
+            toast('🌊 The river is too deep to cross! Moses needs 3 crystal tiles 💎. Finish the 3 desert checkpoints to collect them, build the crossing, then lead your sheep across!');
+          } else if (have === 0) {
+            toast('💎 0/3 crystal tiles. Clear all 3 checkpoints to build your crossing, then guide the sheep over.');
+          } else {
+            toast('💎 ' + have + '/3 crystal tiles — ' + left + ' to go! Finish ' + (left === 1 ? 'the last checkpoint' : left + ' more checkpoints') + ', then cross and lead the sheep.');
+          }
+        }
+      }
+    } catch(e){}
+    return;
+  }
   // v1.2 FIX (§3.2): In Scenes 2 & 3, NPCs and uncollected pickups are solid.
   // Kids must walk AROUND them and use Interact to pick up / talk.
   if (game.scene === 2 || game.scene === 3) {
@@ -6262,7 +7049,7 @@ function attemptMove(dir) {
           }
         }
       }
-      if (game.streamChaseActive && player.tx > SCENE3_STREAM_COL && !game._chaseEscaped) {
+      if (game.streamChaseActive && player.tx > SCENE3_STREAM_COL_MAX && !game._chaseEscaped) {
         game._chaseEscaped = true;
         game.streamChaseActive = false;
         for (const s of pursuitScouts) { s.chaseMode = false; }
@@ -6399,9 +7186,27 @@ document.querySelectorAll('.difficulty-btn').forEach(btn => {
     game.difficulty = btn.dataset.diff;
     // v3.5: apply full difficulty config (guards, hazards, time, gate count)
     applyDifficultyConfig(game.difficulty);
+    // "One world": remember the choice so it carries across all three scenes
+    try { localStorage.setItem('bek.lastDifficulty', game.difficulty); } catch(e){}
     play('click');
   });
 });
+// "One world": honour the difficulty the player picked earlier in the bundle —
+// preselect it on the Scene-3 cover so they can just tap Start (still changeable).
+(function _preselectWorldDifficulty(){
+  try {
+    const saved = localStorage.getItem('bek.lastDifficulty');
+    if (saved === 'easy' || saved === 'medium' || saved === 'hard') {
+      const btn = document.querySelector('.difficulty-btn[data-diff="' + saved + '"]');
+      if (btn) {
+        document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        game.difficulty = saved;
+        try { applyDifficultyConfig(saved); } catch(e){}
+      }
+    }
+  } catch(e){}
+})();
 $('startBtn').addEventListener('click', () => {
   unlockAudio();
   if (!document.querySelector('.difficulty-btn.selected')) {
@@ -7017,10 +7822,13 @@ function startScene1() {
   if (typeof shufflePalaceLayout === 'function') shufflePalaceLayout();
   // v2.1: seed 9 mandatory challenges (4 zone checkpoints + 5 cliff ascents)
   seedChallenges(game.difficulty || 'easy');
+  try { resetScene3Flock(); } catch(e){}
+  try { resetScene3Herd(); } catch(e){}
   // v3.28: if a mid-game save exists, overwrite gate positions + scalars.
   try { _applyCheckpointAfterSeed(); } catch(e){}
   // v2.1: spawn Pharaoh pursuit scouts on west edge
   try { seedPursuitScouts(); } catch(e){}
+  try { _resetFirstEventSeen(); } catch(e){}
   // v2.1: arm mirage traps (Zone C) and rolling boulder schedule (Zone A hard)
   try { seedMirages(); } catch(e){}
   try { seedRollingBoulders(); } catch(e){}
@@ -7104,6 +7912,7 @@ function restartScene() {
   game.guardAlertActive = false;
   // v3.3 resets
   game.crownFound = false;
+  window._godsGraceUsedScene3 = false;   // God's Grace re-arms each scene run
   game.truthCardCollected = false;
   game.midSceneTruth = null;
   game.peeksLeft = 2;
@@ -7127,8 +7936,11 @@ function restartScene() {
   $('pulseVignette').classList.remove('alerted');
   // re-seed challenge gates (fresh questions!)
   seedChallenges(game.difficulty || 'easy');
+  try { resetScene3Flock(); } catch(e){}
+  try { resetScene3Herd(); } catch(e){}
   // v2.1 Scene 2: re-seed pursuit scouts + mirage traps + boulder schedule
   try { seedPursuitScouts(); } catch(e){}
+  try { _resetFirstEventSeen(); } catch(e){}
   try { seedMirages(); } catch(e){}
   try { seedRollingBoulders(); } catch(e){}
   updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){} try { _refreshUnlockButtons(); } catch(e){}
@@ -7153,8 +7965,9 @@ function restartScene() {
 const TUT_STEPS = [
   { icon:'[>]',  title:'Move Moses', body:'Tap the arrows below, swipe the screen, or use arrow keys on a keyboard to guide Moses east across Midian toward Jethro\u2019s tent.' },
   { icon:'[#]',  title:'Hide Behind Palms & Rocks', body:'Step beside a palm cluster, rock outcrop, or water-jar pile [#] to crouch. Crouching hides Moses from the three rude shepherds patrolling near the well.' },
-  { icon:'[?]',  title:'Midian Checkpoints (MANDATORY)', body:'Nine glowing [?] Midian Checkpoints are UNAVOIDABLE. Walk near any checkpoint and Moses will be stopped for 3 Bible questions. You must solve EVERY checkpoint in the scene to drive off the rude shepherds and open the path to Jethro\u2019s tent. You cannot walk around them.' },
-  { icon:'[!]',  title:'Reach Jethro\u2019s Tent', body:'To finish Scene 3, Moses must first clear all NINE Midian Checkpoints, then walk into the glowing EXIT tile on the east edge \u2014 Jethro\u2019s tent. Only then does the scene end and God welcomes Moses into a new family!' },
+  { icon:'[?]',  title:'Midian Stops (MANDATORY)', body:'Five glowing [?] stops are UNAVOIDABLE on the way to Jethro\u2019s tent: three Bible Checkpoints, plus two big mini-games \u2014 the Well (water Jethro\u2019s flock) and the Rescue (save his daughters from the rude shepherds). Walk near a Bible Checkpoint and Moses is stopped for 3 questions. You must clear EVERY stop to open the path east.' },
+  { icon:'[~]',  title:'Cross the River & Lead the Flock', body:'A wide river splits Midian in two. Clear the three Bible Checkpoints to earn three crystal stones \u2014 together they BUILD a stepping-stone crossing! A little flock is stranded on the west bank. Once the crossing is built, walk up to the sheep and they\u2019ll follow you across the stones into the safe pen. Be a good shepherd, just like Moses became in Midian.' },
+  { icon:'[!]',  title:'Reach Jethro\u2019s Tent', body:'To finish Scene 3, Moses must first clear all five Midian stops \u2014 the three Bible Checkpoints, the Well, and the Rescue \u2014 then walk into the glowing EXIT tile on the east edge: Jethro\u2019s tent. Only then does the scene end and God welcomes Moses into a new family!' },
   { icon:'[x]',  title:'Watch for the Rude Shepherds', body:'Three rude shepherds patrol near the well. Stay in cover \u2014 palms, rocks, jar piles \u2014 when they look your way. Bump into one and Moses must answer a question to drive him off. Moses stood up for the weak; you can too.' },
 ];
 function showTutorial(step){
@@ -7185,13 +7998,93 @@ $('tutNextBtn').addEventListener('click', () => {
   }
 });
 
+/* ---------- PROXIMITY TIP POPUPS (one-world coaching, ported from Scene 1) ----------
+   First-time, just-in-time popups for Scene 3's signature moments. Honors the
+   shared bek.bundle1.tutMode toggle: when OFF, falls back to a one-shot toast so
+   the kid still gets the info without the modal interruption. The popup pauses
+   the world (state='tutorial') and restores the prior state on dismiss. */
+const TUT_MODE_KEY = 'bek.bundle1.tutMode';
+function _tutModeOn(){ try { return localStorage.getItem(TUT_MODE_KEY) !== '0'; } catch(e){ return true; } }
+const _firstEventSeen = { river:false, flock:false, shepherd:false, checkpoint:false, crown:false };
+function _resetFirstEventSeen(){ for (const k in _firstEventSeen) _firstEventSeen[k] = false; }
+let _tipPopupPrevState = null;
+function showTipPopup(eventKey, opts){
+  if (!opts || !opts.title || !opts.body) return;
+  if (eventKey && _firstEventSeen[eventKey]) return;
+  if (eventKey) _firstEventSeen[eventKey] = true;
+  if (!_tutModeOn()){ try { toast((opts.icon || '👋') + ' ' + opts.body); } catch(e){} return; }
+  const overlay = document.getElementById('tipPopupOverlay');
+  if (!overlay){ try { toast((opts.icon || '👋') + ' ' + opts.body); } catch(e){} return; }
+  try { $('tipPopupIcon').textContent = opts.icon || '👋'; } catch(e){}
+  try { $('tipPopupTitle').textContent = opts.title; } catch(e){}
+  try { $('tipPopupBody').textContent  = opts.body; } catch(e){}
+  overlay.classList.add('active');
+  if (game.state !== 'tutorial'){ _tipPopupPrevState = game.state; game.state = 'tutorial'; }
+  try { if (audio.alerted){ audio.alerted.pause(); } } catch(e){}
+  try { play('chime'); } catch(e){}
+}
+function _hideTipPopup(){
+  const overlay = document.getElementById('tipPopupOverlay');
+  if (overlay) overlay.classList.remove('active');
+  if (game.state === 'tutorial'){ game.state = (_tipPopupPrevState != null ? _tipPopupPrevState : 'playing'); _tipPopupPrevState = null; }
+}
+(function _wireTipPopup(){
+  const btn = document.getElementById('tipPopupBtn');
+  if (btn) btn.addEventListener('click', () => { try { play('click'); } catch(e){} _hideTipPopup(); });
+})();
+// Proximity scan — called each playing frame. Cheap distance checks; each popup
+// fires at most once per scene run (registry reset on scene start/reset).
+function _checkScene3Tips(){
+  // showTipPopup itself handles tutMode (rich popup when ON, one-shot toast when
+  // OFF), so we always run the proximity scan — each tip still fires only once.
+  if (game.state !== 'playing') return;
+  if (typeof player === 'undefined') return;
+  const px = player.tx, py = player.ty;
+  // RIVER: approaching the west bank of the 3-wide river
+  if (!_firstEventSeen.river && px >= 8 && px <= 10 && py >= 6 && py <= 18){
+    showTipPopup('river', { icon:'🌊', title:'The River of Midian',
+      body:'A wide river blocks the way east! Clear the three Bible Checkpoints to earn three crystal stones — they build a stepping-stone crossing. Then lead the stranded flock across into the pen.' });
+    return;
+  }
+  // FLOCK: near the stranded west-bank flock
+  if (!_firstEventSeen.flock && typeof scene3Herd !== 'undefined' && scene3Herd.spawned){
+    for (const s of scene3Herd.sheep){
+      if (s.state === 'graze' && Math.max(Math.abs(Math.round(s.px/TILE)-px), Math.abs(Math.round(s.py/TILE)-py)) <= 2){
+        showTipPopup('flock', { icon:'🐑', title:'A Lost Flock',
+          body:'These sheep are stranded! Once the crossing is built, walk close and they’ll follow you across the stepping stones. Watch out — a rude shepherd may rush to scatter them, so hurry, freeze him, or reach the stones!' });
+        return;
+      }
+    }
+  }
+  // SHEPHERD: first time near a rude shepherd
+  if (!_firstEventSeen.shepherd && typeof pursuitScouts !== 'undefined'){
+    for (const sh of pursuitScouts){
+      if (sh.shovedOff || sh.caught) continue;
+      if (Math.max(Math.abs(sh.tx-px), Math.abs(sh.ty-py)) <= 3){
+        showTipPopup('shepherd', { icon:'🧔', title:'Rude Shepherds',
+          body:'Three rude shepherds guard the well. Bump into one and you’ll lose a heart — but solve his checkpoint riddle and he’ll back off. ❄️ Foe Freeze stops them; ⚡ Speed Burst helps you slip past.' });
+        return;
+      }
+    }
+  }
+}
+
 /* ---------- HUD ---------- */
 function updateHudHearts(){
   let s='';
   for (let i=0;i<3;i++) s += (i<game.hearts) ? '&#9829;' : '&#9825;';
   $('hudHearts').innerHTML = s;
 }
-function updateHudStars(){ $('hudStars').textContent = game.stars; }
+function updateHudStars(){ $('hudStars').textContent = game.stars; try { updateHudCrystals(); } catch(e){} }
+// Scene 3: live "crystal tiles X/3" readout. Derived from solved market gates so
+// it stays correct across save/resume. Glows gold once all 3 are collected.
+function updateHudCrystals(){
+  const el = $('hudCrystals'); if (!el) return;
+  const n = (typeof _scene3CrystalCount === 'function') ? _scene3CrystalCount() : 0;
+  el.textContent = n;
+  const chip = $('hudCrystalChip');
+  if (chip) chip.classList.toggle('hud-crystal-done', n >= 3);
+}
 function updateHudTreasure(){
   $('hudTreasure').textContent = game.treasureCount;
   const tot = $('hudTreasureTotal');
@@ -7206,11 +8099,14 @@ function updateHudAltitude(){
   const chip = document.getElementById('hudAltitudeChip');
   const val  = document.getElementById('hudAltitude');
   if (!chip || !val) return;
+  // Scene 3 uses the dedicated crystal-tiles chip (💎 x/3) for river progress, so
+  // the legacy "▲ x/5" altitude chip is hidden here to avoid a confusing double.
+  if (document.getElementById('hudCrystalChip')) { chip.style.display = 'none'; return; }
   if (game.scene !== 2) { chip.style.display = 'none'; return; }
   const liveGates = (typeof challengeGates !== 'undefined' && challengeGates)
     ? challengeGates.length
     : 0;
-  const totalGates = liveGates > 0 ? liveGates : 9; // design: 4 zone + 5 eastern = 9
+  const totalGates = liveGates > 0 ? liveGates : 5; // design: 3 Bible Checkpoints + Well + Rescue = 5
   const solved = (typeof challengeGates !== 'undefined' && challengeGates)
     ? challengeGates.filter(g => g && g.solved).length
     : 0;
@@ -7379,6 +8275,10 @@ function triggerInteractable(obj){
   } else if (obj.reward === 'stars50') {
     game.stars += 50;
     game.crownFound = true;
+    // "One world": the hidden crown feeds the cross-scene crown total that
+    // unlocks Eagle Eye (royalVision) at 4 crowns — same as scenes 1 & 2.
+    try { _addLifetimeCrowns(1); } catch(e){}
+    try { _refreshUnlockButtons(); } catch(e){}
     updateHudStars();
     try { play('collectCrown'); } catch(e){}  // v2.2.7 crown-specific fanfare
     try { play('win') || play('success'); } catch(e){}
@@ -8026,6 +8926,7 @@ function _closePulleyGame() {
   try { spawnGlitterBurstAtPlayer(22); } catch(e){}
   try { toast('You watered Jethro\'s flock! ' + '⭐'.repeat(earned) + ' +' + earned + ' stars!'); } catch(e){}
   game.stars += earned; try { updateHudStars(); } catch(e){}
+  try { _announceAllGatesCleared(); } catch(e){}
   try { if (typeof showVerseDrift === 'function') setTimeout(showVerseDrift, 600); } catch(e){}
   try { _saveCheckpoint(); } catch(e){}
 }
@@ -9082,6 +9983,7 @@ function _closeRescue() {
   try { spawnGlitterBurstAtPlayer(20); } catch(e){}
   try { toast('You rescued Jethro\'s daughters! ' + '⭐'.repeat(earned) + ' +' + earned + ' stars!'); } catch(e){}
   game.stars += earned; try { updateHudStars(); } catch(e){}
+  try { _announceAllGatesCleared(); } catch(e){}
   try { _saveCheckpoint(); } catch(e){}
 }
 function _rescueFrame(now) {
@@ -9393,17 +10295,499 @@ function _makeRescueGate(){ return { tx: 0, ty: 0, solved: false, _rescuetest: t
   if (document.readyState !== 'loading') wire(); else document.addEventListener('DOMContentLoaded', wire);
 })();
 
+// Scene 3 epic: fire the "exit is open" fanfare exactly once — the moment the
+// LAST of the five mandatory stops (3 Bible Checkpoints + Well + Rescue) is
+// cleared. Works no matter which stop type finishes last (trivia, Well, or
+// Rescue all call this). (game.scene stays 2 internally — Scene 3 was ported
+// from Scene 2 and kept the id so the shared gate/HUD logic keeps working.)
+function _announceAllGatesCleared(){
+  try {
+    if (game.scene !== 2) return;
+    if (game.allGatesCleared) return;
+    const total  = (typeof challengeGates !== 'undefined' && challengeGates) ? challengeGates.length : 0;
+    const solved = (typeof challengeGates !== 'undefined' && challengeGates)
+      ? challengeGates.filter(g => g && g.solved).length : 0;
+    if (total > 0 && solved >= total) {
+      game.allGatesCleared = true;
+      try { play('allComplete'); } catch(e){}
+      try { toast('All Midian stops cleared! Walk east into Jethro’s tent to finish!'); } catch(e){}
+    }
+  } catch(e){}
+}
+
+// River-crossing concept: how many crystal stepping-stones Moses has earned =
+// how many west-bank Bible Checkpoints (zone 'market') he has solved. Derived
+// (not a stored counter) so it stays correct across save/resume. He needs 3 to
+// bridge the river at SCENE3_STREAM_COL.
+function _scene3CrystalCount(){
+  try {
+    if (typeof challengeGates === 'undefined' || !challengeGates) return 0;
+    return challengeGates.filter(g => g && g.solved && g.zone === 'market').length;
+  } catch(e){ return 0; }
+}
+
+// ======================================================================
+// SCENE 3 — bespoke 3rd-question mini-games (Exodus 1 & 2 themed).
+// One per west-bank market checkpoint, injected into seedChallenges slot 3.
+// These live in scene3_midian.html only, so Scenes 1 & 2 keep the standard
+// random-of-11 challenge model. On win each calls handleChallengeAnswer(gate,
+// 0, ...) — the unified "correct" path — which clears the 3rd question, finishes
+// the checkpoint, and awards the crystal stepping-stone + money bags.
+// ======================================================================
+function _buildScene3Game3rd(kind){
+  try {
+    if (kind === 'match3') {
+      const target = ({ easy: 6, medium: 9, hard: 12 })[game.difficulty] || 9;
+      return {
+        type: 'm3moses',
+        q: 'Match-3! Swap two neighbours to line up 3 of the same tile. Crush ' + target + ' tiles to earn your crystal!',
+        correct: 0,
+        target: target,
+        clue: 'Tap one tile, then tap a tile right next to it to swap them. Look for two-in-a-row already on the board and slide a third one in to make three! Crushed tiles fall away and new ones drop in — sometimes that makes even more matches. Stuck? The "Truth Seeker" power-up will make two tiles glow to show you a winning swap.',
+      };
+    }
+    if (kind === 'sort') {
+      // "In the Moses story" vs "Not in the story" — kids tap a picture then the
+      // basket it belongs in. IN = Exodus 1-2 elements; OUT = modern items that
+      // could never be in the story (gentle anachronism humour kids love).
+      const IN  = [
+        {e:'🐑',n:'sheep'}, {e:'🦯',n:'shepherd staff'}, {e:'🧺',n:'papyrus basket'},
+        {e:'🌾',n:'reeds'}, {e:'👑',n:'crown'}, {e:'🔺',n:'pyramid'},
+        {e:'🏺',n:'water jar'}, {e:'📜',n:'scroll'}, {e:'🐪',n:'camel'}, {e:'🔥',n:'fire'},
+      ];
+      const OUT = [
+        {e:'🚗',n:'car'}, {e:'📱',n:'phone'}, {e:'🍕',n:'pizza'}, {e:'🤖',n:'robot'},
+        {e:'✈️',n:'aeroplane'}, {e:'📺',n:'television'}, {e:'⚽',n:'football'}, {e:'🚀',n:'rocket'},
+        {e:'💻',n:'laptop'}, {e:'🚲',n:'bicycle'},
+      ];
+      const per = ({ easy: 3, medium: 4, hard: 5 })[game.difficulty] || 4;
+      const pick = (arr, k) => { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a.slice(0,k); };
+      const items = [];
+      pick(IN,  per).forEach(o => items.push({ e:o.e, n:o.n, bin:'in'  }));
+      pick(OUT, per).forEach(o => items.push({ e:o.e, n:o.n, bin:'out' }));
+      for (let i=items.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [items[i],items[j]]=[items[j],items[i]]; }
+      return {
+        type: 'sortmoses',
+        q: 'Sorting time! Tap a picture, then tap the basket it belongs in.',
+        correct: 0,
+        bins: [ {key:'in', label:'In the Moses story'}, {key:'out', label:'Not in the story'} ],
+        items: items,
+        clue: 'Ask yourself: could this thing be in a Bible story about Moses long, long ago? Sheep, a shepherd\'s staff, a basket, reeds, a crown and pyramids all belong in Egypt and Midian. But cars, phones, pizza and robots were invented thousands of years LATER — they go in the "Not in the story" basket! Need a freebie? "Truth Seeker" will sort one picture for you.',
+      };
+    }
+    if (kind === 'merge') {
+      // 2048-style merge that retells Exodus 2: slide tiles to merge two of a
+      // kind up the story ladder (reeds -> basket -> baby Moses -> river ->
+      // princess -> crown -> palace). Reach the goal tier to win.
+      const goal = ({ easy: 5, medium: 6, hard: 7 })[game.difficulty] || 6;
+      return {
+        type: 'mergemoses',
+        q: 'Slide to merge! Join two matching tiles to climb the Moses story. Reach the goal tile to earn your crystal!',
+        correct: 0,
+        goal: goal,
+        clue: 'Press an arrow (or swipe) to slide ALL tiles that way. When two of the same tile bump together, they join into the next thing in the story: reeds make a basket, baskets become baby Moses, then the river, the princess, the crown, and the palace! Keep your biggest tile in a corner and slide gently toward it. Reach the goal tile to win. "Truth Seeker" gifts you a powerful tile to get started.',
+      };
+    }
+  } catch(e){}
+  return null;
+}
+
+// Candy-Crush-style match-3 on Moses-story tiles (sheep, staff, basket, reeds,
+// crown, pyramid). Tap a tile then an adjacent tile to swap; 3-in-a-row crushes
+// with a glitter burst, tiles fall and refill (cascades count too). Reaching the
+// crush target wins. Kid-friendly: bad swaps just bounce back (no penalty).
+function renderMatch3(gate, q, container){
+  const ROWS = 6, COLS = 6;
+  const TYPES = [
+    { e:'🐑', name:'sheep' },
+    { e:'🦯', name:'shepherd staff' },
+    { e:'🧺', name:'papyrus basket' },
+    { e:'🌾', name:'reeds' },
+    { e:'👑', name:'crown' },
+    { e:'🔺', name:'pyramid' },
+  ];
+  const N = TYPES.length;
+  const target = q.target || 9;
+  let crushed = 0, sel = null, busy = false, board = [];
+  const rnd = () => Math.floor(Math.random() * N);
+
+  function gen(){
+    board = [];
+    for (let r=0;r<ROWS;r++){ const row=[]; for(let c=0;c<COLS;c++){
+      let t, guard=0;
+      do { t = rnd(); guard++; } while (guard<25 && (
+        (c>=2 && row[c-1]===t && row[c-2]===t) ||
+        (r>=2 && board[r-1][c]===t && board[r-2][c]===t)
+      ));
+      row.push(t);
+    } board.push(row); }
+  }
+  function findMatches(){
+    const hit = new Set();
+    for (let r=0;r<ROWS;r++){ let run=1; for(let c=1;c<=COLS;c++){
+      if (c<COLS && board[r][c]===board[r][c-1]) run++;
+      else { if (run>=3) for(let k=1;k<=run;k++) hit.add(r+','+(c-k)); run=1; }
+    }}
+    for (let c=0;c<COLS;c++){ let run=1; for(let r=1;r<=ROWS;r++){
+      if (r<ROWS && board[r][c]===board[r-1][c]) run++;
+      else { if (run>=3) for(let k=1;k<=run;k++) hit.add((r-k)+','+c); run=1; }
+    }}
+    return hit;
+  }
+  function collapse(){
+    for (let c=0;c<COLS;c++){
+      let write=ROWS-1;
+      for (let r=ROWS-1;r>=0;r--){ if (board[r][c]!==null){ board[write][c]=board[r][c]; if(write!==r) board[r][c]=null; write--; } }
+      for (let r=write;r>=0;r--) board[r][c]=rnd();
+    }
+  }
+  function resolve(){
+    let total=0, m=findMatches();
+    while (m.size){
+      total += m.size;
+      m.forEach(k=>{ const p=k.split(',').map(Number); board[p[0]][p[1]]=null; });
+      collapse();
+      m=findMatches();
+    }
+    return total;
+  }
+  function findHint(){
+    for (let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const tries=[];
+      if (c+1<COLS) tries.push([r,c,r,c+1]);
+      if (r+1<ROWS) tries.push([r,c,r+1,c]);
+      for (const t of tries){
+        const tmp=board[t[0]][t[1]]; board[t[0]][t[1]]=board[t[2]][t[3]]; board[t[2]][t[3]]=tmp;
+        const has=findMatches().size>0;
+        const tmp2=board[t[0]][t[1]]; board[t[0]][t[1]]=board[t[2]][t[3]]; board[t[2]][t[3]]=tmp2;
+        if (has) return { a:{r:t[0],c:t[1]}, b:{r:t[2],c:t[3]} };
+      }
+    }
+    return null;
+  }
+
+  container.innerHTML='';
+  const wrap = document.createElement('div'); wrap.className='ch-m3-wrap';
+  const bar = document.createElement('div'); bar.className='ch-m3-bar';
+  const score = document.createElement('div'); score.className='ch-m3-score';
+  const prog = document.createElement('div'); prog.className='ch-m3-prog';
+  const pfill = document.createElement('div'); pfill.className='ch-m3-prog-fill'; prog.appendChild(pfill);
+  bar.appendChild(score); bar.appendChild(prog); wrap.appendChild(bar);
+  const grid = document.createElement('div'); grid.className='ch-m3-grid';
+  grid.style.setProperty('--m3-cols', COLS);
+  wrap.appendChild(grid); container.appendChild(wrap);
+
+  gen(); let _g=0; while(!findHint() && _g++<10) gen();
+
+  const cellEl = (r,c) => grid.children[r*COLS+c];
+  function updBar(){
+    score.textContent = '💎 ' + Math.min(crushed,target) + ' / ' + target;
+    pfill.style.width = Math.min(100,(crushed/target)*100) + '%';
+  }
+  function draw(){
+    grid.innerHTML='';
+    for (let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const b=document.createElement('button');
+      b.className='ch-m3-tile t'+board[r][c]+(sel&&sel.r===r&&sel.c===c?' sel':'');
+      b.textContent=TYPES[board[r][c]].e;
+      b.setAttribute('aria-label',TYPES[board[r][c]].name);
+      b.addEventListener('click',()=>onTap(r,c));
+      grid.appendChild(b);
+    }
+    updBar();
+  }
+  function flashCrush(keys){ keys.forEach(k=>{ const p=k.split(',').map(Number); const el=cellEl(p[0],p[1]); if(el) el.classList.add('crush'); }); }
+  function win(){
+    busy=true;
+    try{ play('levelUp')||play('success'); }catch(e){}
+    try{ if(typeof spawnGlitterBurstAtPlayer==='function') spawnGlitterBurstAtPlayer(34); }catch(e){}
+    setTimeout(()=>{ try{ handleChallengeAnswer(gate,0,wrap,{answerLabel:'3 IN A ROW!'}); }catch(e){} }, 360);
+  }
+  function onTap(r,c){
+    if (busy) return;
+    if (!sel){ sel={r,c}; draw(); try{play('tap');}catch(e){} return; }
+    if (sel.r===r && sel.c===c){ sel=null; draw(); return; }
+    if ((Math.abs(sel.r-r)+Math.abs(sel.c-c))!==1){ sel={r,c}; draw(); try{play('tap');}catch(e){} return; }
+    const a=sel; busy=true; sel=null;
+    const sw=()=>{ const t=board[a.r][a.c]; board[a.r][a.c]=board[r][c]; board[r][c]=t; };
+    sw();
+    if (!findMatches().size){
+      sw(); draw(); try{play('pop');}catch(e){}
+      const e1=cellEl(a.r,a.c), e2=cellEl(r,c);
+      if(e1)e1.classList.add('nudge'); if(e2)e2.classList.add('nudge');
+      setTimeout(()=>{ busy=false; },240);
+      return;
+    }
+    draw(); try{play('chime')||play('correct');}catch(e){}
+    flashCrush(findMatches());
+    setTimeout(()=>{
+      const gained=resolve(); crushed+=gained; draw();
+      try{ if(typeof spawnGlitterBurstAtPlayer==='function') spawnGlitterBurstAtPlayer(Math.min(22,gained*3)); }catch(e){}
+      if (crushed>=target) { win(); return; }
+      let g=0; while(!findHint() && g++<10) gen();
+      draw(); busy=false;
+    }, 280);
+  }
+
+  draw();
+
+  // Truth Seeker power-up: glow a guaranteed winning swap as a hint.
+  if (window._truthSeekerArmed){
+    window._truthSeekerArmed=false;
+    const h=findHint();
+    if (h){ const e1=cellEl(h.a.r,h.a.c), e2=cellEl(h.b.r,h.b.c); if(e1)e1.classList.add('hint'); if(e2)e2.classList.add('hint');
+      try{ toast('📖 Truth Seeker: swap the glowing tiles to make a match!'); }catch(e){}
+    } else { try{ toast('📖 Truth Seeker: swap any neighbours to line up 3!'); }catch(e){} }
+  }
+}
+
+// Checkpoint 2 — SORT the picture tiles into the right basket ("In the Moses
+// story" vs "Not in the story"). Tap a tile to pick it up, tap a basket to drop.
+// Correct drop locks the tile into the basket with a glitter pop; a wrong drop
+// just bounces (no penalty). Sorting them all wins. Power-ups: Truth Seeker
+// auto-sorts one tile; Scribe's Wisdom skips the whole checkpoint upstream.
+function renderSort(gate, q, container){
+  const items = (q.items || []).map((it, i) => ({ ...it, id:i, placed:false }));
+  const bins = q.bins || [ {key:'in', label:'In the Moses story'}, {key:'out', label:'Not in the story'} ];
+  let sel = null, done = 0, busy = false;
+
+  container.innerHTML = '';
+  const wrap = document.createElement('div'); wrap.className = 'ch-sort-wrap';
+  const tray = document.createElement('div'); tray.className = 'ch-sort-tray';
+  const binRow = document.createElement('div'); binRow.className = 'ch-sort-bins';
+  wrap.appendChild(tray); wrap.appendChild(binRow); container.appendChild(wrap);
+
+  const binEls = {};
+  bins.forEach((b, i) => {
+    const bin = document.createElement('button');
+    bin.className = 'ch-sort-bin bin' + i;
+    const cap = document.createElement('div'); cap.className = 'ch-sort-bin-cap'; cap.textContent = (i===0?'✔️ ':'✖️ ') + b.label;
+    const slot = document.createElement('div'); slot.className = 'ch-sort-bin-slot';
+    bin.appendChild(cap); bin.appendChild(slot);
+    bin.addEventListener('click', () => dropInto(b.key, bin, slot));
+    binRow.appendChild(bin);
+    binEls[b.key] = { bin, slot };
+  });
+
+  function tileBtn(it){
+    const b = document.createElement('button');
+    b.className = 'ch-sort-tile';
+    b.textContent = it.e; b.setAttribute('aria-label', it.n); b.dataset.id = it.id;
+    b.addEventListener('click', () => {
+      if (busy || it.placed) return;
+      if (sel === it.id) { sel = null; render(); return; }
+      sel = it.id; render(); try{ play('tap'); }catch(e){}
+    });
+    return b;
+  }
+  function render(){
+    tray.innerHTML = '';
+    items.filter(it => !it.placed).forEach(it => {
+      const b = tileBtn(it);
+      if (sel === it.id) b.classList.add('sel');
+      tray.appendChild(b);
+    });
+    if (!items.some(it => !it.placed)) tray.innerHTML = '<div class="ch-sort-empty">All sorted! 🎉</div>';
+  }
+  function dropInto(binKey, binEl, slotEl){
+    if (busy || sel === null) { if(sel===null){ binEl.classList.add('shake'); setTimeout(()=>binEl.classList.remove('shake'),300);} return; }
+    const it = items.find(x => x.id === sel);
+    if (!it || it.placed) return;
+    if (it.bin === binKey){
+      it.placed = true; sel = null; done++;
+      const chip = document.createElement('span'); chip.className = 'ch-sort-chip'; chip.textContent = it.e;
+      slotEl.appendChild(chip);
+      try{ play('chime') || play('correct'); }catch(e){}
+      try{ if (typeof spawnGlitterBurstAtPlayer === 'function') spawnGlitterBurstAtPlayer(8); }catch(e){}
+      render();
+      if (done >= items.length){
+        busy = true;
+        try{ play('levelUp') || play('success'); }catch(e){}
+        try{ if (typeof spawnGlitterBurstAtPlayer === 'function') spawnGlitterBurstAtPlayer(30); }catch(e){}
+        setTimeout(() => { try{ handleChallengeAnswer(gate, 0, wrap, {answerLabel:'ALL SORTED!'}); }catch(e){} }, 360);
+      }
+    } else {
+      try{ play('pop'); }catch(e){}
+      binEl.classList.add('shake'); setTimeout(()=>binEl.classList.remove('shake'), 320);
+      const t = tray.querySelector('.ch-sort-tile.sel'); if (t){ t.classList.remove('sel'); t.classList.add('nudge'); setTimeout(()=>t.classList.remove('nudge'),300); }
+    }
+  }
+
+  render();
+
+  // Truth Seeker power-up: auto-sort one tile into its correct basket as a clue.
+  if (window._truthSeekerArmed){
+    window._truthSeekerArmed = false;
+    const it = items.find(x => !x.placed);
+    if (it){
+      sel = it.id;
+      const tgt = binEls[it.bin];
+      try{ toast('📖 Truth Seeker: one picture sorted for you!'); }catch(e){}
+      setTimeout(() => { if (tgt) dropInto(it.bin, tgt.bin, tgt.slot); }, 250);
+    }
+  }
+}
+
+// Checkpoint 3 — 2048-style MERGE that retells Exodus 2. Slide the 4x4 board
+// (arrow buttons / keyboard / swipe); equal neighbours merge up the story ladder
+// (reeds -> basket -> baby -> river -> princess -> crown -> palace). Reaching the
+// goal tier wins. Kid-friendly: a deadlocked board softly reshuffles (no penalty).
+function renderMerge2048(gate, q, container){
+  const SIZE = 4;
+  const TIERS = [ null,
+    {e:'🌾', n:'reeds'}, {e:'🧺', n:'basket'}, {e:'👶', n:'baby Moses'},
+    {e:'🌊', n:'river'}, {e:'👸', n:'princess'}, {e:'👑', n:'crown'}, {e:'🏛️', n:'palace'},
+  ];
+  const goal = Math.min(q.goal || 6, TIERS.length - 1);
+  let board = [], won = false, busy = false;
+  const empties = () => { const o=[]; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++) if(!board[r][c]) o.push([r,c]); return o; };
+  function spawn(){ const e=empties(); if(!e.length) return; const [r,c]=e[Math.floor(Math.random()*e.length)]; board[r][c]=Math.random()<0.85?1:2; }
+  function init(){ board=[]; for(let r=0;r<SIZE;r++){const row=[];for(let c=0;c<SIZE;c++)row.push(0);board.push(row);} spawn(); spawn(); }
+
+  function slide(line){ // toward index 0
+    const a=line.filter(v=>v);
+    for(let i=0;i<a.length-1;i++){ if(a[i]===a[i+1]){ a[i]++; a.splice(i+1,1); } }
+    while(a.length<SIZE) a.push(0);
+    return a;
+  }
+  function getLine(dir,i){
+    const L=[];
+    for(let k=0;k<SIZE;k++){
+      if(dir==='left')  L.push(board[i][k]);
+      if(dir==='right') L.push(board[i][SIZE-1-k]);
+      if(dir==='up')    L.push(board[k][i]);
+      if(dir==='down')  L.push(board[SIZE-1-k][i]);
+    }
+    return L;
+  }
+  function setLine(dir,i,L){
+    for(let k=0;k<SIZE;k++){
+      if(dir==='left')  board[i][k]=L[k];
+      if(dir==='right') board[i][SIZE-1-k]=L[k];
+      if(dir==='up')    board[k][i]=L[k];
+      if(dir==='down')  board[SIZE-1-k][i]=L[k];
+    }
+  }
+  function move(dir){
+    if(busy||won) return;
+    const before=JSON.stringify(board);
+    for(let i=0;i<SIZE;i++) setLine(dir,i,slide(getLine(dir,i)));
+    if(JSON.stringify(board)===before){ try{play('pop');}catch(e){} return; }
+    spawn();
+    try{play('tap');}catch(e){}
+    draw();
+    // win?
+    let best=0; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++) best=Math.max(best,board[r][c]);
+    if(best>=goal){ win(); return; }
+    if(!canMove()){ // soft reshuffle, no penalty
+      try{ toast('Board full — fresh tiles!'); }catch(e){}
+      const keep=[]; for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++) if(board[r][c]) keep.push(board[r][c]);
+      keep.sort((a,b)=>b-a);
+      init();
+      // re-seed a couple of the best tiles so progress isn't fully lost
+      if(keep[0]) board[0][0]=keep[0]; if(keep[1]) board[SIZE-1][SIZE-1]=keep[1];
+      draw();
+    }
+  }
+  function canMove(){
+    if(empties().length) return true;
+    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+      if(c+1<SIZE && board[r][c]===board[r][c+1]) return true;
+      if(r+1<SIZE && board[r][c]===board[r+1][c]) return true;
+    }
+    return false;
+  }
+
+  container.innerHTML='';
+  const wrap=document.createElement('div'); wrap.className='ch-mg-wrap';
+  const bar=document.createElement('div'); bar.className='ch-mg-bar';
+  const goalChip=document.createElement('div'); goalChip.className='ch-mg-goal';
+  goalChip.innerHTML='Goal: <b>'+TIERS[goal].e+'</b> '+TIERS[goal].n;
+  const bestChip=document.createElement('div'); bestChip.className='ch-mg-best';
+  bar.appendChild(goalChip); bar.appendChild(bestChip); wrap.appendChild(bar);
+  const grid=document.createElement('div'); grid.className='ch-mg-grid'; wrap.appendChild(grid);
+  const pad=document.createElement('div'); pad.className='ch-mg-pad';
+  [['up','▲'],['left','◀'],['down','▼'],['right','▶']].forEach(([d,sym])=>{
+    const b=document.createElement('button'); b.className='ch-mg-btn mg-'+d; b.textContent=sym;
+    b.setAttribute('aria-label','slide '+d); b.addEventListener('click',()=>move(d)); pad.appendChild(b);
+  });
+  wrap.appendChild(pad); container.appendChild(wrap);
+
+  function draw(){
+    grid.innerHTML='';
+    let best=0;
+    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+      const v=board[r][c]; best=Math.max(best,v);
+      const cell=document.createElement('div'); cell.className='ch-mg-cell'+(v?(' filled tier'+v):'');
+      if(v){ cell.textContent=TIERS[v]?TIERS[v].e:'?'; cell.setAttribute('aria-label',TIERS[v]?TIERS[v].n:''); cell.classList.add('pop'); }
+      grid.appendChild(cell);
+    }
+    bestChip.innerHTML='Best: <b>'+(best&&TIERS[best]?TIERS[best].e:'–')+'</b>';
+  }
+  function win(){
+    won=true; busy=true; cleanup();
+    try{ play('levelUp')||play('success'); }catch(e){}
+    try{ if(typeof spawnGlitterBurstAtPlayer==='function') spawnGlitterBurstAtPlayer(34); }catch(e){}
+    setTimeout(()=>{ try{ handleChallengeAnswer(gate,0,wrap,{answerLabel:'STORY BUILT!'}); }catch(e){} }, 360);
+  }
+
+  // input: keyboard arrows + swipe on the grid
+  function onKey(e){
+    if(!document.body.contains(grid)){ cleanup(); return; }
+    const m={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[e.key];
+    if(m){ e.preventDefault(); move(m); }
+  }
+  let tsx=0,tsy=0;
+  function onTS(e){ const t=e.changedTouches?e.changedTouches[0]:e; tsx=t.clientX; tsy=t.clientY; }
+  function onTE(e){ const t=e.changedTouches?e.changedTouches[0]:e; const dx=t.clientX-tsx, dy=t.clientY-tsy;
+    if(Math.max(Math.abs(dx),Math.abs(dy))<24) return;
+    move(Math.abs(dx)>Math.abs(dy) ? (dx>0?'right':'left') : (dy>0?'down':'up'));
+  }
+  function cleanup(){ document.removeEventListener('keydown',onKey); }
+  document.addEventListener('keydown',onKey);
+  grid.addEventListener('touchstart',onTS,{passive:true});
+  grid.addEventListener('touchend',onTE,{passive:true});
+
+  init(); draw();
+
+  // Truth Seeker power-up: gift a high tile (one below the goal) as a head start.
+  if (window._truthSeekerArmed){
+    window._truthSeekerArmed=false;
+    const e=empties(); if(e.length){ const [r,c]=e[0]; board[r][c]=Math.max(1,goal-1); draw(); }
+    try{ toast('📖 Truth Seeker: a powerful '+(TIERS[Math.max(1,goal-1)].e)+' tile appears!'); }catch(e){}
+  }
+}
+
 function openChallenge(gate) {
   // Phase C Step 7: Well gate → pulley mini-game instead of trivia
   if (gate && gate.zone === 'well') { openWellPulleyGame(gate); return; }
+  // Scene 3 epic: Rescue gate near Jethro's tent → lane-defense mini-game.
+  if (gate && gate.zone === 'rescue') { openRescueGame(gate); return; }
   // Scribe's Wisdom power: skip a trivia checkpoint (never a mini-game gate).
-  if (window._scribesWisdomArmed && gate && gate.zone !== 'well') {
-    window._scribesWisdomArmed = false;
-    gate.solved = true; game.state = 'playing';
-    try { play('success') || play('chime'); } catch(e){}
-    try { spawnGlitterBurstAtPlayer(12); } catch(e){}
-    try { toast('🪶 Scribe\'s Wisdom — checkpoint skipped!'); } catch(e){}
-    return;
+  // SCENE-3-ONLY behaviour: this whole file is the Scene 3 experience, and the
+  // crystal/river mechanic only exists on Scene 3's 'market' checkpoints. The
+  // fast-track is therefore scoped to market gates that actually own a bespoke
+  // 3rd-question game — Scenes 1 & 2 live in their own files and are unaffected.
+  if (window._scribesWisdomArmed && gate && gate.zone === 'market') {
+    const BESPOKE = ['m3moses','sortmoses','mergemoses'];
+    const gi = gate.questions.findIndex(q => q && BESPOKE.indexOf(q.type) !== -1);
+    if (gi !== -1) {
+      window._scribesWisdomArmed = false;
+      // Scribe's Wisdom does NOT hand out a free crystal. It FAST-TRACKS the
+      // checkpoint: it gives kids the ILLUSION the Bible questions are cleared,
+      // then drops Moses straight into that checkpoint's fun 3rd-question game.
+      // The kid still has to WIN the game to collect the crystal tile and cross —
+      // so a crystal always means real play, never a pure skip.
+      gate.bundleIndex = gi;
+      try { play('success') || play('chime'); } catch(e){}
+      try { spawnGlitterBurstAtPlayer(12); } catch(e){}
+      // Illusion of completion: a golden "checkpoint cleared" stamp appears above
+      // the modal (it fades on its own and never blocks taps), while the bonus
+      // game renders underneath — the kid still has to WIN it to claim the tile.
+      try { showCorrectAnswerFlash('✓ Checkpoint Cleared!'); } catch(e){}
+      try { toast('🪶 Scribe\'s Wisdom — questions cleared! Now win the bonus game to claim your crystal tile.'); } catch(e){}
+      // fall through — openChallenge now renders the 3rd-question mini-game.
+    }
   }
   // v2.3.1 (Jane) BULLETPROOF: if the gate or its questions are missing,
   // treat the gate as already-solved so Moses can walk past it instead of
@@ -9522,6 +10906,9 @@ function openChallenge(gate) {
     else if (q.type === 'slider')     { renderSlider(gate, q, opts); }
     else if (q.type === 'spotdiff')   { renderSpotDiff(gate, q, opts); }
     else if (q.type === 'pictionary') { renderPictionary(gate, q, opts); }
+    else if (q.type === 'm3moses')    { renderMatch3(gate, q, opts); }
+    else if (q.type === 'sortmoses')  { renderSort(gate, q, opts); }
+    else if (q.type === 'mergemoses') { renderMerge2048(gate, q, opts); }
     else {
       // trivia / fill / tf -> MCQ-style buttons
       (q.options || []).forEach((opt, i) => {
@@ -10461,7 +11848,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
   // For trivia/fill/tf: correctness is index === q.correct
   // For unscramble/match/sequence: caller passes index=0 if correct, -1 if wrong
   let correct;
-  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count','slider','spotdiff','pictionary'];
+  const CUSTOM_TYPES = ['unscramble','match','sequence','memory','maze','spot','pair','count','slider','spotdiff','pictionary','m3moses','sortmoses','mergemoses'];
   if (CUSTOM_TYPES.indexOf(q.type) !== -1) {
     correct = (index === 0);
   } else {
@@ -10536,6 +11923,16 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         gate.solved = true;
         const isClimb = (gate.kind === 'climb');
         const perfect = (gate.bundleCorrect === gate.questions.length && gate.strikes === 0);
+        // River-crossing concept: every gate that reaches this trivia path is one
+        // of the 3 west-bank Bible Checkpoints (the Well/Rescue mini-games route
+        // away in openChallenge). Clearing one awards a crystal stepping-stone +
+        // money bags, so Moses banks wealth for the Rescue's weapons and gathers
+        // the 3 crystals he needs to bridge the river at col 12. The crystal
+        // count is DERIVED from solved checkpoints so it survives save/resume.
+        const _crystalBags = ({ easy: 40, medium: 35, hard: 30 })[game.difficulty] || 35;
+        const _crystals = _scene3CrystalCount();
+        game.treasureBags = (game.treasureBags || 0) + _crystalBags;
+        try { if (typeof updateHudCrystals === 'function') updateHudCrystals(); } catch(e){}
         // Scene 3: if this gate is a rude-shepherd blockade (label contains
         // "Shepherd"), shove the nearest shepherd off-screen AND trigger the
         // stream-chase: every remaining shepherd breaks their patrol and
@@ -10576,11 +11973,17 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         if (perfect) {
           game.stars += 5;
           updateHudStars();
-          if (isClimb) toast('Desert Checkpoint ' + (gate.step || '') + ' cleared perfectly! +5 stars');
-          else toast('Checkpoint cleared perfectly! +5 stars');
+          toast('💎 Crystal stepping-stone earned! (' + _crystals + '/3) Perfect — +5 stars, +' + _crystalBags + ' treasure!');
         } else {
-          if (isClimb) toast('Desert Checkpoint ' + (gate.step || '') + ' cleared - Moses presses on!');
-          else toast('Checkpoint cleared!');
+          toast('💎 Crystal stepping-stone earned! (' + _crystals + '/3)  +' + _crystalBags + ' treasure for the rescue');
+        }
+        // The 3rd crystal "builds" the river crossing — celebrate + point east.
+        if (_crystals >= 3) {
+          setTimeout(() => {
+            try { play('levelUp') || play('success'); } catch(e){}
+            try { spawnGlitterBurstAtPlayer(40); } catch(e){}
+            try { toast('🌉 Crossing built! Your 3 crystal stones bridge the river — cross east to the well!'); } catch(e){}
+          }, 1100);
         }
         // v3.3 LANE 3 (Jane 2026-04-23): celebration on every gate clear —
         // particle burst + verse drift across the top so kids feel rewarded.
@@ -10607,24 +12010,19 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         // gates are cleared. Moses must still walk INTO the exit tile. We
         // only toast that the path east is now open — actual scene-complete
         // fires from onReachExit() when player.tx/ty hits the exit position.
-        if (game.scene === 2 && isClimb) {
-          const totalClimbs = challengeGates.filter(g => g.kind === 'climb').length;
-          const solvedClimbs = challengeGates.filter(g => g.kind === 'climb' && g.solved).length;
+        // Scene 3 epic: stops are no longer "climb" steps. Announce the
+        // exit-open fanfare the moment the LAST of the five stops is cleared;
+        // otherwise nudge how many remain. (The Well & Rescue mini-game stops
+        // call the same helper from their own completion handlers.)
+        if (game.scene === 2) {
           const totalGates = challengeGates.length;
           const solvedGates = challengeGates.filter(g => g.solved).length;
           if (solvedGates >= totalGates && totalGates > 0) {
-            // ALL mandatory gates cleared. Open the desert exit and tell
-            // Moses where to go — but don't jump to the next scene yet.
-            try { game.allGatesCleared = true; } catch(e){}
-            try { play('allComplete'); } catch(e){}  // v2.2.7 all-gates fanfare
-            try { toast('All Midian checkpoints cleared! Walk east into Jethro’s tent to finish!'); } catch(e){}
-          } else if (solvedClimbs >= totalClimbs && totalClimbs > 0) {
-            const zonesLeft = totalGates - solvedGates;
-            try { play('cliffStep'); } catch(e){}  // v2.2.7 east-edge gate step
-            try { toast('Press on! Still ' + zonesLeft + ' checkpoint' + (zonesLeft===1?'':'s') + ' to clear before Jethro’s tent opens.'); } catch(e){}
-          } else if (isClimb) {
-            // v2.2.7: an east-edge gate just cleared — climb-step sfx only
+            _announceAllGatesCleared();
+          } else {
+            const left = totalGates - solvedGates;
             try { play('cliffStep'); } catch(e){}
+            try { toast('Press on! Still ' + left + ' stop' + (left === 1 ? '' : 's') + ' to clear before Jethro’s tent opens.'); } catch(e){}
           }
         }
         // step onto the now-open gate (legacy behavior, Scene 1)
@@ -10763,14 +12161,19 @@ const _UNLOCKS_KEY            = 'bek.bundle1.unlocks';
 const UNLOCK_TIERS = [
   { threshold:  75, resource: 'treasures', key: 'speedBurst',    label: '⚡ Speed Burst',     cooldownMs: 25000, desc: 'Moses sprints 2× for 5 seconds. Tap any time — recharges every 25 s.' },
   { threshold: 175, resource: 'treasures', key: 'guardFreeze',   label: '❄️ Foe Freeze',      cooldownMs: 35000, desc: 'Shepherds AND wolves freeze in place for 5 seconds. Recharges every 35 s.' },
-  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '🦅 Eagle Eye',       cooldownMs: 30000, desc: 'Marks every river stone safe (✓) or sinking (✗) so you cross without stumbling. Lasts 8 seconds.' },
+  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '🦅 Eagle Eye',       cooldownMs: 30000, desc: 'Lights up the safe stepping-stone crossing AND reveals the hidden crown with a beacon. Lasts 8 seconds.' },
   { threshold: 350, resource: 'treasures', key: 'truthSeeker',   label: '📖 Truth Seeker',    cooldownMs: 60000, desc: 'On the next checkpoint: clue is free + 2 wrong options greyed out.' },
-  { threshold:   5, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000, desc: 'Skip the next checkpoint (counts as solved). Recharges every 90 s.' },
+  { threshold:   5, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000, desc: 'Skip the Bible questions and jump straight to the checkpoint\'s bonus game — win it to claim the crystal. Recharges every 90 s.' },
+  { threshold: 600, resource: 'treasures', key: 'pharaohsMercy', label: '🙏 God\'s Grace',     cooldownMs: 0,     desc: 'When Moses is down to his last heart, God restores one — automatically, once per scene. He is always watching over you.' },
 ];
 function _loadLifetimeTreasures(){ try { return parseInt(localStorage.getItem(_LIFETIME_TREASURES_KEY) || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadLifetimeCrowns(){    try { return parseInt(localStorage.getItem(_LIFETIME_CROWNS_KEY)    || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadLifetimeScrolls(){   try { return parseInt(localStorage.getItem(_LIFETIME_SCROLLS_KEY)   || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadUnlocks(){ try { return JSON.parse(localStorage.getItem(_UNLOCKS_KEY) || '[]'); } catch(e){ return []; } }
+// First-tap discovery cue: pulse + "TAP" arrow on a ready power until first used.
+const _PU_TAPPED_KEY = 'bek.bundle1.puTapped';
+function _loadPuTapped(){ try { return new Set(JSON.parse(localStorage.getItem(_PU_TAPPED_KEY) || '[]')); } catch(e){ return new Set(); } }
+function _markPuTapped(key){ try { const s=_loadPuTapped(); s.add(key); localStorage.setItem(_PU_TAPPED_KEY, JSON.stringify([...s])); } catch(e){} }
 function _hasUnlock(key){ return _loadUnlocks().includes(key); }
 
 /* ---------- IN-GAME POWER DOCK (ported from scenes 1 & 2, wired to scene-3 systems) ----------
@@ -10784,6 +12187,7 @@ function _activatePowerup(key){
   const tier = UNLOCK_TIERS.find(t => t.key === key);
   if (!tier) return;
   if (!_hasUnlock(key)) return;
+  try { _markPuTapped(key); } catch(e){}   // stop the first-tap pulse/arrow once used
   if (!_puReady(key)) {
     const left = Math.max(0, Math.ceil(((window._puCooldownUntil[key] || 0) - performance.now()) / 1000));
     try { toast('⏳ ' + tier.label + ' recharging — ' + left + 's left.'); } catch(e){}
@@ -10807,7 +12211,7 @@ function _activatePowerup(key){
   } else if (key === 'royalVision') {
     window._royalVisionUntil = now + 8000;
     window._puActiveUntil[key] = now + 8000;
-    try { toast('🦅 EAGLE EYE! Safe stones ✓ and sinking stones ✗ revealed.'); } catch(e){}
+    try { toast('🦅 EAGLE EYE! The stepping-stone crossing glows — and the hidden crown is revealed.'); } catch(e){}
   } else if (key === 'truthSeeker') {
     window._truthSeekerArmed = true;
     window._puActiveUntil[key] = now + 1500;
@@ -10816,6 +12220,12 @@ function _activatePowerup(key){
     window._scribesWisdomArmed = true;
     window._puActiveUntil[key] = now + 1500;
     try { toast('🪶 SCRIBE\'S WISDOM armed — next checkpoint skipped.'); } catch(e){}
+  } else if (key === 'pharaohsMercy') {
+    // Passive power — it heals automatically (see _maybeGodsGrace). Tapping just explains it.
+    try { toast(window._godsGraceUsedScene3
+      ? '🙏 God\'s Grace already lifted Moses up this scene.'
+      : '🙏 God\'s Grace watches over Moses — it restores a heart by itself when he\'s down to his last.'); } catch(e){}
+    return;
   }
   if (tier.cooldownMs && tier.cooldownMs > 0) window._puCooldownUntil[key] = now + tier.cooldownMs;
   try { play('powerSpell') || play('magicSfx') || play('chime') || play('success'); } catch(e){}
@@ -10824,22 +12234,43 @@ function _activatePowerup(key){
   if (window._puActiveUntil[key]) setTimeout(_refreshUnlockButtons, Math.max(60, window._puActiveUntil[key] - performance.now() + 50));
   if (tier.cooldownMs && tier.cooldownMs > 0) setTimeout(_refreshUnlockButtons, tier.cooldownMs + 100);
 }
+// God's Grace (pharaohsMercy): when Moses is down to his last heart, God restores
+// one — automatically, once per scene. Mirrors scenes 1 & 2's auto-heal power.
+function _maybeGodsGrace(){
+  try {
+    if (window._godsGraceUsedScene3) return;
+    if (typeof game === 'undefined' || game.hearts !== 1) return;
+    if (!_hasUnlock('pharaohsMercy')) return;
+    window._godsGraceUsedScene3 = true;
+    game.hearts = Math.min(3, game.hearts + 1);
+    try { updateHudHearts(); } catch(e){}
+    try { play('levelUp') || play('chime') || play('success'); } catch(e){}
+    try { spawnGlitterBurstAtPlayer(22); } catch(e){}
+    try { toast('🙏 GOD\'S GRACE! Moses was down to his last heart — and God restored one.'); } catch(e){}
+    try { _refreshUnlockButtons(); } catch(e){}
+  } catch(e){}
+}
 function _refreshUnlockButtons(){
   try {
     const dock = document.getElementById('hudPowerups');
     if (!dock) return;
     const have = _loadUnlocks();
+    const tapped = _loadPuTapped();
     let html = '';
     for (const tier of UNLOCK_TIERS) {
       if (!have.includes(tier.key)) continue;
       const ready  = _puReady(tier.key);
       const active = _puActive(tier.key);
+      // God's Grace is passive (auto-heal) — never show the "TAP me" cue for it.
+      const passive = (tier.key === 'pharaohsMercy');
+      const showCue = !passive && ready && !active && !tapped.has(tier.key);
       const css = active ? 'background:linear-gradient(145deg,#7fff8a,#3aa54a);box-shadow:0 0 14px rgba(120,255,140,0.85);'
                 : ready  ? 'background:linear-gradient(145deg,#ffd976,#c38b28);'
                 :          'background:linear-gradient(145deg,#6a4a20,#3a2810);opacity:0.55;';
       const cdLeft = ready ? '' : Math.max(0, Math.ceil(((window._puCooldownUntil[tier.key] || 0) - performance.now()) / 1000));
       const cdBadge = cdLeft ? '<span style="position:absolute;right:-4px;top:-4px;background:#000;color:#ffd976;border-radius:50%;width:18px;height:18px;font-size:10px;display:flex;align-items:center;justify-content:center;border:1px solid #ffd976;">' + cdLeft + '</span>' : '';
-      html += '<button type="button" data-pu="' + tier.key + '" class="hud-pu-btn" aria-label="' + tier.label + '" title="' + tier.desc + '" style="position:relative;border:2px solid #ffd976;border-radius:10px;width:48px;height:48px;font-size:22px;cursor:pointer;color:#3a1505;font-weight:900;' + css + '">' + tier.label.split(' ')[0] + cdBadge + '</button>';
+      const arrow = showCue ? '<span class="pu-tap-arrow" aria-hidden="true">→ TAP</span>' : '';
+      html += '<button type="button" data-pu="' + tier.key + '" class="hud-pu-btn' + (showCue ? ' pu-first-tap-pulse' : '') + '" aria-label="' + tier.label + '" title="' + tier.desc + '" style="position:relative;border:2px solid #ffd976;border-radius:10px;width:48px;height:48px;font-size:22px;cursor:pointer;color:#3a1505;font-weight:900;' + css + '">' + tier.label.split(' ')[0] + cdBadge + arrow + '</button>';
     }
     dock.innerHTML = html;
     dock.querySelectorAll('button[data-pu]').forEach(b => { b.addEventListener('click', () => _activatePowerup(b.getAttribute('data-pu'))); });
@@ -12254,6 +13685,9 @@ let _scoutCloseWarnAt = 0;   // v2.2 hoofbeat/scout-alert cooldown (ms)
 let _scene3LastShepherdToastShown = false;
 function updateRudeShepherds(dt) {
   const now = performance.now();
+  // ❄️ Foe Freeze power: the rude shepherds are the main Scene-3 threat, so they
+  // must freeze too (previously only wolves/legacy guards honored this).
+  if (window._guardFreezeUntil && now < window._guardFreezeUntil) return;
   const moses_hidden = !!player.crouched || (typeof isMosesInCave === 'function' && isMosesInCave());
   let anyCaughtThisFrame = false;
   let allCaught = true;
@@ -13696,7 +15130,7 @@ const SCENE3_FLOCK = [
   { tx: 23, ty: 17, kind: 'lamb',  dir: 'right', alt: false },
   { tx: 26, ty: 19, kind: 'sheep', dir: 'left'  },
   { tx: 18, ty: 20, kind: 'lamb',  dir: 'down',  alt: true  },
-  { tx: 13, ty: 21, kind: 'sheep', dir: 'right' },
+  { tx: 15, ty: 21, kind: 'sheep', dir: 'right' },
 ];
 function drawScene3Flock(){
   if (typeof camera === 'undefined' || typeof TILE === 'undefined') return;
@@ -14313,6 +15747,10 @@ function render(){
   // Scene 3: flowing stream + waterfall — drawn ABOVE the floor tiles but
   // BELOW characters so Moses + shepherds appear over the water.
   try { drawScene3Stream(); } catch(e){}
+  // Scene 3: the lost flock Moses leads across the river + its east-bank pen.
+  // Drawn above the water (so sheep read as standing on the stones) but below
+  // Moses so his sprite stays on top.
+  try { drawScene3Herd(); } catch(e){}
   // Scene 3: visible flock of sheep grazing in the south pasture. Adds
   // pastoral life; no gameplay interaction (collision still resolves to cover
   // tile underneath). Draws below Moses so sprite still appears on top.
@@ -14321,6 +15759,9 @@ function render(){
   try { drawStubbornGoat(); } catch(e){}
   // Scene 3: dusk wolf shadow — slinks along the south edge at twilight.
   try { drawScene3Wolf(); } catch(e){}
+  // Scene 3 Phase 2: the wolf-rescue flock (pinned sheep + stalking wolves) Moses
+  // frees in the pasture. Previously shadowed by a duplicate name — now restored.
+  try { drawScene3RescueFlock(); } catch(e){}
   // Scene 3: charging ram random event — dangerous pasture hazard.
   try { drawScene3Ram(); } catch(e){}
   // Scene 3: donkey caravan — marketplace ambience, gentle bump obstacle.
@@ -17404,8 +18845,12 @@ function loop(now){
     try { updateStubbornGoat(dt); } catch(e){}
     try { updateZipporahNPC(); } catch(e){}
     try { updateScene3Wolf(dt); } catch(e){}
+    try { updateScene3Flock(dt); } catch(e){}
+    try { updateScene3Herd(dt); } catch(e){}
+    try { _maybeGodsGrace(); } catch(e){}
     try { updateScene3Ram(dt); } catch(e){}
     try { _checkScene3JarDrop(); } catch(e){}
+    try { _checkScene3Tips(); } catch(e){}
     try { updateScene3Caravan(dt); } catch(e){}
     try { updateDog(dt); } catch(e){}
     // Scene 3 (Midian) cinematic systems — mirages/boulders/vultures/foxes
