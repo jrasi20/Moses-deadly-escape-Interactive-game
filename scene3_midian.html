@@ -2498,7 +2498,7 @@
          drawn from the illustrated sprites. You fill yours via the timing bar
          (tap PULL in the GREEN); the rival fills his automatically AND tries to
          STEAL your water — tap SHOO! in time to block him. First trough full wins. -->
-    <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:100%;height:auto;max-height:60vh;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#bfe3f0;"></canvas>
+    <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:auto;height:auto;max-width:100%;max-height:62vh;aspect-ratio:600/340;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#bfe3f0;"></canvas>
     <div style="display:flex;justify-content:space-between;color:#ffe2b0;font-size:12px;font-weight:bold;margin:7px 2px 3px;">
       <span id="pulleyTaps">🪣 You: 0%</span>
       <span id="pulleyTimer">Rival: 0% 🐐</span>
@@ -9575,7 +9575,9 @@ function _pulleyFrame(now) {
     const grab = who === 1 ? ['shep2Grab', 'shepGrab'] : who === 2 ? ['shep4Grab', 'shepGrab'] : ['shepGrab'];
     shepKeys = nearPot ? grab.concat(base) : base;
   } else { shepKeys = ['shepHeave', 'shepPull', 'shepherdLeft', 'shepherdFront']; }
-  _pDraw(c, shepKeys, sIdleX, sIdleY, 130, 140, shepFlip);
+  // 2026-05-26: clamp the shepherd's draw-x so his 130px width can't jut past
+  // the 600px logical canvas edge (he was drawn at ~478 → right edge 608).
+  _pDraw(c, shepKeys, Math.min(sIdleX, 470), sIdleY, 130, 140, shepFlip);
 
   // pots — drawn back-to-front (by y) so raised pots never hide the front ones
   _pulley.pots.slice().sort((a, b) => a.y - b.y).forEach(p => _pPot(c, p, now));
