@@ -2514,7 +2514,7 @@
     <div id="pulleyFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:17px;font-weight:bold;">Drag from Moses to aim — fill every pot!</div>
     <div style="color:#d8b890;font-size:12px;text-align:center;margin-top:5px;font-style:italic;">"Moses got up and came to their rescue and watered their flock." — Exodus 2:17</div>
     </div><!-- /pulleyPlayCol -->
-    <div id="pulleyIntroOverlay" style="display:none;position:absolute;inset:0;z-index:6;background:radial-gradient(circle at 50% 30%,rgba(58,42,26,0.95),rgba(26,16,8,0.98));flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 18px;overflow:hidden;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
+    <div id="pulleyIntroOverlay" style="display:none;position:absolute;inset:0;z-index:6;background:radial-gradient(circle at 50% 28%,#4a3420 0%,#2a1c0e 55%,#160d06 100%);flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 18px;overflow:hidden;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
       <!-- animated backdrop: Moses at the well, the rude shepherd on the other side -->
       <div class="piScene" aria-hidden="true">
         <img class="piImg piWell" src="assets/images/midian%20well.png" alt="">
@@ -2535,14 +2535,18 @@
     <style>
       #pulleyIntroOverlay .piScene{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;}
       #pulleyIntroOverlay .piImg{position:absolute;bottom:0;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));}
-      #pulleyIntroOverlay .piWell{left:50%;transform:translateX(-50%);width:min(34vw,260px);opacity:.45;bottom:-2%;animation:piWellRise 1s ease-out both;}
-      #pulleyIntroOverlay .piMoses{left:4%;height:min(40vh,260px);opacity:.95;animation:piMosesIn .7s ease-out both,piBob 2.8s ease-in-out infinite;}
-      #pulleyIntroOverlay .piShep{right:4%;height:min(38vh,250px);opacity:.92;animation:piShepIn .7s ease-out both,piLean 2.2s ease-in-out infinite;}
+      /* 2026-05-26 (Jane: "the start watering button is hiding the well image
+         ... overlap looks worse [on portrait/landscape]"). Sink the decorative
+         well low + small + faint so it's a distant backdrop at the very bottom,
+         clear of the centred Start-Watering button. */
+      #pulleyIntroOverlay .piWell{left:50%;transform:translateX(-50%);width:min(24vw,180px);opacity:.26;bottom:-14%;animation:piWellRise 1s ease-out both;}
+      #pulleyIntroOverlay .piMoses{left:3%;height:min(38vh,240px);opacity:.95;animation:piMosesIn .7s ease-out both,piBob 2.8s ease-in-out infinite;}
+      #pulleyIntroOverlay .piShep{right:3%;height:min(36vh,230px);opacity:.92;animation:piShepIn .7s ease-out both,piLean 2.2s ease-in-out infinite;}
       @keyframes piMosesIn{from{opacity:0;}to{opacity:.95;}}
       @keyframes piShepIn{from{opacity:0;}to{opacity:.92;}}
       @keyframes piBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
       @keyframes piLean{0%,100%{transform:translateX(0);}50%{transform:translateX(-14px);}}
-      @keyframes piWellRise{from{transform:translateX(-50%) translateY(40px);opacity:0;}to{opacity:.45;}}
+      @keyframes piWellRise{from{transform:translateX(-50%) translateY(40px);opacity:0;}to{opacity:.26;}}
       #pulleyIntroOverlay .piTitle{animation:piPop .6s .15s both;text-shadow:0 3px 8px rgba(0,0,0,.6),0 0 22px rgba(255,205,120,.45);}
       #pulleyIntroOverlay .piSub{animation:piFade .6s .3s both;}
       #pulleyIntroOverlay #pulleyHowTo{animation:piFade .6s .45s both;}
@@ -2550,7 +2554,11 @@
       @keyframes piFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
       @keyframes piPop{0%{opacity:0;transform:scale(.8);}70%{transform:scale(1.05);}100%{opacity:1;transform:scale(1);}}
       @keyframes piPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
-      @media (max-width:560px){#pulleyIntroOverlay .piMoses{height:20vh;}#pulleyIntroOverlay .piShep{height:20vh;}#pulleyIntroOverlay .piWell{opacity:.3;}}
+      @media (max-width:560px){#pulleyIntroOverlay .piMoses{height:20vh;}#pulleyIntroOverlay .piShep{height:20vh;}#pulleyIntroOverlay .piWell{opacity:.22;}}
+      /* 2026-05-26: short landscape has no vertical room — hide the decorative
+         well entirely (the side figures still frame the scene) so it can never
+         peek behind the Start-Watering button. */
+      @media (orientation:landscape) and (max-height:600px){#pulleyIntroOverlay .piWell{display:none;}#pulleyIntroOverlay .piMoses{height:min(52vh,180px);}#pulleyIntroOverlay .piShep{height:min(50vh,175px);}}
       @media (prefers-reduced-motion:reduce){#pulleyIntroOverlay .piImg,#pulleyIntroOverlay .piContent *,#pulleyIntroOverlay .piBtn{animation:none !important;}}
     </style>
     <div id="pulleyPausedOverlay" style="display:none;position:absolute;inset:0;z-index:4;background:rgba(40,24,10,0.85);flex-direction:column;align-items:center;justify-content:center;gap:14px;">
