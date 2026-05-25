@@ -6465,7 +6465,9 @@ seedTreasures();
 updateHudTreasure();
 
 /* ---------- CAMERA ---------- */
-const camera = { px:0, py:0, locked:false };
+const camera = { px:0, py:0, locked:false,
+  // 2026-05-26 cinematic ZOOM punch-in (see _cameraPunch). zoom===1 = no transform.
+  zoomPeak:1, zoomStart:0, zoomDur:0, zoomFX:null, zoomFY:null };
 function updateCamera() {
   // v3.11 Jane 2026-04-24: when the intro pan owns the camera, skip the
   // player-recenter so the cinematic sweep can reach the east edge.
@@ -10968,6 +10970,7 @@ function _activatePowerup(key){
     window._puActiveUntil[key] = now + 5000;
     try { play('frozen'); } catch(e){}
     try { toast('❄️ FOE FREEZE! Slip past while they\'re stuck!'); } catch(e){}
+    try { _cameraPunch(1.18, 720); } catch(e){}  // cinematic freeze punch-in
   } else if (key === 'royalVision') {   // key kept for unlock-state; effect is now the LURE (desert: rock)
     let _ddx = 0, _ddy = 0;
     if      (player.dir === 'up')   _ddy = -3;
@@ -10987,6 +10990,7 @@ function _activatePowerup(key){
     try { for (const s of pursuitScouts) s._decoyLured = false; } catch(e){}
     window._puActiveUntil[key] = now + 5000;
     try { toast('🪨 You toss a rock — the scouts run to the clatter! Slip past!'); } catch(e){}
+    try { _cameraPunch(1.12, 520); } catch(e){}  // quick toss punch-in
   } else if (key === 'truthSeeker') {
     window._truthSeekerArmed = true;
     window._puActiveUntil[key] = now + 1500;
@@ -13965,6 +13969,32 @@ function updateCameraShake(){
   cameraShake.y = (Math.random() * 2 - 1) * cameraShake.mag;
   cameraShake.mag *= cameraShake.decay;
 }
+// 2026-05-26 (Jane: "camera zoom at the right places is essential to bring in
+// wow factor"). Cinematic ZOOM punch-in: brief zoom toward a focal point that
+// eases back to 1. peak ~1.12-1.22; durMs total; (fx,fy) optional focal point
+// in SCREEN px (default = canvas centre). Honors prefers-reduced-motion.
+function _cameraPunch(peak, durMs, fx, fy) {
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  } catch(e){}
+  camera.zoomPeak  = peak  || 1.16;
+  camera.zoomDur   = durMs || 620;
+  camera.zoomStart = performance.now();
+  camera.zoomFX    = (typeof fx === 'number') ? fx : null;
+  camera.zoomFY    = (typeof fy === 'number') ? fy : null;
+}
+function _currentZoom() {
+  const d = camera.zoomDur || 0;
+  if (d <= 0) return 1;
+  const t = performance.now() - (camera.zoomStart || 0);
+  if (t >= d || t < 0) return 1;
+  const peak = camera.zoomPeak || 1;
+  const inMs = Math.min(180, d * 0.3);
+  if (t < inMs) { const e = t / inMs; return 1 + (peak - 1) * (e * e); }
+  const e = (t - inMs) / (d - inMs);
+  const ease = 1 - Math.pow(1 - e, 3);
+  return peak + (1 - peak) * ease;
+}
 
 const sandPuffs = [];
 function emitSandPuff(cx, cy){
@@ -14189,6 +14219,9 @@ function drawSandstorm(ctx){
 
 /* ---------- RENDER ---------- */
 function render(){
+  // 2026-05-26: defensive transform reset so a leaked ctx.save() can never
+  // compound the world-zoom transform below.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   // 2026-05-21 PM63k (Jane: "scene 2 loads first without sprites. is it
   // because i am directly opening scene 2"). HARD SAFETY NET: never paint
   // the gameplay map until EVERY sprite has downloaded + decoded. This
@@ -14232,6 +14265,16 @@ function render(){
   if (_shakeApplied) {
     ctx.save();
     ctx.translate(Math.round(cameraShake.x), Math.round(cameraShake.y));
+  }
+  // 2026-05-26: cinematic ZOOM punch-in wraps the WORLD + sky layers. We always
+  // save here and restore right before the end-of-frame vignettes/HUD, so the
+  // stack stays balanced whether or not a zoom is active. Zoom is always >= 1.
+  const _zoom = _currentZoom();
+  ctx.save();
+  if (_zoom > 1.001) {
+    const _zfx = (camera.zoomFX != null) ? camera.zoomFX : CANVAS_W / 2;
+    const _zfy = (camera.zoomFY != null) ? camera.zoomFY : CANVAS_H / 2;
+    ctx.translate(_zfx, _zfy); ctx.scale(_zoom, _zoom); ctx.translate(-_zfx, -_zfy);
   }
   // v2.0 cinematic stack for Scene 2 (order = back-to-front):
   //   1. Sky gradient (difficulty-anchored time band)
@@ -14424,6 +14467,9 @@ function render(){
     ctx.fillRect(0, CANVAS_H * 0.82, CANVAS_W, CANVAS_H * 0.18);
     ctx.restore();
   }
+  // 2026-05-26: end of WORLD layers — restore the zoom transform so the
+  // vignettes + HUD below are drawn at true (un-zoomed) scale.
+  ctx.restore();
   // PM66 danger-heat: red-edge vignette that intensifies as a guard/scout
   // closes in, plus the close-call relief flash. Drawn over the world.
   try { drawHeartbeatVignette(); } catch(e){}

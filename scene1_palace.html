@@ -7360,6 +7360,7 @@ function _updatePharaohHunt(dt){
         c.spawnAt = now;
         c.active = true;
         c.facing = 'right';
+        try { _cameraPunch(1.12, 820); } catch(e){}  // chariot bursts in — dramatic zoom
       }
       break;
     case 'rolling': {
@@ -9018,6 +9019,11 @@ updateHudTreasure();
 const camera = {
   px:0, py:0, locked:false,
   shakeUntil:0, shakeIntensity:0,
+  // 2026-05-26 (Jane: "camera zoom at the right places is essential to bring in
+  // wow factor"). Transient cinematic punch-in: a brief zoom toward a focal
+  // point that eases back to 1. Applied as a ctx transform around the WORLD
+  // layers only (HUD/overlays unaffected). zoom===1 means no transform.
+  zoomPeak:1, zoomStart:0, zoomDur:0, zoomFX:null, zoomFY:null,
 };
 function updateCamera() {
   if (camera.locked) return;
@@ -9042,6 +9048,35 @@ function updateCamera() {
 function _cameraShake(intensityPx, durationMs) {
   camera.shakeUntil = performance.now() + (durationMs || 220);
   camera.shakeIntensity = intensityPx || 4;
+}
+// 2026-05-26: trigger a cinematic ZOOM punch-in. peak ~1.12-1.22 = how far it
+// zooms; durMs = total in+out time. (fx,fy) optional focal point in SCREEN px
+// (defaults to canvas centre = where Moses is). Honors prefers-reduced-motion
+// (skips the zoom entirely for motion-sensitive users). Safe to spam — a new
+// punch just retargets the active one.
+function _cameraPunch(peak, durMs, fx, fy) {
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  } catch(e){}
+  camera.zoomPeak  = peak  || 1.16;
+  camera.zoomDur   = durMs || 620;
+  camera.zoomStart = performance.now();
+  camera.zoomFX    = (typeof fx === 'number') ? fx : null;
+  camera.zoomFY    = (typeof fy === 'number') ? fy : null;
+}
+// Current eased zoom factor for this frame (1 = none). Quick ease-in punch to
+// the peak (~30% of duration), then a smooth cubic ease-out back to 1.
+function _currentZoom() {
+  const d = camera.zoomDur || 0;
+  if (d <= 0) return 1;
+  const t = performance.now() - (camera.zoomStart || 0);
+  if (t >= d || t < 0) return 1;
+  const peak = camera.zoomPeak || 1;
+  const inMs = Math.min(180, d * 0.3);
+  if (t < inMs) { const e = t / inMs; return 1 + (peak - 1) * (e * e); }
+  const e = (t - inMs) / (d - inMs);
+  const ease = 1 - Math.pow(1 - e, 3);
+  return peak + (1 - peak) * ease;
 }
 
 /* ---------- INTRO CAMERA PAN (port from scene2 v3.24) ----------
@@ -16095,6 +16130,7 @@ function _activatePowerup(key){
     // that fires from the shared activation path below.
     try { play('frozen'); } catch(e){}
     try { toast('❄️ GUARD FREEZE! Sneak past while they\'re stuck!'); } catch(e){}
+    try { _cameraPunch(1.18, 720); } catch(e){}  // cinematic freeze punch-in
   } else if (key === 'royalVision') {   // key kept for unlock-state; effect is now the DECOY
     // Toss a decoy ~3 tiles ahead in Moses's facing direction. Nearby foes
     // rush to the "noise" for 5 s (handled in the guard-update loop), opening
@@ -16117,6 +16153,7 @@ function _activatePowerup(key){
     try { for (const g of guards) g._decoyTimer = 0; } catch(e){}
     window._puActiveUntil[key] = now + 5000;
     try { toast('🍷 You toss the goblet — the guards scramble for it! Slip past!'); } catch(e){}
+    try { _cameraPunch(1.12, 520); } catch(e){}  // quick toss punch-in
   } else if (key === 'truthSeeker') {
     // Sets a one-shot flag the next Bible-gate consumes.
     window._truthSeekerArmed = true;
@@ -18416,6 +18453,9 @@ function render(){
   }
 }
 function _renderInner(){
+  // 2026-05-26: defensive transform reset so a leaked ctx.save() from any
+  // prior frame can never compound the world-zoom transform below.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = '#2a1004';
   ctx.fillRect(0,0,CANVAS_W, CANVAS_H);
 
@@ -18430,6 +18470,18 @@ function _renderInner(){
   }
   const _origCamPx = camera.px, _origCamPy = camera.py;
   camera.px += _shakeOX; camera.py += _shakeOY;
+
+  // 2026-05-26: cinematic ZOOM punch-in wraps the WORLD layers only. We always
+  // save here and restore right before the full-screen overlays, so the stack
+  // stays balanced whether or not a zoom is active. Zoom is always >= 1 (zoom
+  // IN), so the scaled world fully covers the canvas — no background gaps.
+  const _zoom = _currentZoom();
+  ctx.save();
+  if (_zoom > 1.001) {
+    const _zfx = (camera.zoomFX != null) ? camera.zoomFX : CANVAS_W / 2;
+    const _zfy = (camera.zoomFY != null) ? camera.zoomFY : CANVAS_H / 2;
+    ctx.translate(_zfx, _zfy); ctx.scale(_zoom, _zoom); ctx.translate(-_zfx, -_zfy);
+  }
 
   // --- LAYER 0: (intentionally empty) ---
   // FINAL REVERT (2026-05-07, Jane: "doesn't look clean to me. some blurry
@@ -18587,6 +18639,10 @@ function _renderInner(){
   try { drawCloseCallFlash(); } catch(e){}   // PM66 near-miss relief flash
   // ambient: warm light rays + dust motes
   drawAmbient();
+  // 2026-05-26: end of WORLD layers — restore the zoom transform so the
+  // full-screen overlays + HUD below are drawn at true (un-zoomed) scale.
+  ctx.restore();
+
   // Phase 1: torchlight dim overlay — soft cool wash + slight darken so kids
   // visibly read "the torches just dimmed" without losing readability of
   // sprites or tiles. Eased in/out by quadratic ramp at start and end of the

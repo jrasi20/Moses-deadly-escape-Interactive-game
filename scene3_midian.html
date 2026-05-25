@@ -6936,13 +6936,41 @@ seedTreasures();
 updateHudTreasure();
 
 /* ---------- CAMERA ---------- */
-const camera = { px:0, py:0 };
+const camera = { px:0, py:0,
+  // 2026-05-26 cinematic ZOOM punch-in (see _cameraPunch). zoom===1 = no transform.
+  zoomPeak:1, zoomStart:0, zoomDur:0, zoomFX:null, zoomFY:null };
 function updateCamera() {
   // center on player, clamp to map edges
   const cx = player.px + TILE/2 - CANVAS_W/2;
   const cy = player.py + TILE/2 - CANVAS_H/2;
   camera.px = clamp(cx, 0, MAP_W*TILE - CANVAS_W);
   camera.py = clamp(cy, 0, MAP_H*TILE - CANVAS_H);
+}
+// 2026-05-26 (Jane: "camera zoom at the right places is essential to bring in
+// wow factor"). Cinematic ZOOM punch-in: brief zoom toward a focal point that
+// eases back to 1. peak ~1.12-1.22; durMs total; (fx,fy) optional focal in
+// SCREEN px (default = canvas centre). Honors prefers-reduced-motion.
+function _cameraPunch(peak, durMs, fx, fy) {
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  } catch(e){}
+  camera.zoomPeak  = peak  || 1.16;
+  camera.zoomDur   = durMs || 620;
+  camera.zoomStart = performance.now();
+  camera.zoomFX    = (typeof fx === 'number') ? fx : null;
+  camera.zoomFY    = (typeof fy === 'number') ? fy : null;
+}
+function _currentZoom() {
+  const d = camera.zoomDur || 0;
+  if (d <= 0) return 1;
+  const t = performance.now() - (camera.zoomStart || 0);
+  if (t >= d || t < 0) return 1;
+  const peak = camera.zoomPeak || 1;
+  const inMs = Math.min(180, d * 0.3);
+  if (t < inMs) { const e = t / inMs; return 1 + (peak - 1) * (e * e); }
+  const e = (t - inMs) / (d - inMs);
+  const ease = 1 - Math.pow(1 - e, 3);
+  return peak + (1 - peak) * ease;
 }
 
 /* ---------- INPUT ---------- */
@@ -12587,6 +12615,7 @@ function _activatePowerup(key){
     window._puActiveUntil[key] = now + 5000;
     try { play('frozen'); } catch(e){}
     try { toast('❄️ FOE FREEZE! Shepherds and wolves are stuck — slip past!'); } catch(e){}
+    try { _cameraPunch(1.18, 720); } catch(e){}  // cinematic freeze punch-in
   } else if (key === 'royalVision') {   // key kept for unlock-state; now the WATER-JAR LURE (+ keeps the Eagle-Eye reveal)
     // Toss a water jar ~3 tiles ahead; rude shepherds rush to it (handled in
     // updateRudeShepherds). Also keep _royalVisionUntil so the stepping-stone
@@ -12610,6 +12639,7 @@ function _activatePowerup(key){
     try { for (const s of pursuitScouts) s._decoyLured = false; } catch(e){}
     window._puActiveUntil[key] = now + 8000;
     try { toast('🏺 You toss a water jar — the shepherds scramble for it! Slip past!'); } catch(e){}
+    try { _cameraPunch(1.12, 520); } catch(e){}  // quick toss punch-in
   } else if (key === 'truthSeeker') {
     window._truthSeekerArmed = true;
     window._puActiveUntil[key] = now + 1500;
@@ -16130,6 +16160,19 @@ function render(){
   }
 }
 function _renderInner(){
+  // 2026-05-26: defensive transform reset so a leaked ctx.save() can never
+  // compound the world-zoom transform below.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // 2026-05-26: cinematic ZOOM punch-in wraps the WORLD + sky layers. We always
+  // save here and restore right before the end-of-frame atmospheric haze + HUD,
+  // so the stack stays balanced whether or not a zoom is active. Zoom is >= 1.
+  const _zoom = _currentZoom();
+  ctx.save();
+  if (_zoom > 1.001) {
+    const _zfx = (camera.zoomFX != null) ? camera.zoomFX : CANVAS_W / 2;
+    const _zfy = (camera.zoomFY != null) ? camera.zoomFY : CANVAS_H / 2;
+    ctx.translate(_zfx, _zfy); ctx.scale(_zoom, _zoom); ctx.translate(-_zfx, -_zfy);
+  }
   // v2.0 cinematic stack for Scene 2 (order = back-to-front):
   //   1. Sky gradient (difficulty-anchored time band)
   //   2. Sun/moon disc
@@ -16311,6 +16354,9 @@ function _renderInner(){
   drawHidingBadge();
   // ambient: warm light rays + dust motes
   drawAmbient();
+  // 2026-05-26: end of WORLD layers — restore the zoom transform so the
+  // atmospheric haze + HUD below are drawn at true (un-zoomed) scale.
+  ctx.restore();
   // v3.5 LANE 2+ Jane 2026-04-24: cool-tone atmospheric overlay to break
   // up the monotone warm-tan palette. Painted as a soft horizon-blue haze
   // at the top of the canvas (sky reflecting on sand) plus a subtle
