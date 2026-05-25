@@ -723,6 +723,37 @@
     stroke-dasharray: 5 7;
   }
   .jigsaw-piece.snapped .crystal-face { filter: drop-shadow(0 0 10px rgba(255,217,118,0.8)); }
+  /* 2026-05-26 (Jane: "the jigsaw can be improved massively ... more thrilling
+     ... camera zoom ins"). Juicy SNAP-pop when a piece locks into its slot. */
+  @keyframes jigsawSnapPop {
+    0%   { transform: scale(1.40); }
+    50%  { transform: scale(0.90); }
+    78%  { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+  .jigsaw-piece.snap-pop { animation: jigsawSnapPop 0.46s cubic-bezier(.2,1.5,.35,1) both; z-index: 30; }
+  /* Visible golden sparkle stars burst at the slot (canvas glitter can't show
+     over the DOM modal, so these are DOM stars appended to #jigsawModal). */
+  .jig-spark { position: fixed; pointer-events: none; z-index: 40; font-size: 18px;
+    will-change: transform, opacity; animation: jigSparkFly 0.7s ease-out forwards; }
+  @keyframes jigSparkFly {
+    0%   { opacity: 1; transform: translate(-50%,-50%) scale(0.4) rotate(0deg); }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--sx,0)), calc(-50% + var(--sy,0))) scale(1.1) rotate(160deg); }
+  }
+  /* Completion SHOCKWAVE — an expanding golden ring + flash from board centre.
+     Reads as a "zoom/impact" punch without moving the fixed-position pieces. */
+  .jig-shockwave { position: fixed; left: 50%; top: 50%; width: 40px; height: 40px;
+    margin: -20px 0 0 -20px; border-radius: 50%; pointer-events: none; z-index: 38;
+    border: 4px solid rgba(255,214,90,0.95); box-shadow: 0 0 30px rgba(255,214,90,0.8);
+    animation: jigShock 0.85s cubic-bezier(.15,.8,.3,1) forwards; }
+  @keyframes jigShock {
+    0%   { opacity: 0.95; transform: scale(0.3); }
+    100% { opacity: 0;    transform: scale(13); }
+  }
+  .jig-flash { position: fixed; inset: 0; pointer-events: none; z-index: 37;
+    background: radial-gradient(circle at 50% 45%, rgba(255,235,170,0.55), rgba(255,210,90,0) 60%);
+    animation: jigFlash 0.7s ease-out forwards; }
+  @keyframes jigFlash { 0% { opacity: 0.9; } 100% { opacity: 0; } }
   /* when the whole route is revealed, every placed segment glows gold */
   .jigsaw-board.revealed .jigsaw-piece .map-ink .route-seg {
     stroke: #ffcf4a; stroke-dasharray: none;
@@ -8430,9 +8461,12 @@ function _wireJigsawPiece(pieceEl){
     pieceEl.style.height = slotRect.height + 'px';
     pieceEl.classList.add('locked');
     pieceEl.classList.add('snapped');
+    // 2026-05-26 JUICE: squash-pop the piece + a VISIBLE sparkle burst at the
+    // slot (canvas glitter-at-Moses is hidden behind the full-screen modal).
+    try { pieceEl.classList.remove('snap-pop'); void pieceEl.offsetWidth; pieceEl.classList.add('snap-pop'); } catch(_){}
     hit.classList.add('filled');
     try { play('chimeChomp') || play('chime'); } catch(_){}
-    try { spawnGlitterBurstAtPlayer(14); } catch(_){}
+    try { const _sr = hit.getBoundingClientRect(); _jigsawSparkleBurst(_sr.left + _sr.width/2, _sr.top + _sr.height/2, 12); } catch(_){}
     const status = document.getElementById('jigsawStatus');
     const filled = document.querySelectorAll('#jigsawBoard .jigsaw-slot.filled').length;
     if (status) status.textContent = filled === 3
@@ -8466,6 +8500,10 @@ function _playMapReveal(){
   }
   if (title)  title.textContent = 'The path is revealed!';
   if (status) status.textContent = 'God lights the way to Midian ✨';
+  // 2026-05-26 JUICE (Jane: "camera zoom ins"): a golden SHOCKWAVE ring + flash
+  // bursts from the board centre as the map completes — an "impact/zoom" beat
+  // that doesn't move the fixed-position pieces.
+  try { _jigsawShockwave(); } catch(e){}
   try { play('puzzleComplete') || play('victoryChime') || play('success'); } catch(e){}
   // 2026-05-21 PM64 (Jane: "show confetti blast there for a cheer ... the
   // verse is very quick and hardly noticeable. linger that celebration").
@@ -8488,6 +8526,42 @@ function _playMapReveal(){
     if (verse) { verse.classList.remove('show'); verse.classList.remove('celebrate'); }
     _showMosesKeepGoing();
   }, 6200);
+}
+// 2026-05-26 JUICE: a small burst of golden sparkle stars at (cx,cy) in VIEWPORT
+// px — visible over the DOM jigsaw modal (unlike canvas glitter). Self-cleans.
+function _jigsawSparkleBurst(cx, cy, n){
+  const host = document.getElementById('jigsawModal');
+  if (!host) return;
+  const glyphs = ['✨','⭐','✦','❇'];
+  for (let i = 0; i < (n || 10); i++){
+    const s = document.createElement('div');
+    s.className = 'jig-spark';
+    s.textContent = glyphs[i % glyphs.length];
+    s.style.left = cx + 'px';
+    s.style.top  = cy + 'px';
+    s.style.color = (i % 2) ? '#ffd976' : '#fff2c4';
+    const ang = (Math.PI * 2 * i) / (n || 10) + Math.random() * 0.6;
+    const dist = 34 + Math.random() * 46;
+    s.style.setProperty('--sx', Math.cos(ang) * dist + 'px');
+    s.style.setProperty('--sy', Math.sin(ang) * dist + 'px');
+    host.appendChild(s);
+    setTimeout(() => { try { s.remove(); } catch(_){} }, 760);
+  }
+}
+// 2026-05-26 JUICE: expanding golden shockwave ring + brief flash from the board
+// centre on completion — the "zoom/impact" punch. Self-cleans.
+function _jigsawShockwave(){
+  const host = document.getElementById('jigsawModal');
+  if (!host) return;
+  const board = document.getElementById('jigsawBoard');
+  const r = board ? board.getBoundingClientRect() : { left: innerWidth/2 - 20, top: innerHeight/2 - 20, width: 40, height: 40 };
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const flash = document.createElement('div'); flash.className = 'jig-flash';
+  host.appendChild(flash); setTimeout(() => { try { flash.remove(); } catch(_){} }, 720);
+  const ring = document.createElement('div'); ring.className = 'jig-shockwave';
+  ring.style.left = cx + 'px'; ring.style.top = cy + 'px';
+  host.appendChild(ring); setTimeout(() => { try { ring.remove(); } catch(_){} }, 880);
+  try { _jigsawSparkleBurst(cx, cy, 16); } catch(_){}
 }
 // 2026-05-21 PM64: DOM confetti rain over the jigsaw modal (canvas glitter
 // can't show over a DOM overlay). Appends to the full-screen #jigsawModal so
