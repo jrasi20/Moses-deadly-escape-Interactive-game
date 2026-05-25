@@ -4861,6 +4861,244 @@ function drawScene3Flock(){
   }
 }
 
+/* ============================================================================
+   SCENE 3 — LEAD THE LOST FLOCK ACROSS THE RIVER  (Exodus 2:16-17)
+   A small flock is stranded on the WEST bank. Once Moses has BUILT the crossing
+   (earned all 3 crystal stones), he can lead them: each sheep he walks near falls
+   into a following line that hugs his EXACT path (a breadcrumb trail), so they
+   cross the stepping stones safely and gather in a PEN on the east bank. When the
+   whole flock is across, a short cinematic blessing plays + bonus reward.
+   Purely ADDITIVE / non-blocking — skipping it never softlocks the scene.
+   ========================================================================== */
+const SCENE3_HERD_PEN = { x0: 15, y0: 10, x1: 19, y1: 15 };   // east-bank pen (tiles)
+// distinct rest spots inside the pen so arrived sheep spread into a tidy flock
+const SCENE3_HERD_REST = [
+  {tx:17,ty:12}, {tx:16,ty:11}, {tx:18,ty:11}, {tx:16,ty:13}, {tx:18,ty:13}, {tx:17,ty:14}, {tx:15,ty:12},
+];
+const scene3Herd = {
+  spawned:false, done:false, builtToastShown:false, nearHintShown:false,
+  sheep:[], total:0, across:0, trail:[], slotNext:0,
+  _ltx:0, _lty:0, idleMs:0, celebrateAt:0,
+};
+function resetScene3Herd(){
+  scene3Herd.spawned=false; scene3Herd.done=false; scene3Herd.builtToastShown=false;
+  scene3Herd.nearHintShown=false; scene3Herd.sheep=[]; scene3Herd.total=0; scene3Herd.across=0;
+  scene3Herd.trail=[]; scene3Herd.slotNext=0; scene3Herd._ltx=0; scene3Herd._lty=0; scene3Herd.idleMs=0; scene3Herd.celebrateAt=0;
+}
+function _herdWalkable(tx,ty){ return (typeof MAP!=='undefined' && MAP[ty] && MAP[ty][tx]===0); }
+function _herdCrossingBuilt(){ try{ return _scene3CrystalCount()>=3; }catch(e){ return false; } }
+function _herdInPen(tx,ty){ const p=SCENE3_HERD_PEN; return tx>=p.x0&&tx<=p.x1&&ty>=p.y0&&ty<=p.y1; }
+function initScene3Herd(){
+  scene3Herd.sheep=[];
+  // a stranded cluster on the WEST bank, a few tiles from the river
+  const spots=[
+    {tx:7,ty:10,kind:'sheep'}, {tx:6,ty:12,kind:'sheep'}, {tx:8,ty:13,kind:'lamb',alt:false},
+    {tx:7,ty:14,kind:'sheep'}, {tx:9,ty:11,kind:'lamb',alt:true},
+  ];
+  for (let i=0;i<spots.length;i++){
+    const s=spots[i];
+    const tx=_herdWalkable(s.tx,s.ty)?s.tx:7;
+    const ty=_herdWalkable(s.tx,s.ty)?s.ty:(10+i);
+    scene3Herd.sheep.push({
+      id:i, kind:s.kind, alt:!!s.alt, px:tx*TILE, py:ty*TILE, tx, ty,
+      state:'graze', dir:1, slot:0, wanderAt:0, hop:0, arrivedAt:0,
+      jx:(Math.random()*2-1)*TILE*0.16, jy:(Math.random()*2-1)*TILE*0.10,
+    });
+  }
+  scene3Herd.total=scene3Herd.sheep.length; scene3Herd.across=0; scene3Herd.spawned=true;
+}
+function _herdComplete(){
+  if (scene3Herd.done) return;
+  scene3Herd.done=true; scene3Herd.celebrateAt=performance.now();
+  try{ play('success')||play('levelUp')||play('chime'); }catch(e){}
+  try{ game.stars+=5; updateHudStars(); }catch(e){}
+  try{ game.treasureBags=(game.treasureBags||0)+40; }catch(e){}
+  try{ if(typeof _addLifetimeTreasures==='function') _addLifetimeTreasures(6); }catch(e){}
+  try{
+    const r=canvas.getBoundingClientRect(); const p=SCENE3_HERD_PEN;
+    const cx=((p.x0+p.x1+1)/2)*TILE-camera.px, cy=((p.y0+p.y1+1)/2)*TILE-camera.py;
+    spawnGlitterBurst(r.left+cx, r.top+cy, 28);
+  }catch(e){}
+  try{ toast('🎉 The whole flock is safe across! "Moses got up and came to their rescue, and watered their flock." — Exodus 2:17'); }catch(e){}
+}
+function updateScene3Herd(dt){
+  if (game.scene!==2 || game.state!=='playing') return;
+  if (!scene3Herd.spawned){ if (typeof TILE!=='undefined' && player) initScene3Herd(); return; }
+  const now=performance.now();
+  const built=_herdCrossingBuilt();
+  if (built && !scene3Herd.builtToastShown){
+    scene3Herd.builtToastShown=true;
+    try{ toast('🐑 The crossing is ready! Walk up to the lost flock and lead them across to the pen.'); }catch(e){}
+  }
+  // Record Moses' breadcrumb trail in SHORT segments so the line hugs his path.
+  const ddx=player.px-scene3Herd._ltx, ddy=player.py-scene3Herd._lty;
+  let grew=false;
+  if (ddx*ddx+ddy*ddy >= (TILE*0.30)*(TILE*0.30)){
+    scene3Herd.trail.push({x:player.px,y:player.py});
+    scene3Herd._ltx=player.px; scene3Herd._lty=player.py; grew=true;
+    if (scene3Herd.trail.length>280) scene3Herd.trail.shift();
+  }
+  // When Moses idles, collapse the spacing so stragglers gather to him (and into
+  // the pen if he's parked there); when he moves the line stretches back out.
+  scene3Herd.idleMs = grew ? 0 : (scene3Herd.idleMs + dt);
+  const trail=scene3Herd.trail;
+  const GAP = scene3Herd.idleMs > 350 ? 2 : 7;
+  for (const s of scene3Herd.sheep){
+    if (s.state==='graze'){
+      if (built){
+        const d=Math.hypot(player.px-s.px, player.py-s.py);
+        if (d < TILE*2.3){
+          s.state='follow'; s.slot=scene3Herd.slotNext++;
+          try{ if(audio.sheepBleat){audio.sheepBleat.currentTime=0;audio.sheepBleat.volume=0.55;audio.sheepBleat.play().catch(()=>{});} }catch(e){}
+          try{ const r=canvas.getBoundingClientRect(); spawnGlitterBurst(r.left+(s.px-camera.px)+TILE/2, r.top+(s.py-camera.py)+TILE/2, 8); }catch(e){}
+        }
+      } else if (!scene3Herd.nearHintShown){
+        const d=Math.hypot(player.px-s.px, player.py-s.py);
+        if (d < TILE*2.6){
+          scene3Herd.nearHintShown=true;
+          try{ toast('🐑 These sheep are stranded! Earn all 3 crystals to build the crossing, then lead them across.'); }catch(e){}
+        }
+      }
+      if (now>=s.wanderAt){ s.wanderAt=now+1400+Math.random()*2600; const ntx=s.tx+(Math.random()<0.5?-1:1); if(_herdWalkable(ntx,s.ty)){ s.dir=ntx<s.tx?-1:1; s.tx=ntx; } }
+      s.px += (s.tx*TILE - s.px)*Math.min(1,dt/240);
+      s.py += (s.ty*TILE - s.py)*Math.min(1,dt/240);
+      s.hop=0;
+    } else if (s.state==='follow'){
+      let tgt;
+      if (scene3Herd.idleMs > 500){
+        // Shepherd is waiting — stragglers gather straight to him (and into the
+        // pen if he's parked there) so the objective always resolves.
+        tgt = trail[trail.length-1] || {x:player.px,y:player.py};
+      } else {
+        const idx=trail.length-1 - s.slot*GAP;
+        tgt = idx>=0 ? trail[idx] : (trail[0]||{x:player.px,y:player.py});
+      }
+      const tx=tgt.x + s.jx, ty=tgt.y + s.jy;
+      const k=Math.min(1, dt/170);
+      const odx=tx-s.px;
+      s.px += odx*k; s.py += (ty-s.py)*k;
+      if (Math.abs(odx)>0.4) s.dir = odx<0?-1:1;
+      s.tx=Math.round(s.px/TILE); s.ty=Math.round(s.py/TILE);
+      s.hop = (typeof isScene3StreamTile==='function' && isScene3StreamTile(s.tx,s.ty)) ? Math.abs(Math.sin(now/110 + s.id))*3 : 0;
+      if (s.tx>SCENE3_STREAM_COL_MAX && _herdInPen(s.tx,s.ty)){
+        s.state='arrived'; s.arrivedAt=now; scene3Herd.across++;
+        const spot=SCENE3_HERD_REST[(scene3Herd.across-1)%SCENE3_HERD_REST.length];
+        s.penTx=spot.tx; s.penTy=spot.ty;
+        try{ if(audio.sheepBleat){audio.sheepBleat.currentTime=0;audio.sheepBleat.volume=0.7;audio.sheepBleat.play().catch(()=>{});} }catch(e){}
+        try{ const r=canvas.getBoundingClientRect(); spawnGlitterBurst(r.left+(s.px-camera.px)+TILE/2, r.top+(s.py-camera.py)+TILE/2, 10); }catch(e){}
+        try{ game.stars+=2; updateHudStars(); }catch(e){}
+        try{ play('coin')||play('chime'); }catch(e){}
+        if (scene3Herd.across>=scene3Herd.total) _herdComplete();
+        else { try{ toast('🐑 Safe across! ('+scene3Herd.across+'/'+scene3Herd.total+')'); }catch(e){} }
+      }
+    } else if (s.state==='arrived'){
+      // settle into a distinct rest spot so the flock spreads tidily in the pen
+      const tgx=s.penTx*TILE, tgy=s.penTy*TILE;
+      const odx=tgx-s.px;
+      s.px += odx*Math.min(1,dt/300);
+      s.py += (tgy-s.py)*Math.min(1,dt/300);
+      if (Math.abs(odx)>0.6) s.dir = odx<0?-1:1;
+      s.tx=Math.round(s.px/TILE); s.ty=Math.round(s.py/TILE);
+      s.hop=0;
+    }
+  }
+}
+function _drawOneSheep(px,py,dir,kind,alt,extraY){
+  const dx=px-camera.px, dy=py-camera.py;
+  if (dx<-TILE*2||dx>CANVAS_W+TILE||dy<-TILE*2||dy>CANVAS_H+TILE) return;
+  const okI=(im)=>im&&im.complete&&im.naturalWidth;
+  ctx.fillStyle='rgba(0,0,0,0.28)';
+  ctx.beginPath(); ctx.ellipse(dx+TILE/2, dy+TILE*0.88, TILE*0.28, 3, 0, 0, Math.PI*2); ctx.fill();
+  let img=null, mirror=false;
+  if (kind==='lamb'){
+    img=(alt&&okI(IMG.lambAlt))?IMG.lambAlt:(okI(IMG.lamb)?IMG.lamb:(okI(IMG.lambAlt)?IMG.lambAlt:null));
+    mirror=(dir<0);
+  } else {
+    if (dir<0 && okI(IMG.sheepLeft)) img=IMG.sheepLeft;
+    else if (dir>0 && okI(IMG.sheepRight)) img=IMG.sheepRight;
+    else if (okI(IMG.sheep)){ img=IMG.sheep; mirror=(dir<0); }
+  }
+  const scale=(kind==='lamb')?0.85:1.05;
+  const drawH=Math.round(TILE*scale);
+  if (img){
+    const ar=(img.naturalWidth||1)/(img.naturalHeight||1);
+    const drawW=Math.round(drawH*ar);
+    const ox=Math.round(dx+TILE/2-drawW/2);
+    const oy=Math.round(dy+TILE-drawH-extraY);
+    if (mirror){ ctx.save(); ctx.translate(ox+drawW,oy); ctx.scale(-1,1); ctx.drawImage(img,0,0,drawW,drawH); ctx.restore(); }
+    else ctx.drawImage(img,ox,oy,drawW,drawH);
+  } else {
+    const cx=dx+TILE/2, cy=dy+TILE*0.55-extraY, bodyR=TILE*scale*0.30;
+    ctx.fillStyle='#fafafa'; ctx.beginPath();
+    ctx.arc(cx-bodyR*0.35,cy,bodyR*0.70,0,Math.PI*2); ctx.arc(cx,cy-bodyR*0.20,bodyR*0.80,0,Math.PI*2);
+    ctx.arc(cx+bodyR*0.35,cy,bodyR*0.70,0,Math.PI*2); ctx.arc(cx,cy+bodyR*0.25,bodyR*0.65,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#4a3a2a'; ctx.beginPath(); ctx.ellipse(cx+bodyR*0.95*(dir<0?-1:1),cy,bodyR*0.32,bodyR*0.26,0,0,Math.PI*2); ctx.fill();
+  }
+}
+function _drawHerdPen(now){
+  const p=SCENE3_HERD_PEN;
+  const x=p.x0*TILE-camera.px, y=p.y0*TILE-camera.py;
+  const w=(p.x1-p.x0+1)*TILE, h=(p.y1-p.y0+1)*TILE;
+  if (x>CANVAS_W||x+w<0||y>CANVAS_H||y+h<0) return;
+  ctx.save();
+  ctx.fillStyle='rgba(120,180,90,0.10)'; ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle='rgba(120,80,40,0.85)'; ctx.lineWidth=Math.max(2,TILE*0.07);
+  ctx.setLineDash([TILE*0.5, TILE*0.22]);
+  ctx.beginPath();
+  ctx.moveTo(x,y); ctx.lineTo(x+w,y); ctx.lineTo(x+w,y+h); ctx.lineTo(x,y+h);
+  ctx.lineTo(x,y+h*0.62); ctx.moveTo(x,y+h*0.38); ctx.lineTo(x,y);   // west gate gap (toward the river)
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#6b4a2a';
+  const post=(px,py)=>ctx.fillRect(px-3,py-10,6,16);
+  post(x,y); post(x+w,y); post(x,y+h); post(x+w,y+h);
+  ctx.restore();
+}
+function _drawHerdCounter(txt){
+  ctx.save();
+  ctx.font='bold 15px sans-serif';
+  const w=ctx.measureText(txt).width+30, x=CANVAS_W/2-w/2, y=14, h=28;
+  ctx.fillStyle='rgba(20,30,50,0.80)';
+  if (ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x,y,w,h,14); ctx.fill(); ctx.strokeStyle='rgba(255,210,90,0.7)'; ctx.lineWidth=1.5; ctx.stroke(); }
+  else ctx.fillRect(x,y,w,h);
+  ctx.fillStyle='#ffe7a0'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(txt, CANVAS_W/2, y+h/2+1);
+  ctx.textAlign='start'; ctx.textBaseline='alphabetic';
+  ctx.restore();
+}
+function drawScene3Herd(){
+  if (game.scene!==2 || !scene3Herd.spawned || typeof camera==='undefined') return;
+  const now=performance.now();
+  const built=_herdCrossingBuilt();
+  _drawHerdPen(now);
+  for (const s of scene3Herd.sheep){
+    const bob=Math.sin(now/620 + s.id*1.3)*1.4;
+    _drawOneSheep(s.px, s.py, s.dir, s.kind, s.alt, bob + (s.hop||0));
+    if (built && s.state==='graze'){
+      const cx=s.px-camera.px+TILE/2, top=s.py-camera.py;
+      const pulse=0.5+0.5*Math.sin(now/360 + s.id);
+      ctx.save();
+      ctx.strokeStyle='rgba(255,210,90,'+(0.30+0.30*pulse)+')'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.ellipse(cx, s.py-camera.py+TILE*0.9, TILE*0.42, TILE*0.16, 0,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle='rgba(255,225,120,'+(0.55+0.40*pulse)+')';
+      const ay=top-8-pulse*3;
+      ctx.beginPath(); ctx.moveTo(cx-5,ay); ctx.lineTo(cx+5,ay); ctx.lineTo(cx,ay+6); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+  if (built && !scene3Herd.done && scene3Herd.total>0){
+    _drawHerdCounter('🐑 Flock across: '+scene3Herd.across+'/'+scene3Herd.total);
+  }
+  if (scene3Herd.done && now-scene3Herd.celebrateAt<1500){
+    const t=(now-scene3Herd.celebrateAt)/1500, p=SCENE3_HERD_PEN;
+    const cx=((p.x0+p.x1+1)/2)*TILE-camera.px, cy=((p.y0+p.y1+1)/2)*TILE-camera.py;
+    const R=TILE*6*(0.4+t*0.8);
+    const g=ctx.createRadialGradient(cx,cy,2,cx,cy,R);
+    g.addColorStop(0,'rgba(255,230,150,'+(0.5*(1-t))+')');
+    g.addColorStop(1,'rgba(255,230,150,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
+  }
+}
+
 /* ===== PHASE C STEP 8 — RANDOM EVENTS ===== */
 
 /* --- 8A: Ram charge --- */
@@ -7388,6 +7626,7 @@ function startScene1() {
   // v2.1: seed 9 mandatory challenges (4 zone checkpoints + 5 cliff ascents)
   seedChallenges(game.difficulty || 'easy');
   try { resetScene3Flock(); } catch(e){}
+  try { resetScene3Herd(); } catch(e){}
   // v3.28: if a mid-game save exists, overwrite gate positions + scalars.
   try { _applyCheckpointAfterSeed(); } catch(e){}
   // v2.1: spawn Pharaoh pursuit scouts on west edge
@@ -7499,6 +7738,7 @@ function restartScene() {
   // re-seed challenge gates (fresh questions!)
   seedChallenges(game.difficulty || 'easy');
   try { resetScene3Flock(); } catch(e){}
+  try { resetScene3Herd(); } catch(e){}
   // v2.1 Scene 2: re-seed pursuit scouts + mirage traps + boulder schedule
   try { seedPursuitScouts(); } catch(e){}
   try { seedMirages(); } catch(e){}
@@ -15070,6 +15310,10 @@ function render(){
   // Scene 3: flowing stream + waterfall — drawn ABOVE the floor tiles but
   // BELOW characters so Moses + shepherds appear over the water.
   try { drawScene3Stream(); } catch(e){}
+  // Scene 3: the lost flock Moses leads across the river + its east-bank pen.
+  // Drawn above the water (so sheep read as standing on the stones) but below
+  // Moses so his sprite stays on top.
+  try { drawScene3Herd(); } catch(e){}
   // Scene 3: visible flock of sheep grazing in the south pasture. Adds
   // pastoral life; no gameplay interaction (collision still resolves to cover
   // tile underneath). Draws below Moses so sprite still appears on top.
@@ -18163,6 +18407,7 @@ function loop(now){
     try { updateZipporahNPC(); } catch(e){}
     try { updateScene3Wolf(dt); } catch(e){}
     try { updateScene3Flock(dt); } catch(e){}
+    try { updateScene3Herd(dt); } catch(e){}
     try { updateScene3Ram(dt); } catch(e){}
     try { _checkScene3JarDrop(); } catch(e){}
     try { updateScene3Caravan(dt); } catch(e){}
