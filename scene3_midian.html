@@ -4958,6 +4958,9 @@ function _flockFreeSheep(s){
   try { game.stars += 3; updateHudStars(); } catch(e){}
   try { _addLifetimeTreasures(8); } catch(e){}
   try { spawnGlitterBurstAtPlayer(14); } catch(e){}
+  // 2026-05-26 JUICE: quick rewarding zoom on the rescued sheep (subtler than
+  // the wolf-capture punch) so the save feels like a win.
+  try { _cameraPunch(1.10, 460, s.px - camera.px + TILE/2, s.py - camera.py + TILE/2); } catch(e){}
   try { if (audio.sheepBleat){ audio.sheepBleat.currentTime = 0; audio.sheepBleat.volume = 0.7; audio.sheepBleat.play().catch(()=>{}); } } catch(e){}
   try { play('coin') || play('chime'); } catch(e){}
   try { toast('🐑 Sheep freed! +' + bags + ' treasure for the rescue'); } catch(e){}
@@ -5032,6 +5035,16 @@ function updateScene3Flock(dt){
       s.state = 'pinned'; s.wolf = w; s.pinnedAt = now;
       w.state = 'pinning'; w.targetId = s.id;
       try { if (audio.sheepBleat){ audio.sheepBleat.currentTime = 0; audio.sheepBleat.volume = 0.6; audio.sheepBleat.play().catch(()=>{}); } } catch(e){}
+      // 2026-05-26 JUICE (Jane: "when sheeps are captured by wolves ... animation
+      // and graphics ... zoom ins, sound effects"). Punch the camera onto the
+      // grabbed sheep + a wolf snarl so the kid feels the urgency to race over.
+      // Throttled so a multi-wolf pile-on doesn't strobe the view.
+      if (now - (scene3Flock._lastPinFx || 0) > 1400) {
+        scene3Flock._lastPinFx = now;
+        try { _cameraPunch(1.17, 700, s.px - camera.px + TILE/2, s.py - camera.py + TILE/2); } catch(e){}
+        try { if (audio.dog){ audio.dog.currentTime = 0; audio.dog.volume = 0.5; audio.dog.play().catch(()=>{}); } } catch(e){}
+        try { toast('🐺 A wolf grabbed a sheep — race over and shoo it!'); } catch(e){}
+      }
     }
   }
   for (const s of scene3Flock.sheep){
@@ -5107,6 +5120,14 @@ function drawScene3RescueFlock(){
       ctx.fillStyle = '#f2ead8'; ctx.fillRect(dx + 5, dy + 6, TILE - 10, TILE - 12);
     }
     if (s.state === 'pinned'){
+      // 2026-05-26 JUICE: pulsing red danger ring around the grabbed sheep so
+      // the "rescue me!" moment reads instantly, plus the existing alert "!".
+      const _pp = 0.45 + 0.4 * Math.sin(performance.now() / 110);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,60,40,' + _pp.toFixed(2) + ')';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(dx + TILE/2, dy + TILE/2, TILE * 0.62, 0, Math.PI*2); ctx.stroke();
+      ctx.restore();
       ctx.fillStyle = '#ff5a4a'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText('!', dx + TILE/2, dy - 2); ctx.textAlign = 'start';
     }
@@ -5173,8 +5194,16 @@ function _herdComplete(){
   try{
     const r=canvas.getBoundingClientRect(); const p=SCENE3_HERD_PEN;
     const cx=((p.x0+p.x1+1)/2)*TILE-camera.px, cy=((p.y0+p.y1+1)/2)*TILE-camera.py;
-    spawnGlitterBurst(r.left+cx, r.top+cy, 28);
+    // 2026-05-26 JUICE (Jane: "when all sheeps reach where they need to reach
+    // after river crossing, animation and graphics ... zoom ins, sound effects").
+    // Big celebratory zoom onto the pen + a staggered confetti shower so the
+    // payoff feels earned before control returns.
+    try{ _cameraPunch(1.20, 1150, cx, cy); }catch(e){}
+    spawnGlitterBurst(r.left+cx, r.top+cy, 40);
+    setTimeout(()=>{ try{ const r2=canvas.getBoundingClientRect(); spawnGlitterBurst(r2.left+cx, r2.top+cy-20, 26); }catch(e){} }, 230);
+    setTimeout(()=>{ try{ const r3=canvas.getBoundingClientRect(); spawnGlitterBurst(r3.left+cx-24, r3.top+cy+12, 22); spawnGlitterBurst(r3.left+cx+24, r3.top+cy+12, 22); }catch(e){} }, 480);
   }catch(e){}
+  try{ play('success')||play('levelUp')||play('chime'); }catch(e){}
   try{ toast('🎉 The whole flock is safe across! "Moses got up and came to their rescue, and watered their flock." — Exodus 2:17'); }catch(e){}
 }
 function updateScene3Herd(dt){
