@@ -8044,7 +8044,7 @@ function restartScene() {
   // active timer, or armed flag never carries into this one.
   try {
     window._puCooldownUntil = {}; window._puActiveUntil = {};
-    window._speedBurstUntil = 0; window._guardFreezeUntil = 0; window._royalVisionUntil = 0;
+    window._speedBurstUntil = 0; window._guardFreezeUntil = 0; window._royalVisionUntil = 0; window._decoyUntil = 0; window._decoyTile = null;
     window._truthSeekerArmed = false; window._scribesWisdomArmed = false;
     if (typeof _refreshUnlockButtons === 'function') _refreshUnlockButtons();
   } catch(e){}
@@ -12481,7 +12481,7 @@ const _UNLOCKS_KEY            = 'bek.bundle1.unlocks';
 const UNLOCK_TIERS = [
   { threshold:  75, resource: 'treasures', key: 'speedBurst',    label: '⚡ Speed Burst',     cooldownMs: 25000, desc: 'Moses sprints 2× for 5 seconds. Tap any time — recharges every 25 s.' },
   { threshold: 175, resource: 'treasures', key: 'guardFreeze',   label: '❄️ Foe Freeze',      cooldownMs: 35000, desc: 'Shepherds AND wolves freeze in place for 5 seconds. Recharges every 35 s.' },
-  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '🦅 Eagle Eye',       cooldownMs: 30000, desc: 'Lights up the safe stepping-stone crossing AND reveals the hidden crown with a beacon. Lasts 8 seconds.' },
+  { threshold:   4, resource: 'crowns',    key: 'royalVision',   label: '🏺 Water-Jar Lure',  cooldownMs: 30000, desc: 'Toss a water jar — the rude shepherds rush to it for 5 s (and the stepping-stone crossing + hidden crown glow). Opens your path.' },
   { threshold: 350, resource: 'treasures', key: 'truthSeeker',   label: '📖 Truth Seeker',    cooldownMs: 60000, desc: 'On the next checkpoint: clue is free + 2 wrong options greyed out.' },
   { threshold:   5, resource: 'scrolls',   key: 'scribesWisdom', label: '🪶 Scribe\'s Wisdom', cooldownMs: 90000, desc: 'Skip the Bible questions and jump straight to the checkpoint\'s bonus game — win it to claim the crystal. Recharges every 90 s.' },
   { threshold: 600, resource: 'treasures', key: 'pharaohsMercy', label: '🙏 God\'s Grace',     cooldownMs: 0,     desc: 'When Moses is down to his last heart, God restores one — automatically, once per scene. He is always watching over you.' },
@@ -12528,10 +12528,29 @@ function _activatePowerup(key){
     window._puActiveUntil[key] = now + 5000;
     try { play('frozen'); } catch(e){}
     try { toast('❄️ FOE FREEZE! Shepherds and wolves are stuck — slip past!'); } catch(e){}
-  } else if (key === 'royalVision') {
-    window._royalVisionUntil = now + 8000;
+  } else if (key === 'royalVision') {   // key kept for unlock-state; now the WATER-JAR LURE (+ keeps the Eagle-Eye reveal)
+    // Toss a water jar ~3 tiles ahead; rude shepherds rush to it (handled in
+    // updateRudeShepherds). Also keep _royalVisionUntil so the stepping-stone
+    // crossing + hidden-crown beacon still light up — no feature lost.
+    let _ddx = 0, _ddy = 0;
+    if      (player.dir === 'up')   _ddy = -3;
+    else if (player.dir === 'down') _ddy =  3;
+    else if (player.dir === 'left') _ddx = -3;
+    else                            _ddx =  3;
+    let _dtx = player.tx + _ddx, _dty = player.ty + _ddy;
+    if (!isWalkable(_dtx, _dty)) {
+      _dtx = player.tx; _dty = player.ty;
+      for (let s = 2; s >= 1; s--) {
+        const _tx = player.tx + Math.sign(_ddx) * s, _ty = player.ty + Math.sign(_ddy) * s;
+        if (isWalkable(_tx, _ty)) { _dtx = _tx; _dty = _ty; break; }
+      }
+    }
+    window._decoyTile = { x: _dtx, y: _dty };
+    window._decoyUntil = now + 5000;
+    window._royalVisionUntil = now + 8000;   // keep the crossing + crown reveal
+    try { for (const s of pursuitScouts) s._decoyLured = false; } catch(e){}
     window._puActiveUntil[key] = now + 8000;
-    try { toast('🦅 EAGLE EYE! The stepping-stone crossing glows — and the hidden crown is revealed.'); } catch(e){}
+    try { toast('🏺 You toss a water jar — the shepherds scramble for it! Slip past!'); } catch(e){}
   } else if (key === 'truthSeeker') {
     window._truthSeekerArmed = true;
     window._puActiveUntil[key] = now + 1500;
@@ -12782,7 +12801,7 @@ function _renderJourneyPanel(){
   const _WJ_TIERS = [
     { th:75,  res:'treasures', key:'speedBurst',    label:'⚡ Speed Burst' },
     { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
-    { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
+    { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F3FA} Water-Jar Lure' },
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
     { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
@@ -14030,6 +14049,34 @@ function updateRudeShepherds(dt) {
       continue;
     }
     allCaught = false;
+    // 2026-05-26 — WATER-JAR LURE: while a jar decoy is active, rude shepherds
+    // within range leave their post and rush to it (the well water), ignoring
+    // Moses (no taunt/contact). Robust greedy step toward the decoy.
+    if ((now < (window._decoyUntil || 0)) && window._decoyTile) {
+      const _dT = window._decoyTile;
+      const _gd = Math.abs(s.tx - _dT.x) + Math.abs(s.ty - _dT.y);
+      if (_gd <= 8) {
+        s._decoyLured = true; s.taunting = false;
+        s.tick = (s.tick || 0) + dt;
+        const _spd = Math.min(s.advanceMs || 1500, 900);
+        if (s.tick >= _spd) {
+          s.tick = 0;
+          if (_gd > 1) {
+            let _best = null, _bestD = _gd;
+            const _cands = [[s.tx+1,s.ty,'right'],[s.tx-1,s.ty,'left'],[s.tx,s.ty+1,'down'],[s.tx,s.ty-1,'up']];
+            for (const _c of _cands) {
+              if (_c[0] < 1 || _c[0] > MAP_W - 2) continue;
+              if (!isWalkable(_c[0], _c[1])) continue;
+              try { if (typeof isScene3StreamBlocker === 'function' && isScene3StreamBlocker(_c[0], _c[1], false)) continue; } catch(e){}
+              const _d = Math.abs(_c[0]-_dT.x) + Math.abs(_c[1]-_dT.y);
+              if (_d < _bestD) { _bestD = _d; _best = _c; }
+            }
+            if (_best) { s.tx = _best[0]; s.ty = _best[1]; s.dir = _best[2]; }
+          }
+        }
+        continue;  // skip patrol/chase/taunt/contact while lured
+      } else { s._decoyLured = false; }
+    } else { s._decoyLured = false; }
     // Patrol: step within patrolRadius around post every advanceMs ms
     s.tick = (s.tick || 0) + dt;
     const speed = s.chaseMode ? Math.min(s.advanceMs, 1100) : (s.advanceMs || 2800);
@@ -14231,6 +14278,32 @@ function updatePursuitScouts(dt){
   }
 }
 function drawPursuitScouts(ctx){
+  // 2026-05-26 — Water-Jar Lure marker: jar + noise ripples at the decoy tile
+  // while the Lure is active (drawn before the scene guard so it always shows).
+  try {
+    const _dU = window._decoyUntil || 0, _dT = window._decoyTile;
+    if (_dT && performance.now() < _dU) {
+      const ddx = _dT.x * TILE - camera.px, ddy = _dT.y * TILE - camera.py;
+      if (ddx > -TILE*2 && ddx < CANVAS_W + TILE*2 && ddy > -TILE*2 && ddy < CANVAS_H + TILE*2) {
+        const ccx = ddx + TILE/2, ccy = ddy + TILE/2, _n = performance.now();
+        ctx.save();
+        for (let i = 0; i < 3; i++){
+          const ph = ((_n/600) + i/3) % 1;
+          ctx.beginPath(); ctx.arc(ccx, ccy, TILE*(0.3 + ph*1.3), 0, Math.PI*2);
+          ctx.strokeStyle = 'rgba(255,210,120,' + (0.5*(1-ph)).toFixed(2) + ')'; ctx.lineWidth = 3; ctx.stroke();
+        }
+        const _bob = Math.sin(_n/180)*2, _sz = TILE*0.85;
+        const _jar = IMG.jarPile || IMG.jar;
+        if (_jar && _jar.complete && _jar.naturalWidth) {
+          ctx.drawImage(_jar, ccx - _sz/2, ccy - _sz/2 + _bob, _sz, _sz);
+        } else {
+          ctx.font = Math.round(TILE*0.7) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('\u{1F3FA}', ccx, ccy + _bob);
+        }
+        ctx.restore();
+      }
+    }
+  } catch(e){}
   if (game.scene !== 2) return;
   // Scene 3: 3 unique rude shepherds with per-post sprite selection.
   // Shepherd 0 (post 1) has full 4 directional sprites — uses them all.
