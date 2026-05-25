@@ -7712,6 +7712,12 @@ function resetScene2Cinematic(){
 const _SAVE_KEY = 'bek.moses3.scene3.save';
 function _saveCheckpoint(){
   try {
+    // Resume is scene-specific and only meaningful once the player has made REAL
+    // progress. Don't persist a save until at least one Bible Checkpoint is
+    // cleared — otherwise a fresh run writes a "0 of 0" save and the cover shows
+    // a bogus "Welcome back" resume prompt.
+    const _solved = (challengeGates || []).filter(g => g && g.solved).length;
+    if (_solved < 1) return;
     const collectedTiles = [];
     try {
       for (let y=0; y<MAP_H; y++) for (let x=0; x<MAP_W; x++) {
@@ -7749,6 +7755,12 @@ function _loadCheckpoint(){
     const p = JSON.parse(raw);
     if (!p || p.v !== 1 || p.scene !== 3) return null;
     if (p.savedAt && (Date.now() - p.savedAt) > 7 * 24 * 60 * 60 * 1000) return null;
+    // Only a save with genuine progress (≥1 checkpoint cleared) AND a living Moses
+    // (not caught) is resumable. A 0-of-N or dead save is treated as no save, so
+    // the "Welcome back" prompt never shows on a fresh-ish run.
+    const gatesSolved = Array.isArray(p.gates) ? p.gates.filter(g => g && g.solved).length : 0;
+    if (gatesSolved < 1) return null;
+    if (typeof p.hearts === 'number' && p.hearts <= 0) return null;
     return p;
   } catch(e) { return null; }
 }
@@ -8013,13 +8025,15 @@ function restartScene() {
 }
 
 /* ---------- TUTORIAL ---------- */
+// Crisp, scannable onboarding \u2014 one short line each. Kids can't read paragraphs,
+// so the detail is delivered just-in-time by the in-world proximity tips, the
+// glowing checkpoint markers, and the move-prompts during mini-games.
 const TUT_STEPS = [
-  { icon:'[>]',  title:'Move Moses', body:'Tap the arrows below, swipe the screen, or use arrow keys on a keyboard to guide Moses east across Midian toward Jethro\u2019s tent.' },
-  { icon:'[#]',  title:'Hide Behind Palms & Rocks', body:'Step beside a palm cluster, rock outcrop, or water-jar pile [#] to crouch. Crouching hides Moses from the three rude shepherds patrolling near the well.' },
-  { icon:'[?]',  title:'Midian Stops (MANDATORY)', body:'Five glowing [?] stops are UNAVOIDABLE on the way to Jethro\u2019s tent: three Bible Checkpoints, plus two big mini-games \u2014 the Well (water Jethro\u2019s flock) and the Rescue (save his daughters from the rude shepherds). Walk near a Bible Checkpoint and Moses is stopped for 3 questions. You must clear EVERY stop to open the path east.' },
-  { icon:'[~]',  title:'Cross the River & Lead the Flock', body:'A wide river splits Midian in two. Clear the three Bible Checkpoints to earn three crystal stones \u2014 together they BUILD a stepping-stone crossing! A little flock is stranded on the west bank. Once the crossing is built, walk up to the sheep and they\u2019ll follow you across the stones into the safe pen. Be a good shepherd, just like Moses became in Midian.' },
-  { icon:'[!]',  title:'Reach Jethro\u2019s Tent', body:'To finish Scene 3, Moses must first clear all five Midian stops \u2014 the three Bible Checkpoints, the Well, and the Rescue \u2014 then walk into the glowing EXIT tile on the east edge: Jethro\u2019s tent. Only then does the scene end and God welcomes Moses into a new family!' },
-  { icon:'[x]',  title:'Watch for the Rude Shepherds', body:'Three rude shepherds patrol near the well. Stay in cover \u2014 palms, rocks, jar piles \u2014 when they look your way. Bump into one and Moses must answer a question to drive him off. Moses stood up for the weak; you can too.' },
+  { icon:'\u{1F463}', title:'Move Moses',      body:'Tap the arrows (or swipe) to move Moses east.' },
+  { icon:'\u{1F334}', title:'Hide',            body:'Stand by palms, rocks, or jars to hide from rude shepherds.' },
+  { icon:'\u{1F4DC}', title:'Checkpoints',     body:'Walk into a glowing \u2753 scroll and answer to earn a crystal.' },
+  { icon:'\u{1F309}', title:'Cross the River', body:'3 crystals build a bridge \u2014 then lead the sheep across.' },
+  { icon:'\u{26FA}',  title:'Reach the Tent',  body:'Clear every stop, then reach Jethro\u2019s tent to win!' },
 ];
 function showTutorial(step){
   game.tutorialStep = step;
@@ -16130,6 +16144,33 @@ function drawChallengeGate(gate){
     ctx.fillText('?', bx, by + 1);
     ctx.restore();
     return;
+  }
+  // ── Zone checkpoint BODY (Scene 3) — a glowing scripture-scroll medallion ON
+  //    the tile so kids recognize a checkpoint to walk into. Previously only the
+  //    floating "!" rendered below, so a checkpoint looked like a lone "!" with
+  //    nothing under it ("I don't see checkpoints, only an exclamation point").
+  {
+    const cxp = dx + TILE/2, cyp = dy + TILE*0.56;
+    ctx.save();
+    const gh = ctx.createRadialGradient(cxp, cyp, 2, cxp, cyp, TILE*0.62);
+    gh.addColorStop(0, 'rgba(255,225,130,' + (0.55*pulse).toFixed(2) + ')');
+    gh.addColorStop(1, 'rgba(255,180,40,0)');
+    ctx.fillStyle = gh;
+    ctx.beginPath(); ctx.ellipse(cxp, cyp + TILE*0.12, TILE*0.56, TILE*0.34, 0, 0, Math.PI*2); ctx.fill();
+    const w = TILE*0.62, h = TILE*0.72, rx = cxp - w/2, ry = cyp - h/2;
+    const gg = ctx.createLinearGradient(rx, ry, rx, ry+h);
+    gg.addColorStop(0, '#fff4d2'); gg.addColorStop(1, '#e8c98a');
+    ctx.fillStyle = gg; ctx.strokeStyle = '#7a4809'; ctx.lineWidth = 2;
+    if (ctx.roundRect){ ctx.beginPath(); ctx.roundRect(rx, ry, w, h, 5); ctx.fill(); ctx.stroke(); }
+    else { ctx.fillRect(rx, ry, w, h); ctx.strokeRect(rx, ry, w, h); }
+    ctx.fillStyle = '#c8860a';
+    ctx.fillRect(rx-2, ry-3, w+4, 4);
+    ctx.fillRect(rx-2, ry+h-1, w+4, 4);
+    ctx.fillStyle = '#7a4809';
+    ctx.font = 'bold ' + Math.max(13, Math.floor(TILE*0.5)) + 'px Georgia';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('?', cxp, cyp + 1);
+    ctx.restore();
   }
   const bob = Math.sin(performance.now()/360 + gate.tx*0.7) * 1.6;
   // v3.6 PASS A Jane 2026-04-24: floating glowing "!" indicator above every
