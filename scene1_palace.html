@@ -7274,6 +7274,9 @@ function _updatePharaohHunt(dt){
     if (document.getElementById('_introPanLabel')) return;
   } catch(e){}
   const now = performance.now();
+  // 2026-05-26 (Jane): Foe Freeze stops ALL foes — pause the Pharaoh chariot
+  // hunt too (hold its position; the state machine resumes when the ice melts).
+  if (now < (window._guardFreezeUntil || 0)) return;
   switch (_pharaohHunt.state) {
     case 'idle':
       if (now >= _pharaohHunt.nextEventAt) {
@@ -21650,6 +21653,32 @@ function drawGuard(g){
     ctx.restore();
   } else {
     ctx.fillStyle = '#c44'; ctx.fillRect(dx+6,dy+6,TILE-12,TILE-12);
+  }
+  // 2026-05-26 (Jane PM33): ICE-FROZEN visual + freeze meter while Foe Freeze
+  // is active — frosty wash + ice shards over the foe + a shrinking blue meter
+  // above it so the kid sees who's frozen and for how long.
+  if (_isFrozen) {
+    const fr = Math.max(0, Math.min(1, (_frozenUntil - _nowDG) / 5000));
+    ctx.save();
+    // frosty blue wash
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = 'rgba(150,220,255,0.55)';
+    ctx.beginPath(); ctx.arc(dx+TILE/2, dy+TILE/2, TILE*0.72, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+    // ice crystal shards radiating out
+    ctx.strokeStyle = 'rgba(225,248,255,0.92)'; ctx.lineWidth = 2;
+    for (let k = 0; k < 6; k++){
+      const a = k*Math.PI/3 + _nowDG/2400;
+      ctx.beginPath();
+      ctx.moveTo(dx+TILE/2+Math.cos(a)*TILE*0.26, dy+TILE/2+Math.sin(a)*TILE*0.26);
+      ctx.lineTo(dx+TILE/2+Math.cos(a)*TILE*0.62, dy+TILE/2+Math.sin(a)*TILE*0.62);
+      ctx.stroke();
+    }
+    // freeze meter (shrinks 1→0 over the 5 s)
+    const mw = TILE*0.7, mx = dx+TILE/2-mw/2, my = dy-9;
+    ctx.fillStyle = 'rgba(10,30,45,0.6)'; ctx.fillRect(mx-1, my-1, mw+2, 5);
+    ctx.fillStyle = 'rgba(150,220,255,0.95)'; ctx.fillRect(mx, my, mw*fr, 3);
+    ctx.restore();
   }
   // state indicator
   if (g.state === 'suspicious') {
