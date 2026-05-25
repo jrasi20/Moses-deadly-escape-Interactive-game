@@ -4416,6 +4416,30 @@ function isScene3StreamBlocker(tx, ty, allowSteppingStones){
   } catch(e){}
 })();
 
+// Auto-load the OPTIONAL painted Scene-3 sprites (wolf / crystal stone / market
+// stall / flock signpost). Same graceful pattern as the river: each loads into
+// IMG.* and the draw code falls back to its procedural art on 404, so a missing
+// file never breaks the scene.
+(function _loadScene3Art(){
+  try {
+    if (typeof IMG === 'undefined') return;
+    const want = {
+      crystalStone:  'crystal%20stone.png',
+      wolfRight:     'wolf%20right%20facing.png',
+      wolfLeft:      'wolf%20left%20facing.png',
+      marketStall:   'market%20stall.png',
+      marketStall2:  'optional%20market%20stall%202.png',
+      flockSignpost: 'flock%20signpost.png',
+    };
+    for (const key in want) {
+      const im = new Image();
+      im.onload  = ((k, img) => () => { IMG[k] = img; })(key, im);
+      im.onerror = () => {};
+      im.src = 'assets/images/' + want[key];
+    }
+  } catch(e){}
+})();
+
 // Deterministic 0..1 pseudo-noise for twinkle/sparkle placement (no per-frame
 // allocation, stable per cell so glints don't jitter randomly each frame).
 function _riverHash(a, b){
@@ -4575,27 +4599,34 @@ function drawScene3Stream(){
         ctx.ellipse(dx + TILE/2, dy + TILE*0.55, TILE*0.55, TILE*0.40, 0, 0, Math.PI*2);
         ctx.fill();
       }
-      // stone body
-      const sg = ctx.createLinearGradient(dx, dy + wobY, dx, dy + TILE + wobY);
-      if (sinking) {
-        sg.addColorStop(0.0, '#6a6860');
-        sg.addColorStop(0.6, '#4a4840');
-        sg.addColorStop(1.0, '#2e2c28');
+      // stone body — painted crystal sprite for safe stones when available,
+      // procedural ellipse otherwise (sinking stones always stay procedural grey).
+      const _okCS = (i => i && i.complete && i.naturalWidth > 0);
+      if (!sinking && _okCS(IMG.crystalStone)) {
+        const cs = TILE * 1.05;
+        ctx.drawImage(IMG.crystalStone, dx + TILE/2 - cs/2 + wobX, dy + TILE*0.55 - cs*0.55 + wobY, cs, cs);
       } else {
-        sg.addColorStop(0.0, '#c8b870');
-        sg.addColorStop(0.6, '#8a7a40');
-        sg.addColorStop(1.0, '#5a4a20');
-      }
-      ctx.fillStyle = sg;
-      ctx.beginPath();
-      ctx.ellipse(dx + TILE/2 + wobX, dy + TILE*0.55 + wobY, TILE*0.42, TILE*0.30, 0, 0, Math.PI*2);
-      ctx.fill();
-      // mossy highlight on safe stones only
-      if (!sinking) {
-        ctx.fillStyle = 'rgba(140,190,70,0.55)';
+        const sg = ctx.createLinearGradient(dx, dy + wobY, dx, dy + TILE + wobY);
+        if (sinking) {
+          sg.addColorStop(0.0, '#6a6860');
+          sg.addColorStop(0.6, '#4a4840');
+          sg.addColorStop(1.0, '#2e2c28');
+        } else {
+          sg.addColorStop(0.0, '#c8b870');
+          sg.addColorStop(0.6, '#8a7a40');
+          sg.addColorStop(1.0, '#5a4a20');
+        }
+        ctx.fillStyle = sg;
         ctx.beginPath();
-        ctx.ellipse(dx + TILE*0.40, dy + TILE*0.42, TILE*0.18, TILE*0.06, 0, 0, Math.PI*2);
+        ctx.ellipse(dx + TILE/2 + wobX, dy + TILE*0.55 + wobY, TILE*0.42, TILE*0.30, 0, 0, Math.PI*2);
         ctx.fill();
+        // mossy highlight on safe stones only
+        if (!sinking) {
+          ctx.fillStyle = 'rgba(140,190,70,0.55)';
+          ctx.beginPath();
+          ctx.ellipse(dx + TILE*0.40, dy + TILE*0.42, TILE*0.18, TILE*0.06, 0, 0, Math.PI*2);
+          ctx.fill();
+        }
       }
       // warning crack lines on sinking stones
       if (sinking) {
@@ -4949,6 +4980,22 @@ function updateScene3Flock(dt){
 function _drawFlockWolf(cx, cy, dir){
   const sx = cx - camera.px, sy = cy - camera.py;
   if (sx < -120 || sx > CANVAS_W + 120 || sy < -80 || sy > CANVAS_H + 80) return;
+  // Painted wolf sprite when available (faces with movement dir); soft contact
+  // shadow under it. Falls back to the procedural silhouette below on 404.
+  const _okW = (i => i && i.complete && i.naturalWidth > 0);
+  const wImg = (dir > 0) ? (IMG.wolfRight || IMG.wolfLeft) : (IMG.wolfLeft || IMG.wolfRight);
+  if (_okW(wImg)) {
+    const sz = TILE * 1.4;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath(); ctx.ellipse(sx, sy + sz*0.34, sz*0.30, sz*0.09, 0, 0, Math.PI*2); ctx.fill();
+    // If only the "wrong" facing exists, mirror it so the wolf always faces travel.
+    const haveExact = (dir > 0) ? _okW(IMG.wolfRight) : _okW(IMG.wolfLeft);
+    if (!haveExact && dir > 0) { ctx.translate(sx, sy); ctx.scale(-1, 1); ctx.translate(-sx, -sy); }
+    ctx.drawImage(wImg, sx - sz/2, sy - sz*0.62, sz, sz);
+    ctx.restore();
+    return;
+  }
   ctx.save();
   const shimmer = 0.6 + 0.10 * Math.sin(performance.now() / 300);
   if (dir > 0){ ctx.translate(sx, sy); ctx.scale(-1, 1); ctx.translate(-sx, -sy); }
@@ -17598,6 +17645,12 @@ const PALACE_DECOR = [
   { kind: 'cookfire', tx: 11, ty: 5  },
   { kind: 'rockpile', tx: 7,  ty: 10 },
   { kind: 'rockpile', tx: 27, ty: 10 },
+  // West-bank marketplace flavour (the Market/Caravan checkpoint zone). Painted
+  // stall sprites when present; non-blocking decor on open floor tiles.
+  { kind: 'marketStall',  tx: 2, ty: 9,  variant: 0 },
+  { kind: 'marketStall',  tx: 2, ty: 11, variant: 1 },
+  // Signpost marking the stranded west-bank flock.
+  { kind: 'flockSignpost', tx: 5, ty: 11 },
   // v2.3.3 Jane: red-with-gold-ankh palace BANNERS removed from Scene 2.
   // They were a leftover from Scene 1's palace and read as alien Egyptian
   // iconography in the Midian desert. The treasure-hiding contract that
@@ -17612,6 +17665,8 @@ function drawPalaceDecor(){
       case 'tent':     drawDesertTent(dx, dy); break;
       case 'cookfire': drawCookfire(dx, dy); break;
       case 'rockpile': drawRockpile(dx, dy); break;
+      case 'marketStall':   drawMarketStall(dx, dy, d.variant); break;
+      case 'flockSignpost': drawFlockSignpost(dx, dy); break;
       case 'banner':   drawBanner(dx, dy); break;
       // legacy palace draws still present below for backward compatibility
       case 'throne':   drawThrone(dx, dy); break;
@@ -17621,6 +17676,42 @@ function drawPalaceDecor(){
   }
 }
 /* --- desert decor renderers --- */
+function drawMarketStall(dx, dy, variant){
+  const _ok = (i => i && i.complete && i.naturalWidth > 0);
+  // variant 1 prefers the optional 2nd stall art; both fall back to each other.
+  const img = (variant ? (IMG.marketStall2 || IMG.marketStall) : (IMG.marketStall || IMG.marketStall2));
+  const w = TILE * 1.7, h = TILE * 1.7;
+  const ox = dx + TILE/2 - w/2, oy = dy + TILE - h*0.92;
+  // soft contact shadow
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath(); ctx.ellipse(dx + TILE/2, dy + TILE*0.92, TILE*0.55, TILE*0.13, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+  if (_ok(img)) { ctx.drawImage(img, ox, oy, w, h); return; }
+  // fallback: striped-awning stall so the marketplace still reads without art
+  ctx.save();
+  ctx.fillStyle = '#6b3f14'; ctx.fillRect(dx + TILE*0.2, dy + TILE*0.45, TILE*0.6, TILE*0.5);
+  ctx.fillStyle = '#c8412c';
+  for (let i = 0; i < 4; i++){ ctx.fillRect(dx + TILE*0.1 + i*TILE*0.22, dy + TILE*0.30, TILE*0.11, TILE*0.16); }
+  ctx.fillStyle = '#f2d28a';
+  for (let i = 0; i < 4; i++){ ctx.fillRect(dx + TILE*0.21 + i*TILE*0.22, dy + TILE*0.30, TILE*0.11, TILE*0.16); }
+  ctx.restore();
+}
+function drawFlockSignpost(dx, dy){
+  const _ok = (i => i && i.complete && i.naturalWidth > 0);
+  const w = TILE * 1.0, h = TILE * 1.0;
+  const ox = dx + TILE/2 - w/2, oy = dy + TILE - h*0.95;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath(); ctx.ellipse(dx + TILE/2, dy + TILE*0.92, TILE*0.28, TILE*0.08, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+  if (_ok(IMG.flockSignpost)) { ctx.drawImage(IMG.flockSignpost, ox, oy, w, h); return; }
+  // fallback: simple wooden post + board
+  ctx.save();
+  ctx.fillStyle = '#7a4a1c'; ctx.fillRect(dx + TILE*0.46, dy + TILE*0.4, TILE*0.08, TILE*0.5);
+  ctx.fillStyle = '#b5803a'; ctx.fillRect(dx + TILE*0.28, dy + TILE*0.28, TILE*0.44, TILE*0.22);
+  ctx.restore();
+}
 function drawDesertTent(dx, dy){
   // bedouin-style tent: flat top with sloped sides, two poles, dark cloth
   const tx0 = dx + 2, ty0 = dy + 6;
