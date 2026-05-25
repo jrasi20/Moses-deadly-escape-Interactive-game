@@ -876,6 +876,24 @@
     70%  { transform:translateY(0) scale(1.05) rotate(-2deg); }
     100% { opacity:1; transform:translateY(0) scale(1) rotate(0); }
   }
+  /* ==== POWER-UP DOCK: first-tap pulse + "TAP" arrow (parity with Scene 1) ==== */
+  @keyframes puFirstTapPulse {
+    0%, 100% { transform: scale(1);    box-shadow: 0 3px 10px rgba(0,0,0,0.5), 0 0 0 0  rgba(255,217,118,0.95); }
+    50%      { transform: scale(1.08); box-shadow: 0 6px 18px rgba(0,0,0,0.55), 0 0 0 12px rgba(255,217,118,0); }
+  }
+  .pu-first-tap-pulse { animation: puFirstTapPulse 1.4s ease-out infinite; }
+  .pu-tap-arrow {
+    position:absolute; left:50%; top:-22px; transform:translateX(-50%);
+    background:linear-gradient(180deg,#fff5cd,#ffd976); color:#3a1708;
+    border:2px solid #c79a3a; border-radius:14px; padding:2px 8px;
+    font-family:Georgia, serif; font-size:10px; font-weight:800; letter-spacing:0.6px;
+    white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,0.4); pointer-events:none; z-index:6;
+    animation:puArrowBob 1.2s ease-in-out infinite;
+  }
+  @keyframes puArrowBob {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-4px); }
+  }
   /* ==== SLOW-MO CAPTURE (screen freeze + shake) ==== */
   .capture-freeze { filter:grayscale(0.55) brightness(0.85) blur(1.2px) !important; }
   .capture-shake  { animation: captureShake 1.4s cubic-bezier(.36,.07,.19,.97); }
@@ -11856,6 +11874,10 @@ function _loadLifetimeTreasures(){ try { return parseInt(localStorage.getItem(_L
 function _loadLifetimeCrowns(){    try { return parseInt(localStorage.getItem(_LIFETIME_CROWNS_KEY)    || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadLifetimeScrolls(){   try { return parseInt(localStorage.getItem(_LIFETIME_SCROLLS_KEY)   || '0', 10) || 0; } catch(e){ return 0; } }
 function _loadUnlocks(){ try { return JSON.parse(localStorage.getItem(_UNLOCKS_KEY) || '[]'); } catch(e){ return []; } }
+// First-tap discovery cue: pulse + "TAP" arrow on a ready power until first used.
+const _PU_TAPPED_KEY = 'bek.bundle1.puTapped';
+function _loadPuTapped(){ try { return new Set(JSON.parse(localStorage.getItem(_PU_TAPPED_KEY) || '[]')); } catch(e){ return new Set(); } }
+function _markPuTapped(key){ try { const s=_loadPuTapped(); s.add(key); localStorage.setItem(_PU_TAPPED_KEY, JSON.stringify([...s])); } catch(e){} }
 function _hasUnlock(key){ return _loadUnlocks().includes(key); }
 
 /* ---------- IN-GAME POWER DOCK (ported from scenes 1 & 2, wired to scene-3 systems) ----------
@@ -11869,6 +11891,7 @@ function _activatePowerup(key){
   const tier = UNLOCK_TIERS.find(t => t.key === key);
   if (!tier) return;
   if (!_hasUnlock(key)) return;
+  try { _markPuTapped(key); } catch(e){}   // stop the first-tap pulse/arrow once used
   if (!_puReady(key)) {
     const left = Math.max(0, Math.ceil(((window._puCooldownUntil[key] || 0) - performance.now()) / 1000));
     try { toast('⏳ ' + tier.label + ' recharging — ' + left + 's left.'); } catch(e){}
@@ -11936,17 +11959,22 @@ function _refreshUnlockButtons(){
     const dock = document.getElementById('hudPowerups');
     if (!dock) return;
     const have = _loadUnlocks();
+    const tapped = _loadPuTapped();
     let html = '';
     for (const tier of UNLOCK_TIERS) {
       if (!have.includes(tier.key)) continue;
       const ready  = _puReady(tier.key);
       const active = _puActive(tier.key);
+      // God's Grace is passive (auto-heal) — never show the "TAP me" cue for it.
+      const passive = (tier.key === 'pharaohsMercy');
+      const showCue = !passive && ready && !active && !tapped.has(tier.key);
       const css = active ? 'background:linear-gradient(145deg,#7fff8a,#3aa54a);box-shadow:0 0 14px rgba(120,255,140,0.85);'
                 : ready  ? 'background:linear-gradient(145deg,#ffd976,#c38b28);'
                 :          'background:linear-gradient(145deg,#6a4a20,#3a2810);opacity:0.55;';
       const cdLeft = ready ? '' : Math.max(0, Math.ceil(((window._puCooldownUntil[tier.key] || 0) - performance.now()) / 1000));
       const cdBadge = cdLeft ? '<span style="position:absolute;right:-4px;top:-4px;background:#000;color:#ffd976;border-radius:50%;width:18px;height:18px;font-size:10px;display:flex;align-items:center;justify-content:center;border:1px solid #ffd976;">' + cdLeft + '</span>' : '';
-      html += '<button type="button" data-pu="' + tier.key + '" class="hud-pu-btn" aria-label="' + tier.label + '" title="' + tier.desc + '" style="position:relative;border:2px solid #ffd976;border-radius:10px;width:48px;height:48px;font-size:22px;cursor:pointer;color:#3a1505;font-weight:900;' + css + '">' + tier.label.split(' ')[0] + cdBadge + '</button>';
+      const arrow = showCue ? '<span class="pu-tap-arrow" aria-hidden="true">→ TAP</span>' : '';
+      html += '<button type="button" data-pu="' + tier.key + '" class="hud-pu-btn' + (showCue ? ' pu-first-tap-pulse' : '') + '" aria-label="' + tier.label + '" title="' + tier.desc + '" style="position:relative;border:2px solid #ffd976;border-radius:10px;width:48px;height:48px;font-size:22px;cursor:pointer;color:#3a1505;font-weight:900;' + css + '">' + tier.label.split(' ')[0] + cdBadge + arrow + '</button>';
     }
     dock.innerHTML = html;
     dock.querySelectorAll('button[data-pu]').forEach(b => { b.addEventListener('click', () => _activatePowerup(b.getAttribute('data-pu'))); });

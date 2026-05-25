@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v34'; // v34: FIX Scene-3 truth card was unreachable (chest placed off-map at col 36 on a 35-wide map) — moved onto the row-12 exit approach so it's collectible; restores the Truth Card Keeper badge + Truth Library entry for one-world parity
+const CACHE_VERSION = 'bek-bundle-v35'; // v35: power dock polish parity — first-tap pulse + '→ TAP' arrow on a newly-ready power (persisted via bek.bundle1.puTapped), passive God's Grace excluded; matches scenes 1/2
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
