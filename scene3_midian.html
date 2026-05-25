@@ -7566,7 +7566,10 @@ function playIntroPan(onDone){
       try {
         if (_introPanLabel && !_introPanLabel.dataset.flipped) {
           _introPanLabel.dataset.flipped = '1';
-          _introPanLabel.innerHTML = '→ REACH THIS EXIT ←<br><span style="font-size:13px;font-weight:600;letter-spacing:0.3px;">Solve checkpoints to unlock it!</span>';
+          // 2026-05-26 (Jane: "the goal for each scene on the tutorial should be
+          // laid out clearly, short and crisp"). Scene 3 goal = rescue + water +
+          // beat the sunset (was a generic copy-pasted "solve checkpoints" line).
+          _introPanLabel.innerHTML = '→ REACH JETHRO\'S TENT ←<br><span style="font-size:13px;font-weight:600;letter-spacing:0.3px;">Rescue the daughters · water the flock · beat the sunset</span>';
           _introPanLabel.style.background = 'linear-gradient(180deg,#0f3a1a,#1f6b2e)';
           _introPanLabel.style.color = '#ffeaa3';
           _introPanLabel.style.borderColor = '#ffeaa3';
