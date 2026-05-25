@@ -2248,6 +2248,14 @@
 
 <!-- ================ GAME PAGE ================ -->
 <div class="game-page" id="gamePage">
+<!-- 2026-05-26 (Jane): ☀️ SUNSET tint — warms + darkens the world as daylight runs
+     out. Scene 3 has no sky, so this is how kids FEEL the sunset. Driven by
+     game.timeLeft/timeLimit in updateHudTimer(). z-index 4 = over canvas, under HUD. -->
+<div id="sunsetTint" aria-hidden="true" style="position:fixed; inset:0; pointer-events:none; z-index:4; opacity:0; transition:opacity 1.2s linear, background 1.2s linear;"></div>
+<style>
+@keyframes sunsetCriticalPulse { 0%,100%{ opacity:var(--sunset-op,0.45);} 50%{ opacity:calc(var(--sunset-op,0.45) + 0.16);} }
+#sunsetTint.sunset-critical { animation: sunsetCriticalPulse 1.1s ease-in-out infinite; }
+</style>
   <div class="hud">
     <div class="hud-group">
       <span class="hud-hearts" id="hudHearts">&#9829;&#9829;&#9829;</span>
@@ -8282,8 +8290,29 @@ function updateHudAltitude(){
 function updateHudTimer(){
   const m = Math.floor(game.timeLeft / 60);
   const s = Math.floor(game.timeLeft % 60);
-  $('hudTimer').textContent = m + ':' + (s<10?'0':'') + s;
+  $('hudTimer').textContent = '☀️ ' + m + ':' + (s<10?'0':'') + s;
   if (game.timeLeft < 30) $('hudTimer').style.color = '#ff8a8a';
+  // 2026-05-26 (Jane): ☀️ SUNSET tint — warm + darken the world as daylight runs
+  // out (Scene 3 has no sky, so THIS is the sunset). frac 1 = full day → 0 = dusk.
+  try {
+    const tintEl = document.getElementById('sunsetTint');
+    if (tintEl) {
+      if (game.state !== 'playing' || !game.timeLimit) {
+        tintEl.style.opacity = '0'; tintEl.classList.remove('sunset-critical');
+      } else {
+        const frac = Math.max(0, Math.min(1, game.timeLeft / game.timeLimit));
+        const t = 1 - frac;                    // 0 = day → 1 = sunset
+        const g  = Math.round(200 - 150 * t);  // 200 → 50
+        const bl = Math.round(120 - 110 * t);  // 120 → 10
+        let op = (t < 0.4) ? (0.06 + t * 0.35) : (0.20 + (t - 0.4) * 0.50);
+        op = Math.min(0.5, op);
+        tintEl.style.background = 'radial-gradient(ellipse at 50% 38%, rgba(255,' + (g+35) + ',' + (bl+45) + ',0.20), rgba(255,' + g + ',' + bl + ',0.92) 92%)';
+        tintEl.style.setProperty('--sunset-op', op.toFixed(2));
+        tintEl.style.opacity = op.toFixed(2);
+        tintEl.classList.toggle('sunset-critical', game.timeLeft < 30);
+      }
+    }
+  } catch(e){}
 }
 
 /* ---------- INTERACT ----------
