@@ -4881,6 +4881,8 @@ function drawScene3Wolf(){
   ctx.arc(sx + 28, sy - 5, 1.1, 0, Math.PI*2);
   ctx.fill();
   ctx.restore();
+  // 2026-05-26: ice-encase the stalking wolf while Foe Freeze is active
+  _drawFoeIce(ctx, sx, sy, 30);
 }
 
 /* ===== PHASE 2 — FREE JETHRO'S FLOCK FROM THE WOLVES (pasture, cols 23-33) =====
@@ -5068,6 +5070,8 @@ function _drawFlockWolf(cx, cy, dir){
     if (!haveExact && dir > 0) { ctx.translate(sx, sy); ctx.scale(-1, 1); ctx.translate(-sx, -sy); }
     ctx.drawImage(wImg, sx - sz/2, sy - sz*0.62, sz, sz);
     ctx.restore();
+    // 2026-05-26: ice-encase the flock-wolf while Foe Freeze is active
+    _drawFoeIce(ctx, sx, sy - sz*0.1, sz*0.5);
     return;
   }
   ctx.save();
@@ -5082,6 +5086,8 @@ function _drawFlockWolf(cx, cy, dir){
   ctx.fillStyle = `rgba(255,200,80,${shimmer})`;
   ctx.beginPath(); ctx.arc(sx + 24, sy - 5, 1.4, 0, Math.PI*2); ctx.fill();
   ctx.restore();
+  // 2026-05-26: ice-encase the flock-wolf (fallback silhouette) while frozen
+  _drawFoeIce(ctx, sx, sy, 28);
 }
 function drawScene3RescueFlock(){
   if (game.scene !== 2 || !scene3Flock.spawned || typeof camera === 'undefined') return;
@@ -14330,6 +14336,36 @@ function updatePursuitScouts(dt){
     } catch(e){}
   }
 }
+// 2026-05-26 (Jane: "we need nice graphics to show that all foes across the
+// scene are ice frozen"). Reusable ice-encasement visual — frosty wash + icy
+// ring + radiating shards + snowflake + a shrinking freeze meter. Call from any
+// foe's draw routine while Foe Freeze is active. (cx,cy)=sprite centre in SCREEN
+// space; r = encasement radius. Mirrors Scene 1's guard ice treatment.
+function _drawFoeIce(ctx, cx, cy, r){
+  const now = performance.now();
+  const fr = Math.max(0, Math.min(1, ((window._guardFreezeUntil||0) - now) / 5000));
+  if (fr <= 0) return;
+  ctx.save();
+  const shimmer = 0.45 + 0.20 * Math.sin(now/220 + cx*0.05);
+  ctx.fillStyle = 'rgba(150,220,255,' + (shimmer*0.5).toFixed(2) + ')';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = 'rgba(200,240,255,' + (0.85*shimmer+0.15).toFixed(2) + ')';
+  ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(225,248,255,0.92)'; ctx.lineWidth = 2;
+  for (let k=0;k<6;k++){ const a = k*Math.PI/3 + now/2400;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a)*r*0.4, cy+Math.sin(a)*r*0.4);
+    ctx.lineTo(cx+Math.cos(a)*r*0.95, cy+Math.sin(a)*r*0.95);
+    ctx.stroke(); }
+  ctx.font = 'bold 20px Georgia'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.shadowColor = 'rgba(120,200,255,0.95)'; ctx.shadowBlur = 8;
+  ctx.fillText('❄', cx, cy); ctx.shadowBlur = 0;
+  const mw = r*1.4, mx = cx - mw/2, my = cy - r - 8;
+  ctx.fillStyle = 'rgba(10,30,45,0.6)'; ctx.fillRect(mx-1, my-1, mw+2, 5);
+  ctx.fillStyle = 'rgba(150,220,255,0.95)'; ctx.fillRect(mx, my, mw*fr, 3);
+  ctx.restore();
+}
 function drawPursuitScouts(ctx){
   // 2026-05-26 — Water-Jar Lure marker: jar + noise ripples at the decoy tile
   // while the Lure is active (drawn before the scene guard so it always shows).
@@ -14456,6 +14492,8 @@ function drawPursuitScouts(ctx){
       ctx.arc(sx + TILE*0.85, sy + TILE*0.15, 3, 0, Math.PI*2);
       ctx.fill();
     }
+    // 2026-05-26: ice-encase the shepherd while Foe Freeze is active
+    _drawFoeIce(ctx, sx + TILE/2, sy + TILE/2, TILE*0.85);
     // Proximity warning — red halo if scout is close
     const dx = Math.abs(s.tx - player.tx);
     const dy = Math.abs(s.ty - player.ty);

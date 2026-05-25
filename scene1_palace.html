@@ -7541,6 +7541,37 @@ function _drawSecretDoors(){
     }
   }
 }
+// 2026-05-26 (Jane: "we need nice graphics to show that all foes across the
+// scene are ice frozen"). Reusable ice-encasement visual for the chariot + dogs
+// (guards keep their own richer inline treatment). Frosty wash + icy ring +
+// radiating shards + snowflake + a shrinking freeze meter, all scaled to r.
+// (cx,cy)=centre in SCREEN space; r = encasement radius.
+function _drawFoeIce(ctx, cx, cy, r){
+  const now = performance.now();
+  const fr = Math.max(0, Math.min(1, ((window._guardFreezeUntil||0) - now) / 5000));
+  if (fr <= 0) return;
+  ctx.save();
+  const shimmer = 0.45 + 0.20 * Math.sin(now/220 + cx*0.05);
+  ctx.fillStyle = 'rgba(150,220,255,' + (shimmer*0.5).toFixed(2) + ')';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = 'rgba(200,240,255,' + (0.85*shimmer+0.15).toFixed(2) + ')';
+  ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(225,248,255,0.92)'; ctx.lineWidth = 2;
+  for (let k=0;k<6;k++){ const a = k*Math.PI/3 + now/2400;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a)*r*0.4, cy+Math.sin(a)*r*0.4);
+    ctx.lineTo(cx+Math.cos(a)*r*0.95, cy+Math.sin(a)*r*0.95);
+    ctx.stroke(); }
+  ctx.font = 'bold ' + Math.max(16, Math.round(r*0.45)) + 'px Georgia';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.shadowColor = 'rgba(120,200,255,0.95)'; ctx.shadowBlur = 8;
+  ctx.fillText('❄', cx, cy); ctx.shadowBlur = 0;
+  const mw = r*1.2, mx = cx - mw/2, my = cy - r - 8;
+  ctx.fillStyle = 'rgba(10,30,45,0.6)'; ctx.fillRect(mx-1, my-1, mw+2, 5);
+  ctx.fillStyle = 'rgba(150,220,255,0.95)'; ctx.fillRect(mx, my, mw*fr, 3);
+  ctx.restore();
+}
 function _drawPharaohChariot(){
   if (!_pharaohHunt.enabled) return;
   const c = _pharaohHunt.chariot;
@@ -7566,6 +7597,10 @@ function _drawPharaohChariot(){
     // Pulsing red proximity ring at TILE * 3 (matches the catch radius
     // in _updatePharaohHunt). Visible warning so the kid can see how
     // close they're allowed to be.
+    // 2026-05-26: hide the red threat ring while the chariot is ice-frozen —
+    // a frozen chariot can't catch Moses, so it shouldn't read as dangerous.
+    const _chariotFrozen = (performance.now() < (window._guardFreezeUntil || 0));
+    if (!_chariotFrozen) {
     ctx.save();
     const _now = performance.now();
     const _coneR = TILE * 3.0;
@@ -7587,6 +7622,7 @@ function _drawPharaohChariot(){
     ctx.arc(dx + TILE/2, dy + TILE/2, _coneR * 0.95, 0, Math.PI*2);
     ctx.stroke();
     ctx.restore();
+    }
     // Warm dust trail behind the chariot — gold smear so the cameo
     // reads as motion even at slow speed.
     ctx.save();
@@ -7609,6 +7645,8 @@ function _drawPharaohChariot(){
     ctx.shadowOffsetY = 6;
     ctx.drawImage(img, sx, sy, sW, sH);
     ctx.restore();
+    // 2026-05-26: ice-encase Pharaoh's chariot while Foe Freeze is active
+    _drawFoeIce(ctx, sx + sW/2, sy + sH*0.5, Math.min(sW, sH) * 0.46);
   }
 }
 
@@ -20603,8 +20641,10 @@ function _drawDogOne(d){
   // square-bbox detection (not directional like guards) so a CIRCLE is the
   // honest visual, not a cone. Drawn on the floor BEFORE the dog halo. Soft
   // amber while patrolling, brightens to red when alerted/chasing.
+  // 2026-05-26: while Foe Freeze is active the dog is iced — drop the threat ring.
+  const _dogFrozen = (window._guardFreezeUntil && performance.now() < window._guardFreezeUntil);
   try {
-    if (!d.friendly) {
+    if (!d.friendly && !_dogFrozen) {
       const ringR = Math.max(2, (d.seeRadius || 3)) * TILE;
       const isAlerted = d.state === 'alerted';
       const ringFill = isAlerted ? 'rgba(255,80,80,' : 'rgba(255,180,90,';
@@ -20678,8 +20718,8 @@ function _drawDogOne(d){
     ctx.font = 'bold 10px Georgia'; ctx.textAlign = 'center';
     ctx.fillText('WOOF!', dx+TILE+4, dy+7);
   }
-  // chase indicator (red exclamation when alerted)
-  if (isAlerted) {
+  // chase indicator (red exclamation when alerted) — hidden while frozen
+  if (isAlerted && !_dogFrozen) {
     ctx.fillStyle = '#ff3030';
     ctx.font = 'bold 16px Georgia';
     ctx.textAlign = 'center';
@@ -20688,6 +20728,8 @@ function _drawDogOne(d){
     ctx.fillText('!', dx + TILE/2, dy - 4);
     ctx.shadowBlur = 0;
   }
+  // 2026-05-26: ice-encase a hostile dog while Foe Freeze is active
+  if (!d.friendly) _drawFoeIce(ctx, dx + TILE/2, dy + TILE/2, TILE*0.7);
 }
 function drawDog(){
   if (Array.isArray(dogs)) {
@@ -22220,6 +22262,9 @@ function updateServantNPC(dt){
 /* ---------- DOG bark (30% chance every ~4-6s when nearby) ---------- */
 let _dogBarkCooldown = 4500 + Math.random() * 2500;
 function updateDog(dt){
+  // 2026-05-26: Foe Freeze stops the palace dogs (no bark/patrol/chase) for the
+  // 5 s, matching updateGuards. Ice visual is drawn per-dog in _drawDogOne.
+  if (window._guardFreezeUntil && performance.now() < window._guardFreezeUntil) return;
   // v3.x audit (Bug 136): bark behavior preserved on the lead dog (dogs[1])
   // for backwards compatibility with existing toast/alert wiring, but now
   // EVERY dog patrols + chases via the loop below. Barking is a separate

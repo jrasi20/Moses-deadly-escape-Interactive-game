@@ -12556,6 +12556,41 @@ function updatePursuitScouts(dt){
     } catch(e){}
   }
 }
+// 2026-05-26 (Jane: "we need nice graphics to show that all foes across the
+// scene are ice frozen"). Reusable ice-encasement visual — frosty wash + icy
+// ring + radiating shards + snowflake + a shrinking freeze meter. Call from
+// any foe's draw routine while Foe Freeze is active. (cx,cy)=sprite centre in
+// SCREEN space; r = encasement radius. Mirrors Scene 1's guard ice treatment.
+function _drawFoeIce(ctx, cx, cy, r){
+  const now = performance.now();
+  const fr = Math.max(0, Math.min(1, ((window._guardFreezeUntil||0) - now) / 5000));
+  if (fr <= 0) return;
+  ctx.save();
+  const shimmer = 0.45 + 0.20 * Math.sin(now/220 + cx*0.05);
+  // frosty blue wash
+  ctx.fillStyle = 'rgba(150,220,255,' + (shimmer*0.5).toFixed(2) + ')';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  // crisp icy ring
+  ctx.strokeStyle = 'rgba(200,240,255,' + (0.85*shimmer+0.15).toFixed(2) + ')';
+  ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+  // radiating ice shards
+  ctx.strokeStyle = 'rgba(225,248,255,0.92)'; ctx.lineWidth = 2;
+  for (let k=0;k<6;k++){ const a = k*Math.PI/3 + now/2400;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a)*r*0.4, cy+Math.sin(a)*r*0.4);
+    ctx.lineTo(cx+Math.cos(a)*r*0.95, cy+Math.sin(a)*r*0.95);
+    ctx.stroke(); }
+  // snowflake glyph on the chest
+  ctx.font = 'bold 20px Georgia'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.shadowColor = 'rgba(120,200,255,0.95)'; ctx.shadowBlur = 8;
+  ctx.fillText('❄', cx, cy); ctx.shadowBlur = 0;
+  // shrinking freeze meter above the head (1 -> 0 over the 5 s)
+  const mw = r*1.4, mx = cx - mw/2, my = cy - r - 8;
+  ctx.fillStyle = 'rgba(10,30,45,0.6)'; ctx.fillRect(mx-1, my-1, mw+2, 5);
+  ctx.fillStyle = 'rgba(150,220,255,0.95)'; ctx.fillRect(mx, my, mw*fr, 3);
+  ctx.restore();
+}
 function drawPursuitScouts(ctx){
   if (game.scene !== 2) return;
   // 2026-05-26 — Lure marker: tossed rock + expanding noise ripples at the
@@ -12600,10 +12635,14 @@ function drawPursuitScouts(ctx){
     if (sx < -TILE*2 || sx > CANVAS_W + TILE || sy < -TILE || sy > CANVAS_H + TILE) continue;
     // v2.3 Jane: visible scout vision cone — scouts chasing Moses treated
     // as "alerted" so kids see a red forward cone while they close in.
-    try {
-      const scoutState = (!player.crouched && !isMosesInCave()) ? 'alerted' : 'suspicious';
-      _drawVisionCone(sx + TILE/2, sy + TILE/2, s.dir || 'right', 3, scoutState);
-    } catch(e){}
+    // 2026-05-26: suppress the cone while frozen (a frozen foe isn't scanning).
+    const _scoutFrozen = (window._guardFreezeUntil && performance.now() < window._guardFreezeUntil);
+    if (!_scoutFrozen) {
+      try {
+        const scoutState = (!player.crouched && !isMosesInCave()) ? 'alerted' : 'suspicious';
+        _drawVisionCone(sx + TILE/2, sy + TILE/2, s.dir || 'right', 3, scoutState);
+      } catch(e){}
+    }
     // Shadow under feet
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.beginPath();
@@ -12657,6 +12696,8 @@ function drawPursuitScouts(ctx){
       ctx.arc(sx + TILE*0.85, sy + TILE*0.15, 3, 0, Math.PI*2);
       ctx.fill();
     }
+    // 2026-05-26: ice-encase the scout while Foe Freeze is active
+    _drawFoeIce(ctx, sx + TILE/2, sy + TILE/2, TILE*0.85);
     // Proximity warning — red halo if scout is close
     const dx = Math.abs(s.tx - player.tx);
     const dy = Math.abs(s.ty - player.ty);
@@ -13524,6 +13565,8 @@ function spawnActiveVulture(){
 function updateActiveVultures(dt){
   if (window._introPanActive) return; // PM63g
   if (game.scene !== 2) return;
+  // 2026-05-26: Foe Freeze suspends vultures mid-swoop (no move, no damage).
+  if (window._guardFreezeUntil && performance.now() < window._guardFreezeUntil) return;
   for (let i = activeVultures.length - 1; i >= 0; i--) {
     const v = activeVultures[i];
     v.px += v.vx * dt;
@@ -13616,6 +13659,8 @@ function drawActiveVultures(){
       ctx.fill();
       ctx.restore();
     }
+    // 2026-05-26: ice-encase the vulture while Foe Freeze is active
+    _drawFoeIce(ctx, sx, sy, size*0.55);
   }
 }
 
@@ -13672,6 +13717,8 @@ function spawnActiveFox(){
 function updateActiveFoxes(dt){
   if (window._introPanActive) return; // PM63g
   if (game.scene !== 2) return;
+  // 2026-05-26: Foe Freeze stops a darting fox in its tracks (no move/damage).
+  if (window._guardFreezeUntil && performance.now() < window._guardFreezeUntil) return;
   for (let i = activeFoxes.length - 1; i >= 0; i--){
     const f = activeFoxes[i];
     f.px += f.vx * dt;
@@ -13773,6 +13820,8 @@ function drawActiveFoxes(){
       ctx.beginPath(); ctx.arc(tailX, sy + size*0.55, size*0.05, 0, Math.PI*2); ctx.fill();
       ctx.restore();
     }
+    // 2026-05-26: ice-encase the fox while Foe Freeze is active (both branches)
+    _drawFoeIce(ctx, sx + size*0.5, sy + size*0.5, size*0.55);
   }
 }
 
