@@ -4833,7 +4833,7 @@ function _drawFlockWolf(cx, cy, dir){
   ctx.beginPath(); ctx.arc(sx + 24, sy - 5, 1.4, 0, Math.PI*2); ctx.fill();
   ctx.restore();
 }
-function drawScene3Flock(){
+function drawScene3RescueFlock(){
   if (game.scene !== 2 || !scene3Flock.spawned || typeof camera === 'undefined') return;
   for (const s of scene3Flock.sheep){
     if (s.state === 'gone') continue;
@@ -5041,16 +5041,26 @@ function _drawHerdPen(now){
   const w=(p.x1-p.x0+1)*TILE, h=(p.y1-p.y0+1)*TILE;
   if (x>CANVAS_W||x+w<0||y>CANVAS_H||y+h<0) return;
   ctx.save();
+  // soft grass tint marks the pen footprint
   ctx.fillStyle='rgba(120,180,90,0.10)'; ctx.fillRect(x,y,w,h);
-  ctx.strokeStyle='rgba(120,80,40,0.85)'; ctx.lineWidth=Math.max(2,TILE*0.07);
-  ctx.setLineDash([TILE*0.5, TILE*0.22]);
-  ctx.beginPath();
-  ctx.moveTo(x,y); ctx.lineTo(x+w,y); ctx.lineTo(x+w,y+h); ctx.lineTo(x,y+h);
-  ctx.lineTo(x,y+h*0.62); ctx.moveTo(x,y+h*0.38); ctx.lineTo(x,y);   // west gate gap (toward the river)
-  ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle='#6b4a2a';
-  const post=(px,py)=>ctx.fillRect(px-3,py-10,6,16);
-  post(x,y); post(x+w,y); post(x,y+h); post(x+w,y+h);
+  const okI=(im)=>im&&im.complete&&im.naturalWidth;
+  if (okI(IMG.sheepPenWall)){
+    // Real stone-pen enclosure sprite: gate opening faces WEST (toward the river
+    // and the incoming flock). Drawn a touch taller so the curved back wall sits
+    // behind the pen; sheep draw afterward and so appear inside it.
+    ctx.drawImage(IMG.sheepPenWall, x, y - h*0.12, w, h*1.12);
+  } else {
+    // vector fallback — dashed rope fence with a west gate gap + corner posts
+    ctx.strokeStyle='rgba(120,80,40,0.85)'; ctx.lineWidth=Math.max(2,TILE*0.07);
+    ctx.setLineDash([TILE*0.5, TILE*0.22]);
+    ctx.beginPath();
+    ctx.moveTo(x,y); ctx.lineTo(x+w,y); ctx.lineTo(x+w,y+h); ctx.lineTo(x,y+h);
+    ctx.lineTo(x,y+h*0.62); ctx.moveTo(x,y+h*0.38); ctx.lineTo(x,y);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#6b4a2a';
+    const post=(px,py)=>ctx.fillRect(px-3,py-10,6,16);
+    post(x,y); post(x+w,y); post(x,y+h); post(x+w,y+h);
+  }
   ctx.restore();
 }
 function _drawHerdCounter(txt){
@@ -7766,6 +7776,7 @@ const TUT_STEPS = [
   { icon:'[>]',  title:'Move Moses', body:'Tap the arrows below, swipe the screen, or use arrow keys on a keyboard to guide Moses east across Midian toward Jethro\u2019s tent.' },
   { icon:'[#]',  title:'Hide Behind Palms & Rocks', body:'Step beside a palm cluster, rock outcrop, or water-jar pile [#] to crouch. Crouching hides Moses from the three rude shepherds patrolling near the well.' },
   { icon:'[?]',  title:'Midian Stops (MANDATORY)', body:'Five glowing [?] stops are UNAVOIDABLE on the way to Jethro\u2019s tent: three Bible Checkpoints, plus two big mini-games \u2014 the Well (water Jethro\u2019s flock) and the Rescue (save his daughters from the rude shepherds). Walk near a Bible Checkpoint and Moses is stopped for 3 questions. You must clear EVERY stop to open the path east.' },
+  { icon:'[~]',  title:'Cross the River & Lead the Flock', body:'A wide river splits Midian in two. Clear the three Bible Checkpoints to earn three crystal stones \u2014 together they BUILD a stepping-stone crossing! A little flock is stranded on the west bank. Once the crossing is built, walk up to the sheep and they\u2019ll follow you across the stones into the safe pen. Be a good shepherd, just like Moses became in Midian.' },
   { icon:'[!]',  title:'Reach Jethro\u2019s Tent', body:'To finish Scene 3, Moses must first clear all five Midian stops \u2014 the three Bible Checkpoints, the Well, and the Rescue \u2014 then walk into the glowing EXIT tile on the east edge: Jethro\u2019s tent. Only then does the scene end and God welcomes Moses into a new family!' },
   { icon:'[x]',  title:'Watch for the Rude Shepherds', body:'Three rude shepherds patrol near the well. Stay in cover \u2014 palms, rocks, jar piles \u2014 when they look your way. Bump into one and Moses must answer a question to drive him off. Moses stood up for the weak; you can too.' },
 ];
@@ -15322,7 +15333,9 @@ function render(){
   try { drawStubbornGoat(); } catch(e){}
   // Scene 3: dusk wolf shadow — slinks along the south edge at twilight.
   try { drawScene3Wolf(); } catch(e){}
-  try { drawScene3Flock(); } catch(e){}
+  // Scene 3 Phase 2: the wolf-rescue flock (pinned sheep + stalking wolves) Moses
+  // frees in the pasture. Previously shadowed by a duplicate name — now restored.
+  try { drawScene3RescueFlock(); } catch(e){}
   // Scene 3: charging ram random event — dangerous pasture hazard.
   try { drawScene3Ram(); } catch(e){}
   // Scene 3: donkey caravan — marketplace ambience, gentle bump obstacle.

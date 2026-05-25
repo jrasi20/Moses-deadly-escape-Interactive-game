@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v30'; // v30: NEW 'Lead the Lost Flock Across the River' herding mechanic — once the crossing is built, a stranded west-bank flock follows Moses' path across the stepping stones into an east-bank pen; cinematic blessing (Exodus 2:17) + bonus reward on completion. Non-blocking.
+const CACHE_VERSION = 'bek-bundle-v31'; // v31: fix drawScene3Flock name collision (wolf-rescue flock now renders); add river+flock tutorial step; herd pen now uses the stone sheep-pen-wall sprite
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
