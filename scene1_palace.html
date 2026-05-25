@@ -17693,19 +17693,26 @@ function updateGuards(dt){
         else if (_ey > 0) g.dir = 'down'; else if (_ey < 0) g.dir = 'up';
         continue;
       }
-      const _step = (nx, ny, dir) => {
-        if (!isWalkable(nx, ny)) return false;
-        for (const cg of challengeGates) { if (!cg.solved && cg.tx === nx && cg.ty === ny) return false; }
-        if (player.tx === nx && player.ty === ny) return false;
-        g.tx = nx; g.ty = ny; g.dir = dir; return true;
-      };
-      if (Math.abs(_ex) >= Math.abs(_ey)) {
-        ((_ex > 0) ? _step(g.tx + 1, g.ty, 'right') : _step(g.tx - 1, g.ty, 'left'))
-          || (_ey !== 0 && _step(g.tx, g.ty + (_ey > 0 ? 1 : -1), _ey > 0 ? 'down' : 'up'));
-      } else {
-        ((_ey > 0) ? _step(g.tx, g.ty + 1, 'down') : _step(g.tx, g.ty - 1, 'up'))
-          || (_ex !== 0 && _step(g.tx + (_ex > 0 ? 1 : -1), g.ty, _ex > 0 ? 'right' : 'left'));
+      // 2026-05-26: robust GREEDY-BEST-STEP (parity with Scenes 2 & 3). Pick the
+      // walkable neighbour that gets CLOSEST to the decoy, instead of the older
+      // single-axis-then-fallback step which could stick against an L-shaped wall.
+      const _cands = [
+        { nx: g.tx + 1, ny: g.ty, dir: 'right' },
+        { nx: g.tx - 1, ny: g.ty, dir: 'left'  },
+        { nx: g.tx, ny: g.ty + 1, dir: 'down'  },
+        { nx: g.tx, ny: g.ty - 1, dir: 'up'    },
+      ];
+      let _best = null, _bestD = Infinity;
+      for (const c of _cands) {
+        if (!isWalkable(c.nx, c.ny)) continue;
+        let _gated = false;
+        for (const cg of challengeGates) { if (!cg.solved && cg.tx === c.nx && cg.ty === c.ny) { _gated = true; break; } }
+        if (_gated) continue;
+        if (player.tx === c.nx && player.ty === c.ny) continue;
+        const _d = Math.abs(c.nx - _dT.x) + Math.abs(c.ny - _dT.y);
+        if (_d < _bestD) { _bestD = _d; _best = c; }
       }
+      if (_best) { g.tx = _best.nx; g.ty = _best.ny; g.dir = _best.dir; }
     }
   } else {
     for (const g of guards) { if (g._decoyLured) g._decoyLured = false; }
