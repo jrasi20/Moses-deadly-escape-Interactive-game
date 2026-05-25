@@ -7979,6 +7979,14 @@ function restartScene() {
   // v3.3 resets
   game.crownFound = false;
   window._godsGraceUsedScene3 = false;   // God's Grace re-arms each scene run
+  // Canonical E10: clear all leftover power-up state so a previous run's cooldown,
+  // active timer, or armed flag never carries into this one.
+  try {
+    window._puCooldownUntil = {}; window._puActiveUntil = {};
+    window._speedBurstUntil = 0; window._guardFreezeUntil = 0; window._royalVisionUntil = 0;
+    window._truthSeekerArmed = false; window._scribesWisdomArmed = false;
+    if (typeof _refreshUnlockButtons === 'function') _refreshUnlockButtons();
+  } catch(e){}
   game.truthCardCollected = false;
   game.midSceneTruth = null;
   game.peeksLeft = 2;
@@ -15807,7 +15815,19 @@ function drawFootprints(){
 }
 
 /* ---------- RENDER ---------- */
+// Canonical C1: one thrown exception inside render() aborts the whole layer
+// chain, leaving the canvas on its last (often blank) clear — the "black canvas"
+// bug. Wrap the body so a bad frame is logged ONCE (no 60fps spam) and the next
+// frame simply retries.
+const _renderErrSeen = Object.create(null);
 function render(){
+  try { _renderInner(); }
+  catch(e){
+    const k = (e && e.message) || String(e);
+    if (!_renderErrSeen[k]) { _renderErrSeen[k] = 1; try { console.error('[render]', e); } catch(_){} }
+  }
+}
+function _renderInner(){
   // v2.0 cinematic stack for Scene 2 (order = back-to-front):
   //   1. Sky gradient (difficulty-anchored time band)
   //   2. Sun/moon disc
@@ -18830,12 +18850,26 @@ function drawCompass(){
    v3.6.1: extended linger from 2.2s -> 4.5s so "how-to-play" hints stay
    readable long enough for younger kids to finish reading them. */
 let toastTimer = null;
+// Canonical D1: dedupe + short FIFO queue so the many in-world messages (proximity
+// tips, raid warning, mini-game hints, sheep-scatter) don't clobber one another
+// before a kid can read them. Identical messages within 6s are dropped.
+let _toastQueue = [], _toastShowing = false, _toastLast = { msg:'', at:0 };
 function toast(msg){
-  const el = $('toast');
-  el.textContent = msg;
+  const now = performance.now();
+  if (msg === _toastLast.msg && (now - _toastLast.at) < 6000) return;
+  _toastLast = { msg, at: now };
+  _toastQueue.push(msg);
+  if (_toastQueue.length > 4) _toastQueue.splice(0, _toastQueue.length - 4);
+  if (!_toastShowing) _toastNext();
+}
+function _toastNext(){
+  const el = $('toast'); if (!el) return;
+  if (!_toastQueue.length) { _toastShowing = false; return; }
+  _toastShowing = true;
+  el.textContent = _toastQueue.shift();
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 4500);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(_toastNext, 260); }, 2700);
 }
 
 /* ---------- v3.4 CENSER + SERVANT update + collision ---------- */
