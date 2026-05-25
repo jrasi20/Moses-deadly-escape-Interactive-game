@@ -10871,8 +10871,8 @@ const UNLOCK_TIERS = [
     label: '❄️ Foe Freeze',      cooldownMs: 35000,
     desc: 'Guards AND scouts freeze in place for 5 seconds. Recharges every 35 s.' },
   { threshold:   4, resource: 'crowns',    key: 'royalVision',
-    label: '👁️ Royal Vision',    cooldownMs: 30000,
-    desc: 'Lights up every guard/scout sight cone so you can plan a safe path. Lasts 8 seconds.' },
+    label: '🪨 Rock Lure',    cooldownMs: 30000,
+    desc: 'Toss a rock — nearby scouts rush to the clatter for 5 seconds, opening your path east.' },
   { threshold: 350, resource: 'treasures', key: 'truthSeeker',
     label: '📖 Truth Seeker',    cooldownMs: 60000,
     desc: 'On the next Bible Gate: clue is free + 2 wrong options greyed out.' },
@@ -10968,10 +10968,25 @@ function _activatePowerup(key){
     window._puActiveUntil[key] = now + 5000;
     try { play('frozen'); } catch(e){}
     try { toast('❄️ FOE FREEZE! Slip past while they\'re stuck!'); } catch(e){}
-  } else if (key === 'royalVision') {
-    window._royalVisionUntil = now + 8000;
-    window._puActiveUntil[key] = now + 8000;
-    try { toast('👁️ ROYAL VISION! Sight cones revealed.'); } catch(e){}
+  } else if (key === 'royalVision') {   // key kept for unlock-state; effect is now the LURE (desert: rock)
+    let _ddx = 0, _ddy = 0;
+    if      (player.dir === 'up')   _ddy = -3;
+    else if (player.dir === 'down') _ddy =  3;
+    else if (player.dir === 'left') _ddx = -3;
+    else                            _ddx =  3;
+    let _dtx = player.tx + _ddx, _dty = player.ty + _ddy;
+    if (!isWalkable(_dtx, _dty)) {
+      _dtx = player.tx; _dty = player.ty;
+      for (let s = 2; s >= 1; s--) {
+        const _tx = player.tx + Math.sign(_ddx) * s, _ty = player.ty + Math.sign(_ddy) * s;
+        if (isWalkable(_tx, _ty)) { _dtx = _tx; _dty = _ty; break; }
+      }
+    }
+    window._decoyTile = { x: _dtx, y: _dty };
+    window._decoyUntil = now + 5000;
+    try { for (const s of pursuitScouts) s._decoyLured = false; } catch(e){}
+    window._puActiveUntil[key] = now + 5000;
+    try { toast('🪨 You toss a rock — the scouts run to the clatter! Slip past!'); } catch(e){}
   } else if (key === 'truthSeeker') {
     window._truthSeekerArmed = true;
     window._puActiveUntil[key] = now + 1500;
@@ -11386,7 +11401,7 @@ function _renderJourneyPanel(){
   const _WJ_TIERS = [
     { th:75,  res:'treasures', key:'speedBurst',    label:'⚡ Speed Burst' },
     { th:175, res:'treasures', key:'guardFreeze',   label:'❄️ Foe Freeze' },
-    { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1F441}️ Royal Vision' },
+    { th:4,   res:'crowns',    key:'royalVision',   label:'\u{1FAA8} Rock Lure' },
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
     { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
@@ -12395,6 +12410,36 @@ function updatePursuitScouts(dt){
     // v2.2.6: 5s grace at scene start so Moses has a head start
     if (s.spawnGraceUntil && now < s.spawnGraceUntil) continue;
     if (!s.lastAdvance) s.lastAdvance = now;
+    // 2026-05-26 — LURE: while a rock decoy is active, scouts within range chase
+    // the noise (the decoy tile), NOT Moses, and can't catch him. Opens the path.
+    if ((now < (window._decoyUntil || 0)) && window._decoyTile) {
+      const _dT = window._decoyTile;
+      const _gd = Math.abs(s.tx - _dT.x) + Math.abs(s.ty - _dT.y);
+      if (_gd <= 8) {
+        s._decoyLured = true;
+        if (now - s.lastAdvance >= s.advanceMs) {
+          s.lastAdvance = now;
+          const _pre = { x: s.tx, y: s.ty };
+          if (_gd > 1) {
+            // robust greedy step: pick the walkable neighbour CLOSEST to the
+            // decoy (handles walls — single-axis stepping got stuck).
+            let _best = null, _bestD = _gd;
+            const _cands = [[s.tx+1,s.ty,'right'],[s.tx-1,s.ty,'left'],[s.tx,s.ty+1,'down'],[s.tx,s.ty-1,'up']];
+            for (const _c of _cands) {
+              if (!isWalkable(_c[0], _c[1])) continue;
+              const _d = Math.abs(_c[0]-_dT.x) + Math.abs(_c[1]-_dT.y);
+              if (_d < _bestD) { _bestD = _d; _best = _c; }
+            }
+            if (_best) { s.tx = _best[0]; s.ty = _best[1]; s.dir = _best[2]; }
+          }
+          if      (s.tx > _pre.x) s.dir = 'right';
+          else if (s.tx < _pre.x) s.dir = 'left';
+          else if (s.ty > _pre.y) s.dir = 'down';
+          else if (s.ty < _pre.y) s.dir = 'up';
+        }
+        continue;  // skip normal chase + capture while lured
+      } else { s._decoyLured = false; }
+    } else { s._decoyLured = false; }
     if (now - s.lastAdvance >= s.advanceMs) {
       s.lastAdvance = now;
       // v2.2.7: remember pre-move tile to infer facing direction
@@ -12513,6 +12558,31 @@ function updatePursuitScouts(dt){
 }
 function drawPursuitScouts(ctx){
   if (game.scene !== 2) return;
+  // 2026-05-26 — Lure marker: tossed rock + expanding noise ripples at the
+  // decoy tile while the Rock Lure is active (so the kid sees where scouts run).
+  try {
+    const _dU = window._decoyUntil || 0, _dT = window._decoyTile;
+    if (_dT && performance.now() < _dU) {
+      const ddx = _dT.x * TILE - camera.px, ddy = _dT.y * TILE - camera.py;
+      if (ddx > -TILE*2 && ddx < CANVAS_W + TILE*2 && ddy > -TILE*2 && ddy < CANVAS_H + TILE*2) {
+        const ccx = ddx + TILE/2, ccy = ddy + TILE/2, _n = performance.now();
+        ctx.save();
+        for (let i = 0; i < 3; i++){
+          const ph = ((_n/600) + i/3) % 1;
+          ctx.beginPath(); ctx.arc(ccx, ccy, TILE*(0.3 + ph*1.3), 0, Math.PI*2);
+          ctx.strokeStyle = 'rgba(255,210,120,' + (0.5*(1-ph)).toFixed(2) + ')'; ctx.lineWidth = 3; ctx.stroke();
+        }
+        const _bob = Math.sin(_n/180)*2, _sz = TILE*0.8;
+        if (IMG.rock && IMG.rock.complete && IMG.rock.naturalWidth) {
+          ctx.drawImage(IMG.rock, ccx - _sz/2, ccy - _sz/2 + _bob, _sz, _sz);
+        } else {
+          ctx.font = Math.round(TILE*0.7) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('\u{1FAA8}', ccx, ccy + _bob);
+        }
+        ctx.restore();
+      }
+    }
+  } catch(e){}
   // v2.2.7: pick directional scout sprite (falls back to vector if PNG missing)
   const _pickScoutSprite = (dir) => {
     const ok = (im) => im && im.complete && im.naturalWidth;
