@@ -2072,6 +2072,16 @@
     .dpad-btn { height:38px; }
     .action-btn { height:36px; }
   }
+  /* ==== PROXIMITY TIP POPUP (one-world coaching, ported from Scene 1) ==== */
+  .tip-popup-overlay { position:fixed; inset:0; z-index:56; background:rgba(8,4,2,0.55); display:none; align-items:flex-end; justify-content:center; padding-bottom:14%; }
+  .tip-popup-overlay.active { display:flex; }
+  .tip-popup-card { background:linear-gradient(160deg,#3a1508,#5a2510); border:3px solid #ffd976; border-radius:14px; padding:18px 22px; max-width:min(440px,90vw); max-height:80vh; overflow-y:auto; color:#fff8e7; box-shadow:0 8px 32px rgba(0,0,0,0.55),0 0 24px rgba(255,217,118,0.35); text-align:center; font-family:Georgia,serif; animation:tipPopIn 0.32s cubic-bezier(.2,1.4,.4,1.0); }
+  .tip-popup-icon { font-size:30px; line-height:1; margin-bottom:6px; }
+  .tip-popup-title { font-size:17px; font-weight:800; color:#ffd976; margin-bottom:6px; }
+  .tip-popup-body { font-size:14.5px; line-height:1.45; color:#fff5d8; margin-bottom:14px; }
+  .tip-popup-btn { background:#ffd976; color:#5a1d06; border:none; border-radius:10px; font-family:Georgia,serif; font-weight:800; font-size:15px; padding:10px 24px; cursor:pointer; min-width:110px; min-height:44px; box-shadow:0 3px 10px rgba(0,0,0,0.4); }
+  @media (orientation:landscape) and (max-height:500px){ .tip-popup-overlay{ padding-bottom:5%; } .tip-popup-card{ padding:10px 16px; max-width:min(380px,70vw); } .tip-popup-icon{font-size:24px;} .tip-popup-title{font-size:15px;} .tip-popup-body{font-size:13px;} }
+  @keyframes tipPopIn { 0% { transform:translateY(40px) scale(0.85); opacity:0; } 100% { transform:translateY(0) scale(1); opacity:1; } }
 </style>
 </head>
 <body>
@@ -2405,6 +2415,15 @@
 </div>
 
 <!-- ================ MID-SCENE TRUTH CHEST MODAL ================ -->
+<!-- ============ PROXIMITY TIP POPUP (one-world coaching) ============ -->
+<div class="tip-popup-overlay" id="tipPopupOverlay" role="dialog" aria-modal="true" aria-labelledby="tipPopupTitle">
+  <div class="tip-popup-card">
+    <div class="tip-popup-icon" id="tipPopupIcon" aria-hidden="true">👋</div>
+    <div class="tip-popup-title" id="tipPopupTitle">Tip</div>
+    <div class="tip-popup-body" id="tipPopupBody">…</div>
+    <button class="tip-popup-btn" id="tipPopupBtn">Got it!</button>
+  </div>
+</div>
 <div class="modal-overlay" id="truthChestModal" style="z-index:42;">
   <div class="modal-content" style="background:linear-gradient(155deg,#2a0a4a,#4a1080 55%,#7b1fa2);border:3px solid #ffd700;max-width:420px;">
     <div style="color:#ffd700;font-size:12px;letter-spacing:1.5px;text-align:center;">~ A TREASURE CHEST APPEARS ~</div>
@@ -4972,12 +4991,6 @@ function updateScene3Herd(dt){
           s.state='follow'; s.slot=scene3Herd.slotNext++;
           try{ if(audio.sheepBleat){audio.sheepBleat.currentTime=0;audio.sheepBleat.volume=0.55;audio.sheepBleat.play().catch(()=>{});} }catch(e){}
           try{ const r=canvas.getBoundingClientRect(); spawnGlitterBurst(r.left+(s.px-camera.px)+TILE/2, r.top+(s.py-camera.py)+TILE/2, 8); }catch(e){}
-        }
-      } else if (!scene3Herd.nearHintShown){
-        const d=Math.hypot(player.px-s.px, player.py-s.py);
-        if (d < TILE*2.6){
-          scene3Herd.nearHintShown=true;
-          try{ toast('🐑 These sheep are stranded! Earn all 3 crystals to build the crossing, then lead them across.'); }catch(e){}
         }
       }
       if (now>=s.wanderAt){ s.wanderAt=now+1400+Math.random()*2600; const ntx=s.tx+(Math.random()<0.5?-1:1); if(_herdWalkable(ntx,s.ty)){ s.dir=ntx<s.tx?-1:1; s.tx=ntx; } }
@@ -7730,6 +7743,7 @@ function startScene1() {
   try { _applyCheckpointAfterSeed(); } catch(e){}
   // v2.1: spawn Pharaoh pursuit scouts on west edge
   try { seedPursuitScouts(); } catch(e){}
+  try { _resetFirstEventSeen(); } catch(e){}
   // v2.1: arm mirage traps (Zone C) and rolling boulder schedule (Zone A hard)
   try { seedMirages(); } catch(e){}
   try { seedRollingBoulders(); } catch(e){}
@@ -7841,6 +7855,7 @@ function restartScene() {
   try { resetScene3Herd(); } catch(e){}
   // v2.1 Scene 2: re-seed pursuit scouts + mirage traps + boulder schedule
   try { seedPursuitScouts(); } catch(e){}
+  try { _resetFirstEventSeen(); } catch(e){}
   try { seedMirages(); } catch(e){}
   try { seedRollingBoulders(); } catch(e){}
   updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try { updateHudAltitude(); } catch(e){} try { _refreshUnlockButtons(); } catch(e){}
@@ -7897,6 +7912,77 @@ $('tutNextBtn').addEventListener('click', () => {
     }
   }
 });
+
+/* ---------- PROXIMITY TIP POPUPS (one-world coaching, ported from Scene 1) ----------
+   First-time, just-in-time popups for Scene 3's signature moments. Honors the
+   shared bek.bundle1.tutMode toggle: when OFF, falls back to a one-shot toast so
+   the kid still gets the info without the modal interruption. The popup pauses
+   the world (state='tutorial') and restores the prior state on dismiss. */
+const TUT_MODE_KEY = 'bek.bundle1.tutMode';
+function _tutModeOn(){ try { return localStorage.getItem(TUT_MODE_KEY) !== '0'; } catch(e){ return true; } }
+const _firstEventSeen = { river:false, flock:false, shepherd:false, checkpoint:false, crown:false };
+function _resetFirstEventSeen(){ for (const k in _firstEventSeen) _firstEventSeen[k] = false; }
+let _tipPopupPrevState = null;
+function showTipPopup(eventKey, opts){
+  if (!opts || !opts.title || !opts.body) return;
+  if (eventKey && _firstEventSeen[eventKey]) return;
+  if (eventKey) _firstEventSeen[eventKey] = true;
+  if (!_tutModeOn()){ try { toast((opts.icon || '👋') + ' ' + opts.body); } catch(e){} return; }
+  const overlay = document.getElementById('tipPopupOverlay');
+  if (!overlay){ try { toast((opts.icon || '👋') + ' ' + opts.body); } catch(e){} return; }
+  try { $('tipPopupIcon').textContent = opts.icon || '👋'; } catch(e){}
+  try { $('tipPopupTitle').textContent = opts.title; } catch(e){}
+  try { $('tipPopupBody').textContent  = opts.body; } catch(e){}
+  overlay.classList.add('active');
+  if (game.state !== 'tutorial'){ _tipPopupPrevState = game.state; game.state = 'tutorial'; }
+  try { if (audio.alerted){ audio.alerted.pause(); } } catch(e){}
+  try { play('chime'); } catch(e){}
+}
+function _hideTipPopup(){
+  const overlay = document.getElementById('tipPopupOverlay');
+  if (overlay) overlay.classList.remove('active');
+  if (game.state === 'tutorial'){ game.state = (_tipPopupPrevState != null ? _tipPopupPrevState : 'playing'); _tipPopupPrevState = null; }
+}
+(function _wireTipPopup(){
+  const btn = document.getElementById('tipPopupBtn');
+  if (btn) btn.addEventListener('click', () => { try { play('click'); } catch(e){} _hideTipPopup(); });
+})();
+// Proximity scan — called each playing frame. Cheap distance checks; each popup
+// fires at most once per scene run (registry reset on scene start/reset).
+function _checkScene3Tips(){
+  // showTipPopup itself handles tutMode (rich popup when ON, one-shot toast when
+  // OFF), so we always run the proximity scan — each tip still fires only once.
+  if (game.state !== 'playing') return;
+  if (typeof player === 'undefined') return;
+  const px = player.tx, py = player.ty;
+  // RIVER: approaching the west bank of the 3-wide river
+  if (!_firstEventSeen.river && px >= 8 && px <= 10 && py >= 6 && py <= 18){
+    showTipPopup('river', { icon:'🌊', title:'The River of Midian',
+      body:'A wide river blocks the way east! Clear the three Bible Checkpoints to earn three crystal stones — they build a stepping-stone crossing. Then lead the stranded flock across into the pen.' });
+    return;
+  }
+  // FLOCK: near the stranded west-bank flock
+  if (!_firstEventSeen.flock && typeof scene3Herd !== 'undefined' && scene3Herd.spawned){
+    for (const s of scene3Herd.sheep){
+      if (s.state === 'graze' && Math.max(Math.abs(Math.round(s.px/TILE)-px), Math.abs(Math.round(s.py/TILE)-py)) <= 2){
+        showTipPopup('flock', { icon:'🐑', title:'A Lost Flock',
+          body:'These sheep are stranded! Once the crossing is built, walk close and they’ll follow you across the stepping stones. Watch out — a rude shepherd may rush to scatter them, so hurry, freeze him, or reach the stones!' });
+        return;
+      }
+    }
+  }
+  // SHEPHERD: first time near a rude shepherd
+  if (!_firstEventSeen.shepherd && typeof pursuitScouts !== 'undefined'){
+    for (const sh of pursuitScouts){
+      if (sh.shovedOff || sh.caught) continue;
+      if (Math.max(Math.abs(sh.tx-px), Math.abs(sh.ty-py)) <= 3){
+        showTipPopup('shepherd', { icon:'🧔', title:'Rude Shepherds',
+          body:'Three rude shepherds guard the well. Bump into one and you’ll lose a heart — but solve his checkpoint riddle and he’ll back off. ❄️ Foe Freeze stops them; ⚡ Speed Burst helps you slip past.' });
+        return;
+      }
+    }
+  }
+}
 
 /* ---------- HUD ---------- */
 function updateHudHearts(){
@@ -18554,6 +18640,7 @@ function loop(now){
     try { _maybeGodsGrace(); } catch(e){}
     try { updateScene3Ram(dt); } catch(e){}
     try { _checkScene3JarDrop(); } catch(e){}
+    try { _checkScene3Tips(); } catch(e){}
     try { updateScene3Caravan(dt); } catch(e){}
     try { updateDog(dt); } catch(e){}
     // Scene 3 (Midian) cinematic systems — mirages/boulders/vultures/foxes

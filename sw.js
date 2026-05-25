@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v35'; // v35: power dock polish parity — first-tap pulse + '→ TAP' arrow on a newly-ready power (persisted via bek.bundle1.puTapped), passive God's Grace excluded; matches scenes 1/2
+const CACHE_VERSION = 'bek-bundle-v36'; // v36: proximity tutorial popups ported to Scene 3 (river / lost flock / rude shepherds), honoring the shared tutMode toggle (rich popup when ON, one-shot toast when OFF); pauses world while reading, fires once each per run
 
 self.addEventListener('install', () => {
   // Activate immediately so the first navigation after install is controlled.
