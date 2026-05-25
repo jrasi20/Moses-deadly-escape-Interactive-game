@@ -15797,7 +15797,7 @@ function _grantAchievements(badges){
 //
 // Unlock tiers (treasures-collected → power-up):
 //   25 → "Speed Burst" — Moses sprints 2× for 5 s on action-button tap
-//   50 → "Guard Freeze" — all guards frozen for 5 s on action-button tap
+//   50 → "Foe Freeze" — all guards/foes frozen for 5 s on action-button tap
 //   80 → "Truth Seeker" — Bible Clue free + reveals 2 wrong options
 //   120 → "Pharaoh's Mercy" — second-chance: one free heart restore per scene
 //
@@ -15848,7 +15848,7 @@ const UNLOCK_TIERS = [
     label: '⚡ Speed Burst',     cooldownMs: 25000,
     desc: 'Moses sprints 2× for 5 seconds. Tap any time — recharges every 25 s.' },
   { threshold: 175, resource: 'treasures', key: 'guardFreeze',
-    label: '❄️ Guard Freeze',    cooldownMs: 35000,
+    label: '❄️ Foe Freeze',    cooldownMs: 35000,
     desc: 'All guards freeze in place for 5 seconds. Recharges every 35 s.' },
   { threshold:   4, resource: 'crowns',    key: 'royalVision',
     label: '👁️ Royal Vision',    cooldownMs: 30000,
