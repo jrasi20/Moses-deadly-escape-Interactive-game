@@ -2488,6 +2488,7 @@
 <div class="modal-overlay" id="wellPulleyModal" style="z-index:50;display:none;">
   <div class="modal-content" id="wellGameRoot" style="background:linear-gradient(155deg,#3a2a1a,#5a3a22);border:none;border-radius:0;position:fixed;inset:0;width:auto;height:auto;max-width:none;max-height:none;padding:10px 14px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;box-sizing:border-box;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
     <button id="pulleyPauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:20px;cursor:pointer;line-height:1;">⏸</button>
+    <button id="pulleyRestartBtn" aria-label="Restart" title="Restart" style="position:absolute;top:8px;right:60px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:19px;cursor:pointer;line-height:1;">🔁</button>
     <div id="pulleyPlayCol" style="width:100%;max-width:860px;display:flex;flex-direction:column;margin:auto;">
     <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;">~ RACE TO WATER THE FLOCK ~</div>
     <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;">Beat the Rude Shepherds — fill all your pots first!</h2>
@@ -8889,6 +8890,7 @@ function getHintForQuestion(q){
 const _pulley = {
   gate: null, rafId: null, lastFrame: 0,
   pots: [], combo: 0, bestCombo: 0,
+  countdown: 0, go: 0,
   over: false, win: false, celebrate: 0,
   shake: 0, drops: [], cues: [], fx: [], bucketBob: 0,
   aiming: false, aimX: 0, aimY: 0, proj: null, curWind: 0, wind: 0,
@@ -8983,7 +8985,7 @@ function _pulleyReset() {
   _pulley.shepHeave = 0; _pulley.shepPourT = 0; _pulley.paused = false; _pulley.intro = false;
   _pulley.matchPoint = false; _pulley.slowmo = 0; _pulley.flock = null; _pulley.zoom = 1; _pulley.zoomTarget = 1;
   _pulley.potsLostToSteal = 0; _pulley.ownGoals = 0; _pulley.earnedStars = 3; _pulley.winPanelShown = false;
-  _pulley.stealNo = 0;
+  _pulley.stealNo = 0; _pulley.countdown = 0; _pulley.go = 0;
   _pulley.shepX = _pulley.shepHomeX; _pulley.mosesX = _pulley.mosesHomeX;
   const lo = document.getElementById('pulleyLoseOverlay'); if (lo) lo.style.display = 'none';
   const wo = document.getElementById('pulleyWinOverlay'); if (wo) wo.style.display = 'none';
@@ -8996,9 +8998,12 @@ function openWellPulleyGame(gate) {
   _pulley.gate = gate; _pulley.lastFrame = 0;
   _pulleyReset();
   game.state = 'dialog';
-  // pause the scene BGM; the well-game music + banter + loop don't start until the
-  // player taps "Start Watering" so nothing plays under the intro/tutorial screen.
+  // pause the scene BGM. 2026-05-26 (Jane: "the bg music to begin even on the
+  // intro page"): start the well bg bed UNDER the intro/tutorial screen. It then
+  // breaks for the 3-2-1 countdown on Start Watering and resumes after (parity
+  // with the rescue game).
   try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); } } catch(e){}
+  try { if (audio.wellMusic) { audio.wellMusic.loop = true; audio.wellMusic.volume = 0.18; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
   const modal = document.getElementById('wellPulleyModal');
   modal.style.display = 'flex'; modal.classList.add('active');
   const ov = document.getElementById('pulleyPausedOverlay'); if (ov) ov.style.display = 'none';
@@ -9023,7 +9028,7 @@ function _pulleyCanvasPos(e) {
   return { x: (cx - r.left) * (600 / r.width), y: (cy - r.top) * (340 / r.height) };
 }
 function _pulleyAimStart(e) {
-  if (_pulley.over || _pulley.intro || _pulley.proj || _pulley.mosesRun || _pulley.paused || !_pulley.gate) return;
+  if (_pulley.over || _pulley.intro || _pulley.proj || _pulley.mosesRun || _pulley.paused || !_pulley.gate || _pulley.countdown > 0) return;
   if (e.cancelable) e.preventDefault();
   const p = _pulleyCanvasPos(e);
   _pulley.aiming = true; _pulley.aimX = p.x; _pulley.aimY = p.y;
@@ -9186,24 +9191,33 @@ function _pulleyStartGame() {
   const intro = document.getElementById('pulleyIntroOverlay'); if (intro) intro.style.display = 'none';
   _pulley.intro = false; _pulley.lastFrame = 0;
   _pulley.zoom = 1.16; _pulley.zoomTarget = 1; _pulley.shake = 7;   // cinematic entry punch-in (parity with rescue)
-  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = 'Drag back from Moses, then let go to splash water in!';
-  try { play('click') || play('pop'); } catch(e){}
-  // now (and only now) start the music bed, opening banter and the game loop
-  try { if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
-  _pulleySay('mosesSay', 'This water is for Jethro’s flock!', 'voJethro');
-  setTimeout(() => { if (_pulley.gate && !_pulley.over && !_pulley.paused && !_pulley.intro) _pulleySay('shepSay', 'We’ll see about that!', 'voSeeAbout'); }, 3000);
+  try { play('click') || play('pop'); } catch(e){}   // button-select SFX
+  // 2026-05-26 (Jane: "after selecting start watering, break the bg music, then
+  // play countdown music, and after countdown, begin bg music track again - same
+  // like rescue game"). BREAK the intro bed → 3-2-1 countdown → GO restarts the
+  // bed + opening narration (handled in _pulleyFrame's countdown tick).
+  try { if (audio.wellMusic) audio.wellMusic.pause(); } catch(e){}
+  _pulley.countdown = 3.0; _pulley.go = 0;
+  const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = 'Get ready…';
+  // double-rAF so the 3-2-1 beeps are audible right after the overlay swaps out.
+  try { requestAnimationFrame(() => requestAnimationFrame(() => { try { play('raceCountdown'); } catch(e){} })); } catch(e){}
   cancelAnimationFrame(_pulley.rafId); _pulley.rafId = requestAnimationFrame(_pulleyFrame);
 }
 function _pulleyRetry() {
   const lo = document.getElementById('pulleyLoseOverlay'); if (lo) lo.style.display = 'none';
   const wo = document.getElementById('pulleyWinOverlay'); if (wo) wo.style.display = 'none';
   if (!_pulley.gate) return;
+  try { play('click') || play('pop'); } catch(e){}   // button-select SFX
   cancelAnimationFrame(_pulley.rafId);
   _pulley.lastFrame = 0;
   _pulleyReset(); _pulleyUpdateHud();
   _pulley.zoom = 1.16; _pulley.zoomTarget = 1; _pulley.shake = 7;   // entry punch-in on replay too
-  document.getElementById('pulleyFeedback').textContent = 'Go again — fill every pot before the shepherd!';
-  try { if (audio.wellMusic) { audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
+  // 2026-05-26: replay runs through the same 3-2-1 countdown (music breaks, then
+  // resumes on GO with the opening banter) for parity with the first play.
+  try { if (audio.wellMusic) audio.wellMusic.pause(); } catch(e){}
+  _pulley.countdown = 3.0; _pulley.go = 0;
+  document.getElementById('pulleyFeedback').textContent = 'Get ready…';
+  try { requestAnimationFrame(() => requestAnimationFrame(() => { try { play('raceCountdown'); } catch(e){} })); } catch(e){}
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
 }
 function _closePulleyGame() {
@@ -9274,6 +9288,7 @@ function _makeWellTestGate(){ return { tx: 0, ty: 0, solved: false, _welltest: t
 // ---- pause / resume / quit (works inside the mini-game modal) ----
 function _pulleyPause() {
   if (_pulley.over || _pulley.paused || !_pulley.gate) return;
+  try { play('click') || play('pop'); } catch(e){}   // button-select SFX
   _pulley.paused = true;
   cancelAnimationFrame(_pulley.rafId);
   try { if (audio.wellMusic) audio.wellMusic.pause(); } catch(e){}
@@ -9281,6 +9296,7 @@ function _pulleyPause() {
 }
 function _pulleyResume() {
   if (!_pulley.paused) return;
+  try { play('click') || play('pop'); } catch(e){}   // button-select SFX
   _pulley.paused = false;
   const ov = document.getElementById('pulleyPausedOverlay'); if (ov) ov.style.display = 'none';
   try { if (audio.wellMusic) audio.wellMusic.play().catch(()=>{}); } catch(e){}
@@ -9397,8 +9413,27 @@ function _pulleyFrame(now) {
   const dts = dt / 1000;
   const fb = document.getElementById('pulleyFeedback');
 
+  // ===== 3-2-1-GO COUNTDOWN (parity with the rescue game) =====
+  // Holds the race (no rival fill / steals / aiming) while the beeps play; on GO
+  // it restarts the music bed + fires the opening narration (Jane: "after the
+  // countdown begin bg music ... then bring in the audio narration").
+  if (_pulley.countdown > 0 && !_pulley.over && !_pulley.intro && !_pulley.paused) {
+    const _before = _pulley.countdown;
+    _pulley.countdown = Math.max(0, _pulley.countdown - dts);
+    if (_before > 0 && _pulley.countdown <= 0) {
+      _pulley.go = 0.9;
+      _pulley.zoom = 1.12; _pulley.zoomTarget = 1; _pulley.shake = 6;   // GO! punch-in
+      try { if (audio.wellMusic) { audio.wellMusic.loop = true; audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
+      _pulleySay('mosesSay', 'This water is for Jethro’s flock!', 'voJethro');
+      setTimeout(() => { if (_pulley.gate && !_pulley.over && !_pulley.paused && !_pulley.intro && _pulley.countdown <= 0) _pulleySay('shepSay', 'We’ll see about that!', 'voSeeAbout'); }, 3000);
+      if (fb) fb.textContent = 'Drag back from Moses, then let go to splash water in!';
+    }
+  } else if (_pulley.go > 0) {
+    _pulley.go = Math.max(0, _pulley.go - dts);
+  }
+
   // ===== UPDATE =====
-  if (!_pulley.over && !_pulley.intro) {
+  if (!_pulley.over && !_pulley.intro && _pulley.countdown <= 0) {
     // pot fill "pop" animation decay
     _pulley.pots.forEach(p => { if (p.pop > 0) p.pop = Math.max(0, p.pop - dts * 2.2); });
     // rival fills his pots one at a time (unless stunned / mid-steal-away),
@@ -9799,6 +9834,26 @@ function _pulleyFrame(now) {
   if (_pulley.over && _pulley.win) {
     c.fillStyle = 'rgba(255,230,120,' + (0.12 + 0.07 * Math.sin(now / 120)).toFixed(2) + ')'; c.fillRect(0, 0, W, H);
   }
+  // 3-2-1-GO! big countdown number (drawn over the scene during the hold)
+  if (_pulley.countdown > 0 || _pulley.go > 0) {
+    c.save();
+    c.fillStyle = 'rgba(0,0,0,0.22)'; c.fillRect(0, 0, W, H);
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    if (_pulley.countdown > 0) {
+      const n = Math.ceil(_pulley.countdown), frac = _pulley.countdown - (n - 1), sc = 1 + (1 - frac) * 0.5;
+      c.font = 'bold ' + Math.round(110 * sc) + 'px Georgia';
+      c.fillStyle = 'rgba(255,225,130,' + Math.min(1, frac * 1.6).toFixed(2) + ')';
+      c.shadowColor = 'rgba(0,0,0,0.6)'; c.shadowBlur = 14;
+      c.fillText(String(n), W / 2, H / 2);
+    } else {
+      const a = Math.min(1, _pulley.go / 0.9), sc = 1 + (1 - a) * 0.6;
+      c.font = 'bold ' + Math.round(96 * sc) + 'px Georgia';
+      c.fillStyle = 'rgba(150,240,170,' + a.toFixed(2) + ')';
+      c.shadowColor = 'rgba(0,0,0,0.6)'; c.shadowBlur = 14;
+      c.fillText('GO!', W / 2, H / 2);
+    }
+    c.shadowBlur = 0; c.restore();
+  }
   c.restore();
 
   // full-canvas color flash (screen-space, drawn after the camera transform so it
@@ -9820,11 +9875,17 @@ function _pulleyFrame(now) {
   }
   const startBtn = document.getElementById('pulleyStartBtn'); if (startBtn) { startBtn.addEventListener('click', _pulleyStartGame); startBtn.addEventListener('touchend', (e) => { e.preventDefault(); _pulleyStartGame(); }); }
   const pauseBtn = document.getElementById('pulleyPauseBtn'); if (pauseBtn) pauseBtn.addEventListener('click', _pulleyPause);
+  // 2026-05-26 (Jane: "there should be a restart button to restart again"): an
+  // always-available Restart that re-runs the round (with the countdown). Ignored
+  // while the intro tutorial is still up.
+  const restartBtn = document.getElementById('pulleyRestartBtn');
+  if (restartBtn) { const _go = () => { if (!_pulley.intro && _pulley.gate) _pulleyRetry(); };
+    restartBtn.addEventListener('click', _go); restartBtn.addEventListener('touchend', (e) => { e.preventDefault(); _go(); }); }
   const resumeBtn = document.getElementById('pulleyResumeBtn'); if (resumeBtn) resumeBtn.addEventListener('click', _pulleyResume);
-  const quitBtn = document.getElementById('pulleyQuitBtn'); if (quitBtn) quitBtn.addEventListener('click', _pulleyQuit);
+  const quitBtn = document.getElementById('pulleyQuitBtn'); if (quitBtn) quitBtn.addEventListener('click', () => { try { play('click') || play('pop'); } catch(e){} _pulleyQuit(); });
   const retryBtn = document.getElementById('pulleyRetryBtn'); if (retryBtn) retryBtn.addEventListener('click', _pulleyRetry);
-  const loseQuitBtn = document.getElementById('pulleyLoseQuitBtn'); if (loseQuitBtn) loseQuitBtn.addEventListener('click', _pulleyQuit);
-  const winContinueBtn = document.getElementById('pulleyWinContinueBtn'); if (winContinueBtn) winContinueBtn.addEventListener('click', _pulleyWinContinue);
+  const loseQuitBtn = document.getElementById('pulleyLoseQuitBtn'); if (loseQuitBtn) loseQuitBtn.addEventListener('click', () => { try { play('click') || play('pop'); } catch(e){} _pulleyQuit(); });
+  const winContinueBtn = document.getElementById('pulleyWinContinueBtn'); if (winContinueBtn) winContinueBtn.addEventListener('click', () => { try { play('click') || play('pop'); } catch(e){} _pulleyWinContinue(); });
   const winReplayBtn = document.getElementById('pulleyWinReplayBtn'); if (winReplayBtn) winReplayBtn.addEventListener('click', _pulleyRetry);
   const cv = document.getElementById('pulleyCanvas');
   if (cv) {
