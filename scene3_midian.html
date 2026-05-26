@@ -2486,14 +2486,10 @@
 
 <!-- ================ WELL PULLEY MINI-GAME ================ -->
 <div class="modal-overlay" id="wellPulleyModal" style="z-index:50;display:none;">
-  <div class="modal-content" id="wellGameRoot" style="background:radial-gradient(ellipse 95% 72% at 50% 26%, #ffdca0 0%, #f0aa64 36%, #d6843f 64%, #a8602a 88%, #7c441d 100%);border:none;border-radius:0;position:fixed;inset:0;width:auto;height:auto;max-width:none;max-height:none;padding:8px 10px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;box-sizing:border-box;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
+  <div class="modal-content" id="wellGameRoot" style="background:radial-gradient(ellipse 95% 72% at 50% 26%, #ffdca0 0%, #f0aa64 36%, #d6843f 64%, #a8602a 88%, #7c441d 100%);border:none;border-radius:0;position:fixed;inset:0;width:auto;height:auto;max-width:none;max-height:none;padding:8px 10px;display:flex;flex-direction:column;align-items:stretch;justify-content:stretch;overflow:hidden;box-sizing:border-box;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
     <button id="pulleyPauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:20px;cursor:pointer;line-height:1;">⏸</button>
     <button id="pulleyRestartBtn" aria-label="Restart" title="Restart" style="position:absolute;top:8px;right:60px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:19px;cursor:pointer;line-height:1;">🔁</button>
-    <div id="pulleyPlayCol" style="width:100%;max-width:1200px;display:flex;flex-direction:column;margin:0 auto;">
-    <!-- 2026-05-26 (Jane: "the rescue game has the logo on top. can you keep
-         the logo for this game also so it is consistent"). Bible Explorer Kids
-         brand chip — small + always at the very top of the well game. -->
-    <img id="pulleyBrandLogo" src="assets/images/logo%201.png" alt="Bible Explorer Kids" onerror="this.style.display='none'" style="display:block;height:32px;width:auto;margin:2px auto 4px;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.6));align-self:center;">
+    <div id="pulleyPlayCol" style="flex:1;min-height:0;min-width:0;width:100%;max-width:1200px;display:flex;flex-direction:column;margin:0 auto;">
     <!-- 2026-05-26 (Jane: "title's font color is still not standing out against
          the background ... underlined text has to be made bigger"). Wrap the
          header in a dark backdrop pill with a gold border so it pops against
@@ -2509,7 +2505,16 @@
          drawn from the illustrated sprites. You fill yours via the timing bar
          (tap PULL in the GREEN); the rival fills his automatically AND tries to
          STEAL your water — tap SHOO! in time to block him. First trough full wins. -->
-    <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:min(98vw, calc((100vh - 180px) * 1.7647));height:auto;max-width:100%;aspect-ratio:600/340;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#bfe3f0;box-shadow:0 6px 30px rgba(60,30,8,0.5);"></canvas>
+    <!-- Canvas sits in a flex:1 wrapper so it absorbs whatever vertical space is
+         left after the title pill and bottom HUD/buttons, and is always centred,
+         aspect-locked, never overflowing — the PULL/SHOO toggle doesn't change
+         the bottom row height, so the canvas never resizes mid-game. -->
+    <!-- container-type:size lets the canvas size with cqw/cqh, which gives true
+         fit-contain (min of width-bound and height-bound) at any viewport — no
+         scrollbar, no aspect distortion, canvas size is stable when SHOO toggles. -->
+    <div id="pulleyCanvasWrap" style="flex:1 1 auto;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;margin:6px 0;container-type:size;">
+      <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:min(100cqw, calc(100cqh * 600/340));aspect-ratio:600/340;border-radius:8px;border:2px solid #6a4a2a;background:#bfe3f0;box-shadow:0 6px 30px rgba(60,30,8,0.5);"></canvas>
+    </div>
     <div style="display:flex;justify-content:space-between;color:#ffe2b0;font-size:12px;font-weight:bold;margin:7px 2px 3px;">
       <span id="pulleyTaps">🪣 You: 0%</span>
       <span id="pulleyTimer">Rival: 0% 🐐</span>
@@ -2525,104 +2530,82 @@
     <div id="pulleyFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:17px;font-weight:bold;">Drag from Moses to aim — fill every pot!</div>
     <div style="color:#d8b890;font-size:12px;text-align:center;margin-top:5px;font-style:italic;">"Moses got up and came to their rescue and watered their flock." — Exodus 2:17</div>
     </div><!-- /pulleyPlayCol -->
-    <div id="pulleyIntroOverlay" style="display:none;position:absolute;inset:0;z-index:6;background:radial-gradient(circle at 50% 28%,#4a3420 0%,#2a1c0e 55%,#160d06 100%);flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;padding:26px 18px 18px;overflow:hidden;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
-      <!-- animated backdrop: Moses at the well, the rude shepherd on the other side -->
-      <div class="piScene" aria-hidden="true">
-        <img class="piImg piWell" src="assets/images/midian%20well.png" alt="">
-        <img class="piImg piMoses" src="assets/images/moses%20right%20facing%20heaving%20and%20leaning.png" alt="">
-        <img class="piImg piShep" src="assets/images/orange%20shepherd%20heave%202.png" alt="">
-        <!-- 2026-05-26 (Jane: "on the cover page also draw a rope like this"). A
-             tug-of-war rope arcs from Moses's gripping hands → over the central
-             well's pulley → to the shepherd's hands. Stretches to fit the overlay. -->
-        <svg id="piRopeSvg" class="piRope" viewBox="0 0 1000 600" preserveAspectRatio="none"
-             style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;opacity:0;animation:piRopeIn .9s .4s ease-out forwards;">
-          <path class="piRopeP" d="M 138 478 Q 500 196 862 478" fill="none" stroke="#3a2410" stroke-width="12" stroke-linecap="round" opacity="0.55"/>
-          <path class="piRopeP" d="M 138 478 Q 500 196 862 478" fill="none" stroke="#a87444" stroke-width="7" stroke-linecap="round"/>
-          <path class="piRopeP" d="M 138 478 Q 500 196 862 478" fill="none" stroke="#e4c08a" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 10"/>
-          <circle class="piRopeKnotL" cx="138" cy="478" r="9" fill="#3a2410" stroke="#e4c08a" stroke-width="1.5"/>
-          <circle class="piRopeKnotR" cx="862" cy="478" r="9" fill="#3a2410" stroke="#e4c08a" stroke-width="1.5"/>
-        </svg>
+    <!-- 2026-05-27 (Jane: "the rope should go to moses and the shepherd's hands ...
+         tricky to get it correct on desktop, portrait and landscape"): rewritten
+         as a single FIXED-ASPECT stage holding Moses, the well, the shepherd and
+         the SVG rope together. Because everything inside scales uniformly with
+         the stage, the rope endpoints ALWAYS land on each character's hand on
+         every viewport — no separate per-orientation tuning needed. Logo lives
+         here on the intro only; the play page is logo-free. -->
+    <div id="pulleyIntroOverlay" style="display:none;position:absolute;inset:0;z-index:6;background:radial-gradient(circle at 50% 28%,#4a3420 0%,#2a1c0e 55%,#160d06 100%);align-items:stretch;justify-content:center;padding:12px 14px;box-sizing:border-box;overflow:hidden;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
+      <div class="piPanel">
+        <img class="piLogo" src="assets/images/logo%201.png" alt="Bible Explorer Kids" onerror="this.style.display='none'">
+        <div class="piTitle">🏺 How to Water the Flock</div>
+        <div class="piSub">Fill all your water pots before the rude shepherds do!</div>
+        <div id="pulleyHowTo">
+          <div class="ptStep"><span class="ptIco">👆</span><span class="ptTx"><b>1. Drag &amp; Let Go</b>Aim water into your pot</span></div>
+          <div class="ptStep"><span class="ptIco">✋</span><span class="ptTx"><b>2. Tap SHOO!</b>When a shepherd grabs your pot</span></div>
+          <div class="ptStep"><span class="ptIco">🏺</span><span class="ptTx"><b>3. Fill Them All</b>Beat the rude shepherds to it</span></div>
+        </div>
+        <button class="btn btn-gold piBtn" id="pulleyStartBtn">Start Watering ▶</button>
+        <div class="piStageWrap" aria-hidden="true">
+          <div class="piStage">
+            <img class="piMoses" src="assets/images/moses%20right%20facing%20heaving%20and%20leaning.png" alt="">
+            <img class="piWell"  src="assets/images/midian%20well.png" alt="">
+            <img class="piShep"  src="assets/images/orange%20shepherd%20heave%202.png" alt="">
+            <svg id="piRopeSvg" class="piRope" viewBox="0 0 1000 600" preserveAspectRatio="none">
+              <path d="M 290 245 Q 500 30 710 245" fill="none" stroke="#3a2410" stroke-width="14" stroke-linecap="round" opacity="0.55"/>
+              <path d="M 290 245 Q 500 30 710 245" fill="none" stroke="#a87444" stroke-width="8"  stroke-linecap="round"/>
+              <path d="M 290 245 Q 500 30 710 245" fill="none" stroke="#e4c08a" stroke-width="2"  stroke-linecap="round" stroke-dasharray="3 10"/>
+              <circle class="piRopeKnotL" cx="290" cy="245" r="10" fill="#3a2410" stroke="#e4c08a" stroke-width="1.5"/>
+              <circle class="piRopeKnotR" cx="710" cy="245" r="10" fill="#3a2410" stroke="#e4c08a" stroke-width="1.5"/>
+            </svg>
+          </div>
+        </div>
       </div>
-      <div class="piContent" style="position:relative;z-index:2;text-align:center;">
-        <div class="piTitle" style="color:#ffe0a0;font-size:34px;font-weight:800;letter-spacing:.5px;line-height:1.1;">🏺 How to Water the Flock</div>
-        <div class="piSub" style="color:#f0e0c8;font-size:18px;font-weight:600;margin-top:8px;text-shadow:0 2px 8px rgba(0,0,0,.8);">Fill all your water pots before the rude shepherds do!</div>
-      </div>
-      <div id="pulleyHowTo" style="position:relative;z-index:2;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;max-width:760px;">
-        <div class="ptStep"><span class="ptIco">👆</span><span class="ptTx"><b>1. Drag &amp; Let Go</b><br>Aim water into your pot</span></div>
-        <div class="ptStep"><span class="ptIco">✋</span><span class="ptTx"><b>2. Tap SHOO!</b><br>When a shepherd grabs your pot</span></div>
-        <div class="ptStep"><span class="ptIco">🏺</span><span class="ptTx"><b>3. Fill Them All</b><br>Beat the rude shepherds to it</span></div>
-      </div>
-      <button class="btn btn-gold piBtn" id="pulleyStartBtn" style="position:relative;z-index:2;font-size:24px;padding:15px 46px;letter-spacing:.5px;">Start Watering ▶</button>
     </div>
     <style>
-      #pulleyIntroOverlay .piScene{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;}
-      #pulleyIntroOverlay .piImg{position:absolute;bottom:0;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));}
-      /* 2026-05-26 (Jane: "well is the MAIN ingredient of the game ... should be
-         nice and clear. don't reduce opacity"). The well is the hero — keep it
-         big + clear at the bottom-centre. Moses + shepherd flank it = a clear
-         "stage preview" band along the bottom. The how-to content stacks ABOVE
-         this band (justify-content:flex-start on the overlay) so the Start
-         Watering button never sits on the well. */
-      #pulleyIntroOverlay .piWell{left:50%;transform:translateX(-50%);width:min(46vw,270px);opacity:.95;bottom:0;animation:piWellRise 1s ease-out both;}
-      #pulleyIntroOverlay .piMoses{left:3%;height:min(34vh,230px);opacity:.97;animation:piMosesIn .7s ease-out both,piBob 2.8s ease-in-out infinite;}
-      #pulleyIntroOverlay .piShep{right:3%;height:min(33vh,225px);opacity:.95;animation:piShepIn .7s ease-out both,piLean 2.2s ease-in-out infinite;}
-      @keyframes piMosesIn{from{opacity:0;}to{opacity:.95;}}
-      @keyframes piShepIn{from{opacity:0;}to{opacity:.92;}}
-      @keyframes piBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
-      @keyframes piLean{0%,100%{transform:translateX(0);}50%{transform:translateX(-14px);}}
-      @keyframes piWellRise{from{transform:translateX(-50%) translateY(40px);opacity:0;}to{opacity:.95;}}
-      @keyframes piRopeIn{from{opacity:0;}to{opacity:0.92;}}
-      #pulleyIntroOverlay .piTitle{animation:piPop .6s .15s both;text-shadow:0 3px 8px rgba(0,0,0,.6),0 0 22px rgba(255,205,120,.45);}
-      #pulleyIntroOverlay .piSub{animation:piFade .6s .3s both;}
-      #pulleyIntroOverlay #pulleyHowTo{animation:piFade .6s .45s both;}
-      #pulleyIntroOverlay .piBtn{animation:piPop .6s .6s both,piPulse 1.8s 1.2s ease-in-out infinite;}
-      @keyframes piFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
-      @keyframes piPop{0%{opacity:0;transform:scale(.8);}70%{transform:scale(1.05);}100%{opacity:1;transform:scale(1);}}
-      @keyframes piPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
-      /* 2026-05-26 (Jane: "on portrait the cover page rope is not extending into
-         arms"). Portrait figures were 22vh (~186px square) and OVERLAPPED each
-         other on a 390-wide phone, leaving no horizontal room for a rope. Shrink
-         them + the well + push them outward so a tug-of-war rope has clear span. */
-      @media (max-width:560px){
-        /* R7 (2026-05-26): Jane "on portrait intro page, the images are at the
-           bottom with a lot of space above". Pack the inline content (title /
-           cards / button) at the TOP with a small consistent gap, then make the
-           figures BIGGER and put them right under the button so there is no
-           dead zone in the middle. */
-        #pulleyIntroOverlay{justify-content:flex-start !important;gap:14px !important;padding:18px 14px 0 !important;}
-        /* Lift the figures + well UP from the bottom so they sit just under the
-           Start Watering button — closes the dead zone Jane flagged without
-           making the figures so wide they collide over the well. */
-        #pulleyIntroOverlay .piMoses{height:28vh;left:-4%;bottom:26%;}
-        #pulleyIntroOverlay .piShep{height:28vh;right:-4%;bottom:26%;}
-        #pulleyIntroOverlay .piWell{width:min(36vw,170px);bottom:21%;}
-        /* compact title so portrait fits the figures below the button */
-        #pulleyIntroOverlay .piTitle{font-size:22px;}
-        #pulleyIntroOverlay .piSub{font-size:13px;margin-top:4px;}
-        #pulleyIntroOverlay .piBtn{font-size:19px;padding:11px 32px;margin-top:6px;}
+      #pulleyIntroOverlay .piPanel { width:100%; max-width:980px; height:100%; margin:0 auto; display:flex; flex-direction:column; align-items:center; gap:8px; min-height:0; }
+      #pulleyIntroOverlay .piLogo { height:32px; width:auto; flex-shrink:0; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.6)); animation:piFade .6s both; }
+      #pulleyIntroOverlay .piTitle { color:#ffe0a0; font-size:clamp(20px,4.2vw,32px); font-weight:800; letter-spacing:.5px; line-height:1.1; text-shadow:0 3px 8px rgba(0,0,0,.6),0 0 22px rgba(255,205,120,.45); text-align:center; flex-shrink:0; margin:0; animation:piPop .6s .15s both; }
+      #pulleyIntroOverlay .piSub { color:#f0e0c8; font-size:clamp(12px,2vw,17px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.8); text-align:center; flex-shrink:0; animation:piFade .6s .3s both; }
+      #pulleyIntroOverlay #pulleyHowTo { display:flex; gap:9px; justify-content:center; flex-wrap:nowrap; max-width:760px; width:100%; flex-shrink:0; animation:piFade .6s .45s both; }
+      #pulleyIntroOverlay #pulleyHowTo .ptStep { flex:1; min-width:0; background:rgba(40,24,10,0.55); border:2px solid rgba(255,210,120,0.45); border-radius:13px; padding:8px 6px; text-align:center; color:#fff4e0; display:flex; flex-direction:column; align-items:center; gap:3px; }
+      #pulleyIntroOverlay #pulleyHowTo .ptStep .ptIco { font-size:clamp(18px,3vw,28px); line-height:1; }
+      #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx { font-size:clamp(10px,1.5vw,13px); line-height:1.25; }
+      #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx b { color:#ffd97a; display:block; font-size:clamp(11px,1.65vw,14px); margin-bottom:2px; }
+      #pulleyIntroOverlay .piBtn { font-size:clamp(15px,2.4vw,22px); padding:clamp(8px,1.5vw,13px) clamp(22px,4vw,40px); flex-shrink:0; animation:piPop .6s .6s both,piPulse 1.8s 1.2s ease-in-out infinite; }
+      /* HERO STAGE: a flex:1 wrapper absorbs all remaining vertical space; the
+         inner aspect-locked stage fits inside it preserving 1000:600 so the
+         rope endpoints (in viewBox coords) always land on the character hands. */
+      #pulleyIntroOverlay .piStageWrap { flex:1 1 auto; min-height:0; min-width:0; width:100%; display:flex; align-items:flex-end; justify-content:center; }
+      #pulleyIntroOverlay .piStage { position:relative; aspect-ratio:1000/600; width:100%; max-width:760px; max-height:100%; }
+      #pulleyIntroOverlay .piStage > img { position:absolute; bottom:0; filter:drop-shadow(0 6px 14px rgba(0,0,0,.55)); pointer-events:none; }
+      #pulleyIntroOverlay .piStage .piWell  { left:50%; transform:translateX(-50%); height:90%; width:auto; max-width:32%; bottom:0; opacity:.96; animation:piWellRise 1s ease-out both; }
+      #pulleyIntroOverlay .piStage .piMoses { left:0;  height:82%; opacity:.97; animation:piMosesIn .7s ease-out both,piBob 2.8s ease-in-out infinite; transform-origin:bottom left; }
+      #pulleyIntroOverlay .piStage .piShep  { right:0; height:80%; opacity:.95; animation:piShepIn .7s ease-out both,piLean 2.2s ease-in-out infinite; transform-origin:bottom right; }
+      #pulleyIntroOverlay .piStage .piRope  { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0; animation:piRopeIn .9s .6s ease-out forwards; }
+      @keyframes piFade     { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:none;} }
+      @keyframes piPop      { 0%{opacity:0;transform:scale(.85);} 70%{transform:scale(1.05);} 100%{opacity:1;transform:scale(1);} }
+      @keyframes piPulse    { 0%,100%{transform:scale(1);} 50%{transform:scale(1.04);} }
+      @keyframes piRopeIn   { from{opacity:0;} to{opacity:.92;} }
+      @keyframes piMosesIn  { from{opacity:0;} to{opacity:.97;} }
+      @keyframes piShepIn   { from{opacity:0;} to{opacity:.95;} }
+      @keyframes piWellRise { from{transform:translateX(-50%) translateY(30px);opacity:0;} to{transform:translateX(-50%);opacity:.96;} }
+      @keyframes piBob      { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
+      @keyframes piLean     { 0%,100%{transform:translateX(0);} 50%{transform:translateX(-7px);} }
+      /* Compact pass for very short viewports (landscape phones) */
+      @media (max-height:540px) {
+        #pulleyIntroOverlay { padding:6px 12px !important; }
+        #pulleyIntroOverlay .piPanel { gap:4px; }
+        #pulleyIntroOverlay .piLogo { height:22px; }
+        #pulleyIntroOverlay #pulleyHowTo .ptStep { padding:5px 4px; gap:1px; }
       }
-      /* 2026-05-26 (Jane: keep the well clear + visible): short landscape has
-         little vertical room — keep the well as a clear smaller hero at the
-         bottom-centre with the figures flanking; content stays compact above. */
-      @media (orientation:landscape) and (max-height:600px){
-        /* R7 (2026-05-26): Jane "on landscape 'start watering' button is hiding
-           the well". Pack inline content at the TOP and shrink the well + button
-           so they don't collide. */
-        #pulleyIntroOverlay{gap:4px;padding:6px 18px 0;justify-content:flex-start !important;}
-        #pulleyIntroOverlay .piWell{width:min(20vw,110px);}
-        #pulleyIntroOverlay .piMoses{height:min(34vh,120px);}
-        #pulleyIntroOverlay .piShep{height:min(32vh,115px);}
-        #pulleyIntroOverlay .piTitle{font-size:18px;}
-        #pulleyIntroOverlay .piSub{font-size:11px;margin-top:1px;}
-        /* compact the how-to cards so the column stays short + the button clears the well */
-        #pulleyIntroOverlay #pulleyHowTo{gap:7px;flex-wrap:nowrap;max-width:640px;margin-top:2px;}
-        #pulleyIntroOverlay #pulleyHowTo .ptStep{min-width:0;flex:1;padding:4px 5px;border-radius:9px;gap:1px;}
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptIco{font-size:16px;}
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx{font-size:8.5px;line-height:1.12;}
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx b{font-size:9.5px;margin-bottom:0;}
-        #pulleyIntroOverlay .piBtn{font-size:15px;padding:6px 22px;margin-top:2px;}
+      @media (prefers-reduced-motion:reduce) {
+        #pulleyIntroOverlay .piTitle, #pulleyIntroOverlay .piSub,
+        #pulleyIntroOverlay #pulleyHowTo, #pulleyIntroOverlay .piBtn,
+        #pulleyIntroOverlay .piStage > * { animation:none !important; }
       }
-      @media (prefers-reduced-motion:reduce){#pulleyIntroOverlay .piImg,#pulleyIntroOverlay .piContent *,#pulleyIntroOverlay .piBtn{animation:none !important;}}
     </style>
     <div id="pulleyPausedOverlay" style="display:none;position:absolute;inset:0;z-index:4;background:rgba(40,24,10,0.85);flex-direction:column;align-items:center;justify-content:center;gap:14px;">
       <div style="color:#ffe0a0;font-size:30px;font-weight:bold;letter-spacing:2px;">PAUSED</div>
@@ -9112,14 +9095,17 @@ function _pulleyUpdateIntroRope() {
   const well = ov.querySelector('.piWell');
   if (!moses || !shep || !well) return;
   if (!moses.complete || !shep.complete || !well.complete) return;
-  const ovr = ov.getBoundingClientRect();
-  if (ovr.width < 50 || ovr.height < 50) return;
+  // 2026-05-27 (Jane: "the rope should go to moses and the shepherd's hands"):
+  // map screen px → SVG viewBox via the SVG's OWN rect (the SVG fills the
+  // fixed-aspect .piStage exactly, so this maps 1:1 inside the stage and the
+  // rope endpoints land precisely on each character's fist on every viewport).
+  const svgR = svg.getBoundingClientRect();
+  if (svgR.width < 50 || svgR.height < 50) return;
   const mr = moses.getBoundingClientRect();
   const sr = shep.getBoundingClientRect();
   const wr = well.getBoundingClientRect();
-  // map screen px → SVG viewBox 1000×600
-  const toX = (x) => (x - ovr.left) / ovr.width * 1000;
-  const toY = (y) => (y - ovr.top) / ovr.height * 600;
+  const toX = (x) => (x - svgR.left) / svgR.width * 1000;
+  const toY = (y) => (y - svgR.top) / svgR.height * 600;
   // R7 (2026-05-26): exact fist coords measured by scanning the sprite alpha
   // channel for the topmost opaque pixel. Moses "right facing heaving and
   // leaning" leans BACK-LEFT — his raised pulling fist sits at fracX 0.198,
