@@ -3526,6 +3526,10 @@ const IMG_SRC = {
   shep2Pot:  'assets/images/shepherd%202%20back%20with%20water%20pot.png',
   shep4Grab: 'assets/images/shepherd%204%20bending.png',
   shep4Pot:  'assets/images/shepherd%204%20walk%20back%20with%20waterpot.png',
+  // 2026-05-26 (Jane): empty-handed BACK-walk sprites for a shooed gang member
+  // returning to his own post by the well.
+  shep2BackWalk: 'assets/images/shepherd%202%20back%20walk.png',
+  shep4Back:     'assets/images/shepherd%204%20back.png',
   mosesShove:   'assets/images/moses%20shoving%20right.png',          // Moses shoves him off
   // SHEPHERD 2 — front view only (used at 2nd patrol post for visual variety):
   shepherd2Front: 'assets/images/shepherd%202%20front.png',
@@ -8990,7 +8994,7 @@ function _pulleyReset() {
   _pulley.over = false; _pulley.win = false; _pulley.celebrate = 0;
   _pulley.shake = 0; _pulley.drops = []; _pulley.cues = []; _pulley.fx = []; _pulley.bucketBob = 0;
   _pulley.aiming = false; _pulley.proj = null; _pulley.curWind = 0;
-  _pulley.steal = null; _pulley.mosesRun = null; _pulley.shepStun = 0; _pulley.shepCarry = null; _pulley.shoveT = 0;
+  _pulley.steal = null; _pulley.mosesRun = null; _pulley.shepStun = 0; _pulley.shepCarry = null; _pulley.shoveT = 0; _pulley.stealReturn = null;
   _pulley.shepHeave = 0; _pulley.shepPourT = 0; _pulley.paused = false; _pulley.intro = false;
   _pulley.matchPoint = false; _pulley.slowmo = 0; _pulley.flock = null; _pulley.zoom = 1; _pulley.zoomTarget = 1;
   _pulley.zoomFx = 300; _pulley.zoomFy = 188;   // zoom focal point (default = scene centre)
@@ -9100,13 +9104,23 @@ function _pulleyResolveSteal(saved) {
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
   const fb = document.getElementById('pulleyFeedback');
   const pot = _pulley.steal ? _pulley.steal.pot : null;
+  const who = _pulley.steal ? _pulley.steal.who : 0;
   if (saved) {
-    _pulley.shepStun = 2.0; _pulley.shake = 8; _pulley.shoveT = 0.6;
+    _pulley.shake = 8; _pulley.shoveT = 0.6;
     _pulleyFlash(120, 235, 150, 0.42);   // green save flash
     if (pot) _pulleyCue('SAVED! \u{1F4AA}', pot.x, pot.y - 54, '#9affb0', true);
     _pulleySay('mosesSay', 'Leave it be!', 'voLeaveItBe');
     if (fb) fb.textContent = 'Saved it! He has to wait now.';
     try { play('voLeaveItBe') || play('chime') || play('coin'); } catch(e){}
+    // 2026-05-26 (Jane): if the ORANGE shepherd himself was shooed (who 0) he
+    // waits (stun). If a GANG member was shooed, HE flees back to his OWN post
+    // empty-handed (back sprite) while the orange keeps pumping — don't stun the
+    // orange, and don't leave the gang member standing at the orange's spot.
+    if (who === 0) {
+      _pulley.shepStun = 2.0;
+    } else {
+      _pulley.stealReturn = { who: who, t: 0, carry: false };
+    }
     _pulley.steal = null; _pulley.nextSteal = _pulleyNextStealDelay();
   } else if (pot) {
     pot.fill = 0; pot.done = false; pot.pop = 0;
@@ -9508,13 +9522,23 @@ function _pulleyFrame(now) {
     if (_pulley.steal) {
       _pulley.steal.t += dts;
       if (!_pulley.mosesRun && _pulley.steal.t >= _pulley.stealWindow) _pulleyResolveSteal(false);
-    } else if (!_pulley.mosesRun && !_pulley.shepCarry) {
+    } else if (!_pulley.mosesRun && !_pulley.shepCarry && !_pulley.stealReturn) {
       _pulley.nextSteal -= dts;
       if (_pulley.nextSteal <= 0 && _pulley.shepStun <= 0 && _pulleyDone(false) < _pulleyRival().length) _pulleyStartSteal();
     }
-    // shepherd horizontal position (toward a targeted pot, else home)
+    // 2026-05-26 (Jane): a gang member's OWN post by the well — a shooed or
+    // carrying gang member returns HERE, not to the orange shepherd's spot.
+    const _gangHome = (w) => (w === 1 ? 432 : 470);
+    // gang member fleeing back to his post empty-handed after being shooed
+    if (_pulley.stealReturn) {
+      _pulley.stealReturn.t += dts;
+      if (Math.abs(_pulley.shepX - _gangHome(_pulley.stealReturn.who)) < 8 || _pulley.stealReturn.t > 2.4) _pulley.stealReturn = null;
+    }
+    // shepherd horizontal position (active stealer toward the pot, else home)
     let shepTarget = _pulley.shepHomeX;
     if (_pulley.steal) shepTarget = _pulley.steal.pot.x + 18;
+    else if (_pulley.stealReturn) shepTarget = _gangHome(_pulley.stealReturn.who);                 // shooed gang → own post
+    else if (_pulley.shepCarry && _pulley.shepCarry.who !== 0) shepTarget = _gangHome(_pulley.shepCarry.who); // gang carries stolen pot → own post
     _pulley.shepX += (shepTarget - _pulley.shepX) * Math.min(1, dts * 3.5);
     // projectile integration + per-pot hit test
     if (_pulley.proj) {
@@ -9681,7 +9705,11 @@ function _pulleyFrame(now) {
   // they stay fully on-canvas. When it's THEIR turn to steal, hide the static one so the
   // same shepherd isn't drawn in two places at once.
   c.save(); c.globalAlpha = 0.9;
-  const _stealerWho = _pulley.steal ? _pulley.steal.who : -1;
+  // hide the static helper for whichever gang member is currently OUT (stealing,
+  // fleeing back, or carrying off) so he's never drawn in two places at once.
+  const _stealerWho = _pulley.steal ? _pulley.steal.who
+                    : _pulley.stealReturn ? _pulley.stealReturn.who
+                    : (_pulley.shepCarry ? _pulley.shepCarry.who : -1);
   if (_stealerWho !== 1) _pDrawFit(c, ['shepHelpA', 'shepherd2Front'], 432, 236, 70, 92);
   if (_stealerWho !== 2) _pDrawFit(c, ['shepHelpB', 'shepherd3Front'], 470, 230, 66, 88);
   c.restore();
@@ -9720,11 +9748,19 @@ function _pulleyFrame(now) {
                :             ['shepherdLeft', 'shepPull'];
     const grab = who === 1 ? ['shep2Grab', 'shepGrab'] : who === 2 ? ['shep4Grab', 'shepGrab'] : ['shepGrab'];
     shepKeys = nearPot ? grab.concat(base) : base;
+  }
+  else if (_pulley.stealReturn) {
+    // 2026-05-26 (Jane): shooed gang member walks BACK to his post empty-handed
+    // using his back-facing sprite (no pot).
+    const rw = _pulley.stealReturn.who;
+    shepKeys = rw === 1 ? ['shep2BackWalk', 'shepherdBack', 'shepPull']
+             : rw === 2 ? ['shep4Back', 'shepherdBack', 'shepPull']
+             :            ['shepherdBack', 'shepPull'];
   } else { shepKeys = ['shepHeave', 'shepPull', 'shepherdLeft', 'shepherdFront']; }
   // 2026-05-26 (Jane): while a GANG member (who 1/2) is the one stealing/carrying,
   // keep the ORANGE shepherd at his own well, pumping — he doesn't leave his post.
   // (His pour/heave keeps animating because the fill loop now runs during gang steals.)
-  const _gangBusy = (_pulley.steal && _pulley.steal.who !== 0) || (_pulley.shepCarry && _pulley.shepCarry.who !== 0);
+  const _gangBusy = (_pulley.steal && _pulley.steal.who !== 0) || (_pulley.shepCarry && _pulley.shepCarry.who !== 0) || !!_pulley.stealReturn;
   if (_gangBusy) {
     const oBob = Math.sin(now / 360 + 1.6) * 2.2 - (_pulley.shepHeave > 0 ? Math.sin((1 - _pulley.shepHeave / 0.35) * Math.PI) * 7 : 0);
     _pDraw(c, ['shepHeave', 'shepPull', 'shepherdLeft', 'shepherdFront'], Math.min(_pulley.shepHomeX, 452), 150 + oBob, 130, 140);
