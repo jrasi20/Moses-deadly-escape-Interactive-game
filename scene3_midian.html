@@ -8984,6 +8984,7 @@ function _pulleyReset() {
   _pulley.steal = null; _pulley.mosesRun = null; _pulley.shepStun = 0; _pulley.shepCarry = null; _pulley.shoveT = 0;
   _pulley.shepHeave = 0; _pulley.shepPourT = 0; _pulley.paused = false; _pulley.intro = false;
   _pulley.matchPoint = false; _pulley.slowmo = 0; _pulley.flock = null; _pulley.zoom = 1; _pulley.zoomTarget = 1;
+  _pulley.zoomFx = 300; _pulley.zoomFy = 188;   // zoom focal point (default = scene centre)
   _pulley.potsLostToSteal = 0; _pulley.ownGoals = 0; _pulley.earnedStars = 3; _pulley.winPanelShown = false;
   _pulley.stealNo = 0; _pulley.countdown = 0; _pulley.go = 0;
   _pulley.shepX = _pulley.shepHomeX; _pulley.mosesX = _pulley.mosesHomeX;
@@ -9121,7 +9122,11 @@ function _pulleyResolveSteal(saved) {
 function _pulleyWin() {
   if (_pulley.over) return;
   _pulley.over = true; _pulley.win = true; _pulley.celebrate = 0; _pulley.steal = null; _pulley.proj = null;
-  _pulley.zoom = 1.22; _pulley.zoomTarget = 1.05; _pulley.shake = 11;   // victory punch-in
+  _pulley._cel2 = false;
+  // 2026-05-26 (Jane: "linger on the celebration ... add camera zoom ins"). Frame
+  // the jumping daughters + trotting flock (lower-left) and punch in on them.
+  _pulley.zoomFx = 200; _pulley.zoomFy = 252;
+  _pulley.zoom = 1.34; _pulley.zoomTarget = 1.14; _pulley.shake = 11;   // victory punch-in on the celebration
   _pulleyFlash(255, 226, 120, 0.55);                                    // gold win flash
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F389} All pots filled! The flock comes to drink!';
@@ -9145,8 +9150,9 @@ function _pulleyWin() {
   try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){}
   // the flock bleats happily as it trots in to drink (asset: sheep bleat.mp3)
   try { setTimeout(() => play('sheepBleat'), 650); setTimeout(() => play('sheepBleat'), 1500); } catch(e){}
-  // linger: celebrate the win, then show the star panel (no auto-close)
-  setTimeout(() => { if (_pulley.over && _pulley.win) _pulleyShowWinPanel(); }, 2600);
+  // linger: 2026-05-26 (Jane) hold ~4.4s on the jumping daughters + trotting
+  // flock celebration BEFORE the "You watered the flock!" star panel appears.
+  setTimeout(() => { if (_pulley.over && _pulley.win) _pulleyShowWinPanel(); }, 4400);
 }
 function _pulleyShowWinPanel() {
   _pulley.winPanelShown = true;
@@ -9569,7 +9575,13 @@ function _pulleyFrame(now) {
     else if (_pulleyDone(true) >= _pulleyMine().length) _pulleyWin();
   } else if (_pulley.win) {
     _pulley.celebrate += dts;
-    if (Math.random() < 0.22) _pulleyConfetti(2);
+    if (Math.random() < 0.30) _pulleyConfetti(2);   // a touch more confetti during the lingered celebration
+    // 2026-05-26: a second camera punch-in ~1.6s into the celebration so the
+    // jumping daughters + flock get a fresh "wow" beat before the modal.
+    if (!_pulley._cel2 && _pulley.celebrate > 1.6) {
+      _pulley._cel2 = true; _pulley.zoom = 1.26; _pulley.zoomTarget = 1.10; _pulley.shake = 7;
+      try { play('wellCheer') || play('chime'); } catch(e){}
+    }
     // the watered flock trots in and drinks at your pots
     if (_pulley.flock) for (const s of _pulley.flock) {
       if (!s.drinking) { s.x += (s.tx - s.x) * Math.min(1, dts * 2.2); if (Math.abs(s.x - s.tx) < 6) s.drinking = true; }
@@ -9584,7 +9596,7 @@ function _pulleyFrame(now) {
   c.translate(sx, 0);
   // gentle camera zoom for drama (match-point punch eases back; win zooms in a touch)
   _pulley.zoom += ((_pulley.zoomTarget || 1) - (_pulley.zoom || 1)) * 0.06;
-  if (Math.abs(_pulley.zoom - 1) > 0.003) { const fx = 300, fy = 188; c.translate(fx, fy); c.scale(_pulley.zoom, _pulley.zoom); c.translate(-fx, -fy); }
+  if (Math.abs(_pulley.zoom - 1) > 0.003) { const fx = (_pulley.zoomFx != null ? _pulley.zoomFx : 300), fy = (_pulley.zoomFy != null ? _pulley.zoomFy : 188); c.translate(fx, fy); c.scale(_pulley.zoom, _pulley.zoom); c.translate(-fx, -fy); }
   if (!_pDraw(c, ['scene3Bg', 'midian'], -4, -4, W + 8, H + 8)) {
     const sky = c.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, '#bfe6f2'); sky.addColorStop(0.55, '#e8d9a8'); sky.addColorStop(1, '#d8b878');
