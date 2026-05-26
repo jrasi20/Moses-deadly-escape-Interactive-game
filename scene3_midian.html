@@ -9123,7 +9123,10 @@ function _pulleyStartSteal() {
   _pulley.steal = { pot: pot, t: 0, who: who };
   // 2026-05-26 (Jane): a GANG member (who 1/2) sets out from HIS OWN post by the
   // well (not the orange shepherd's spot). The orange stays + keeps pumping.
-  if (who !== 0) { _pulley.shepX = (who === 1) ? 432 : 470; _pulley.steal.home = _pulley.shepX; }
+  // 2026-05-26 (Jane: "the gang going straight to the orange shepherd ... not
+   //   back center to their place"). Gang home now CENTRAL between the wells (not
+   //   right beside the orange) so the return is visibly distinct.
+  if (who !== 0) { _pulley.shepX = (who === 1) ? 290 : 350; _pulley.steal.home = _pulley.shepX; }
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = '';
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '⚠️ A rude shepherd is grabbing a pot — tap SHOO!';
   const lines = [['That water is mine!', 'voMine'], ['Hand it over!', null], ['We\'ll take that one!', null]];
@@ -9537,17 +9540,26 @@ function _pulleyFrame(now) {
     if (_before > 0 && _pulley.countdown <= 0) {
       _pulley.go = 0.9;
       _pulley.zoom = 1.12; _pulley.zoomTarget = 1; _pulley.shake = 6;   // GO! punch-in
-      try { if (audio.wellMusic) { audio.wellMusic.loop = true; audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
-      _pulleySay('mosesSay', 'This water is for Jethro’s flock!', 'voJethro');
-      setTimeout(() => { if (_pulley.gate && !_pulley.over && !_pulley.paused && !_pulley.intro && _pulley.countdown <= 0) _pulleySay('shepSay', 'We’ll see about that!', 'voSeeAbout'); }, 3000);
-      if (fb) fb.textContent = 'Drag back from Moses, then let go to splash water in!';
     }
   } else if (_pulley.go > 0) {
+    // 2026-05-26 (Jane: "when the countdown music is finishing itself the first
+    // dialogue narration and gameplay is getting started"). Wait for the GO!
+    // beat to fully finish (countdown audio is done by then) BEFORE starting bg
+    // music + narration + gameplay.
+    const _gprev = _pulley.go;
     _pulley.go = Math.max(0, _pulley.go - dts);
+    if (_gprev > 0 && _pulley.go <= 0) {
+      try { if (audio.wellMusic) { audio.wellMusic.loop = true; audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
+      _pulleySay('mosesSay', 'This water is for Jethro’s flock!', 'voJethro');
+      setTimeout(() => { if (_pulley.gate && !_pulley.over && !_pulley.paused && !_pulley.intro) _pulleySay('shepSay', 'We’ll see about that!', 'voSeeAbout'); }, 3000);
+      if (fb) fb.textContent = 'Drag back from Moses, then let go to splash water in!';
+    }
   }
 
   // ===== UPDATE =====
-  if (!_pulley.over && !_pulley.intro && _pulley.countdown <= 0) {
+  // 2026-05-26 (Jane): gameplay only starts after the countdown AND the GO! beat
+  // are both finished, so the countdown audio fully clears before play begins.
+  if (!_pulley.over && !_pulley.intro && _pulley.countdown <= 0 && _pulley.go <= 0) {
     // pot fill "pop" animation decay
     _pulley.pots.forEach(p => { if (p.pop > 0) p.pop = Math.max(0, p.pop - dts * 2.2); });
     // rival fills his pots one at a time (unless stunned / mid-steal-away),
@@ -9587,7 +9599,7 @@ function _pulleyFrame(now) {
     }
     if (_pulley.shoveT > 0) _pulley.shoveT -= dts;
     // shepherd carrying a stolen pot back to his side, then resets
-    if (_pulley.shepCarry) { _pulley.shepCarry.t += dts; if (_pulley.shepCarry.t > 1.2) { _pulley.shepCarry = null; _pulley.nextSteal = _pulleyNextStealDelay(); } }
+    if (_pulley.shepCarry) { _pulley.shepCarry.t += dts; if (_pulley.shepCarry.t > 1.2) { _pulley.shepCarry = null; _pulley.shepX = _pulley.shepHomeX; _pulley.nextSteal = _pulleyNextStealDelay(); } }
     // steal scheduling + progress
     if (_pulley.steal) {
       _pulley.steal.t += dts;
@@ -9598,11 +9610,19 @@ function _pulleyFrame(now) {
     }
     // 2026-05-26 (Jane): a gang member's OWN post by the well — a shooed or
     // carrying gang member returns HERE, not to the orange shepherd's spot.
-    const _gangHome = (w) => (w === 1 ? 432 : 470);
+    const _gangHome = (w) => (w === 1 ? 290 : 350);   // CENTRAL between the wells
     // gang member fleeing back to his post empty-handed after being shooed
     if (_pulley.stealReturn) {
       _pulley.stealReturn.t += dts;
-      if (Math.abs(_pulley.shepX - _gangHome(_pulley.stealReturn.who)) < 8 || _pulley.stealReturn.t > 2.4) _pulley.stealReturn = null;
+      if (Math.abs(_pulley.shepX - _gangHome(_pulley.stealReturn.who)) < 8 || _pulley.stealReturn.t > 2.4) {
+        // 2026-05-26 (Jane: "gang going straight to the orange shepherd"): when
+        // the return finishes, snap shepX back to the orange's home so the next
+        // frame draws the ORANGE at his post — without this, the (now-idle)
+        // main shepherd draw at shepX=gangHome animates toward shepHomeX, which
+        // read as the gang/orange walking from the gang's spot to the orange's.
+        _pulley.stealReturn = null;
+        _pulley.shepX = _pulley.shepHomeX;
+      }
     }
     // shepherd horizontal position (active stealer toward the pot, else home)
     let shepTarget = _pulley.shepHomeX;
@@ -9799,8 +9819,10 @@ function _pulleyFrame(now) {
   const _stealerWho = _pulley.steal ? _pulley.steal.who
                     : _pulley.stealReturn ? _pulley.stealReturn.who
                     : (_pulley.shepCarry ? _pulley.shepCarry.who : -1);
-  if (_stealerWho !== 1) _pDrawFit(c, ['shepHelpA', 'shepherd2Front'], 432, 236, 70, 92);
-  if (_stealerWho !== 2) _pDrawFit(c, ['shepHelpB', 'shepherd3Front'], 470, 230, 66, 88);
+  // 2026-05-26 (Jane): static gang helpers now idle CENTRALLY between the two
+  // wells (was right beside the orange's well, which read as "going to orange").
+  if (_stealerWho !== 1) _pDrawFit(c, ['shepHelpA', 'shepherd2Front'], 290, 232, 60, 80);
+  if (_stealerWho !== 2) _pDrawFit(c, ['shepHelpB', 'shepherd3Front'], 350, 232, 56, 76);
   c.restore();
 
   // Jethro's daughters watching by Moses' well — bigger/clearer, and they jump for joy on a win
