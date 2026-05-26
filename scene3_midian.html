@@ -2487,18 +2487,20 @@
 <!-- ================ WELL PULLEY MINI-GAME ================ -->
 <div class="modal-overlay" id="wellPulleyModal" style="z-index:50;display:none;">
   <div class="modal-content" id="wellGameRoot" style="background:radial-gradient(ellipse 95% 72% at 50% 26%, #ffdca0 0%, #f0aa64 36%, #d6843f 64%, #a8602a 88%, #7c441d 100%);border:none;border-radius:0;position:fixed;inset:0;width:auto;height:auto;max-width:none;max-height:none;padding:8px 10px;display:flex;flex-direction:column;align-items:stretch;justify-content:stretch;overflow:hidden;box-sizing:border-box;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
-    <button id="pulleyPauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:20px;cursor:pointer;line-height:1;">⏸</button>
-    <button id="pulleyRestartBtn" aria-label="Restart" title="Restart" style="position:absolute;top:8px;right:60px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:19px;cursor:pointer;line-height:1;">🔁</button>
     <div id="pulleyPlayCol" style="flex:1;min-height:0;min-width:0;width:100%;max-width:1200px;display:flex;flex-direction:column;margin:0 auto;">
-    <!-- 2026-05-26 (Jane: "title's font color is still not standing out against
-         the background ... underlined text has to be made bigger"). Wrap the
-         header in a dark backdrop pill with a gold border so it pops against
-         the bright desert surround. Bigger headline font. -->
-    <div id="pulleyTitlePill" style="align-self:center;background:linear-gradient(180deg,rgba(46,26,10,0.86),rgba(22,12,4,0.92));border:2px solid #f0c46a;border-radius:14px;padding:7px 22px;margin:0 auto 8px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,0.5);max-width:96%;">
-      <div class="pulleyTitleEyebrow" style="color:#ffd97a;font-size:13px;letter-spacing:2.5px;font-weight:bold;">~ RACE TO WATER THE FLOCK ~</div>
-      <div class="pulleyTitleHead" style="color:#fff8e0;font-size:26px;font-weight:800;letter-spacing:0.5px;font-family:Georgia,serif;text-shadow:0 2px 4px rgba(0,0,0,0.7);margin-top:1px;">Beat the Rude Shepherds — fill all your pots first!</div>
+    <!-- 2026-05-27 (Jane: pause/replay overlap the title pill on phones):
+         pack restart + title pill + pause into a single flex row so the
+         buttons LIVE NEXT TO the pill (not absolutely positioned on top of it),
+         so they can never overlap on any viewport. -->
+    <div id="pulleyHeaderRow" style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px;width:100%;flex-shrink:0;">
+      <button id="pulleyRestartBtn" aria-label="Restart" title="Restart" style="flex-shrink:0;width:42px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:18px;cursor:pointer;line-height:1;padding:0;">🔁</button>
+      <div id="pulleyTitlePill" style="flex:1;min-width:0;background:linear-gradient(180deg,rgba(46,26,10,0.86),rgba(22,12,4,0.92));border:2px solid #f0c46a;border-radius:14px;padding:4px 10px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,0.5);">
+        <div class="pulleyTitleEyebrow" style="color:#ffd97a;font-size:clamp(9px,1.6vw,12px);letter-spacing:1.6px;font-weight:bold;line-height:1.1;">~ RACE TO WATER THE FLOCK ~</div>
+        <div class="pulleyTitleHead" style="color:#fff8e0;font-size:clamp(12px,2.2vw,20px);font-weight:800;letter-spacing:0.3px;font-family:Georgia,serif;text-shadow:0 2px 4px rgba(0,0,0,0.7);line-height:1.15;">Beat the Rude Shepherds — fill all your pots first!</div>
+      </div>
+      <button id="pulleyPauseBtn" aria-label="Pause" style="flex-shrink:0;width:42px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:18px;cursor:pointer;line-height:1;padding:0;">⏸</button>
     </div>
-    <div id="pulleyRotateHint" style="display:none;align-items:center;justify-content:center;gap:7px;background:rgba(255,210,90,0.14);border:1px solid rgba(255,210,90,0.45);color:#ffe8b8;font-size:12px;font-weight:bold;border-radius:10px;padding:5px 8px;margin:0 2px 6px;"><span style="font-size:16px;">📱↻</span> Turn your phone sideways for easier aiming</div>
+    <div id="pulleyRotateHint" style="display:none;align-items:center;justify-content:center;gap:7px;background:rgba(255,210,90,0.14);border:1px solid rgba(255,210,90,0.45);color:#ffe8b8;font-size:11px;font-weight:bold;border-radius:10px;padding:3px 8px;margin:0 2px 4px;flex-shrink:0;"><span style="font-size:14px;">📱↻</span> Turn your phone sideways for easier aiming</div>
     <!-- 2026-05-21 (Jane: puzzles felt too simple/kiddish — wanted a head-to-head,
          Angry-Birds-style contest with real art + a bigger responsive modal).
          "Race to Water the Flock": Moses vs a rude shepherd, side-by-side troughs
@@ -2539,15 +2541,17 @@
          here on the intro only; the play page is logo-free. -->
     <div id="pulleyIntroOverlay" style="display:none;position:absolute;inset:0;z-index:6;background:radial-gradient(circle at 50% 28%,#4a3420 0%,#2a1c0e 55%,#160d06 100%);align-items:stretch;justify-content:center;padding:12px 14px;box-sizing:border-box;overflow:hidden;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
       <div class="piPanel">
-        <img class="piLogo" src="assets/images/logo%201.png" alt="Bible Explorer Kids" onerror="this.style.display='none'">
-        <div class="piTitle">🏺 How to Water the Flock</div>
-        <div class="piSub">Fill all your water pots before the rude shepherds do!</div>
-        <div id="pulleyHowTo">
-          <div class="ptStep"><span class="ptIco">👆</span><span class="ptTx"><b>1. Drag &amp; Let Go</b>Aim water into your pot</span></div>
-          <div class="ptStep"><span class="ptIco">✋</span><span class="ptTx"><b>2. Tap SHOO!</b>When a shepherd grabs your pot</span></div>
-          <div class="ptStep"><span class="ptIco">🏺</span><span class="ptTx"><b>3. Fill Them All</b>Beat the rude shepherds to it</span></div>
+        <div class="piContent">
+          <img class="piLogo" src="assets/images/logo%201.png" alt="Bible Explorer Kids" onerror="this.style.display='none'">
+          <div class="piTitle">🏺 How to Water the Flock</div>
+          <div class="piSub">Fill all your water pots before the rude shepherds do!</div>
+          <div id="pulleyHowTo">
+            <div class="ptStep"><span class="ptIco">👆</span><span class="ptTx"><b>1. Drag &amp; Let Go</b>Aim water into your pot</span></div>
+            <div class="ptStep"><span class="ptIco">✋</span><span class="ptTx"><b>2. Tap SHOO!</b>When a shepherd grabs your pot</span></div>
+            <div class="ptStep"><span class="ptIco">🏺</span><span class="ptTx"><b>3. Fill Them All</b>Beat the rude shepherds to it</span></div>
+          </div>
+          <button class="btn btn-gold piBtn" id="pulleyStartBtn">Start Watering ▶</button>
         </div>
-        <button class="btn btn-gold piBtn" id="pulleyStartBtn">Start Watering ▶</button>
         <div class="piStageWrap" aria-hidden="true">
           <div class="piStage">
             <img class="piMoses" src="assets/images/moses%20right%20facing%20heaving%20and%20leaning.png" alt="">
@@ -2565,7 +2569,8 @@
       </div>
     </div>
     <style>
-      #pulleyIntroOverlay .piPanel { width:100%; max-width:980px; height:100%; margin:0 auto; display:flex; flex-direction:column; align-items:center; gap:8px; min-height:0; }
+      #pulleyIntroOverlay .piPanel { width:100%; max-width:980px; height:100%; margin:0 auto; display:flex; flex-direction:column; align-items:stretch; gap:8px; min-height:0; }
+      #pulleyIntroOverlay .piContent { display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0; width:100%; }
       #pulleyIntroOverlay .piLogo { height:32px; width:auto; flex-shrink:0; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.6)); animation:piFade .6s both; }
       #pulleyIntroOverlay .piTitle { color:#ffe0a0; font-size:clamp(20px,4.2vw,32px); font-weight:800; letter-spacing:.5px; line-height:1.1; text-shadow:0 3px 8px rgba(0,0,0,.6),0 0 22px rgba(255,205,120,.45); text-align:center; flex-shrink:0; margin:0; animation:piPop .6s .15s both; }
       #pulleyIntroOverlay .piSub { color:#f0e0c8; font-size:clamp(12px,2vw,17px); font-weight:600; text-shadow:0 2px 8px rgba(0,0,0,.8); text-align:center; flex-shrink:0; animation:piFade .6s .3s both; }
@@ -2594,12 +2599,26 @@
       @keyframes piWellRise { from{transform:translateX(-50%) translateY(30px);opacity:0;} to{transform:translateX(-50%);opacity:.96;} }
       @keyframes piBob      { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
       @keyframes piLean     { 0%,100%{transform:translateX(0);} 50%{transform:translateX(-7px);} }
-      /* Compact pass for very short viewports (landscape phones) */
-      @media (max-height:540px) {
-        #pulleyIntroOverlay { padding:6px 12px !important; }
-        #pulleyIntroOverlay .piPanel { gap:4px; }
+      /* PORTRAIT — make the hero stage taller so it fills the empty band
+         under the cards/button (was 5:3 wide stage, leaves dead space). */
+      @media (orientation:portrait) and (max-width:760px) {
+        #pulleyIntroOverlay .piStage { aspect-ratio:4/3; }
+      }
+      /* LANDSCAPE PHONES — switch to SIDE-BY-SIDE: content on the left at
+         normal sizes, hero stage on the right taking the full panel height.
+         Stops the figures from shrinking to thumbnails on short viewports. */
+      @media (orientation:landscape) and (max-height:600px) {
+        #pulleyIntroOverlay { padding:8px 12px !important; }
+        #pulleyIntroOverlay .piPanel { flex-direction:row; align-items:center; gap:14px; }
+        #pulleyIntroOverlay .piContent { flex:0 1 55%; max-width:55%; gap:5px; align-items:center; justify-content:center; height:100%; }
         #pulleyIntroOverlay .piLogo { height:22px; }
+        #pulleyIntroOverlay .piTitle { font-size:clamp(15px,2.6vw,22px); }
+        #pulleyIntroOverlay .piSub { font-size:clamp(10px,1.5vw,13px); }
         #pulleyIntroOverlay #pulleyHowTo .ptStep { padding:5px 4px; gap:1px; }
+        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptIco { font-size:clamp(14px,2vw,18px); }
+        #pulleyIntroOverlay .piBtn { font-size:clamp(13px,2vw,17px); padding:6px 20px; }
+        #pulleyIntroOverlay .piStageWrap { flex:1 1 45%; height:100%; align-items:center; }
+        #pulleyIntroOverlay .piStage { max-width:none; }
       }
       @media (prefers-reduced-motion:reduce) {
         #pulleyIntroOverlay .piTitle, #pulleyIntroOverlay .piSub,
@@ -9106,18 +9125,15 @@ function _pulleyUpdateIntroRope() {
   const wr = well.getBoundingClientRect();
   const toX = (x) => (x - svgR.left) / svgR.width * 1000;
   const toY = (y) => (y - svgR.top) / svgR.height * 600;
-  // R7 (2026-05-26): exact fist coords measured by scanning the sprite alpha
-  // channel for the topmost opaque pixel. Moses "right facing heaving and
-  // leaning" leans BACK-LEFT — his raised pulling fist sits at fracX 0.198,
-  // fracY 0.115 of the 1024x1024 sprite (i.e. on the LEFT side of the bbox,
-  // not the right). Shepherd "orange shepherd heave 2" leans BACK-RIGHT — fist
-  // at fracX 0.659, fracY 0.094 (on the RIGHT side of his bbox). Earlier
-  // guess-and-check landed on the hip because both sprites have a LOT of
-  // transparent margin and the fist sits closer to the spine than the edge.
-  const mhx = toX(mr.left + mr.width * 0.198);
-  const mhy = toY(mr.top + mr.height * 0.115);
-  const shx = toX(sr.left + sr.width * 0.659);
-  const shy = toY(sr.top + sr.height * 0.094);
+  // 2026-05-27: PIL-rescanned the sprite alpha channels — Moses (1024^2) topmost
+  // opaque pixel is at fracX 0.210, fracY 0.115; Shepherd's at fracX 0.677,
+  // fracY 0.095. The topmost pixel is the FINGERTIP, so we shift the rope
+  // endpoint down ~3% of sprite height to land on the GRIPPING PALM (where a
+  // hand would actually hold a rope), not the fingertip.
+  const mhx = toX(mr.left + mr.width * 0.210);
+  const mhy = toY(mr.top + mr.height * 0.145);
+  const shx = toX(sr.left + sr.width * 0.677);
+  const shy = toY(sr.top + sr.height * 0.125);
   // Well's pulley wheel (the wooden beam at the top of the well sprite): centre x, ~10% from top.
   const wpx = toX(wr.left + wr.width * 0.50);
   const wpy = toY(wr.top + wr.height * 0.10);
