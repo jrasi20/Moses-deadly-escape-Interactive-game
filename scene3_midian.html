@@ -2494,9 +2494,9 @@
          the background ... underlined text has to be made bigger"). Wrap the
          header in a dark backdrop pill with a gold border so it pops against
          the bright desert surround. Bigger headline font. -->
-    <div style="align-self:center;background:linear-gradient(180deg,rgba(46,26,10,0.86),rgba(22,12,4,0.92));border:2px solid #f0c46a;border-radius:14px;padding:7px 22px;margin:0 auto 8px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,0.5);max-width:96%;">
-      <div style="color:#ffd97a;font-size:13px;letter-spacing:2.5px;font-weight:bold;">~ RACE TO WATER THE FLOCK ~</div>
-      <div style="color:#fff8e0;font-size:26px;font-weight:800;letter-spacing:0.5px;font-family:Georgia,serif;text-shadow:0 2px 4px rgba(0,0,0,0.7);margin-top:1px;">Beat the Rude Shepherds — fill all your pots first!</div>
+    <div id="pulleyTitlePill" style="align-self:center;background:linear-gradient(180deg,rgba(46,26,10,0.86),rgba(22,12,4,0.92));border:2px solid #f0c46a;border-radius:14px;padding:7px 22px;margin:0 auto 8px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,0.5);max-width:96%;">
+      <div class="pulleyTitleEyebrow" style="color:#ffd97a;font-size:13px;letter-spacing:2.5px;font-weight:bold;">~ RACE TO WATER THE FLOCK ~</div>
+      <div class="pulleyTitleHead" style="color:#fff8e0;font-size:26px;font-weight:800;letter-spacing:0.5px;font-family:Georgia,serif;text-shadow:0 2px 4px rgba(0,0,0,0.7);margin-top:1px;">Beat the Rude Shepherds — fill all your pots first!</div>
     </div>
     <div id="pulleyRotateHint" style="display:none;align-items:center;justify-content:center;gap:7px;background:rgba(255,210,90,0.14);border:1px solid rgba(255,210,90,0.45);color:#ffe8b8;font-size:12px;font-weight:bold;border-radius:10px;padding:5px 8px;margin:0 2px 6px;"><span style="font-size:16px;">📱↻</span> Turn your phone sideways for easier aiming</div>
     <!-- 2026-05-21 (Jane: puzzles felt too simple/kiddish — wanted a head-to-head,
@@ -2530,13 +2530,13 @@
         <!-- 2026-05-26 (Jane: "on the cover page also draw a rope like this"). A
              tug-of-war rope arcs from Moses's gripping hands → over the central
              well's pulley → to the shepherd's hands. Stretches to fit the overlay. -->
-        <svg class="piRope" viewBox="0 0 1000 600" preserveAspectRatio="none"
+        <svg id="piRopeSvg" class="piRope" viewBox="0 0 1000 600" preserveAspectRatio="none"
              style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;opacity:0;animation:piRopeIn .9s .4s ease-out forwards;">
-          <path d="M 138 478 Q 500 196 862 478" fill="none" stroke="#3a2410" stroke-width="12" stroke-linecap="round" opacity="0.55"/>
-          <path d="M 138 478 Q 500 196 862 478" fill="none" stroke="#a87444" stroke-width="7" stroke-linecap="round"/>
-          <path d="M 138 478 Q 500 196 862 478" fill="none" stroke="#e4c08a" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 10"/>
-          <circle cx="138" cy="478" r="9" fill="#3a2410" stroke="#e4c08a" stroke-width="1.5"/>
-          <circle cx="862" cy="478" r="9" fill="#3a2410" stroke="#e4c08a" stroke-width="1.5"/>
+          <path class="piRopeP" d="M 138 478 Q 500 196 862 478" fill="none" stroke="#3a2410" stroke-width="12" stroke-linecap="round" opacity="0.55"/>
+          <path class="piRopeP" d="M 138 478 Q 500 196 862 478" fill="none" stroke="#a87444" stroke-width="7" stroke-linecap="round"/>
+          <path class="piRopeP" d="M 138 478 Q 500 196 862 478" fill="none" stroke="#e4c08a" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 10"/>
+          <circle class="piRopeKnotL" cx="138" cy="478" r="9" fill="#3a2410" stroke="#e4c08a" stroke-width="1.5"/>
+          <circle class="piRopeKnotR" cx="862" cy="478" r="9" fill="#3a2410" stroke="#e4c08a" stroke-width="1.5"/>
         </svg>
       </div>
       <div class="piContent" style="position:relative;z-index:2;text-align:center;">
@@ -2575,7 +2575,15 @@
       @keyframes piFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
       @keyframes piPop{0%{opacity:0;transform:scale(.8);}70%{transform:scale(1.05);}100%{opacity:1;transform:scale(1);}}
       @keyframes piPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
-      @media (max-width:560px){#pulleyIntroOverlay .piMoses{height:22vh;}#pulleyIntroOverlay .piShep{height:22vh;}#pulleyIntroOverlay .piWell{width:min(56vw,210px);}}
+      /* 2026-05-26 (Jane: "on portrait the cover page rope is not extending into
+         arms"). Portrait figures were 22vh (~186px square) and OVERLAPPED each
+         other on a 390-wide phone, leaving no horizontal room for a rope. Shrink
+         them + the well + push them outward so a tug-of-war rope has clear span. */
+      @media (max-width:560px){
+        #pulleyIntroOverlay .piMoses{height:17vh;left:0%;}
+        #pulleyIntroOverlay .piShep{height:17vh;right:0%;}
+        #pulleyIntroOverlay .piWell{width:min(38vw,160px);bottom:-2%;}
+      }
       /* 2026-05-26 (Jane: keep the well clear + visible): short landscape has
          little vertical room — keep the well as a clear smaller hero at the
          bottom-centre with the figures flanking; content stays compact above. */
@@ -2617,14 +2625,15 @@
     </div>
     <div id="pulleyWinOverlay" style="display:none;position:absolute;inset:0;z-index:5;background:radial-gradient(circle at 50% 40%,rgba(28,72,42,0.5),rgba(8,22,14,0.88));border-radius:16px;align-items:center;justify-content:center;text-align:center;padding:0 16px;">
       <div class="pWinCard">
-        <!-- 2026-05-26 (Jane: "i was hoping to see sheep in winning modal along
-             with moses"). Moses with his watered flock celebrating around him. -->
+        <!-- 2026-05-26 (Jane: "show sheeps jumping on the winning modal").
+             Moses with his watered flock celebrating around him — the sheep/lambs
+             hop in a staggered rhythm via the .pWinSheep animation. -->
         <div style="display:flex;gap:10px;justify-content:center;align-items:flex-end;margin-bottom:-2px;">
-          <img src="assets/images/sheep%20right%20facing.png" alt="" style="width:50px;height:auto;transform:scaleX(-1);" onerror="this.style.display='none'">
-          <img src="assets/images/lamb.png" alt="" style="width:36px;height:auto;" onerror="this.style.display='none'">
-          <img src="assets/images/moses%20front%20facing.png" alt="" style="width:88px;height:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));" onerror="this.style.display='none'">
-          <img src="assets/images/lamb%201.png" alt="" style="width:36px;height:auto;" onerror="this.style.display='none'">
-          <img src="assets/images/sheep%20right%20facing.png" alt="" style="width:50px;height:auto;" onerror="this.style.display='none'">
+          <img class="pWinSheep" src="assets/images/sheep%20right%20facing.png" alt="" style="width:50px;height:auto;transform:scaleX(-1);" onerror="this.style.display='none'">
+          <img class="pWinSheep" src="assets/images/lamb.png" alt="" style="width:36px;height:auto;" onerror="this.style.display='none'">
+          <img class="pWinSheep" src="assets/images/moses%20front%20facing.png" alt="" style="width:88px;height:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));" onerror="this.style.display='none'">
+          <img class="pWinSheep" src="assets/images/lamb%201.png" alt="" style="width:36px;height:auto;" onerror="this.style.display='none'">
+          <img class="pWinSheep" src="assets/images/sheep%20right%20facing.png" alt="" style="width:50px;height:auto;" onerror="this.style.display='none'">
         </div>
         <div class="pWinTitle">🎉 You watered the flock!</div>
         <div id="pulleyStarRow" class="pStarRow"></div>
@@ -2853,6 +2862,30 @@
 }
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
 @keyframes pulleyConfFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(105vh) rotate(720deg);opacity:0.9}}
+/* 2026-05-26 (Jane: "show sheeps jumping on the winning modal"). */
+@keyframes pWinSheepHop{0%,100%{transform:translateY(0) scaleY(1);}50%{transform:translateY(-14px) scaleY(0.95);}}
+.pWinSheep{animation:pWinSheepHop .75s ease-in-out infinite;will-change:transform;}
+.pWinSheep:nth-of-type(2){animation-delay:.10s;}
+.pWinSheep:nth-of-type(3){animation-delay:.20s;}
+.pWinSheep:nth-of-type(4){animation-delay:.30s;}
+.pWinSheep:nth-of-type(5){animation-delay:.40s;}
+/* 2026-05-26 (Jane: "on portrait also the play area is very tiny and the title
+   bar is so big"). Shrink the title pill aggressively on phone so play area
+   gets the room. Same for landscape phones. */
+@media (max-width:600px) and (orientation:portrait){
+  #pulleyTitlePill{padding:3px 12px !important;margin:0 auto 4px !important;max-width:99% !important;}
+  #pulleyTitlePill .pulleyTitleEyebrow{font-size:9.5px !important;letter-spacing:1.5px !important;}
+  #pulleyTitlePill .pulleyTitleHead{font-size:14px !important;line-height:1.15 !important;}
+}
+@media (orientation:landscape) and (max-height:520px){
+  #pulleyTitlePill{padding:2px 10px !important;margin:0 auto 2px !important;max-width:90% !important;}
+  #pulleyTitlePill .pulleyTitleEyebrow{font-size:9px !important;letter-spacing:1.2px !important;}
+  #pulleyTitlePill .pulleyTitleHead{font-size:13px !important;line-height:1.1 !important;}
+  #pulleyPullBtn,#pulleyShooBtn{font-size:15px !important;padding:5px !important;}
+  #pulleyFeedback{font-size:11px !important;min-height:14px !important;margin-top:2px !important;}
+  #pulleyBar{height:14px !important;margin:1px 0 3px !important;}
+  #wellPulleyModal .modal-content{padding:4px 8px !important;}
+}
 @keyframes pulleyWinPop{0%{transform:scale(.82);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
 @keyframes pulleyStarPop{0%{transform:scale(0) rotate(-30deg);opacity:0}70%{transform:scale(1.35) rotate(8deg)}100%{transform:scale(1) rotate(0);opacity:1}}
 @keyframes pulleyTitleGlow{0%,100%{filter:drop-shadow(0 2px 6px rgba(255,170,40,.5))}50%{filter:drop-shadow(0 2px 12px rgba(255,210,90,.95))}}
@@ -9044,6 +9077,65 @@ function _pulleyReset() {
   const bar = document.getElementById('pulleyBar'); if (bar) bar.style.display = 'none';
   const pull = document.getElementById('pulleyPullBtn'); if (pull) pull.style.display = 'none';
 }
+// 2026-05-26 (Jane: "the cover page rope is not extending into arms" + "should
+// be connected to the pulley area of the wheel"). Anchor the intro tug-of-war
+// rope to the FIGURES' actual hand positions + the well's pulley using their
+// rendered bounding rects, so the rope tracks correctly across desktop, portrait
+// AND landscape (was using viewBox-stretched coords that only matched one aspect).
+function _pulleyUpdateIntroRope() {
+  const ov = document.getElementById('pulleyIntroOverlay');
+  if (!ov || getComputedStyle(ov).display === 'none') return;
+  const svg = ov.querySelector('#piRopeSvg');
+  if (!svg) return;
+  const moses = ov.querySelector('.piMoses');
+  const shep = ov.querySelector('.piShep');
+  const well = ov.querySelector('.piWell');
+  if (!moses || !shep || !well) return;
+  if (!moses.complete || !shep.complete || !well.complete) return;
+  const ovr = ov.getBoundingClientRect();
+  if (ovr.width < 50 || ovr.height < 50) return;
+  const mr = moses.getBoundingClientRect();
+  const sr = shep.getBoundingClientRect();
+  const wr = well.getBoundingClientRect();
+  // map screen px → SVG viewBox 1000×600
+  const toX = (x) => (x - ovr.left) / ovr.width * 1000;
+  const toY = (y) => (y - ovr.top) / ovr.height * 600;
+  // Moses's raised pulling hand: ~78% across his sprite, ~24% from top.
+  const mhx = toX(mr.left + mr.width * 0.78);
+  const mhy = toY(mr.top + mr.height * 0.24);
+  // Shepherd's raised pulling hand: ~22% across, ~22% from top.
+  const shx = toX(sr.left + sr.width * 0.22);
+  const shy = toY(sr.top + sr.height * 0.22);
+  // Well's pulley wheel (the wooden beam at the top of the well sprite): centre x, ~10% from top.
+  const wpx = toX(wr.left + wr.width * 0.50);
+  const wpy = toY(wr.top + wr.height * 0.10);
+  // Smooth arc: rope passes OVER the pulley. On portrait phones the well is
+  // shorter than the figures so its pulley Y can fall BELOW the hands — to
+  // guarantee a visible arc we lift the peak to the MIN of (pulley-25) and
+  // (lower hand - 55), so the rope always crests above hand-level.
+  const peakY = Math.min(wpy - 25, Math.min(mhy, shy) - 55);
+  const d = `M ${mhx.toFixed(0)} ${mhy.toFixed(0)} Q ${wpx.toFixed(0)} ${peakY.toFixed(0)} ${shx.toFixed(0)} ${shy.toFixed(0)}`;
+  svg.querySelectorAll('path').forEach(p => p.setAttribute('d', d));
+  const kL = svg.querySelector('.piRopeKnotL'); if (kL) { kL.setAttribute('cx', mhx.toFixed(0)); kL.setAttribute('cy', mhy.toFixed(0)); }
+  const kR = svg.querySelector('.piRopeKnotR'); if (kR) { kR.setAttribute('cx', shx.toFixed(0)); kR.setAttribute('cy', shy.toFixed(0)); }
+}
+try { window.addEventListener('resize', _pulleyUpdateIntroRope); } catch(e){}
+try { window.addEventListener('orientationchange', _pulleyUpdateIntroRope); } catch(e){}
+// 2026-05-26: attach load listeners to each figure so the rope re-positions the
+// moment images become measurable (fixes portrait where 900ms wasn't enough).
+function _pulleyAttachIntroRopeListeners() {
+  const ov = document.getElementById('pulleyIntroOverlay');
+  if (!ov) return;
+  ['.piMoses', '.piShep', '.piWell'].forEach(sel => {
+    const img = ov.querySelector(sel);
+    if (img && !img._ropeListener) {
+      img._ropeListener = true;
+      img.addEventListener('load', _pulleyUpdateIntroRope);
+    }
+  });
+}
+try { document.addEventListener('DOMContentLoaded', _pulleyAttachIntroRopeListeners); _pulleyAttachIntroRopeListeners(); } catch(e){}
+
 function openWellPulleyGame(gate) {
   _pulley.gate = gate; _pulley.lastFrame = 0;
   _pulleyReset();
@@ -9059,6 +9151,11 @@ function openWellPulleyGame(gate) {
   const ov = document.getElementById('pulleyPausedOverlay'); if (ov) ov.style.display = 'none';
   _pulley.intro = true;
   const intro = document.getElementById('pulleyIntroOverlay'); if (intro) intro.style.display = 'flex';
+  // 2026-05-26: position the tug-of-war rope to actually connect to the figures'
+  // hands once layout settles + images load. Multiple retries to survive slow
+  // image-decode on phones (load event also re-runs it).
+  _pulleyAttachIntroRopeListeners();
+  [40, 200, 600, 1200, 2200, 3500].forEach(d => setTimeout(_pulleyUpdateIntroRope, d));
   _pulleyUpdateHud();
   document.getElementById('pulleyFeedback').textContent = 'Drag from Moses to aim — fill every pot before the shepherd!';
 }
@@ -9463,8 +9560,11 @@ function _pulleySayBubble(c, tipX, tipY, text, alpha) {
   // DPR-scaled backing-store width, so it never clamped → overflowed the edge).
   c.font = 'bold 15px Georgia';
   const LOGW = 600;
-  const w = Math.min(LOGW - 16, c.measureText(text).width + 24), h = 30;
-  let bx = Math.max(8, Math.min(LOGW - w - 8, tipX - w / 2));
+  const w = Math.min(LOGW - 36, c.measureText(text).width + 24), h = 30;
+  // 2026-05-26 (Jane: "'The flock is watered' text on the left side is getting
+  // cut"). Bigger margin (18px instead of 8) so the bubble clears the canvas's
+  // rounded-corner / border-radius region on every viewport.
+  let bx = Math.max(18, Math.min(LOGW - w - 18, tipX - w / 2));
   const ry = tipY - 14 - h;
   c.beginPath();
   if (c.roundRect) c.roundRect(bx, ry, w, h, 8); else c.rect(bx, ry, w, h);
