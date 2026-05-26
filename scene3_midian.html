@@ -9695,10 +9695,20 @@ function _pulleyFrame(now) {
       c.strokeStyle = '#caa86a'; c.lineWidth = 2; c.stroke();
     }
   };
-  if (!_pulley.mosesRun) { _rope(116, 106, _pulley.L.x, _pulley.L.y - 8); _drawBucket(_pulley.L.x, _pulley.L.y, false); }
+  if (!_pulley.mosesRun) {
+    _rope(116, 106, _pulley.L.x, _pulley.L.y - 8); _drawBucket(_pulley.L.x, _pulley.L.y, false);
+    // 2026-05-26 (Jane: "no rope drawn to both their hands ... make sure it goes
+    // to their hands"). Second segment = the part they PULL: pulley beam down to
+    // Moses's gripping hands (with a grip knot).
+    _rope(116, 106, mIdleX + 72, mIdleY + 30);
+  }
   // Rival's rope + draw-bucket mirror Moses' so he visibly works his OWN well/bucket.
   const _RL = { x: 500, y: 176 };
-  if (!_pulley.steal && !_pulley.shepCarry) { _rope(512, 106, _RL.x, _RL.y - 8); _drawBucket(_RL.x, _RL.y, true); }
+  if (!_pulley.steal && !_pulley.shepCarry) {
+    _rope(512, 106, _RL.x, _RL.y - 8); _drawBucket(_RL.x, _RL.y, true);
+    const _shHandX = Math.min(sIdleX, 452);
+    _rope(512, 106, _shHandX + 44, sIdleY + 30);   // pulley beam down to the shepherd's gripping hands
+  }
   c.lineCap = 'butt';
 
   // helper rogue shepherds (the gang) — on the LEFT side of the shepherd's well so
