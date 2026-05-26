@@ -2490,8 +2490,8 @@
     <button id="pulleyPauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:20px;cursor:pointer;line-height:1;">⏸</button>
     <button id="pulleyRestartBtn" aria-label="Restart" title="Restart" style="position:absolute;top:8px;right:60px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:19px;cursor:pointer;line-height:1;">🔁</button>
     <div id="pulleyPlayCol" style="width:100%;max-width:1200px;display:flex;flex-direction:column;margin:auto;">
-    <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;">~ RACE TO WATER THE FLOCK ~</div>
-    <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;">Beat the Rude Shepherds — fill all your pots first!</h2>
+    <div style="color:#fff1c4;font-size:12px;letter-spacing:2px;text-align:center;margin-bottom:3px;text-shadow:0 1px 3px rgba(0,0,0,0.65);font-weight:bold;">~ RACE TO WATER THE FLOCK ~</div>
+    <h2 style="color:#fff4d6;text-align:center;margin:0 0 8px;font-size:23px;font-weight:800;text-shadow:0 2px 4px rgba(90,40,8,0.95),0 0 10px rgba(0,0,0,0.4);">Beat the Rude Shepherds — fill all your pots first!</h2>
     <div id="pulleyRotateHint" style="display:none;align-items:center;justify-content:center;gap:7px;background:rgba(255,210,90,0.14);border:1px solid rgba(255,210,90,0.45);color:#ffe8b8;font-size:12px;font-weight:bold;border-radius:10px;padding:5px 8px;margin:0 2px 6px;"><span style="font-size:16px;">📱↻</span> Turn your phone sideways for easier aiming</div>
     <!-- 2026-05-21 (Jane: puzzles felt too simple/kiddish — wanted a head-to-head,
          Angry-Birds-style contest with real art + a bigger responsive modal).
@@ -2499,7 +2499,7 @@
          drawn from the illustrated sprites. You fill yours via the timing bar
          (tap PULL in the GREEN); the rival fills his automatically AND tries to
          STEAL your water — tap SHOO! in time to block him. First trough full wins. -->
-    <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:100%;height:auto;max-width:100%;max-height:74vh;aspect-ratio:600/340;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#bfe3f0;box-shadow:0 6px 30px rgba(60,30,8,0.5);"></canvas>
+    <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:min(96vw, calc((100vh - 220px) * 1.7647));height:auto;max-width:100%;aspect-ratio:600/340;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#bfe3f0;box-shadow:0 6px 30px rgba(60,30,8,0.5);"></canvas>
     <div style="display:flex;justify-content:space-between;color:#ffe2b0;font-size:12px;font-weight:bold;margin:7px 2px 3px;">
       <span id="pulleyTaps">🪣 You: 0%</span>
       <span id="pulleyTimer">Rival: 0% 🐐</span>
@@ -2806,6 +2806,15 @@
   #pulleyRotateHint{display:flex !important;}
   #wellPulleyModal h2{font-size:16px !important;margin-bottom:5px !important;}
   #pulleyPullBtn,#pulleyShooBtn{font-size:19px !important;padding:14px !important;}
+}
+/* 2026-05-26 (Jane): short landscape has little height — give the canvas a
+   bigger slice by compacting the HUD (smaller buttons/bar/feedback), and use a
+   smaller HUD budget in the width calc so the game isn't tiny. */
+@media (orientation:landscape) and (max-height:600px){
+  #pulleyCanvas{width:min(94vw, calc((100vh - 116px) * 1.7647)) !important;}
+  #pulleyBar{height:18px !important;margin:1px 0 4px !important;}
+  #pulleyPullBtn,#pulleyShooBtn{font-size:16px !important;padding:7px !important;}
+  #pulleyFeedback{font-size:13px !important;min-height:16px !important;margin-top:3px !important;}
 }
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
 @keyframes pulleyWinPop{0%{transform:scale(.82);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
@@ -9362,9 +9371,13 @@ function _pDrawFit(c, keys, cx, baseY, maxW, maxH, flip) {
 function _pulleySayBubble(c, tipX, tipY, text, alpha) {
   c.save();
   c.globalAlpha = (alpha == null) ? 1 : alpha;
-  c.font = 'bold 13px Georgia';
-  const w = Math.min(200, c.measureText(text).width + 20), h = 26;
-  let bx = Math.max(6, Math.min(c.canvas.width - w - 6, tipX - w / 2));
+  // 2026-05-26 (Jane: narration "jetting out the modal" + "make it bigger"):
+  // bigger bubble, and clamp to the LOGICAL 600px width (was clamping to the
+  // DPR-scaled backing-store width, so it never clamped → overflowed the edge).
+  c.font = 'bold 15px Georgia';
+  const LOGW = 600;
+  const w = Math.min(LOGW - 16, c.measureText(text).width + 24), h = 30;
+  let bx = Math.max(8, Math.min(LOGW - w - 8, tipX - w / 2));
   const ry = tipY - 14 - h;
   c.beginPath();
   if (c.roundRect) c.roundRect(bx, ry, w, h, 8); else c.rect(bx, ry, w, h);
@@ -9582,7 +9595,9 @@ function _pulleyFrame(now) {
     // jumping daughters + flock get a fresh "wow" beat before the modal.
     if (!_pulley._cel2 && _pulley.celebrate > 1.6) {
       _pulley._cel2 = true; _pulley.zoom = 1.12; _pulley.zoomTarget = 1.05; _pulley.shake = 6;
-      try { play('wellCheer') || play('chime'); } catch(e){}
+      // 2026-05-26 (Jane: "the victory music starts off and then again starts
+      // off"). Use a light chime here, NOT wellCheer again (that double-played).
+      try { play('chime') || play('coin'); } catch(e){}
     }
     // the watered flock trots in and drinks at your pots
     if (_pulley.flock) for (const s of _pulley.flock) {
