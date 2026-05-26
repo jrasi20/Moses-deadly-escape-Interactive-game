@@ -2486,10 +2486,10 @@
 
 <!-- ================ WELL PULLEY MINI-GAME ================ -->
 <div class="modal-overlay" id="wellPulleyModal" style="z-index:50;display:none;">
-  <div class="modal-content" id="wellGameRoot" style="background:linear-gradient(155deg,#3a2a1a,#5a3a22);border:none;border-radius:0;position:fixed;inset:0;width:auto;height:auto;max-width:none;max-height:none;padding:10px 14px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;box-sizing:border-box;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
+  <div class="modal-content" id="wellGameRoot" style="background:radial-gradient(ellipse 95% 72% at 50% 26%, #ffdca0 0%, #f0aa64 36%, #d6843f 64%, #a8602a 88%, #7c441d 100%);border:none;border-radius:0;position:fixed;inset:0;width:auto;height:auto;max-width:none;max-height:none;padding:8px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;box-sizing:border-box;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
     <button id="pulleyPauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:20px;cursor:pointer;line-height:1;">⏸</button>
     <button id="pulleyRestartBtn" aria-label="Restart" title="Restart" style="position:absolute;top:8px;right:60px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:19px;cursor:pointer;line-height:1;">🔁</button>
-    <div id="pulleyPlayCol" style="width:100%;max-width:860px;display:flex;flex-direction:column;margin:auto;">
+    <div id="pulleyPlayCol" style="width:100%;max-width:1200px;display:flex;flex-direction:column;margin:auto;">
     <div style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;">~ RACE TO WATER THE FLOCK ~</div>
     <h2 style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;">Beat the Rude Shepherds — fill all your pots first!</h2>
     <div id="pulleyRotateHint" style="display:none;align-items:center;justify-content:center;gap:7px;background:rgba(255,210,90,0.14);border:1px solid rgba(255,210,90,0.45);color:#ffe8b8;font-size:12px;font-weight:bold;border-radius:10px;padding:5px 8px;margin:0 2px 6px;"><span style="font-size:16px;">📱↻</span> Turn your phone sideways for easier aiming</div>
@@ -2499,7 +2499,7 @@
          drawn from the illustrated sprites. You fill yours via the timing bar
          (tap PULL in the GREEN); the rival fills his automatically AND tries to
          STEAL your water — tap SHOO! in time to block him. First trough full wins. -->
-    <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:auto;height:auto;max-width:100%;max-height:62vh;aspect-ratio:600/340;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#bfe3f0;"></canvas>
+    <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:100%;height:auto;max-width:100%;max-height:74vh;aspect-ratio:600/340;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#bfe3f0;box-shadow:0 6px 30px rgba(60,30,8,0.5);"></canvas>
     <div style="display:flex;justify-content:space-between;color:#ffe2b0;font-size:12px;font-weight:bold;margin:7px 2px 3px;">
       <span id="pulleyTaps">🪣 You: 0%</span>
       <span id="pulleyTimer">Rival: 0% 🐐</span>
@@ -8897,7 +8897,7 @@ const _pulley = {
   gain: 58, shepRate: 6, stealEvery: 8, stealWindow: 2.2,
   shepFillIdx: 0, nextSteal: 8, steal: null, mosesRun: null,
   shepX: 470, shepStun: 0, mosesSay: null, shepSay: null,
-  mosesHomeX: 0, shepHomeX: 478,
+  mosesHomeX: 24, shepHomeX: 470,
   L: { x: 120, y: 176 }, GROUND: 290, MAXDRAG: 170, GRAV: 940,
 };
 function _pulleyCfg() {
@@ -9123,10 +9123,12 @@ function _pulleyWin() {
   if (_pulley.over) return;
   _pulley.over = true; _pulley.win = true; _pulley.celebrate = 0; _pulley.steal = null; _pulley.proj = null;
   _pulley._cel2 = false;
-  // 2026-05-26 (Jane: "linger on the celebration ... add camera zoom ins"). Frame
-  // the jumping daughters + trotting flock (lower-left) and punch in on them.
-  _pulley.zoomFx = 200; _pulley.zoomFy = 252;
-  _pulley.zoom = 1.34; _pulley.zoomTarget = 1.14; _pulley.shake = 11;   // victory punch-in on the celebration
+  // 2026-05-26 (Jane: "linger on the celebration ... add camera zoom ins" + "the
+  // characters are cut"). Keep the win zoom CENTRED + gentle so it never shoves
+  // Moses/the shepherd off the canvas edges (an off-centre/strong zoom pushed
+  // edge content off-screen — that was the clipping in the celebration shot).
+  _pulley.zoomFx = 300; _pulley.zoomFy = 196;
+  _pulley.zoom = 1.16; _pulley.zoomTarget = 1.05; _pulley.shake = 10;   // gentle victory punch-in
   _pulleyFlash(255, 226, 120, 0.55);                                    // gold win flash
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F389} All pots filled! The flock comes to drink!';
@@ -9579,7 +9581,7 @@ function _pulleyFrame(now) {
     // 2026-05-26: a second camera punch-in ~1.6s into the celebration so the
     // jumping daughters + flock get a fresh "wow" beat before the modal.
     if (!_pulley._cel2 && _pulley.celebrate > 1.6) {
-      _pulley._cel2 = true; _pulley.zoom = 1.26; _pulley.zoomTarget = 1.10; _pulley.shake = 7;
+      _pulley._cel2 = true; _pulley.zoom = 1.12; _pulley.zoomTarget = 1.05; _pulley.shake = 6;
       try { play('wellCheer') || play('chime'); } catch(e){}
     }
     // the watered flock trots in and drinks at your pots
@@ -9623,7 +9625,9 @@ function _pulleyFrame(now) {
 
   // figure out character positions first so the rope can attach to their hands
   const mBob = Math.sin(now / 430) * 2.4, heave = _pulley.bucketBob;
-  const mIdleX = 0 - heave * 0.6, mIdleY = 150 + mBob - heave * 0.2;
+  // 2026-05-26 (Jane: "the 2 characters as they lean are still cut"). Inset Moses
+  // ~24px from the left edge so his lean-back pose stays fully on-canvas.
+  const mIdleX = 24 - heave * 0.6, mIdleY = 150 + mBob - heave * 0.2;
   const sBob = Math.sin(now / 360 + 1.6) * 2.2 + (_pulley.shepStun > 0 ? Math.sin(now / 70) * 2 : 0)
              - (_pulley.shepHeave > 0 ? Math.sin((1 - _pulley.shepHeave / 0.35) * Math.PI) * 7 : 0);
   const sIdleX = (_pulley.shepX != null ? _pulley.shepX : 478), sIdleY = 150 + sBob;
@@ -9708,11 +9712,12 @@ function _pulleyFrame(now) {
   const _gangBusy = (_pulley.steal && _pulley.steal.who !== 0) || (_pulley.shepCarry && _pulley.shepCarry.who !== 0);
   if (_gangBusy) {
     const oBob = Math.sin(now / 360 + 1.6) * 2.2 - (_pulley.shepHeave > 0 ? Math.sin((1 - _pulley.shepHeave / 0.35) * Math.PI) * 7 : 0);
-    _pDraw(c, ['shepHeave', 'shepPull', 'shepherdLeft', 'shepherdFront'], Math.min(_pulley.shepHomeX, 470), 150 + oBob, 130, 140);
+    _pDraw(c, ['shepHeave', 'shepPull', 'shepherdLeft', 'shepherdFront'], Math.min(_pulley.shepHomeX, 452), 150 + oBob, 130, 140);
   }
-  // 2026-05-26: clamp the shepherd's draw-x so his 130px width can't jut past
-  // the 600px logical canvas edge (he was drawn at ~478 → right edge 608).
-  _pDraw(c, shepKeys, Math.min(sIdleX, 470), sIdleY, 130, 140, shepFlip);
+  // 2026-05-26 (Jane: "characters as they lean are still cut"): clamp the
+  // shepherd's draw-x to 452 so his 130px width ends at ~582 — fully on-canvas
+  // (was 470 → right edge 600, clipping his lean).
+  _pDraw(c, shepKeys, Math.min(sIdleX, 452), sIdleY, 130, 140, shepFlip);
 
   // pots — drawn back-to-front (by y) so raised pots never hide the front ones
   _pulley.pots.slice().sort((a, b) => a.y - b.y).forEach(p => _pPot(c, p, now));
@@ -9738,8 +9743,8 @@ function _pulleyFrame(now) {
 
   // name tags
   c.font = 'bold 12px Georgia'; c.textBaseline = 'alphabetic';
-  c.fillStyle = '#cfeaff'; c.textAlign = 'left';  c.fillText('MOSES (YOU)', 8, 332);
-  c.fillStyle = '#ffd0b0'; c.textAlign = 'right'; c.fillText('RUDE SHEPHERD', W - 8, 332);
+  c.fillStyle = '#cfeaff'; c.textAlign = 'left';  c.fillText('MOSES (YOU)', 18, 332);
+  c.fillStyle = '#ffd0b0'; c.textAlign = 'right'; c.fillText('RUDE SHEPHERD', W - 18, 332);
 
   // aim preview
   if (_pulley.aiming) {
