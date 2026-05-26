@@ -2486,10 +2486,14 @@
 
 <!-- ================ WELL PULLEY MINI-GAME ================ -->
 <div class="modal-overlay" id="wellPulleyModal" style="z-index:50;display:none;">
-  <div class="modal-content" id="wellGameRoot" style="background:radial-gradient(ellipse 95% 72% at 50% 26%, #ffdca0 0%, #f0aa64 36%, #d6843f 64%, #a8602a 88%, #7c441d 100%);border:none;border-radius:0;position:fixed;inset:0;width:auto;height:auto;max-width:none;max-height:none;padding:8px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;box-sizing:border-box;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
+  <div class="modal-content" id="wellGameRoot" style="background:radial-gradient(ellipse 95% 72% at 50% 26%, #ffdca0 0%, #f0aa64 36%, #d6843f 64%, #a8602a 88%, #7c441d 100%);border:none;border-radius:0;position:fixed;inset:0;width:auto;height:auto;max-width:none;max-height:none;padding:8px 10px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;box-sizing:border-box;font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;">
     <button id="pulleyPauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:20px;cursor:pointer;line-height:1;">⏸</button>
     <button id="pulleyRestartBtn" aria-label="Restart" title="Restart" style="position:absolute;top:8px;right:60px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:19px;cursor:pointer;line-height:1;">🔁</button>
-    <div id="pulleyPlayCol" style="width:100%;max-width:1200px;display:flex;flex-direction:column;margin:auto;">
+    <div id="pulleyPlayCol" style="width:100%;max-width:1200px;display:flex;flex-direction:column;margin:0 auto;">
+    <!-- 2026-05-26 (Jane: "the rescue game has the logo on top. can you keep
+         the logo for this game also so it is consistent"). Bible Explorer Kids
+         brand chip — small + always at the very top of the well game. -->
+    <img id="pulleyBrandLogo" src="assets/images/logo%201.png" alt="Bible Explorer Kids" onerror="this.style.display='none'" style="display:block;height:32px;width:auto;margin:2px auto 4px;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.6));align-self:center;">
     <!-- 2026-05-26 (Jane: "title's font color is still not standing out against
          the background ... underlined text has to be made bigger"). Wrap the
          header in a dark backdrop pill with a gold border so it pops against
@@ -2580,27 +2584,43 @@
          other on a 390-wide phone, leaving no horizontal room for a rope. Shrink
          them + the well + push them outward so a tug-of-war rope has clear span. */
       @media (max-width:560px){
-        #pulleyIntroOverlay .piMoses{height:17vh;left:0%;}
-        #pulleyIntroOverlay .piShep{height:17vh;right:0%;}
-        #pulleyIntroOverlay .piWell{width:min(38vw,160px);bottom:-2%;}
+        /* R7 (2026-05-26): Jane "on portrait intro page, the images are at the
+           bottom with a lot of space above". Pack the inline content (title /
+           cards / button) at the TOP with a small consistent gap, then make the
+           figures BIGGER and put them right under the button so there is no
+           dead zone in the middle. */
+        #pulleyIntroOverlay{justify-content:flex-start !important;gap:14px !important;padding:18px 14px 0 !important;}
+        /* Lift the figures + well UP from the bottom so they sit just under the
+           Start Watering button — closes the dead zone Jane flagged without
+           making the figures so wide they collide over the well. */
+        #pulleyIntroOverlay .piMoses{height:28vh;left:-4%;bottom:26%;}
+        #pulleyIntroOverlay .piShep{height:28vh;right:-4%;bottom:26%;}
+        #pulleyIntroOverlay .piWell{width:min(36vw,170px);bottom:21%;}
+        /* compact title so portrait fits the figures below the button */
+        #pulleyIntroOverlay .piTitle{font-size:22px;}
+        #pulleyIntroOverlay .piSub{font-size:13px;margin-top:4px;}
+        #pulleyIntroOverlay .piBtn{font-size:19px;padding:11px 32px;margin-top:6px;}
       }
       /* 2026-05-26 (Jane: keep the well clear + visible): short landscape has
          little vertical room — keep the well as a clear smaller hero at the
          bottom-centre with the figures flanking; content stays compact above. */
       @media (orientation:landscape) and (max-height:600px){
-        #pulleyIntroOverlay{gap:5px;padding:8px 18px 4px;}
-        #pulleyIntroOverlay .piWell{width:min(24vw,140px);}
-        #pulleyIntroOverlay .piMoses{height:min(38vh,140px);}
-        #pulleyIntroOverlay .piShep{height:min(36vh,135px);}
-        #pulleyIntroOverlay .piTitle{font-size:19px;}
-        #pulleyIntroOverlay .piSub{font-size:12px;margin-top:2px;}
+        /* R7 (2026-05-26): Jane "on landscape 'start watering' button is hiding
+           the well". Pack inline content at the TOP and shrink the well + button
+           so they don't collide. */
+        #pulleyIntroOverlay{gap:4px;padding:6px 18px 0;justify-content:flex-start !important;}
+        #pulleyIntroOverlay .piWell{width:min(20vw,110px);}
+        #pulleyIntroOverlay .piMoses{height:min(34vh,120px);}
+        #pulleyIntroOverlay .piShep{height:min(32vh,115px);}
+        #pulleyIntroOverlay .piTitle{font-size:18px;}
+        #pulleyIntroOverlay .piSub{font-size:11px;margin-top:1px;}
         /* compact the how-to cards so the column stays short + the button clears the well */
-        #pulleyIntroOverlay #pulleyHowTo{gap:8px;flex-wrap:nowrap;max-width:660px;}
-        #pulleyIntroOverlay #pulleyHowTo .ptStep{min-width:0;flex:1;padding:5px 5px;border-radius:9px;gap:2px;}
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptIco{font-size:18px;}
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx{font-size:9px;line-height:1.15;}
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx b{font-size:10px;margin-bottom:1px;}
-        #pulleyIntroOverlay .piBtn{font-size:17px;padding:8px 28px;}
+        #pulleyIntroOverlay #pulleyHowTo{gap:7px;flex-wrap:nowrap;max-width:640px;margin-top:2px;}
+        #pulleyIntroOverlay #pulleyHowTo .ptStep{min-width:0;flex:1;padding:4px 5px;border-radius:9px;gap:1px;}
+        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptIco{font-size:16px;}
+        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx{font-size:8.5px;line-height:1.12;}
+        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx b{font-size:9.5px;margin-bottom:0;}
+        #pulleyIntroOverlay .piBtn{font-size:15px;padding:6px 22px;margin-top:2px;}
       }
       @media (prefers-reduced-motion:reduce){#pulleyIntroOverlay .piImg,#pulleyIntroOverlay .piContent *,#pulleyIntroOverlay .piBtn{animation:none !important;}}
     </style>
@@ -9100,12 +9120,18 @@ function _pulleyUpdateIntroRope() {
   // map screen px → SVG viewBox 1000×600
   const toX = (x) => (x - ovr.left) / ovr.width * 1000;
   const toY = (y) => (y - ovr.top) / ovr.height * 600;
-  // Moses's raised pulling hand: ~78% across his sprite, ~24% from top.
-  const mhx = toX(mr.left + mr.width * 0.78);
-  const mhy = toY(mr.top + mr.height * 0.24);
-  // Shepherd's raised pulling hand: ~22% across, ~22% from top.
-  const shx = toX(sr.left + sr.width * 0.22);
-  const shy = toY(sr.top + sr.height * 0.22);
+  // R7 (2026-05-26): exact fist coords measured by scanning the sprite alpha
+  // channel for the topmost opaque pixel. Moses "right facing heaving and
+  // leaning" leans BACK-LEFT — his raised pulling fist sits at fracX 0.198,
+  // fracY 0.115 of the 1024x1024 sprite (i.e. on the LEFT side of the bbox,
+  // not the right). Shepherd "orange shepherd heave 2" leans BACK-RIGHT — fist
+  // at fracX 0.659, fracY 0.094 (on the RIGHT side of his bbox). Earlier
+  // guess-and-check landed on the hip because both sprites have a LOT of
+  // transparent margin and the fist sits closer to the spine than the edge.
+  const mhx = toX(mr.left + mr.width * 0.198);
+  const mhy = toY(mr.top + mr.height * 0.115);
+  const shx = toX(sr.left + sr.width * 0.659);
+  const shy = toY(sr.top + sr.height * 0.094);
   // Well's pulley wheel (the wooden beam at the top of the well sprite): centre x, ~10% from top.
   const wpx = toX(wr.left + wr.width * 0.50);
   const wpy = toY(wr.top + wr.height * 0.10);
