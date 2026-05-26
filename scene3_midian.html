@@ -2583,14 +2583,23 @@
       <button class="btn btn-gold" id="pulleyResumeBtn" style="font-size:20px;padding:12px 30px;">▶ Resume</button>
       <button class="btn" id="pulleyQuitBtn" style="font-size:15px;padding:9px 22px;background:rgba(156,96,58,0.97);border:2px solid #ffc089;color:#fff4e6;">Quit to Midian</button>
     </div>
-    <div id="pulleyLoseOverlay" style="display:none;position:absolute;inset:0;z-index:5;background:rgba(20,8,8,0.86);border-radius:16px;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:0 16px;">
-      <div style="color:#ff8a6a;font-size:26px;font-weight:bold;letter-spacing:1px;">Moses lost the race!</div>
-      <div id="pulleyLoseMsg" style="color:#ffe0c0;font-size:16px;line-height:1.5;">The rude shepherd watered his flock first.</div>
-      <button class="btn btn-gold" id="pulleyRetryBtn" style="font-size:20px;padding:12px 34px;">🔁 Retry</button>
-      <button class="btn" id="pulleyLoseQuitBtn" style="font-size:14px;padding:8px 20px;background:rgba(156,96,58,0.97);border:2px solid #ffc089;color:#fff4e6;">Quit to Midian</button>
+    <!-- 2026-05-26 (Jane: "the lost modal needs to be worked on. add borders,
+         images and animation"). Framed card (reuses .pWinCard styling) with a
+         determined-Moses image + the buttons in a row. -->
+    <div id="pulleyLoseOverlay" style="display:none;position:absolute;inset:0;z-index:5;background:rgba(20,8,8,0.82);align-items:center;justify-content:center;text-align:center;padding:0 16px;">
+      <div class="pWinCard" style="border-color:#e0884a;background:linear-gradient(160deg,rgba(62,24,16,0.97),rgba(28,12,8,0.98));">
+        <img src="assets/images/moses%20front%20facing.png" alt="" style="width:88px;height:auto;margin-bottom:2px;filter:saturate(0.85) brightness(0.9);" onerror="this.style.display='none'">
+        <div style="color:#ff9a72;font-size:27px;font-weight:bold;letter-spacing:1px;font-family:Georgia,serif;">Moses lost the race!</div>
+        <div id="pulleyLoseMsg" style="color:#ffe0c0;font-size:16px;line-height:1.5;">The rude shepherd watered his flock first.</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px;">
+          <button class="btn btn-gold" id="pulleyRetryBtn" style="font-size:20px;padding:12px 34px;">🔁 Retry</button>
+          <button class="btn" id="pulleyLoseQuitBtn" style="font-size:14px;padding:8px 20px;background:rgba(156,96,58,0.97);border:2px solid #ffc089;color:#fff4e6;">Quit to Midian</button>
+        </div>
+      </div>
     </div>
     <div id="pulleyWinOverlay" style="display:none;position:absolute;inset:0;z-index:5;background:radial-gradient(circle at 50% 40%,rgba(28,72,42,0.5),rgba(8,22,14,0.88));border-radius:16px;align-items:center;justify-content:center;text-align:center;padding:0 16px;">
       <div class="pWinCard">
+        <img src="assets/images/moses%20front%20facing.png" alt="" style="width:92px;height:auto;margin-bottom:-2px;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));" onerror="this.style.display='none'">
         <div class="pWinTitle">🎉 You watered the flock!</div>
         <div id="pulleyStarRow" class="pStarRow"></div>
         <div id="pulleyWinMsg" style="color:#eafff0;font-size:17px;font-family:Georgia,serif;font-style:italic;">Perfect!</div>
@@ -2817,6 +2826,7 @@
   #pulleyFeedback{font-size:13px !important;min-height:16px !important;margin-top:3px !important;}
 }
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
+@keyframes pulleyConfFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(105vh) rotate(720deg);opacity:0.9}}
 @keyframes pulleyWinPop{0%{transform:scale(.82);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
 @keyframes pulleyStarPop{0%{transform:scale(0) rotate(-30deg);opacity:0}70%{transform:scale(1.35) rotate(8deg)}100%{transform:scale(1) rotate(0);opacity:1}}
 @keyframes pulleyTitleGlow{0%,100%{filter:drop-shadow(0 2px 6px rgba(255,170,40,.5))}50%{filter:drop-shadow(0 2px 12px rgba(255,210,90,.95))}}
@@ -9190,10 +9200,39 @@ function _pulleyShowWinPanel() {
   }
   try { setTimeout(() => play('coin'), 200); if (stars >= 2) setTimeout(() => play('coin'), 420); if (stars >= 3) setTimeout(() => play('chime'), 640); } catch(e){}
   const msg = document.getElementById('pulleyWinMsg');
-  if (msg) msg.textContent = stars >= 3 ? 'Perfect! Not a single pot lost!'
-    : (stars === 2 ? 'Well done! Try again for 3 stars.' : 'You did it! Can you earn 3 stars?');
+  if (msg) {
+    // 2026-05-26 (Jane: "if i get 2 stars because 1 pot was stolen, mention that
+    // 1 pot was stolen and that next time they have to shoo on time").
+    const lost = _pulley.potsLostToSteal || 0;
+    if (stars >= 3) {
+      msg.innerHTML = 'Perfect! Not a single pot lost! ⭐⭐⭐';
+    } else if (lost > 0) {
+      msg.innerHTML = lost + ' pot' + (lost > 1 ? 's were' : ' was') + ' stolen! Tap <b style="color:#ffd86a">SHOO!</b> in time to save every pot and earn ⭐⭐⭐.';
+    } else {
+      msg.innerHTML = 'Well done! Play again for ⭐⭐⭐.';
+    }
+  }
   const rep = document.getElementById('pulleyWinReplayBtn'); if (rep) rep.style.display = (stars >= 3) ? 'none' : '';
   const ov = document.getElementById('pulleyWinOverlay'); if (ov) ov.style.display = 'flex';
+  // confetti burst over the win panel
+  try { _pulleyOverlayConfetti('pulleyWinOverlay', 54); } catch(e){}
+  try { setTimeout(() => _pulleyOverlayConfetti('pulleyWinOverlay', 30), 600); } catch(e){}
+}
+// 2026-05-26 (Jane: "victory/lost modal can include confetti burst"): DOM
+// confetti rained over a well-game overlay (canvas confetti can't show above the
+// DOM overlay). Self-cleans.
+function _pulleyOverlayConfetti(hostId, n) {
+  const host = document.getElementById(hostId); if (!host) return;
+  const colors = ['#FFD700', '#ff6b9d', '#5ad1ff', '#7CFC8A', '#ffae42', '#c792ff', '#fff2c4'];
+  for (let i = 0; i < (n || 40); i++) {
+    const bit = document.createElement('div');
+    bit.style.cssText = 'position:absolute;top:-24px;width:9px;height:14px;border-radius:2px;pointer-events:none;z-index:9;';
+    bit.style.left = (Math.random() * 100) + '%';
+    bit.style.background = colors[i % colors.length];
+    bit.style.animation = 'pulleyConfFall ' + (1.8 + Math.random() * 1.7).toFixed(2) + 's linear ' + (Math.random() * 0.7).toFixed(2) + 's forwards';
+    host.appendChild(bit);
+    setTimeout(() => { try { bit.remove(); } catch(e){} }, 4200);
+  }
 }
 function _pulleyWinContinue() {
   const ov = document.getElementById('pulleyWinOverlay'); if (ov) ov.style.display = 'none';
