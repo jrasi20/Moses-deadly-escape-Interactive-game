@@ -9071,6 +9071,9 @@ function _pulleyStartSteal() {
   _pulley.stealNo = (_pulley.stealNo || 0) + 1;
   const who = (_pulley.stealNo - 1) % 3; // rotate through the gang so it's a different shepherd each time
   _pulley.steal = { pot: pot, t: 0, who: who };
+  // 2026-05-26 (Jane): a GANG member (who 1/2) sets out from HIS OWN post by the
+  // well (not the orange shepherd's spot). The orange stays + keeps pumping.
+  if (who !== 0) { _pulley.shepX = (who === 1) ? 432 : 470; _pulley.steal.home = _pulley.shepX; }
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = '';
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '⚠️ A rude shepherd is grabbing a pot — tap SHOO!';
   const lines = [['That water is mine!', 'voMine'], ['Hand it over!', null], ['We\'ll take that one!', null]];
@@ -9301,6 +9304,12 @@ function _pulleyResume() {
   const ov = document.getElementById('pulleyPausedOverlay'); if (ov) ov.style.display = 'none';
   try { if (audio.wellMusic) audio.wellMusic.play().catch(()=>{}); } catch(e){}
   _pulley.lastFrame = 0;
+  // 2026-05-26 (Jane: "after i pause and resume, sprites are not there"). Robust
+  // restart: cancel any orphan frame, force a canvas-size recheck next frame, and
+  // re-prime the backing store (some mobile browsers drop the 2D backing store
+  // while the loop is parked) so the first resumed frame fully repaints sprites.
+  cancelAnimationFrame(_pulley.rafId);
+  try { const cv = document.getElementById('pulleyCanvas'); if (cv) cv.width = cv.width; } catch(e){}
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
 }
 function _pulleyQuit() {
@@ -9438,9 +9447,14 @@ function _pulleyFrame(now) {
     _pulley.pots.forEach(p => { if (p.pop > 0) p.pop = Math.max(0, p.pop - dts * 2.2); });
     // rival fills his pots one at a time (unless stunned / mid-steal-away),
     // and visibly "pours" — a heave + a splash on his current pot every ~1.2s
+    // 2026-05-26 (Jane: "when the other shepherds come to steal, the orange
+    // shepherd should still be pumping"). The orange shepherd only LEAVES his
+    // well when HE (who 0) is the stealer; when a GANG member (who 1/2) steals,
+    // the orange keeps pumping his own pots.
+    const _orangeAway = (_pulley.steal && _pulley.steal.who === 0) || (_pulley.shepCarry && _pulley.shepCarry.who === 0);
     if (_pulley.shepHeave > 0) _pulley.shepHeave -= dts;
     if (_pulley.shepStun > 0) _pulley.shepStun -= dts;
-    else if (!_pulley.steal && !_pulley.shepCarry) {
+    else if (!_orangeAway) {
       const rp = _pulley.pots.filter(p => !p.mine && !p.done);
       _pulley.shepPourTarget = rp.length ? rp[0] : null;
       if (rp.length) {
@@ -9676,6 +9690,14 @@ function _pulleyFrame(now) {
     const grab = who === 1 ? ['shep2Grab', 'shepGrab'] : who === 2 ? ['shep4Grab', 'shepGrab'] : ['shepGrab'];
     shepKeys = nearPot ? grab.concat(base) : base;
   } else { shepKeys = ['shepHeave', 'shepPull', 'shepherdLeft', 'shepherdFront']; }
+  // 2026-05-26 (Jane): while a GANG member (who 1/2) is the one stealing/carrying,
+  // keep the ORANGE shepherd at his own well, pumping — he doesn't leave his post.
+  // (His pour/heave keeps animating because the fill loop now runs during gang steals.)
+  const _gangBusy = (_pulley.steal && _pulley.steal.who !== 0) || (_pulley.shepCarry && _pulley.shepCarry.who !== 0);
+  if (_gangBusy) {
+    const oBob = Math.sin(now / 360 + 1.6) * 2.2 - (_pulley.shepHeave > 0 ? Math.sin((1 - _pulley.shepHeave / 0.35) * Math.PI) * 7 : 0);
+    _pDraw(c, ['shepHeave', 'shepPull', 'shepherdLeft', 'shepherdFront'], Math.min(_pulley.shepHomeX, 470), 150 + oBob, 130, 140);
+  }
   // 2026-05-26: clamp the shepherd's draw-x so his 130px width can't jut past
   // the 600px logical canvas edge (he was drawn at ~478 → right edge 608).
   _pDraw(c, shepKeys, Math.min(sIdleX, 470), sIdleY, 130, 140, shepFlip);
@@ -9747,23 +9769,31 @@ function _pulleyFrame(now) {
     c.fillStyle = 'rgba(255,255,255,0.8)'; c.beginPath(); c.arc(_pulley.proj.x - 2, _pulley.proj.y - 2, 2.2, 0, Math.PI * 2); c.fill();
   }
 
-  // RIVAL POUR STREAM — the shepherd is "playing" too: a dotted water arc runs
-  // from his bucket to the pot he's currently filling, and a bright glob travels
-  // along it on every heave/pour beat (mirrors Moses' own throw so it reads as a
-  // real opponent rather than a number quietly ticking up).
-  if (!_pulley.over && _pulley.shepPourTarget && !_pulley.shepPourTarget.done
-      && _pulley.shepStun <= 0 && !_pulley.steal && !_pulley.shepCarry && !_pulley.mosesRun) {
+  // RIVAL POUR STREAM — 2026-05-26 (Jane: "the opponent's water stream is blue
+  // dot constantly. it should look realistic as though the water flows now and
+  // then when the shepherd is at his place"). The stream now only appears ON a
+  // pour beat (when he heaves), and the droplets FLOW along the arc toward the
+  // pot (animated offset) so it reads as real running water, not static dots.
+  const _orangeAwayDraw = (_pulley.steal && _pulley.steal.who === 0) || (_pulley.shepCarry && _pulley.shepCarry.who === 0);
+  if (!_pulley.over && _pulley.countdown <= 0 && _pulley.shepPourTarget && !_pulley.shepPourTarget.done
+      && _pulley.shepStun <= 0 && !_orangeAwayDraw && !_pulley.mosesRun) {
     const tg = _pulley.shepPourTarget, bx = 500, by = 168, tx = tg.x, ty = tg.y - 30;
-    for (let i = 0; i <= 11; i++) {
-      const u = i / 11, x = bx + (tx - bx) * u, y = by + (ty - by) * u - 46 * Math.sin(Math.PI * u);
-      c.fillStyle = 'rgba(20,60,110,0.45)'; c.beginPath(); c.arc(x, y, 3.0, 0, Math.PI * 2); c.fill();   // dark halo for contrast on bright sand
-      c.fillStyle = 'rgba(150,215,255,0.9)'; c.beginPath(); c.arc(x, y, 2.2, 0, Math.PI * 2); c.fill();
-    }
-    if (_pulley.shepHeave > 0) {
-      const u = Math.max(0, Math.min(1, 1 - _pulley.shepHeave / 0.35));
-      const x = bx + (tx - bx) * u, y = by + (ty - by) * u - 46 * Math.sin(Math.PI * u);
-      c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(x, y, 5, 0, Math.PI * 2); c.fill();
-      c.fillStyle = 'rgba(255,255,255,0.85)'; c.beginPath(); c.arc(x - 2, y - 2, 2, 0, Math.PI * 2); c.fill();
+    // pour intensity: rises + falls across the ~0.35s heave so water "spurts" then eases
+    const pour = _pulley.shepHeave > 0 ? Math.sin((1 - _pulley.shepHeave / 0.35) * Math.PI) : 0;
+    if (pour > 0.03) {
+      const flow = (now / 85) % 1;   // animates droplets travelling down the arc
+      for (let i = 0; i <= 12; i++) {
+        let u = (i / 12) + flow / 12; if (u > 1) u -= 1;
+        const x = bx + (tx - bx) * u, y = by + (ty - by) * u - 46 * Math.sin(Math.PI * u);
+        const r = (2.4 - u * 0.8) * (0.5 + 0.5 * pour);
+        c.fillStyle = 'rgba(20,60,110,' + (0.42 * pour).toFixed(2) + ')'; c.beginPath(); c.arc(x, y, r + 0.8, 0, Math.PI * 2); c.fill();
+        c.fillStyle = 'rgba(150,215,255,' + (0.92 * pour).toFixed(2) + ')'; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+      }
+      // splash burst where the water lands in the pot
+      c.fillStyle = 'rgba(150,215,255,' + (0.75 * pour).toFixed(2) + ')';
+      c.beginPath(); c.arc(tx, ty, 2 + 3 * pour, 0, Math.PI * 2); c.fill();
+      c.fillStyle = 'rgba(255,255,255,' + (0.6 * pour).toFixed(2) + ')';
+      c.beginPath(); c.arc(tx - 2, ty - 2, 1.6, 0, Math.PI * 2); c.fill();
     }
   }
 
