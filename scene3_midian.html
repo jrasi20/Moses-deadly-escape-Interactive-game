@@ -2490,8 +2490,14 @@
     <button id="pulleyPauseBtn" aria-label="Pause" style="position:absolute;top:8px;right:10px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:20px;cursor:pointer;line-height:1;">⏸</button>
     <button id="pulleyRestartBtn" aria-label="Restart" title="Restart" style="position:absolute;top:8px;right:60px;z-index:3;width:44px;height:44px;border-radius:11px;border:2px solid #d8a86a;background:rgba(40,24,10,0.78);color:#ffe0a0;font-size:19px;cursor:pointer;line-height:1;">🔁</button>
     <div id="pulleyPlayCol" style="width:100%;max-width:1200px;display:flex;flex-direction:column;margin:auto;">
-    <div style="color:#fff1c4;font-size:12px;letter-spacing:2px;text-align:center;margin-bottom:3px;text-shadow:0 1px 3px rgba(0,0,0,0.65);font-weight:bold;">~ RACE TO WATER THE FLOCK ~</div>
-    <h2 style="color:#fff4d6;text-align:center;margin:0 0 8px;font-size:23px;font-weight:800;text-shadow:0 2px 4px rgba(90,40,8,0.95),0 0 10px rgba(0,0,0,0.4);">Beat the Rude Shepherds — fill all your pots first!</h2>
+    <!-- 2026-05-26 (Jane: "title's font color is still not standing out against
+         the background ... underlined text has to be made bigger"). Wrap the
+         header in a dark backdrop pill with a gold border so it pops against
+         the bright desert surround. Bigger headline font. -->
+    <div style="align-self:center;background:linear-gradient(180deg,rgba(46,26,10,0.86),rgba(22,12,4,0.92));border:2px solid #f0c46a;border-radius:14px;padding:7px 22px;margin:0 auto 8px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,0.5);max-width:96%;">
+      <div style="color:#ffd97a;font-size:13px;letter-spacing:2.5px;font-weight:bold;">~ RACE TO WATER THE FLOCK ~</div>
+      <div style="color:#fff8e0;font-size:26px;font-weight:800;letter-spacing:0.5px;font-family:Georgia,serif;text-shadow:0 2px 4px rgba(0,0,0,0.7);margin-top:1px;">Beat the Rude Shepherds — fill all your pots first!</div>
+    </div>
     <div id="pulleyRotateHint" style="display:none;align-items:center;justify-content:center;gap:7px;background:rgba(255,210,90,0.14);border:1px solid rgba(255,210,90,0.45);color:#ffe8b8;font-size:12px;font-weight:bold;border-radius:10px;padding:5px 8px;margin:0 2px 6px;"><span style="font-size:16px;">📱↻</span> Turn your phone sideways for easier aiming</div>
     <!-- 2026-05-21 (Jane: puzzles felt too simple/kiddish — wanted a head-to-head,
          Angry-Birds-style contest with real art + a bigger responsive modal).
@@ -2499,7 +2505,7 @@
          drawn from the illustrated sprites. You fill yours via the timing bar
          (tap PULL in the GREEN); the rival fills his automatically AND tries to
          STEAL your water — tap SHOO! in time to block him. First trough full wins. -->
-    <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:min(96vw, calc((100vh - 220px) * 1.7647));height:auto;max-width:100%;aspect-ratio:600/340;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#bfe3f0;box-shadow:0 6px 30px rgba(60,30,8,0.5);"></canvas>
+    <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:min(98vw, calc((100vh - 180px) * 1.7647));height:auto;max-width:100%;aspect-ratio:600/340;margin:0 auto;border-radius:8px;border:2px solid #6a4a2a;background:#bfe3f0;box-shadow:0 6px 30px rgba(60,30,8,0.5);"></canvas>
     <div style="display:flex;justify-content:space-between;color:#ffe2b0;font-size:12px;font-weight:bold;margin:7px 2px 3px;">
       <span id="pulleyTaps">🪣 You: 0%</span>
       <span id="pulleyTimer">Rival: 0% 🐐</span>
@@ -2509,8 +2515,8 @@
       <div id="pulleyMarker" style="position:absolute;top:-3px;bottom:-3px;left:0;width:6px;background:#fff;border-radius:3px;box-shadow:0 0 10px #fff,0 0 4px #ffe0a0;"></div>
     </div>
     <div style="display:flex;gap:10px;align-items:stretch;">
-      <button class="btn" id="pulleyPullBtn" style="flex:1;font-size:22px;padding:12px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #7ab8d8;letter-spacing:2px;">PULL! 💧</button>
-      <button class="btn" id="pulleyShooBtn" style="display:none;flex:1;font-size:22px;padding:12px;background:linear-gradient(135deg,#c0432a,#e07a3a);border:2px solid #ffb070;letter-spacing:2px;animation:pulleyShooFlash 0.4s steps(2) infinite;">SHOO! ✋</button>
+      <button class="btn" id="pulleyPullBtn" style="flex:1;font-size:19px;padding:8px 10px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #7ab8d8;letter-spacing:2px;">PULL! 💧</button>
+      <button class="btn" id="pulleyShooBtn" style="display:none;flex:1;font-size:19px;padding:8px 10px;background:linear-gradient(135deg,#c0432a,#e07a3a);border:2px solid #ffb070;letter-spacing:2px;animation:pulleyShooFlash 0.4s steps(2) infinite;">SHOO! ✋</button>
     </div>
     <div id="pulleyFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:17px;font-weight:bold;">Drag from Moses to aim — fill every pot!</div>
     <div style="color:#d8b890;font-size:12px;text-align:center;margin-top:5px;font-style:italic;">"Moses got up and came to their rescue and watered their flock." — Exodus 2:17</div>
@@ -2599,7 +2605,15 @@
     </div>
     <div id="pulleyWinOverlay" style="display:none;position:absolute;inset:0;z-index:5;background:radial-gradient(circle at 50% 40%,rgba(28,72,42,0.5),rgba(8,22,14,0.88));border-radius:16px;align-items:center;justify-content:center;text-align:center;padding:0 16px;">
       <div class="pWinCard">
-        <img src="assets/images/moses%20front%20facing.png" alt="" style="width:92px;height:auto;margin-bottom:-2px;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));" onerror="this.style.display='none'">
+        <!-- 2026-05-26 (Jane: "i was hoping to see sheep in winning modal along
+             with moses"). Moses with his watered flock celebrating around him. -->
+        <div style="display:flex;gap:10px;justify-content:center;align-items:flex-end;margin-bottom:-2px;">
+          <img src="assets/images/sheep%20right%20facing.png" alt="" style="width:50px;height:auto;transform:scaleX(-1);" onerror="this.style.display='none'">
+          <img src="assets/images/lamb.png" alt="" style="width:36px;height:auto;" onerror="this.style.display='none'">
+          <img src="assets/images/moses%20front%20facing.png" alt="" style="width:88px;height:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));" onerror="this.style.display='none'">
+          <img src="assets/images/lamb%201.png" alt="" style="width:36px;height:auto;" onerror="this.style.display='none'">
+          <img src="assets/images/sheep%20right%20facing.png" alt="" style="width:50px;height:auto;" onerror="this.style.display='none'">
+        </div>
         <div class="pWinTitle">🎉 You watered the flock!</div>
         <div id="pulleyStarRow" class="pStarRow"></div>
         <div id="pulleyWinMsg" style="color:#eafff0;font-size:17px;font-family:Georgia,serif;font-style:italic;">Perfect!</div>
@@ -9250,14 +9264,19 @@ function _pulleyLose() {
   try { game.hearts = Math.max(0, game.hearts - 1); updateHudHearts(); game.perfectRun = false; } catch(e){}
   // failure sting — placeholder uses game over.mp3 until Jane drops a dedicated track.
   try { play('gameOver') || play('captured') || play('timeUp') || play('sandThud'); } catch(e){}
-  // show the lose overlay with the heart loss + a Retry option
+  // show the lose overlay with the heart loss + a Retry option (unless OUT of hearts)
   const out = (game && game.hearts <= 0);
   const msgEl = document.getElementById('pulleyLoseMsg');
   if (msgEl) msgEl.innerHTML = out
-    ? '\u{1F494} The shepherd won — and that was your last heart!'
+    ? '\u{1F494} That was your last heart! Scene 3 starts over — try again from the beginning.'
     : 'The rude shepherd watered his flock first.<br>Moses lost a heart \u{2764}\u{FE0F}';
+  // 2026-05-26 (Jane: "after losing 3 hearts, scene 3 will be game over and kids
+  // have to replay scene 3. no more retries allowed"). Hide Retry when out of
+  // hearts; the player must Quit (which returns to the maze for a fresh attempt).
   const retry = document.getElementById('pulleyRetryBtn');
-  if (retry) retry.textContent = out ? 'Try once more' : '\u{1F501} Retry';
+  if (retry) { retry.style.display = out ? 'none' : ''; retry.textContent = '\u{1F501} Retry'; }
+  const quitBtn = document.getElementById('pulleyLoseQuitBtn');
+  if (quitBtn) quitBtn.textContent = out ? 'Restart Scene 3' : 'Quit to Midian';
   const ov = document.getElementById('pulleyLoseOverlay'); if (ov) ov.style.display = 'flex';
 }
 function _pulleyStartGame() {
@@ -9743,10 +9762,19 @@ function _pulleyFrame(now) {
   }
   // Rival's rope + draw-bucket mirror Moses' so he visibly works his OWN well/bucket.
   const _RL = { x: 500, y: 176 };
-  if (!_pulley.steal && !_pulley.shepCarry) {
+  // 2026-05-26 (Jane: "when the gang gets shooed off why is the rope on the gang?
+  // the orange shepherd is pumping so the rope should be on the orange shepherd").
+  // Only hide the well's rope when the ORANGE himself is away (who=0 steal/carry).
+  // When a GANG member steals, the orange stays at his well so his rope+bucket+
+  // rope-to-hands ALL stay drawn at the orange's home position (not the gang's pos).
+  const _orangeAwayR = (_pulley.steal && _pulley.steal.who === 0) || (_pulley.shepCarry && _pulley.shepCarry.who === 0);
+  if (!_orangeAwayR) {
     _rope(512, 106, _RL.x, _RL.y - 8); _drawBucket(_RL.x, _RL.y, true);
-    const _shHandX = Math.min(sIdleX, 452);
-    _rope(512, 106, _shHandX + 44, sIdleY + 30);   // pulley beam down to the shepherd's gripping hands
+    // Orange's hands during _gangBusy = at his HOME (not at shepX, which is the
+    // gang's animated position). So anchor the rope-to-hands to orange's home.
+    const _gangBusyNow = (_pulley.steal && _pulley.steal.who !== 0) || (_pulley.shepCarry && _pulley.shepCarry.who !== 0) || !!_pulley.stealReturn;
+    const _oHandX = _gangBusyNow ? Math.min(_pulley.shepHomeX, 452) : Math.min(sIdleX, 452);
+    _rope(512, 106, _oHandX + 44, sIdleY + 30);
   }
   c.lineCap = 'butt';
 
@@ -9815,9 +9843,15 @@ function _pulleyFrame(now) {
     _pDraw(c, ['shepHeave', 'shepPull', 'shepherdLeft', 'shepherdFront'], Math.min(_pulley.shepHomeX, 452), 150 + oBob, 130, 140);
   }
   // 2026-05-26 (Jane: "characters as they lean are still cut"): clamp the
-  // shepherd's draw-x to 452 so his 130px width ends at ~582 — fully on-canvas
-  // (was 470 → right edge 600, clipping his lean).
-  _pDraw(c, shepKeys, Math.min(sIdleX, 452), sIdleY, 130, 140, shepFlip);
+  // shepherd's draw-x to 452 so his 130px width ends at ~582 — fully on-canvas.
+  // 2026-05-26 (Jane: "gang going to orange ... back to their place"): when a
+  // shooed/carrying gang member is returning, draw him SMALLER + slightly raised
+  // (read as moving back/behind toward his post, not standing beside the orange).
+  if (_pulley.stealReturn) {
+    _pDraw(c, shepKeys, Math.min(sIdleX, 470), sIdleY - 18, 96, 110, shepFlip);
+  } else {
+    _pDraw(c, shepKeys, Math.min(sIdleX, 452), sIdleY, 130, 140, shepFlip);
+  }
 
   // pots — drawn back-to-front (by y) so raised pots never hide the front ones
   _pulley.pots.slice().sort((a, b) => a.y - b.y).forEach(p => _pPot(c, p, now));
