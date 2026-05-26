@@ -2527,6 +2527,17 @@
         <img class="piImg piWell" src="assets/images/midian%20well.png" alt="">
         <img class="piImg piMoses" src="assets/images/moses%20right%20facing%20heaving%20and%20leaning.png" alt="">
         <img class="piImg piShep" src="assets/images/orange%20shepherd%20heave%202.png" alt="">
+        <!-- 2026-05-26 (Jane: "on the cover page also draw a rope like this"). A
+             tug-of-war rope arcs from Moses's gripping hands → over the central
+             well's pulley → to the shepherd's hands. Stretches to fit the overlay. -->
+        <svg class="piRope" viewBox="0 0 1000 600" preserveAspectRatio="none"
+             style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;opacity:0;animation:piRopeIn .9s .4s ease-out forwards;">
+          <path d="M 138 478 Q 500 196 862 478" fill="none" stroke="#3a2410" stroke-width="12" stroke-linecap="round" opacity="0.55"/>
+          <path d="M 138 478 Q 500 196 862 478" fill="none" stroke="#a87444" stroke-width="7" stroke-linecap="round"/>
+          <path d="M 138 478 Q 500 196 862 478" fill="none" stroke="#e4c08a" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 10"/>
+          <circle cx="138" cy="478" r="9" fill="#3a2410" stroke="#e4c08a" stroke-width="1.5"/>
+          <circle cx="862" cy="478" r="9" fill="#3a2410" stroke="#e4c08a" stroke-width="1.5"/>
+        </svg>
       </div>
       <div class="piContent" style="position:relative;z-index:2;text-align:center;">
         <div class="piTitle" style="color:#ffe0a0;font-size:34px;font-weight:800;letter-spacing:.5px;line-height:1.1;">🏺 How to Water the Flock</div>
@@ -2556,6 +2567,7 @@
       @keyframes piBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
       @keyframes piLean{0%,100%{transform:translateX(0);}50%{transform:translateX(-14px);}}
       @keyframes piWellRise{from{transform:translateX(-50%) translateY(40px);opacity:0;}to{opacity:.95;}}
+      @keyframes piRopeIn{from{opacity:0;}to{opacity:0.92;}}
       #pulleyIntroOverlay .piTitle{animation:piPop .6s .15s both;text-shadow:0 3px 8px rgba(0,0,0,.6),0 0 22px rgba(255,205,120,.45);}
       #pulleyIntroOverlay .piSub{animation:piFade .6s .3s both;}
       #pulleyIntroOverlay #pulleyHowTo{animation:piFade .6s .45s both;}
