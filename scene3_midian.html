@@ -1830,19 +1830,15 @@
   }
 
   /* ============ TOAST ============ */
-  /* 2026-05-27 (Jane: toast was landing on the cards / rope / characters in
-     every viewport). Now: thin pill at the VERY TOP of the screen above the
-     title bar — slides in from above, never sits over any game content. */
   .toast {
-    position:fixed; top:6px; left:50%; transform:translate(-50%, -200%);
-    max-width:min(420px, 92vw);
+    position:fixed; top:18%; left:50%; transform:translate(-50%, -20px);
     background: linear-gradient(135deg,#ffd976,#f2a83a);
-    color:#4a1605;
-    padding:7px 14px; border-radius:18px; font-weight:700; font-size:12.5px; text-align:center;
-    box-shadow:0 4px 14px rgba(0,0,0,0.45);
+    color:#5a1d06;
+    padding:10px 18px; border-radius:25px; font-weight:700; font-size:14px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.5);
     opacity:0; pointer-events:none;
     transition:all 0.4s ease;
-    z-index:95;
+    z-index:80;
   }
   .toast.show { opacity:1; transform:translate(-50%, 0); }
 
@@ -2515,19 +2511,11 @@
          left after the title pill and bottom HUD/buttons, and is always centred,
          aspect-locked, never overflowing — the PULL/SHOO toggle doesn't change
          the bottom row height, so the canvas never resizes mid-game. -->
-    <!-- 2026-05-27 (Jane: "the game window is so tiny ... why can't the game
-         window fill the screen on landscape or at least 70% of the screen"):
-         the canvas now FILLS the wrap completely. The internal logical 600x340
-         gameplay coords are still respected — _pulleyFrame does a uniform
-         scale + centering inside the backing store and paints the sunset
-         background in COVER mode so the canvas reads as one big game world
-         across any aspect, no more tiny rectangle floating in dead space. -->
-    <div id="pulleyCanvasWrap" style="flex:1 1 auto;min-height:0;min-width:0;display:flex;align-items:stretch;justify-content:stretch;margin:4px 0;position:relative;">
-      <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:100%;height:100%;border-radius:10px;background:#e4c298;box-shadow:0 6px 30px rgba(60,30,8,0.5);"></canvas>
-      <!-- 2026-05-27 (Jane: "on portrait, is there a toast to suggest landscape?").
-           Persistent hint chip sits at the top of the canvas on portrait — even
-           after the orient-popup is dismissed, this stays as a visual reminder. -->
-      <div id="pulleyLandscapeHint" style="display:none;position:absolute;top:6px;left:50%;transform:translateX(-50%);background:rgba(40,24,10,0.78);color:#ffe2b0;padding:5px 11px;border-radius:14px;font-size:11.5px;font-weight:bold;border:1.5px solid rgba(240,196,106,0.6);box-shadow:0 2px 6px rgba(0,0,0,0.35);letter-spacing:0.2px;pointer-events:none;z-index:3;"><span style="display:inline-block;animation:pulleyRotateBob 1.6s ease-in-out infinite;margin-right:4px;">📱↻</span>Rotate for bigger play area</div>
+    <!-- container-type:size lets the canvas size with cqw/cqh, which gives true
+         fit-contain (min of width-bound and height-bound) at any viewport — no
+         scrollbar, no aspect distortion, canvas size is stable when SHOO toggles. -->
+    <div id="pulleyCanvasWrap" style="flex:1 1 auto;min-height:0;min-width:0;display:flex;align-items:center;justify-content:center;margin:6px 0;container-type:size;">
+      <canvas id="pulleyCanvas" width="600" height="340" style="display:block;width:min(100cqw, calc(100cqh * 600/340));aspect-ratio:600/340;border-radius:8px;border:2px solid #6a4a2a;background:#bfe3f0;box-shadow:0 6px 30px rgba(60,30,8,0.5);"></canvas>
     </div>
     <div style="display:flex;justify-content:space-between;color:#ffe2b0;font-size:12px;font-weight:bold;margin:7px 2px 3px;">
       <span id="pulleyTaps">🪣 You: 0%</span>
@@ -2542,7 +2530,7 @@
       <button class="btn" id="pulleyShooBtn" style="display:none;flex:1;font-size:19px;padding:8px 10px;background:linear-gradient(135deg,#c0432a,#e07a3a);border:2px solid #ffb070;letter-spacing:2px;animation:pulleyShooFlash 0.4s steps(2) infinite;">SHOO! ✋</button>
     </div>
     <div id="pulleyFeedback" style="color:#ffe8b8;text-align:center;min-height:24px;margin-top:8px;font-size:17px;font-weight:bold;">Drag from Moses to aim — fill every pot!</div>
-    <div id="pulleyVerse" style="color:#d8b890;font-size:12px;text-align:center;margin-top:5px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">"Moses got up and came to their rescue and watered their flock." — Exodus 2:17</div>
+    <div style="color:#d8b890;font-size:12px;text-align:center;margin-top:5px;font-style:italic;">"Moses got up and came to their rescue and watered their flock." — Exodus 2:17</div>
     </div><!-- /pulleyPlayCol -->
     <!-- 2026-05-27 (Jane: "the rope should go to moses and the shepherd's hands ...
          tricky to get it correct on desktop, portrait and landscape"): rewritten
@@ -2593,18 +2581,14 @@
       #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx b { color:#ffd97a; display:block; font-size:clamp(11px,1.65vw,14px); margin-bottom:2px; }
       #pulleyIntroOverlay .piBtn { font-size:clamp(15px,2.4vw,22px); padding:clamp(8px,1.5vw,13px) clamp(22px,4vw,40px); flex-shrink:0; animation:piPop .6s .6s both,piPulse 1.8s 1.2s ease-in-out infinite; }
       /* HERO STAGE: a flex:1 wrapper absorbs all remaining vertical space; the
-         inner stage fills the wrap completely (no aspect lock) so portrait
-         phones don't leave a huge dark band above the figures. Character +
-         well sizes are bounded by BOTH max-width AND max-height so they scale
-         naturally on every viewport without overlapping each other — and the
-         rope JS positions endpoints from the rendered bounding rects so the
-         arc always lands on the actual gripping hands. */
-      #pulleyIntroOverlay .piStageWrap { flex:1 1 auto; min-height:0; min-width:0; width:100%; display:flex; align-items:stretch; justify-content:center; }
-      #pulleyIntroOverlay .piStage { position:relative; width:100%; max-width:1100px; height:100%; min-height:0; }
+         inner aspect-locked stage fits inside it preserving 1000:600 so the
+         rope endpoints (in viewBox coords) always land on the character hands. */
+      #pulleyIntroOverlay .piStageWrap { flex:1 1 auto; min-height:0; min-width:0; width:100%; display:flex; align-items:flex-end; justify-content:center; }
+      #pulleyIntroOverlay .piStage { position:relative; aspect-ratio:1000/600; width:100%; max-width:760px; max-height:100%; }
       #pulleyIntroOverlay .piStage > img { position:absolute; bottom:0; filter:drop-shadow(0 6px 14px rgba(0,0,0,.55)); pointer-events:none; }
-      #pulleyIntroOverlay .piStage .piWell  { left:50%; transform:translateX(-50%); height:auto; width:auto; max-height:92%; max-width:26%; bottom:0; opacity:.96; animation:piWellRise 1s ease-out both; }
-      #pulleyIntroOverlay .piStage .piMoses { left:2%;  height:auto; width:auto; max-height:84%; max-width:34%; opacity:.97; animation:piMosesIn .7s ease-out both,piBob 2.8s ease-in-out infinite; transform-origin:bottom left; }
-      #pulleyIntroOverlay .piStage .piShep  { right:2%; height:auto; width:auto; max-height:82%; max-width:34%; opacity:.95; animation:piShepIn .7s ease-out both,piLean 2.2s ease-in-out infinite; transform-origin:bottom right; }
+      #pulleyIntroOverlay .piStage .piWell  { left:50%; transform:translateX(-50%); height:90%; width:auto; max-width:32%; bottom:0; opacity:.96; animation:piWellRise 1s ease-out both; }
+      #pulleyIntroOverlay .piStage .piMoses { left:0;  height:82%; opacity:.97; animation:piMosesIn .7s ease-out both,piBob 2.8s ease-in-out infinite; transform-origin:bottom left; }
+      #pulleyIntroOverlay .piStage .piShep  { right:0; height:80%; opacity:.95; animation:piShepIn .7s ease-out both,piLean 2.2s ease-in-out infinite; transform-origin:bottom right; }
       #pulleyIntroOverlay .piStage .piRope  { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0; animation:piRopeIn .9s .6s ease-out forwards; }
       @keyframes piFade     { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:none;} }
       @keyframes piPop      { 0%{opacity:0;transform:scale(.85);} 70%{transform:scale(1.05);} 100%{opacity:1;transform:scale(1);} }
@@ -2615,62 +2599,26 @@
       @keyframes piWellRise { from{transform:translateX(-50%) translateY(30px);opacity:0;} to{transform:translateX(-50%);opacity:.96;} }
       @keyframes piBob      { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
       @keyframes piLean     { 0%,100%{transform:translateX(0);} 50%{transform:translateX(-7px);} }
-      /* PORTRAIT — 2026-05-27 (Jane: "space it uniformly"). space-evenly on
-         the panel distributes the slack EQUALLY above content + between
-         content&stage + below stage, so the dead band between the Start
-         button and the figures disappears. Bigger characters + well too. */
-      /* PORTRAIT — 2026-05-29 (Jane: "make everything on the intro page larger
-         and make it length wise ... make each instruction panel larger so it
-         follows one after the other ... like the cover page before scene 1").
-         Redesigned as a full-page vertical flow matching the main cover page:
-         big logo, big title, stacked instruction cards (each full-width,
-         horizontal icon+text), big Start button, characters filling the
-         remaining space.  Centered vertically with a tight 2:1 stage so
-         characters fill ~90% of the stage height. */
+      /* PORTRAIT — make the hero stage taller so it fills the empty band
+         under the cards/button (was 5:3 wide stage, leaves dead space). */
       @media (orientation:portrait) and (max-width:760px) {
-        #pulleyIntroOverlay { padding:16px 14px 10px !important; }
-        #pulleyIntroOverlay .piPanel { justify-content:center; gap:10px; }
-        #pulleyIntroOverlay .piContent { flex:0 0 auto; gap:10px; }
-        #pulleyIntroOverlay .piLogo { height:clamp(50px,12vw,80px); }
-        #pulleyIntroOverlay .piTitle { font-size:clamp(24px,6.5vw,36px); }
-        #pulleyIntroOverlay .piSub { font-size:clamp(14px,3.5vw,20px); }
-        /* Stack instruction cards vertically, each full-width with horizontal
-           icon + text layout — much larger and clearer than 3-across. */
-        #pulleyIntroOverlay #pulleyHowTo { flex-direction:column; gap:10px; max-width:100%; }
-        #pulleyIntroOverlay #pulleyHowTo .ptStep { flex-direction:row; padding:12px 16px; gap:12px; text-align:left; align-items:center; }
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptIco { font-size:clamp(26px,6vw,34px); flex-shrink:0; }
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx { font-size:clamp(13px,3vw,16px); line-height:1.3; }
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx b { font-size:clamp(14px,3.2vw,17px); display:inline; margin-right:4px; }
-        #pulleyIntroOverlay .piBtn { font-size:clamp(20px,5vw,28px); padding:14px 30px; width:min(85%,380px); }
-        /* Stage: tight 2:1 aspect so characters fill ~90% of height */
-        #pulleyIntroOverlay .piStageWrap { flex:0 0 auto; width:100%; align-items:flex-end; }
-        #pulleyIntroOverlay .piStage { height:auto; width:100%; aspect-ratio:2/1; max-height:50vh; min-height:160px; max-width:none; }
-        #pulleyIntroOverlay .piStage .piWell  { visibility:visible; max-height:70%; max-width:24%; }
-        #pulleyIntroOverlay .piStage .piMoses { max-height:96%; max-width:48%; left:0%; }
-        #pulleyIntroOverlay .piStage .piShep  { max-height:94%; max-width:48%; right:0%; }
+        #pulleyIntroOverlay .piStage { aspect-ratio:4/3; }
       }
-      /* LANDSCAPE PHONES — 2026-05-27 (Jane: "intro landscape center
-         everything. i don't want in two columns left and right"). Stays as a
-         centered single-column stack like portrait — title/cards/button at
-         the top, hero stage below — just COMPACT for the short height. */
+      /* LANDSCAPE PHONES — switch to SIDE-BY-SIDE: content on the left at
+         normal sizes, hero stage on the right taking the full panel height.
+         Stops the figures from shrinking to thumbnails on short viewports. */
       @media (orientation:landscape) and (max-height:600px) {
-        #pulleyIntroOverlay { padding:6px 12px !important; }
-        #pulleyIntroOverlay .piPanel { flex-direction:column; align-items:center; gap:4px; max-width:880px; }
-        #pulleyIntroOverlay .piContent { flex:0 0 auto; width:100%; max-width:none; gap:3px; align-items:center; }
-        #pulleyIntroOverlay .piLogo { height:18px; }
-        #pulleyIntroOverlay .piTitle { font-size:clamp(15px,2.4vw,22px); }
+        #pulleyIntroOverlay { padding:8px 12px !important; }
+        #pulleyIntroOverlay .piPanel { flex-direction:row; align-items:center; gap:14px; }
+        #pulleyIntroOverlay .piContent { flex:0 1 55%; max-width:55%; gap:5px; align-items:center; justify-content:center; height:100%; }
+        #pulleyIntroOverlay .piLogo { height:22px; }
+        #pulleyIntroOverlay .piTitle { font-size:clamp(15px,2.6vw,22px); }
         #pulleyIntroOverlay .piSub { font-size:clamp(10px,1.5vw,13px); }
-        #pulleyIntroOverlay #pulleyHowTo { gap:6px; max-width:660px; }
-        #pulleyIntroOverlay #pulleyHowTo .ptStep { padding:4px 4px; gap:1px; }
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptIco { font-size:clamp(14px,1.8vw,18px); }
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx { font-size:clamp(9.5px,1.3vw,12px); }
-        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx b { font-size:clamp(10.5px,1.5vw,13px); }
-        #pulleyIntroOverlay .piBtn { font-size:clamp(13px,2vw,17px); padding:6px 22px; }
-        #pulleyIntroOverlay .piStageWrap { flex:1 1 auto; min-height:0; width:100%; align-items:flex-end; }
-        #pulleyIntroOverlay .piStage { width:100%; max-width:none; height:100%; aspect-ratio:auto; }
-        #pulleyIntroOverlay .piStage .piMoses { max-height:96%; max-width:30%; left:8%; visibility:visible; }
-        #pulleyIntroOverlay .piStage .piShep  { max-height:94%; max-width:30%; right:8%; visibility:visible; }
-        #pulleyIntroOverlay .piStage .piWell  { max-height:90%; max-width:18%; visibility:visible; }
+        #pulleyIntroOverlay #pulleyHowTo .ptStep { padding:5px 4px; gap:1px; }
+        #pulleyIntroOverlay #pulleyHowTo .ptStep .ptIco { font-size:clamp(14px,2vw,18px); }
+        #pulleyIntroOverlay .piBtn { font-size:clamp(13px,2vw,17px); padding:6px 20px; }
+        #pulleyIntroOverlay .piStageWrap { flex:1 1 45%; height:100%; align-items:center; }
+        #pulleyIntroOverlay .piStage { max-width:none; }
       }
       @media (prefers-reduced-motion:reduce) {
         #pulleyIntroOverlay .piTitle, #pulleyIntroOverlay .piSub,
@@ -2682,22 +2630,6 @@
       <div style="color:#ffe0a0;font-size:30px;font-weight:bold;letter-spacing:2px;">PAUSED</div>
       <button class="btn btn-gold" id="pulleyResumeBtn" style="font-size:20px;padding:12px 30px;">▶ Resume</button>
       <button class="btn" id="pulleyQuitBtn" style="font-size:15px;padding:9px 22px;background:rgba(156,96,58,0.97);border:2px solid #ffc089;color:#fff4e6;">Quit to Midian</button>
-    </div>
-    <!-- 2026-05-27 (Jane: "if this is the max you can do for portrait game page,
-         add a pop up to suggest landscape for better playing experience"). One-
-         time popup shown on portrait the first time gameplay starts; user taps
-         "Got it" or "Play in portrait" to dismiss. Honoured for the whole tab
-         session — won't re-pester on every replay. -->
-    <div id="pulleyOrientPopup" style="display:none;position:absolute;inset:0;z-index:8;background:rgba(20,12,4,0.78);align-items:center;justify-content:center;padding:18px;">
-      <div style="background:linear-gradient(160deg,#3a2110,#1a0e05);border:3px solid #f0c46a;border-radius:20px;padding:22px 22px 18px;max-width:min(420px,92vw);text-align:center;box-shadow:0 12px 36px rgba(0,0,0,0.55),0 0 0 2px rgba(255,232,168,0.25) inset;animation:pulleyWinPop .4s ease-out both;">
-        <div style="font-size:54px;line-height:1;margin-bottom:8px;animation:pulleyRotateBob 1.6s ease-in-out infinite;">📱↻</div>
-        <div style="color:#ffe0a0;font-size:19px;font-weight:bold;line-height:1.25;margin-bottom:6px;font-family:Georgia,serif;">Turn your phone sideways</div>
-        <div style="color:#f0d9b0;font-size:13.5px;line-height:1.45;margin-bottom:16px;">Landscape gives you a much bigger play area to aim, splash water, and SHOO the rude shepherds away!</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
-          <button class="btn btn-gold" id="pulleyOrientGotIt" style="font-size:15px;padding:10px 24px;">Got it ▶</button>
-          <button class="btn" id="pulleyOrientStayPortrait" style="font-size:13px;padding:8px 18px;background:rgba(80,52,28,0.92);border:2px solid #c89968;color:#fff4e0;">Play in portrait</button>
-        </div>
-      </div>
     </div>
     <!-- 2026-05-26 (Jane: "the lost modal needs to be worked on. add borders,
          images and animation"). Framed card (reuses .pWinCard styling) with a
@@ -2935,30 +2867,19 @@
   #pulleyHowTo .ptStep .ptTx b{font-size:11.5px;margin-bottom:1px;}
 }
 @media (orientation:portrait) and (max-width:600px){
-  #wellPulleyModal .modal-content{padding:8px 6px !important;width:100vw !important;max-width:100vw !important;}
-  /* 2026-05-27: canvas fills the wrap on every viewport — no max-height clamp
-     (the JS render uses uniform scale + COVER background so any aspect works). */
-  #pulleyCanvas{width:100% !important;height:100% !important;max-height:none !important;}
-  #pulleyRotateHint{display:none !important;}
+  #wellPulleyModal .modal-content{padding:10px 9px !important;width:99vw !important;max-width:99vw !important;}
+  #pulleyCanvas{max-height:46vh !important;}
+  #pulleyRotateHint{display:flex !important;}
   #wellPulleyModal h2{font-size:16px !important;margin-bottom:5px !important;}
-  #pulleyPullBtn,#pulleyShooBtn{font-size:18px !important;padding:11px !important;}
-  /* 2026-05-27 (Jane: "portrait bible verse is hanging as 2 lines. move it up.").
-     Shrink the verse on phones + tighten the wrapper margins so it sits
-     RIGHT UNDER the gameplay HUD on one line. */
-  #pulleyVerse{font-size:10px !important;margin-top:2px !important;letter-spacing:-0.1px;}
-  #pulleyFeedback{font-size:14px !important;min-height:18px !important;margin-top:4px !important;}
-  #pulleyPlayCol > div[id^="pulley"]{margin:2px 0 !important;}
-}
-@media (orientation:portrait) and (max-width:380px){
-  #pulleyVerse{font-size:9px !important;}
+  #pulleyPullBtn,#pulleyShooBtn{font-size:19px !important;padding:14px !important;}
 }
 /* 2026-05-26 (Jane): short landscape has little height — give the canvas a
    bigger slice by compacting the HUD (smaller buttons/bar/feedback), and use a
    smaller HUD budget in the width calc so the game isn't tiny. */
 @media (orientation:landscape) and (max-height:600px){
-  #pulleyCanvas{width:100% !important;height:100% !important;}
-  #pulleyBar{height:16px !important;margin:1px 0 3px !important;}
-  #pulleyPullBtn,#pulleyShooBtn{font-size:16px !important;padding:6px !important;}
+  #pulleyCanvas{width:min(94vw, calc((100vh - 116px) * 1.7647)) !important;}
+  #pulleyBar{height:18px !important;margin:1px 0 4px !important;}
+  #pulleyPullBtn,#pulleyShooBtn{font-size:16px !important;padding:7px !important;}
   #pulleyFeedback{font-size:13px !important;min-height:16px !important;margin-top:3px !important;}
 }
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
@@ -2988,7 +2909,6 @@
   #wellPulleyModal .modal-content{padding:4px 8px !important;}
 }
 @keyframes pulleyWinPop{0%{transform:scale(.82);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
-@keyframes pulleyRotateBob{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
 @keyframes pulleyStarPop{0%{transform:scale(0) rotate(-30deg);opacity:0}70%{transform:scale(1.35) rotate(8deg)}100%{transform:scale(1) rotate(0);opacity:1}}
 @keyframes pulleyTitleGlow{0%,100%{filter:drop-shadow(0 2px 6px rgba(255,170,40,.5))}50%{filter:drop-shadow(0 2px 12px rgba(255,210,90,.95))}}
 @keyframes pulleyStarSpin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
@@ -3403,27 +3323,6 @@ function _maybeShowMutedToast(){
   if (_audioUnlockToastShown) return;
   if ((_audioUnlockSucceeded + _audioUnlockFailed) === 0) return;
   if (_audioUnlockSucceeded > 0) return;
-  // 2026-05-27 (Jane: toast was landing on the rope/characters of the well
-  // intro). Suppress the toast for as long as either mini-game's modal is
-  // up — the well + rescue games already have their OWN audio handling and
-  // a system "muted?" alert would step on the cinematic. Re-poll until the
-  // modals close, then surface the toast once on a clean scene.
-  try {
-    const wm = document.getElementById('wellPulleyModal');
-    const rm = document.getElementById('rescueModal');
-    const wOpen = wm && getComputedStyle(wm).display !== 'none';
-    const rOpen = rm && getComputedStyle(rm).display !== 'none';
-    // Also suppress in welltest mode (devtest URL) — that opens a mini-game
-    // straight on page load, and the toast race-condition can fire before the
-    // modal is fully laid out, overlapping the title.
-    const inWellTest = !!window._wellTestMode;
-    // Welltest is a devtest URL that doesn't need the audio nag toast at all.
-    if (inWellTest) return;
-    if (wOpen || rOpen) {
-      setTimeout(_maybeShowMutedToast, 2500);
-      return;
-    }
-  } catch(e){}
   _audioUnlockToastShown = true;
   try {
     toast('No sound? Check your phone’s silent switch and turn the volume up.');
@@ -3664,7 +3563,6 @@ const IMG_SRC = {
   // Midian ground + landscape
   grassTile:    'assets/images/midian%20grass%20tile.png',
   scene3Bg:     'assets/images/scene3_background.png',
-  scene3BgPort: 'assets/images/scene3_background_portrait.png',  // taller (3:4) version for portrait viewports
   rescueBg:     'assets/images/rescue%20background.png',   // lane-defense backdrop (Jane to generate; falls back to scene3Bg)
   wildflowers:  'assets/images/midian%20wildflowers.png',
   sunbeam:      'assets/images/golden%20sunbeam.png',
@@ -9191,15 +9089,8 @@ function _pulleyReset() {
   _pulley.shepHeave = 0; _pulley.shepPourT = 0; _pulley.paused = false; _pulley.intro = false;
   _pulley.matchPoint = false; _pulley.slowmo = 0; _pulley.flock = null; _pulley.zoom = 1; _pulley.zoomTarget = 1;
   _pulley.zoomFx = 300; _pulley.zoomFy = 188;   // zoom focal point (default = scene centre)
-  // 2026-05-29 (Jane: "like how we show scene 1 on portrait, present well game
-  // like that. it should occupy full screen and be zoomable."): user-controlled
-  // pinch-to-zoom with a default 1.4× on portrait so game elements fill more
-  // of the tall screen.  _viewCx/_viewCy = logical centre of the visible area.
-  const _isPort = (window.innerHeight || 0) > (window.innerWidth || 1) * 1.15;
-  _pulley._viewZoom = _isPort ? 1.9 : 1;
-  _pulley._viewCx = _isPort ? 260 : 300;
-  _pulley._viewCy = _isPort ? 200 : 170;
-  _pulley._pinching = false;
+  // pinch-to-zoom view state (default = 1x centred, no zoom)
+  _pulley._viewZoom = 1; _pulley._viewCx = 300; _pulley._viewCy = 170; _pulley._pinching = false;
   _pulley.potsLostToSteal = 0; _pulley.ownGoals = 0; _pulley.earnedStars = 3; _pulley.winPanelShown = false;
   _pulley.stealNo = 0; _pulley.countdown = 0; _pulley.go = 0;
   _pulley.shepX = _pulley.shepHomeX; _pulley.mosesX = _pulley.mosesHomeX;
@@ -9225,13 +9116,10 @@ function _pulleyUpdateIntroRope() {
   const well = ov.querySelector('.piWell');
   if (!moses || !shep || !well) return;
   if (!moses.complete || !shep.complete || !well.complete) return;
-  // 2026-05-27 (Jane: "rope is touching their heads, not hands"). PIL-rescanned
-  // the sprite skin-tone pixels in the top 30% RIGHT half of Moses + LEFT half
-  // of the shepherd to find each character's actual GRIPPING FIST centroid:
-  //   Moses (1024²) right fist: fracX 0.58, fracY 0.25
-  //   Shepherd      left  fist: fracX 0.38, fracY 0.27
-  // The previous 0.21/0.15 anchor landed on Moses's hair pompadour (topmost
-  // OPAQUE pixel) — not the same as the topmost SKIN pixel of the raised hand.
+  // 2026-05-27 (Jane: "the rope should go to moses and the shepherd's hands"):
+  // map screen px → SVG viewBox via the SVG's OWN rect (the SVG fills the
+  // fixed-aspect .piStage exactly, so this maps 1:1 inside the stage and the
+  // rope endpoints land precisely on each character's fist on every viewport).
   const svgR = svg.getBoundingClientRect();
   if (svgR.width < 50 || svgR.height < 50) return;
   const mr = moses.getBoundingClientRect();
@@ -9239,24 +9127,24 @@ function _pulleyUpdateIntroRope() {
   const wr = well.getBoundingClientRect();
   const toX = (x) => (x - svgR.left) / svgR.width * 1000;
   const toY = (y) => (y - svgR.top) / svgR.height * 600;
-  const mhx = toX(mr.left + mr.width  * 0.58);
-  const mhy = toY(mr.top  + mr.height * 0.25);
-  const shx = toX(sr.left + sr.width  * 0.38);
-  const shy = toY(sr.top  + sr.height * 0.27);
-  // Well's pulley = the horizontal beam at the very top of the well sprite.
-  const wpx = toX(wr.left + wr.width  * 0.50);
-  const wpy = toY(wr.top  + wr.height * 0.06);
-  // Two-segment Bezier rope: each side arcs UP from the hand toward a control
-  // point above the midpoint between hand & pulley, then meets at the pulley.
-  // This gives the rope a clear over-the-pulley arc on every viewport.
-  const stageH = 600;
-  const ctrl1y = Math.max(20, Math.min(mhy, wpy) - stageH * 0.10);
-  const ctrl2y = Math.max(20, Math.min(shy, wpy) - stageH * 0.10);
-  const c1x = (mhx + wpx) / 2;
-  const c2x = (wpx + shx) / 2;
-  const d = `M ${mhx.toFixed(0)} ${mhy.toFixed(0)} ` +
-            `Q ${c1x.toFixed(0)} ${ctrl1y.toFixed(0)} ${wpx.toFixed(0)} ${wpy.toFixed(0)} ` +
-            `Q ${c2x.toFixed(0)} ${ctrl2y.toFixed(0)} ${shx.toFixed(0)} ${shy.toFixed(0)}`;
+  // 2026-05-27: PIL-rescanned the sprite alpha channels — Moses (1024^2) topmost
+  // opaque pixel is at fracX 0.210, fracY 0.115; Shepherd's at fracX 0.677,
+  // fracY 0.095. The topmost pixel is the FINGERTIP, so we shift the rope
+  // endpoint down ~3% of sprite height to land on the GRIPPING PALM (where a
+  // hand would actually hold a rope), not the fingertip.
+  const mhx = toX(mr.left + mr.width * 0.210);
+  const mhy = toY(mr.top + mr.height * 0.145);
+  const shx = toX(sr.left + sr.width * 0.677);
+  const shy = toY(sr.top + sr.height * 0.125);
+  // Well's pulley wheel (the wooden beam at the top of the well sprite): centre x, ~10% from top.
+  const wpx = toX(wr.left + wr.width * 0.50);
+  const wpy = toY(wr.top + wr.height * 0.10);
+  // Smooth arc: rope passes OVER the pulley. On portrait phones the well is
+  // shorter than the figures so its pulley Y can fall BELOW the hands — to
+  // guarantee a visible arc we lift the peak to the MIN of (pulley-25) and
+  // (lower hand - 55), so the rope always crests above hand-level.
+  const peakY = Math.min(wpy - 25, Math.min(mhy, shy) - 55);
+  const d = `M ${mhx.toFixed(0)} ${mhy.toFixed(0)} Q ${wpx.toFixed(0)} ${peakY.toFixed(0)} ${shx.toFixed(0)} ${shy.toFixed(0)}`;
   svg.querySelectorAll('path').forEach(p => p.setAttribute('d', d));
   const kL = svg.querySelector('.piRopeKnotL'); if (kL) { kL.setAttribute('cx', mhx.toFixed(0)); kL.setAttribute('cy', mhy.toFixed(0)); }
   const kR = svg.querySelector('.piRopeKnotR'); if (kR) { kR.setAttribute('cx', shx.toFixed(0)); kR.setAttribute('cy', shy.toFixed(0)); }
@@ -9313,17 +9201,16 @@ function _pulleyCanvasPos(e) {
   const r = c.getBoundingClientRect();
   const cx = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
   const cy = (e.touches && e.touches[0]) ? e.touches[0].clientY : e.clientY;
-  // Convert CSS client coords to canvas backing-pixel coords, then invert
-  // the effective game transform (which includes the user view-zoom).
+  // map pointer into the 600x340 LOGICAL space, accounting for pinch-to-zoom transform
   const bx = (cx - r.left) * (c.width  / r.width);
   const by = (cy - r.top)  * (c.height / r.height);
   const eg  = _pulley._effGs   || _pulley._gs || 1;
-  const eox = _pulley._effOffX != null ? _pulley._effOffX : (_pulley._goffX || 0);
-  const eoy = _pulley._effOffY != null ? _pulley._effOffY : (_pulley._goffY || 0);
+  const eox = _pulley._effOffX != null ? _pulley._effOffX : 0;
+  const eoy = _pulley._effOffY != null ? _pulley._effOffY : 0;
   return { x: (bx - eox) / eg, y: (by - eoy) / eg };
 }
 function _pulleyAimStart(e) {
-  if (_pulley._pinching) return;  // pinch-to-zoom in progress — don't aim
+  if (_pulley._pinching) return;
   if (_pulley.over || _pulley.intro || _pulley.proj || _pulley.mosesRun || _pulley.paused || !_pulley.gate || _pulley.countdown > 0) return;
   if (e.cancelable) e.preventDefault();
   const p = _pulleyCanvasPos(e);
@@ -9540,37 +9427,11 @@ function _pulleyLose() {
   if (quitBtn) quitBtn.textContent = out ? 'Restart Scene 3' : 'Quit to Midian';
   const ov = document.getElementById('pulleyLoseOverlay'); if (ov) ov.style.display = 'flex';
 }
-function _pulleyMaybeShowOrientPopup() {
-  // 2026-05-27 (Jane: "add a pop up to suggest landscape for better playing
-  // experience" on portrait). One-time per tab session — once dismissed, don't
-  // re-show on replay/retry. Honours the user choosing "Play in portrait".
-  // Also shows a small PERSISTENT chip at the top of the canvas so the hint
-  // stays visible even after the popup is closed.
-  try {
-    const portrait = window.innerHeight > window.innerWidth;
-    const chip = document.getElementById('pulleyLandscapeHint');
-    if (chip) chip.style.display = portrait ? 'block' : 'none';
-    if (window._pulleyOrientShown) return;
-    if (!portrait) return;
-    const pop = document.getElementById('pulleyOrientPopup'); if (!pop) return;
-    pop.style.display = 'flex';
-    window._pulleyOrientShown = true;
-    const close = () => { pop.style.display = 'none'; };
-    const ok = document.getElementById('pulleyOrientGotIt');
-    const stay = document.getElementById('pulleyOrientStayPortrait');
-    if (ok && !ok._wired)  { ok._wired = true;  ok.addEventListener('click',  close); }
-    if (stay && !stay._wired){ stay._wired = true; stay.addEventListener('click', close); }
-  } catch(e){}
-}
-// Toggle the landscape-hint chip on orientation change too.
-try { window.addEventListener('orientationchange', () => { const ch = document.getElementById('pulleyLandscapeHint'); if (ch) ch.style.display = (window.innerHeight > window.innerWidth ? 'block' : 'none'); }); } catch(e){}
-try { window.addEventListener('resize',            () => { const ch = document.getElementById('pulleyLandscapeHint'); if (ch) ch.style.display = (window.innerHeight > window.innerWidth ? 'block' : 'none'); }); } catch(e){}
 function _pulleyStartGame() {
   const intro = document.getElementById('pulleyIntroOverlay'); if (intro) intro.style.display = 'none';
   _pulley.intro = false; _pulley.lastFrame = 0;
   _pulley.zoom = 1.16; _pulley.zoomTarget = 1; _pulley.shake = 7;   // cinematic entry punch-in (parity with rescue)
   try { play('click') || play('pop'); } catch(e){}   // button-select SFX
-  _pulleyMaybeShowOrientPopup();
   // 2026-05-26 (Jane: "after selecting start watering, break the bg music, then
   // play countdown music, and after countdown, begin bg music track again - same
   // like rescue game"). BREAK the intro bed → 3-2-1 countdown → GO restarts the
@@ -9789,86 +9650,24 @@ function _pulleyFrame(now) {
   const canvas = document.getElementById('pulleyCanvas');
   if (!canvas) return;
   const c = canvas.getContext('2d');
-  // 2026-05-27 (Jane: "why can't the game window fill the screen ... at least
-  // 70% of the screen"): canvas now fills its wrap on ANY aspect. We size the
-  // backing store to the rendered CSS box × DPR, paint the desert background
-  // in COVER mode underneath (no distortion), then apply a UNIFORM scale +
-  // centering so the logical 600×340 gameplay world sits inside the canvas
-  // letterboxed — every sprite stays crisp + correctly proportioned, no tiny
-  // rectangle floating in dead space on portrait/landscape.
+  // Crisp rendering: keep a fixed 600×340 LOGICAL coordinate space (all draw coords
+  // below assume it), but size the backing store to the on-screen size × DPR so the
+  // canvas is never blurrily stretched. This sharpens every sprite, current + future.
   const W = 600, H = 340;
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  const dpr = Math.min(3, window.devicePixelRatio || 1); // crisper on high-DPI phones/tablets
   const cssW = canvas.clientWidth || W;
-  const cssH = canvas.clientHeight || H;
-  const needW = Math.max(W, Math.round(cssW * dpr));
-  const needH = Math.max(H, Math.round(cssH * dpr));
+  const needW = Math.max(W, Math.round(cssW * dpr)), needH = Math.round(needW * (H / W));
   if (canvas.width !== needW || canvas.height !== needH) { canvas.width = needW; canvas.height = needH; }
-  // -- BACKGROUND (covers the full canvas, no clipping of sky/sun) --
-  // 2026-05-27 (Jane: "where is the game background on portrait? pathetic"
-  // + "landscape background is being cropped and cut on the top"). Painted
-  // desert is now used on EVERY viewport (no more flat gradient on portrait),
-  // and we use FIT-TO-HEIGHT instead of COVER so the sun + sky are always
-  // visible — any horizontal slack is filled with sky/sand-matched bands so
-  // the canvas reads as one continuous desert scene with NO cropping.
-  c.setTransform(1, 0, 0, 1, 0, 0);
-  c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
-  // 2026-05-29: use the taller 3:4 portrait background on portrait canvases
-  // so the painted desert fills the screen with minimal cropping (the wide
-  // landscape bg loses ~70% of its width when COVER-stretched into a tall
-  // canvas).  Falls back to the standard bg if the portrait asset is absent.
-  const _bgPortrait = (needH > needW * 1.3);
-  const _bgImg = (_bgPortrait && _pImg('scene3BgPort')) || _pImg('scene3Bg') || _pImg('midian');
-  if (_bgImg) {
-    const iw = _bgImg.naturalWidth || _bgImg.width;
-    const ih = _bgImg.naturalHeight || _bgImg.height;
-    const iar = iw / ih;
-    const car = needW / needH;
-    // 2026-05-27 (Jane: "last pass for landscape was good, why did you change it
-    // — only portrait gameplay was missing a bg"). Landscape / desktop / tablet
-    // get the original COVER render (painted desert fills the canvas with the
-    // image's natural aspect, like before). PORTRAIT — where cover would crop
-    // the gameplay band off — uses a fit-to-height pass with a BLURRED stretched
-    // copy underneath, so the sun + sky stay visible and the top/bottom bands
-    // read as a soft continuation of the desert (not flat dead space).
-    // 2026-05-27 (Jane: "there is so much space above and below the game pane"
-    // on portrait): use COVER mode on every viewport so the painted desert
-    // FILLS the canvas. On portrait that crops the outer palms (decorative)
-    // but keeps the sun + dunes + central well — the gameplay band sits over
-    // it with NO blurred dead bands above/below. Game world is still drawn
-    // uniformly via the transform below, so wells/pots/characters land in
-    // their correct logical positions regardless of how the bg crops.
-    let sx, sy, sw, sh;
-    // 2026-05-29 (Jane: "sorry i didn't know the trough was part of the
-    // background image"): COVER mode on every viewport — full painted desert
-    // fills the canvas with the image's natural aspect.  The trough/well in
-    // the bg image stays visible as part of the scene.
-    if (iar > car) { sh = ih; sw = ih * car; sx = (iw - sw) / 2; sy = 0; }
-    else           { sw = iw; sh = iw / car; sx = 0; sy = (ih - sh) / 2; }
-    c.drawImage(_bgImg, sx, sy, sw, sh, 0, 0, needW, needH);
-  } else {
-    const sky = c.createLinearGradient(0, 0, 0, needH);
-    sky.addColorStop(0.00, '#f6c08a');
-    sky.addColorStop(0.55, '#e8a878');
-    sky.addColorStop(1.00, '#cd8b58');
-    c.fillStyle = sky; c.fillRect(0, 0, needW, needH);
-  }
-  // -- GAME WORLD TRANSFORM: uniform scale, centered (letterboxed) --
-  // Base scale fits the 600×340 logical world into the canvas backing pixels.
-  const gs = Math.min(needW / W, needH / H);
-  const goffX = (needW - W * gs) / 2;
-  const goffY = (needH - H * gs) / 2;
-  _pulley._gs = gs; _pulley._goffX = goffX; _pulley._goffY = goffY;
-  // 2026-05-29: user-controlled view-zoom (pinch-to-zoom on portrait).
-  // _viewCx/_viewCy is the logical point that sits at the centre of the canvas.
+  // pinch-to-zoom: apply view transform (at vz=1 this is identical to the original)
+  const gs = needW / W;                             // base scale (== needH/H since aspect is locked)
   const vz = _pulley._viewZoom || 1;
   const vcx = _pulley._viewCx != null ? _pulley._viewCx : 300;
   const vcy = _pulley._viewCy != null ? _pulley._viewCy : 170;
   const effGs  = vz * gs;
   const effOffX = needW / 2 - vcx * effGs;
   const effOffY = needH / 2 - vcy * effGs;
-  _pulley._effGs = effGs; _pulley._effOffX = effOffX; _pulley._effOffY = effOffY;
+  _pulley._gs = gs; _pulley._effGs = effGs; _pulley._effOffX = effOffX; _pulley._effOffY = effOffY;
   c.setTransform(effGs, 0, 0, effGs, effOffX, effOffY);
-  c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
   const rawDt = Math.min(60, now - (_pulley.lastFrame || now));
   _pulley.lastFrame = now;
   if (_pulley.slowmo > 0) _pulley.slowmo -= rawDt / 1000;          // match-point slow-mo (real-time countdown)
@@ -9898,7 +9697,7 @@ function _pulleyFrame(now) {
       try { if (audio.wellMusic) { audio.wellMusic.loop = true; audio.wellMusic.volume = 0.2; audio.wellMusic.currentTime = 0; audio.wellMusic.play().catch(()=>{}); } } catch(e){}
       _pulleySay('mosesSay', 'This water is for Jethro’s flock!', 'voJethro');
       setTimeout(() => { if (_pulley.gate && !_pulley.over && !_pulley.paused && !_pulley.intro) _pulleySay('shepSay', 'We’ll see about that!', 'voSeeAbout'); }, 3000);
-      if (fb) fb.textContent = 'Drag toward a pot — aim a bit ABOVE it, then let go!';
+      if (fb) fb.textContent = 'Drag back from Moses, then let go to splash water in!';
     }
   }
 
@@ -10074,50 +9873,25 @@ function _pulleyFrame(now) {
   // gentle camera zoom for drama (match-point punch eases back; win zooms in a touch)
   _pulley.zoom += ((_pulley.zoomTarget || 1) - (_pulley.zoom || 1)) * 0.06;
   if (Math.abs(_pulley.zoom - 1) > 0.003) { const fx = (_pulley.zoomFx != null ? _pulley.zoomFx : 300), fy = (_pulley.zoomFy != null ? _pulley.zoomFy : 188); c.translate(fx, fy); c.scale(_pulley.zoom, _pulley.zoom); c.translate(-fx, -fy); }
-  // 2026-05-29 (Jane: "there should be some connection between the foreground
-  // and the background. right now you have simply dropped the game elements
-  // on some background"). GROUND PLANE + SHADOWS: a sandy ground surface
-  // that blends into the background and drop-shadows under every element so
-  // characters/pots/wells look like they're standing ON the desert floor,
-  // not pasted over it.
-
-  // --- GROUND PLANE: sandy floor that fades in from the background ---
-  const _gndTop = 200;  // where floor starts to blend in (above back-row pots)
-  const _gndMid = 260;  // fully opaque zone starts
-  const _gnd = c.createLinearGradient(0, _gndTop, 0, H + 10);
-  _gnd.addColorStop(0,    'rgba(198,156,96,0)');     // transparent at top — blends into bg
-  _gnd.addColorStop(0.25, 'rgba(198,156,96,0.22)');  // gentle fade
-  _gnd.addColorStop(0.50, 'rgba(188,146,86,0.40)');  // medium
-  _gnd.addColorStop(1.0,  'rgba(175,132,72,0.55)');  // heavier at the bottom
-  c.fillStyle = _gnd; c.fillRect(-40, _gndTop, W + 80, H - _gndTop + 40);
-
-  // subtle sand texture — small random-looking grains so the floor reads as sandy
-  c.globalAlpha = 0.10;
-  for (let si = 0; si < 60; si++) {
-    // deterministic (seed from index) so it doesn't flicker per-frame
-    const sx2 = ((si * 137 + 47) % (W + 20)) - 10;
-    const sy2 = _gndMid + ((si * 89 + 23) % (H - _gndMid + 10));
-    const sr2 = 1.5 + (si % 4) * 0.8;
-    c.fillStyle = (si % 3 === 0) ? '#a08050' : '#c4a670';
-    c.beginPath(); c.arc(sx2, sy2, sr2, 0, Math.PI * 2); c.fill();
+  if (!_pDraw(c, ['scene3Bg', 'midian'], -4, -4, W + 8, H + 8)) {
+    const sky = c.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#bfe6f2'); sky.addColorStop(0.55, '#e8d9a8'); sky.addColorStop(1, '#d8b878');
+    c.fillStyle = sky; c.fillRect(-4, -4, W + 8, H + 8);
+    c.fillStyle = '#cda866'; c.fillRect(-4, 226, W + 8, H - 222);
   }
-  c.globalAlpha = 1;
+  c.fillStyle = 'rgba(255,240,180,0.5)'; c.beginPath(); c.arc(W - 60, 46, 32, 0, Math.PI * 2); c.fill();
 
+  // side zones + centre divider so it's obvious which pots are whose
+  c.fillStyle = 'rgba(80,150,220,0.12)'; c.beginPath(); c.ellipse(216, 302, 110, 30, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(170,130,70,0.13)'; c.beginPath(); c.ellipse(384, 302, 110, 30, 0, 0, Math.PI * 2); c.fill();
   // small cairn divider at centre
   c.fillStyle = '#9a8a66'; c.beginPath(); c.ellipse(300, 300, 12, 6, 0, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#867655'; c.beginPath(); c.ellipse(300, 293, 9, 5, 0, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#9a8a66'; c.beginPath(); c.ellipse(300, 287, 6, 4, 0, 0, Math.PI * 2); c.fill();
-
-  // subtle side zone labels (no garish colored ellipses — just text captions)
+  // side captions above each cluster
   c.font = 'bold 12px Georgia'; c.textBaseline = 'alphabetic'; c.textAlign = 'center';
-  c.fillStyle = 'rgba(190,228,255,0.85)'; c.fillText('YOUR POTS', 216, 318);
-  c.fillStyle = 'rgba(255,214,184,0.85)'; c.fillText('HIS POTS', 384, 318);
-
-  // --- DROP SHADOWS: soft ovals beneath every object to anchor it to the ground ---
-  c.fillStyle = 'rgba(40,20,5,0.18)';
-  // well shadows (large)
-  c.beginPath(); c.ellipse(118, 236, 60, 14, 0, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.ellipse(512, 236, 60, 14, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(190,228,255,0.95)'; c.fillText('YOUR POTS', 216, 322);
+  c.fillStyle = 'rgba(255,214,184,0.95)'; c.fillText('HIS POTS', 384, 322);
 
   // wells (real art); shepherd's is mirrored so its bucket faces him
   _pDraw(c, ['midianWell', 'wellMouth'], 52, 86, 132, 150);
@@ -10180,27 +9954,6 @@ function _pulleyFrame(now) {
     _rope(512, 106, _oHandX + 44, sIdleY + 30);
   }
   c.lineCap = 'butt';
-
-  // --- drop shadows for helper shepherds, daughters, characters, sheep ---
-  c.fillStyle = 'rgba(40,20,5,0.16)';
-  // helper gang shadows (inline steal check — _stealerWho defined later)
-  const _swho = _pulley.steal ? _pulley.steal.who : _pulley.stealReturn ? _pulley.stealReturn.who : (_pulley.shepCarry ? _pulley.shepCarry.who : -1);
-  if (_swho !== 1) { c.beginPath(); c.ellipse(290, 306, 22, 7, 0, 0, Math.PI * 2); c.fill(); }
-  if (_swho !== 2) { c.beginPath(); c.ellipse(350, 304, 20, 6, 0, 0, Math.PI * 2); c.fill(); }
-  // daughter shadows
-  c.beginPath(); c.ellipse(150, 290, 16, 5, 0, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.ellipse(192, 286, 14, 5, 0, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.ellipse(226, 278, 14, 5, 0, 0, Math.PI * 2); c.fill();
-  // Moses shadow
-  c.fillStyle = 'rgba(40,20,5,0.20)';
-  c.beginPath(); c.ellipse((_pulley.mosesX || mIdleX) + 60, 290, 40, 10, 0, 0, Math.PI * 2); c.fill();
-  // Rude shepherd shadow
-  c.beginPath(); c.ellipse(Math.min(sIdleX, 452) + 60, 290, 40, 10, 0, 0, Math.PI * 2); c.fill();
-  // sheep/lamb/goat shadows
-  c.fillStyle = 'rgba(40,20,5,0.13)';
-  c.beginPath(); c.ellipse(96 + 26, 340, 18, 5, 0, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.ellipse(132 + 17, 338, 12, 4, 0, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.ellipse(506 + 26, 340, 18, 5, 0, 0, Math.PI * 2); c.fill();
 
   // helper rogue shepherds (the gang) — on the LEFT side of the shepherd's well so
   // they stay fully on-canvas. When it's THEIR turn to steal, hide the static one so the
@@ -10279,9 +10032,6 @@ function _pulleyFrame(now) {
     _pDraw(c, shepKeys, Math.min(sIdleX, 452), sIdleY, 130, 140, shepFlip);
   }
 
-  // pot shadows — small dark ovals under each pot to anchor them to the ground
-  c.fillStyle = 'rgba(40,20,5,0.16)';
-  _pulley.pots.forEach(p => { c.beginPath(); c.ellipse(p.x, p.y + 6, 18, 5, 0, 0, Math.PI * 2); c.fill(); });
   // pots — drawn back-to-front (by y) so raised pots never hide the front ones
   _pulley.pots.slice().sort((a, b) => a.y - b.y).forEach(p => _pPot(c, p, now));
 
@@ -10306,12 +10056,8 @@ function _pulleyFrame(now) {
 
   // name tags
   c.font = 'bold 12px Georgia'; c.textBaseline = 'alphabetic';
-  // 2026-05-27 (Jane: name tags getting cut at the bottom of the canvas on
-  // landscape — rounded canvas border was clipping them). Moved up to y=320
-  // (well clear of any canvas-corner rounding at every viewport).
-  // Labels move with the zoomed view — they're part of the game world.
-  c.fillStyle = '#cfeaff'; c.textAlign = 'left';  c.fillText('MOSES (YOU)', 18, 320);
-  c.fillStyle = '#ffd0b0'; c.textAlign = 'right'; c.fillText('RUDE SHEPHERD', W - 18, 320);
+  c.fillStyle = '#cfeaff'; c.textAlign = 'left';  c.fillText('MOSES (YOU)', 18, 332);
+  c.fillStyle = '#ffd0b0'; c.textAlign = 'right'; c.fillText('RUDE SHEPHERD', W - 18, 332);
 
   // aim preview
   if (_pulley.aiming) {
@@ -10519,14 +10265,10 @@ function _pulleyFrame(now) {
   }
 })();
 
-// ---- pinch-to-zoom + pan (portrait touch) ----
-// 2026-05-29 (Jane: "it should occupy full screen and be zoomable."):
-// Two-finger pinch → zoom in/out; two-finger drag → pan the view.
-// One-finger gestures are unaffected (still aim/fire).
+// ===== PINCH-TO-ZOOM (lets kids zoom in on the well game on small screens) =====
 function _pulleyClampView() {
   const vz = _pulley._viewZoom || 1;
   const W = 600, H = 340;
-  // Keep the view centre within the game world (with margin so edges stay reachable)
   _pulley._viewCx = Math.max(40, Math.min(W - 40, _pulley._viewCx || 300));
   _pulley._viewCy = Math.max(30, Math.min(H - 30, _pulley._viewCy || 170));
   _pulley._viewZoom = Math.max(0.8, Math.min(3.5, vz));
@@ -10535,17 +10277,15 @@ function _pulleyClampView() {
   const cv = document.getElementById('pulleyCanvas');
   if (!cv) return;
   let _pDist = 0, _pMidX = 0, _pMidY = 0;
-
   function pinchStart(e) {
     if (e.touches.length < 2) return;
     _pulley._pinching = true;
-    _pulley.aiming = false;           // cancel any in-progress aim
+    _pulley.aiming = false;
     const a = e.touches[0], b = e.touches[1];
     _pDist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
     _pMidX = (a.clientX + b.clientX) / 2;
     _pMidY = (a.clientY + b.clientY) / 2;
   }
-
   function pinchMove(e) {
     if (!_pulley._pinching || e.touches.length < 2) return;
     if (e.cancelable) e.preventDefault();
@@ -10553,13 +10293,10 @@ function _pulleyClampView() {
     const dist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
     const midX = (a.clientX + b.clientX) / 2;
     const midY = (a.clientY + b.clientY) / 2;
-
-    // --- zoom (pinch distance change) ---
     if (_pDist > 10) {
       const ratio = dist / _pDist;
       const oldVz = _pulley._viewZoom || 1;
       const newVz = Math.max(0.8, Math.min(3.5, oldVz * ratio));
-      // Keep the midpoint pinch position anchored on the same logical coord.
       const r   = cv.getBoundingClientRect();
       const bx  = (midX - r.left) * (cv.width  / r.width);
       const by  = (midY - r.top)  * (cv.height / r.height);
@@ -10573,23 +10310,17 @@ function _pulleyClampView() {
       _pulley._viewCy = ly * (1 - k) + (_pulley._viewCy || 170) * k;
       _pulley._viewZoom = newVz;
     }
-
-    // --- pan (midpoint shift) ---
     const baseGs = _pulley._gs || 1;
-    const vz = _pulley._viewZoom || 1;
+    const vzNow = _pulley._viewZoom || 1;
     const dpr = cv.width / (cv.getBoundingClientRect().width || 1);
-    _pulley._viewCx -= (midX - _pMidX) * dpr / (vz * baseGs);
-    _pulley._viewCy -= (midY - _pMidY) * dpr / (vz * baseGs);
-
+    _pulley._viewCx -= (midX - _pMidX) * dpr / (vzNow * baseGs);
+    _pulley._viewCy -= (midY - _pMidY) * dpr / (vzNow * baseGs);
     _pulleyClampView();
     _pDist = dist; _pMidX = midX; _pMidY = midY;
   }
-
   function pinchEnd(e) {
     if (e.touches.length < 2) { _pulley._pinching = false; }
   }
-
-  // Capture-phase touchstart so it fires before pointerdown handlers
   cv.addEventListener('touchstart', function(e) {
     if (e.touches.length >= 2) { pinchStart(e); if (e.cancelable) e.preventDefault(); }
   }, { passive: false, capture: true });
