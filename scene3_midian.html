@@ -9196,9 +9196,9 @@ function _pulleyReset() {
   // pinch-to-zoom with a default 1.4× on portrait so game elements fill more
   // of the tall screen.  _viewCx/_viewCy = logical centre of the visible area.
   const _isPort = (window.innerHeight || 0) > (window.innerWidth || 1) * 1.15;
-  _pulley._viewZoom = _isPort ? 1.4 : 1;
-  _pulley._viewCx = _isPort ? 270 : 300;
-  _pulley._viewCy = 170;
+  _pulley._viewZoom = _isPort ? 1.9 : 1;
+  _pulley._viewCx = _isPort ? 260 : 300;
+  _pulley._viewCy = _isPort ? 200 : 170;
   _pulley._pinching = false;
   _pulley.potsLostToSteal = 0; _pulley.ownGoals = 0; _pulley.earnedStars = 3; _pulley.winPanelShown = false;
   _pulley.stealNo = 0; _pulley.countdown = 0; _pulley.go = 0;
