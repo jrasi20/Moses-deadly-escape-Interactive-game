@@ -9190,8 +9190,11 @@ function _pulleyReset() {
   _pulley.shepHeave = 0; _pulley.shepPourT = 0; _pulley.paused = false; _pulley.intro = false;
   _pulley.matchPoint = false; _pulley.slowmo = 0; _pulley.flock = null; _pulley.zoom = 1; _pulley.zoomTarget = 1;
   _pulley.zoomFx = 300; _pulley.zoomFy = 188;   // zoom focal point (default = scene centre)
-  // pinch-to-zoom view state (default = 1x centred, kids can pinch to zoom in)
-  _pulley._viewZoom = 1; _pulley._viewCx = 300; _pulley._viewCy = 170; _pulley._pinching = false;
+  // pinch-to-zoom view state — landscape phones get a default 1.35x so game
+  // elements fill more of the wide screen; desktop + portrait stay at 1x.
+  const _isLandPhone = (window.innerWidth || 0) > (window.innerHeight || 1) * 1.15 && (window.innerHeight || 999) < 500;
+  _pulley._viewZoom = _isLandPhone ? 1.35 : 1;
+  _pulley._viewCx = 300; _pulley._viewCy = 175; _pulley._pinching = false;
   _pulley.potsLostToSteal = 0; _pulley.ownGoals = 0; _pulley.earnedStars = 3; _pulley.winPanelShown = false;
   _pulley.stealNo = 0; _pulley.countdown = 0; _pulley.go = 0;
   _pulley.shepX = _pulley.shepHomeX; _pulley.mosesX = _pulley.mosesHomeX;
