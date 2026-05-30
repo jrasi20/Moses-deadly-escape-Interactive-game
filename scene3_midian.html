@@ -10074,22 +10074,50 @@ function _pulleyFrame(now) {
   // gentle camera zoom for drama (match-point punch eases back; win zooms in a touch)
   _pulley.zoom += ((_pulley.zoomTarget || 1) - (_pulley.zoom || 1)) * 0.06;
   if (Math.abs(_pulley.zoom - 1) > 0.003) { const fx = (_pulley.zoomFx != null ? _pulley.zoomFx : 300), fy = (_pulley.zoomFy != null ? _pulley.zoomFy : 188); c.translate(fx, fy); c.scale(_pulley.zoom, _pulley.zoom); c.translate(-fx, -fy); }
-  // 2026-05-27: background is now painted PRE-transform in COVER mode by
-  // _pulleyFrame so it fills the full canvas (any aspect) — no per-frame
-  // stretch into the 600x340 logical box anymore.
-  c.fillStyle = 'rgba(255,240,180,0.35)'; c.beginPath(); c.arc(W - 60, 46, 32, 0, Math.PI * 2); c.fill();
+  // 2026-05-29 (Jane: "there should be some connection between the foreground
+  // and the background. right now you have simply dropped the game elements
+  // on some background"). GROUND PLANE + SHADOWS: a sandy ground surface
+  // that blends into the background and drop-shadows under every element so
+  // characters/pots/wells look like they're standing ON the desert floor,
+  // not pasted over it.
 
-  // side zones + centre divider so it's obvious which pots are whose
-  c.fillStyle = 'rgba(80,150,220,0.12)'; c.beginPath(); c.ellipse(216, 302, 110, 30, 0, 0, Math.PI * 2); c.fill();
-  c.fillStyle = 'rgba(170,130,70,0.13)'; c.beginPath(); c.ellipse(384, 302, 110, 30, 0, 0, Math.PI * 2); c.fill();
+  // --- GROUND PLANE: sandy floor that fades in from the background ---
+  const _gndTop = 200;  // where floor starts to blend in (above back-row pots)
+  const _gndMid = 260;  // fully opaque zone starts
+  const _gnd = c.createLinearGradient(0, _gndTop, 0, H + 10);
+  _gnd.addColorStop(0,    'rgba(198,156,96,0)');     // transparent at top — blends into bg
+  _gnd.addColorStop(0.25, 'rgba(198,156,96,0.22)');  // gentle fade
+  _gnd.addColorStop(0.50, 'rgba(188,146,86,0.40)');  // medium
+  _gnd.addColorStop(1.0,  'rgba(175,132,72,0.55)');  // heavier at the bottom
+  c.fillStyle = _gnd; c.fillRect(-40, _gndTop, W + 80, H - _gndTop + 40);
+
+  // subtle sand texture — small random-looking grains so the floor reads as sandy
+  c.globalAlpha = 0.10;
+  for (let si = 0; si < 60; si++) {
+    // deterministic (seed from index) so it doesn't flicker per-frame
+    const sx2 = ((si * 137 + 47) % (W + 20)) - 10;
+    const sy2 = _gndMid + ((si * 89 + 23) % (H - _gndMid + 10));
+    const sr2 = 1.5 + (si % 4) * 0.8;
+    c.fillStyle = (si % 3 === 0) ? '#a08050' : '#c4a670';
+    c.beginPath(); c.arc(sx2, sy2, sr2, 0, Math.PI * 2); c.fill();
+  }
+  c.globalAlpha = 1;
+
   // small cairn divider at centre
   c.fillStyle = '#9a8a66'; c.beginPath(); c.ellipse(300, 300, 12, 6, 0, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#867655'; c.beginPath(); c.ellipse(300, 293, 9, 5, 0, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#9a8a66'; c.beginPath(); c.ellipse(300, 287, 6, 4, 0, 0, Math.PI * 2); c.fill();
-  // side captions above each cluster
+
+  // subtle side zone labels (no garish colored ellipses — just text captions)
   c.font = 'bold 12px Georgia'; c.textBaseline = 'alphabetic'; c.textAlign = 'center';
-  c.fillStyle = 'rgba(190,228,255,0.95)'; c.fillText('YOUR POTS', 216, 318);
-  c.fillStyle = 'rgba(255,214,184,0.95)'; c.fillText('HIS POTS', 384, 318);
+  c.fillStyle = 'rgba(190,228,255,0.85)'; c.fillText('YOUR POTS', 216, 318);
+  c.fillStyle = 'rgba(255,214,184,0.85)'; c.fillText('HIS POTS', 384, 318);
+
+  // --- DROP SHADOWS: soft ovals beneath every object to anchor it to the ground ---
+  c.fillStyle = 'rgba(40,20,5,0.18)';
+  // well shadows (large)
+  c.beginPath(); c.ellipse(118, 236, 60, 14, 0, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.ellipse(512, 236, 60, 14, 0, 0, Math.PI * 2); c.fill();
 
   // wells (real art); shepherd's is mirrored so its bucket faces him
   _pDraw(c, ['midianWell', 'wellMouth'], 52, 86, 132, 150);
@@ -10152,6 +10180,27 @@ function _pulleyFrame(now) {
     _rope(512, 106, _oHandX + 44, sIdleY + 30);
   }
   c.lineCap = 'butt';
+
+  // --- drop shadows for helper shepherds, daughters, characters, sheep ---
+  c.fillStyle = 'rgba(40,20,5,0.16)';
+  // helper gang shadows (inline steal check — _stealerWho defined later)
+  const _swho = _pulley.steal ? _pulley.steal.who : _pulley.stealReturn ? _pulley.stealReturn.who : (_pulley.shepCarry ? _pulley.shepCarry.who : -1);
+  if (_swho !== 1) { c.beginPath(); c.ellipse(290, 306, 22, 7, 0, 0, Math.PI * 2); c.fill(); }
+  if (_swho !== 2) { c.beginPath(); c.ellipse(350, 304, 20, 6, 0, 0, Math.PI * 2); c.fill(); }
+  // daughter shadows
+  c.beginPath(); c.ellipse(150, 290, 16, 5, 0, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.ellipse(192, 286, 14, 5, 0, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.ellipse(226, 278, 14, 5, 0, 0, Math.PI * 2); c.fill();
+  // Moses shadow
+  c.fillStyle = 'rgba(40,20,5,0.20)';
+  c.beginPath(); c.ellipse((_pulley.mosesX || mIdleX) + 60, 290, 40, 10, 0, 0, Math.PI * 2); c.fill();
+  // Rude shepherd shadow
+  c.beginPath(); c.ellipse(Math.min(sIdleX, 452) + 60, 290, 40, 10, 0, 0, Math.PI * 2); c.fill();
+  // sheep/lamb/goat shadows
+  c.fillStyle = 'rgba(40,20,5,0.13)';
+  c.beginPath(); c.ellipse(96 + 26, 340, 18, 5, 0, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.ellipse(132 + 17, 338, 12, 4, 0, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.ellipse(506 + 26, 340, 18, 5, 0, 0, Math.PI * 2); c.fill();
 
   // helper rogue shepherds (the gang) — on the LEFT side of the shepherd's well so
   // they stay fully on-canvas. When it's THEIR turn to steal, hide the static one so the
@@ -10230,6 +10279,9 @@ function _pulleyFrame(now) {
     _pDraw(c, shepKeys, Math.min(sIdleX, 452), sIdleY, 130, 140, shepFlip);
   }
 
+  // pot shadows — small dark ovals under each pot to anchor them to the ground
+  c.fillStyle = 'rgba(40,20,5,0.16)';
+  _pulley.pots.forEach(p => { c.beginPath(); c.ellipse(p.x, p.y + 6, 18, 5, 0, 0, Math.PI * 2); c.fill(); });
   // pots — drawn back-to-front (by y) so raised pots never hide the front ones
   _pulley.pots.slice().sort((a, b) => a.y - b.y).forEach(p => _pPot(c, p, now));
 
