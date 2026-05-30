@@ -2660,28 +2660,32 @@
         #pulleyIntroOverlay .piStage .piMoses { max-height:100%; max-width:52%; left:-1%; }
         #pulleyIntroOverlay .piStage .piShep  { max-height:98%; max-width:52%; right:-1%; }
       }
-      /* LANDSCAPE PHONES — 2026-05-27 (Jane: "intro landscape center
-         everything. i don't want in two columns left and right"). Stays as a
-         centered single-column stack like portrait — title/cards/button at
-         the top, hero stage below — just COMPACT for the short height. */
+      /* LANDSCAPE PHONES — 2026-05-30 (Jane: "i can't click the button — it's
+         behind the image. use scroll if you have to, arrange everything
+         centered"). The hero used to be flex:1 + bottom-anchored, so the big
+         figures overlapped the cards/button AND the stage div swallowed the
+         button's taps. Now: a TOP-ALIGNED, SCROLLABLE column — cards + Start
+         button first, then a BOUNDED hero that can't overlap them — and the whole
+         stage is pointer-events:none so the Start button is ALWAYS tappable. */
       @media (orientation:landscape) and (max-height:600px) {
-        #pulleyIntroOverlay { padding:6px 12px !important; }
-        #pulleyIntroOverlay .piPanel { flex-direction:column; align-items:center; gap:4px; max-width:880px; }
-        #pulleyIntroOverlay .piContent { flex:0 0 auto; width:100%; max-width:none; gap:3px; align-items:center; }
+        #pulleyIntroOverlay { padding:8px 12px !important; overflow-y:auto !important; }
+        #pulleyIntroOverlay .piPanel { flex-direction:column; align-items:center; justify-content:flex-start; gap:6px; max-width:880px; height:auto; min-height:100%; }
+        #pulleyIntroOverlay .piContent { flex:0 0 auto; width:100%; max-width:none; gap:4px; align-items:center; }
         #pulleyIntroOverlay .piLogo { height:18px; }
         #pulleyIntroOverlay .piTitle { font-size:clamp(15px,2.4vw,22px); }
         #pulleyIntroOverlay .piSub { font-size:clamp(10px,1.5vw,13px); }
-        #pulleyIntroOverlay #pulleyHowTo { gap:6px; max-width:660px; }
-        #pulleyIntroOverlay #pulleyHowTo .ptStep { padding:4px 4px; gap:1px; }
+        #pulleyIntroOverlay #pulleyHowTo { gap:6px; max-width:680px; }
+        #pulleyIntroOverlay #pulleyHowTo .ptStep { padding:5px 5px; gap:2px; }
         #pulleyIntroOverlay #pulleyHowTo .ptStep .ptIco { font-size:clamp(14px,1.8vw,18px); }
         #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx { font-size:clamp(9.5px,1.3vw,12px); }
         #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx b { font-size:clamp(10.5px,1.5vw,13px); }
-        #pulleyIntroOverlay .piBtn { font-size:clamp(13px,2vw,17px); padding:6px 22px; }
-        #pulleyIntroOverlay .piStageWrap { flex:1 1 auto; min-height:0; width:100%; align-items:flex-end; }
-        #pulleyIntroOverlay .piStage { width:100%; max-width:none; height:100%; aspect-ratio:auto; }
-        #pulleyIntroOverlay .piStage .piMoses { max-height:96%; max-width:30%; left:8%; visibility:visible; }
-        #pulleyIntroOverlay .piStage .piShep  { max-height:94%; max-width:30%; right:8%; visibility:visible; }
-        #pulleyIntroOverlay .piStage .piWell  { max-height:90%; max-width:18%; visibility:visible; }
+        #pulleyIntroOverlay .piBtn { font-size:clamp(14px,2.2vw,18px); padding:8px 26px; position:relative; z-index:2; }
+        /* bounded hero BELOW the button — pointer-events:none so it never blocks the tap */
+        #pulleyIntroOverlay .piStageWrap { flex:0 0 auto; min-height:0; width:100%; align-items:flex-end; justify-content:center; pointer-events:none; margin-top:2px; }
+        #pulleyIntroOverlay .piStage { width:100%; max-width:700px; height:auto; aspect-ratio:3/1; max-height:34vh; min-height:118px; pointer-events:none; }
+        #pulleyIntroOverlay .piStage .piMoses { max-height:100%; max-width:30%; left:2%; visibility:visible; }
+        #pulleyIntroOverlay .piStage .piShep  { max-height:98%; max-width:30%; right:2%; visibility:visible; }
+        #pulleyIntroOverlay .piStage .piWell  { max-height:84%; max-width:18%; visibility:visible; }
       }
       @media (prefers-reduced-motion:reduce) {
         #pulleyIntroOverlay .piTitle, #pulleyIntroOverlay .piSub,
@@ -10230,15 +10234,15 @@ function _pulleyFrame(now) {
                     : (_pulley.shepCarry ? _pulley.shepCarry.who : -1);
   // 2026-05-26 (Jane): static gang helpers now idle CENTRALLY between the two
   // wells (was right beside the orange's well, which read as "going to orange").
-  if (_stealerWho !== 1) _pDrawFit(c, ['shepHelpA', 'shepherd2Front'], 290, 232, 60, 80);
-  if (_stealerWho !== 2) _pDrawFit(c, ['shepHelpB', 'shepherd3Front'], 350, 232, 56, 76);
+  if (_stealerWho !== 1) _pDrawFit(c, ['shepHelpA', 'shepherd2Front'], 288, 232, 72, 96);
+  if (_stealerWho !== 2) _pDrawFit(c, ['shepHelpB', 'shepherd3Front'], 352, 232, 67, 91);
   c.restore();
 
   // Jethro's daughters watching by Moses' well — bigger/clearer, and they jump for joy on a win
   const winJump = _pulley.win ? 1 : 0;
-  _pDrawFit(c, ['daughter1', 'daughter2'], 150, 216 - (winJump ? Math.abs(Math.sin(now / 165)) * 13 : 0), 46, 78);
-  _pDrawFit(c, ['daughter2', 'daughter1'], 192, 216 - (winJump ? Math.abs(Math.sin(now / 165 + 1.1)) * 13 : 0), 44, 74);
-  _pDrawFit(c, ['daughter3', 'daughter1'], 226, 212 - (winJump ? Math.abs(Math.sin(now / 165 + 2.2)) * 13 : 0), 42, 70);
+  _pDrawFit(c, ['daughter1', 'daughter2'], 146, 216 - (winJump ? Math.abs(Math.sin(now / 165)) * 13 : 0), 55, 94);
+  _pDrawFit(c, ['daughter2', 'daughter1'], 190, 216 - (winJump ? Math.abs(Math.sin(now / 165 + 1.1)) * 13 : 0), 53, 89);
+  _pDrawFit(c, ['daughter3', 'daughter1'], 228, 212 - (winJump ? Math.abs(Math.sin(now / 165 + 2.2)) * 13 : 0), 50, 84);
 
   // characters — Moses (no-rope heave pose; rope drawn above)
   if (_pulley.mosesRun) {
