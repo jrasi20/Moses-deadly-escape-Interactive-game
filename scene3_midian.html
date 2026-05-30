@@ -9201,11 +9201,11 @@ function _pulleyReset() {
   _pulley.shepHeave = 0; _pulley.shepPourT = 0; _pulley.paused = false; _pulley.intro = false;
   _pulley.matchPoint = false; _pulley.slowmo = 0; _pulley.flock = null; _pulley.zoom = 1; _pulley.zoomTarget = 1;
   _pulley.zoomFx = 300; _pulley.zoomFy = 188;   // zoom focal point (default = scene centre)
-  // pinch-to-zoom view state — landscape phones get a default 1.35x so game
-  // elements fill more of the wide screen; desktop + portrait stay at 1x.
-  const _isLandPhone = (window.innerWidth || 0) > (window.innerHeight || 1) * 1.15 && (window.innerHeight || 999) < 500;
-  _pulley._viewZoom = _isLandPhone ? 1.35 : 1;
-  _pulley._viewCx = 300; _pulley._viewCy = 175; _pulley._pinching = false;
+  // 2026-05-30 (Jane: "remove zoom pinch on devices ... don't make it zoomable
+  // on portrait and landscape"). No user/device view-zoom at all — the draw fits
+  // the CONTENT rect so elements are large with nothing cut. Pinch is removed.
+  _pulley._viewZoom = 1;
+  _pulley._viewCx = 300; _pulley._viewCy = 201; _pulley._pinching = false;
   _pulley.potsLostToSteal = 0; _pulley.ownGoals = 0; _pulley.earnedStars = 3; _pulley.winPanelShown = false;
   _pulley.stealNo = 0; _pulley.countdown = 0; _pulley.go = 0;
   _pulley.shepX = _pulley.shepHomeX; _pulley.mosesX = _pulley.mosesHomeX;
@@ -9312,8 +9312,11 @@ function _pulleyStopIntroRopeLoop() {
 // later GO-time restart. Re-armed each time the game opens.
 function _pulleyPrimeWellMusicOnGesture() {
   const start = () => {
+    try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}   // unlock ALL tracks on this gesture (countdown/game music too)
     try {
-      if (_soundOn && audio.wellMusic && audio.wellMusic.paused) {
+      // only start the intro bed if the game is still on the intro screen — once
+      // the player has tapped Start, _pulleyBeginCountdown owns the audio.
+      if (_soundOn && _pulley.intro && audio.wellMusic && audio.wellMusic.paused) {
         audio.wellMusic.loop = true;
         if (!(audio.wellMusic.currentTime > 0)) audio.wellMusic.currentTime = 0;
         audio.wellMusic.volume = 0.18;
@@ -9595,27 +9598,22 @@ function _pulleyLose() {
   if (quitBtn) quitBtn.textContent = out ? 'Restart Scene 3' : 'Quit to Midian';
   const ov = document.getElementById('pulleyLoseOverlay'); if (ov) ov.style.display = 'flex';
 }
-function _pulleyMaybeShowOrientPopup() {
-  // 2026-05-27 (Jane: "add a pop up to suggest landscape for better playing
-  // experience" on portrait). One-time per tab session — once dismissed, don't
-  // re-show on replay/retry. Honours the user choosing "Play in portrait".
-  // Also shows a small PERSISTENT chip at the top of the canvas so the hint
-  // stays visible even after the popup is closed.
-  try {
-    const portrait = window.innerHeight > window.innerWidth;
-    const chip = document.getElementById('pulleyLandscapeHint');
-    if (chip) chip.style.display = portrait ? 'block' : 'none';
-    if (window._pulleyOrientShown) return;
-    if (!portrait) return;
-    const pop = document.getElementById('pulleyOrientPopup'); if (!pop) return;
-    pop.style.display = 'flex';
-    window._pulleyOrientShown = true;
-    const close = () => { pop.style.display = 'none'; };
-    const ok = document.getElementById('pulleyOrientGotIt');
-    const stay = document.getElementById('pulleyOrientStayPortrait');
-    if (ok && !ok._wired)  { ok._wired = true;  ok.addEventListener('click',  close); }
-    if (stay && !stay._wired){ stay._wired = true; stay.addEventListener('click', close); }
-  } catch(e){}
+// 2026-05-30 (Jane: "the game keeps running behind the rotate modal — freeze the
+// game until the user makes a selection"). Show the rotate popup and invoke
+// onChoose ONLY after the player picks "Got it" / "Play in portrait". One-time
+// per tab session (window._pulleyOrientShown); after that the game starts
+// immediately on replay without re-pestering.
+function _pulleyShowOrientPopup(onChoose) {
+  const pop = document.getElementById('pulleyOrientPopup');
+  if (!pop) { if (onChoose) onChoose(); return; }
+  pop.style.display = 'flex';
+  window._pulleyOrientShown = true;
+  let done = false;
+  const close = () => { if (done) return; done = true; pop.style.display = 'none'; if (onChoose) onChoose(); };
+  const ok = document.getElementById('pulleyOrientGotIt');
+  const stay = document.getElementById('pulleyOrientStayPortrait');
+  if (ok)   ok.onclick   = close;   // .onclick (not addEventListener) → always the latest callback, never double-bound
+  if (stay) stay.onclick = close;
 }
 // Toggle the landscape-hint chip on orientation change too.
 try { window.addEventListener('orientationchange', () => { const ch = document.getElementById('pulleyLandscapeHint'); if (ch) ch.style.display = (window.innerHeight > window.innerWidth ? 'block' : 'none'); }); } catch(e){}
@@ -9624,9 +9622,21 @@ function _pulleyStartGame() {
   const intro = document.getElementById('pulleyIntroOverlay'); if (intro) intro.style.display = 'none';
   _pulley.intro = false; _pulley.lastFrame = 0;
   _pulleyStopIntroRopeLoop();
-  _pulley.zoom = 1.16; _pulley.zoomTarget = 1; _pulley.shake = 7;   // cinematic entry punch-in (parity with rescue)
   try { play('click') || play('pop'); } catch(e){}   // button-select SFX
-  _pulleyMaybeShowOrientPopup();
+  // On portrait the rotate popup shows on the FIRST start — FREEZE here and only
+  // begin the countdown/music/loop once the player chooses (the intro bed keeps
+  // playing under the popup). After that, or on landscape, start immediately.
+  const portrait = window.innerHeight > window.innerWidth;
+  const chip = document.getElementById('pulleyLandscapeHint');
+  if (chip) chip.style.display = portrait ? 'block' : 'none';
+  if (portrait && !window._pulleyOrientShown) {
+    _pulleyShowOrientPopup(_pulleyBeginCountdown);
+    return;
+  }
+  _pulleyBeginCountdown();
+}
+function _pulleyBeginCountdown() {
+  _pulley.zoom = 1.16; _pulley.zoomTarget = 1; _pulley.shake = 7;   // cinematic entry punch-in (parity with rescue)
   // 2026-05-26 (Jane: "after selecting start watering, break the bg music, then
   // play countdown music, and after countdown, begin bg music track again - same
   // like rescue game"). BREAK the intro bed → 3-2-1 countdown → GO restarts the
@@ -9860,32 +9870,22 @@ function _pulleyFrame(now) {
   const needW = Math.max(W, Math.round(cssW * dpr));
   const needH = Math.max(H, Math.round(cssH * dpr));
   if (canvas.width !== needW || canvas.height !== needH) { canvas.width = needW; canvas.height = needH; }
-  // -- GAME WORLD TRANSFORM (computed up-front so the BACKGROUND can share it) --
-  // 2026-05-30 (Jane: "the agent made only the foreground zoomable/movable but
-  // the background stays fixed"). ROOT CAUSE: the bg was painted at identity
-  // BEFORE the view-zoom transform was applied, so pinch-zoom/pan only moved the
-  // sprites. We now compute the view-zoom first and paint the desert under the
-  // SAME zoom+pan so the whole world moves as one.
+  // -- GAME WORLD TRANSFORM --
+  // 2026-05-30 (Jane: "elements appear very small ... on landscape distribute to
+  // fill the screen ... nothing cut ... remove zoom"). No view-zoom/pinch. Rather
+  // than letterboxing the FULL 600x340 world (which wastes the empty sky margin
+  // and shrinks the gameplay), we fit the CONTENT rect — the bounding box of the
+  // wells/figures/pots — so elements are as large as possible with nothing
+  // important cut. Wide landscape fills the full width; tall portrait is
+  // width-bound (the wide scene's inherent limit; the desert bg fills the slack).
   const gs = Math.min(needW / W, needH / H);
-  const goffX = (needW - W * gs) / 2;
-  const goffY = (needH - H * gs) / 2;
-  _pulley._gs = gs; _pulley._goffX = goffX; _pulley._goffY = goffY;
-  // user-controlled view-zoom (pinch-to-zoom). _viewCx/_viewCy = logical point
-  // that sits at the centre of the canvas. Defaults match the well-scene centre.
-  const vz = _pulley._viewZoom || 1;
-  const vcx = _pulley._viewCx != null ? _pulley._viewCx : 300;
-  const vcy = _pulley._viewCy != null ? _pulley._viewCy : 170;
-  const effGs  = vz * gs;
-  const effOffX = needW / 2 - vcx * effGs;
-  const effOffY = needH / 2 - vcy * effGs;
+  _pulley._gs = gs; _pulley._goffX = (needW - W * gs) / 2; _pulley._goffY = (needH - H * gs) / 2;
+  // content rect: x[6..594], y[70..332] — the live gameplay minus empty sky.
+  const _cW = 588, _cH = 262, _cCx = 6 + _cW / 2, _cCy = 70 + _cH / 2;
+  const effGs  = Math.min(needW / _cW, needH / _cH);
+  const effOffX = needW / 2 - _cCx * effGs;
+  const effOffY = needH / 2 - _cCy * effGs;
   _pulley._effGs = effGs; _pulley._effOffX = effOffX; _pulley._effOffY = effOffY;
-  // Background lockstep: at the default view (vz=1, centred on 300/170) this
-  // resolves to the identity COVER draw (no regression); under zoom/pan it
-  // scales by vz + pans with the world. offXd/offYd = the bg's default offset.
-  const _bgOffXd = needW / 2 - 300 * gs;
-  const _bgOffYd = needH / 2 - 170 * gs;
-  const _bgTx = effOffX - vz * _bgOffXd;
-  const _bgTy = effOffY - vz * _bgOffYd;
   // -- BACKGROUND (covers the full canvas, no clipping of sky/sun) --
   // 2026-05-27 (Jane: "where is the game background on portrait? pathetic"
   // + "landscape background is being cropped and cut on the top"). Painted
@@ -9893,7 +9893,7 @@ function _pulleyFrame(now) {
   // and we use FIT-TO-HEIGHT instead of COVER so the sun + sky are always
   // visible — any horizontal slack is filled with sky/sand-matched bands so
   // the canvas reads as one continuous desert scene with NO cropping.
-  c.setTransform(vz, 0, 0, vz, _bgTx, _bgTy);
+  c.setTransform(1, 0, 0, 1, 0, 0);   // background fills the whole canvas (cover), independent of the content-fit world
   c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
   const _bgImg = _pImg('scene3Bg') || _pImg('midian');
   if (_bgImg) {
@@ -10533,84 +10533,11 @@ function _pulleyFrame(now) {
   }
 })();
 
-// ---- pinch-to-zoom + pan (portrait touch) ----
-// 2026-05-29 (Jane: "it should occupy full screen and be zoomable."):
-// Two-finger pinch → zoom in/out; two-finger drag → pan the view.
-// One-finger gestures are unaffected (still aim/fire).
-function _pulleyClampView() {
-  const vz = _pulley._viewZoom || 1;
-  const W = 600, H = 340;
-  // Keep the view centre within the game world (with margin so edges stay reachable)
-  _pulley._viewCx = Math.max(40, Math.min(W - 40, _pulley._viewCx || 300));
-  _pulley._viewCy = Math.max(30, Math.min(H - 30, _pulley._viewCy || 170));
-  _pulley._viewZoom = Math.max(0.8, Math.min(3.5, vz));
-}
-(function() {
-  const cv = document.getElementById('pulleyCanvas');
-  if (!cv) return;
-  let _pDist = 0, _pMidX = 0, _pMidY = 0;
-
-  function pinchStart(e) {
-    if (e.touches.length < 2) return;
-    _pulley._pinching = true;
-    _pulley.aiming = false;           // cancel any in-progress aim
-    const a = e.touches[0], b = e.touches[1];
-    _pDist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
-    _pMidX = (a.clientX + b.clientX) / 2;
-    _pMidY = (a.clientY + b.clientY) / 2;
-  }
-
-  function pinchMove(e) {
-    if (!_pulley._pinching || e.touches.length < 2) return;
-    if (e.cancelable) e.preventDefault();
-    const a = e.touches[0], b = e.touches[1];
-    const dist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
-    const midX = (a.clientX + b.clientX) / 2;
-    const midY = (a.clientY + b.clientY) / 2;
-
-    // --- zoom (pinch distance change) ---
-    if (_pDist > 10) {
-      const ratio = dist / _pDist;
-      const oldVz = _pulley._viewZoom || 1;
-      const newVz = Math.max(0.8, Math.min(3.5, oldVz * ratio));
-      // Keep the midpoint pinch position anchored on the same logical coord.
-      const r   = cv.getBoundingClientRect();
-      const bx  = (midX - r.left) * (cv.width  / r.width);
-      const by  = (midY - r.top)  * (cv.height / r.height);
-      const eg  = _pulley._effGs   || _pulley._gs || 1;
-      const eox = _pulley._effOffX != null ? _pulley._effOffX : 0;
-      const eoy = _pulley._effOffY != null ? _pulley._effOffY : 0;
-      const lx  = (bx - eox) / eg;
-      const ly  = (by - eoy) / eg;
-      const k   = oldVz / newVz;
-      _pulley._viewCx = lx * (1 - k) + (_pulley._viewCx || 300) * k;
-      _pulley._viewCy = ly * (1 - k) + (_pulley._viewCy || 170) * k;
-      _pulley._viewZoom = newVz;
-    }
-
-    // --- pan (midpoint shift) ---
-    const baseGs = _pulley._gs || 1;
-    const vz = _pulley._viewZoom || 1;
-    const dpr = cv.width / (cv.getBoundingClientRect().width || 1);
-    _pulley._viewCx -= (midX - _pMidX) * dpr / (vz * baseGs);
-    _pulley._viewCy -= (midY - _pMidY) * dpr / (vz * baseGs);
-
-    _pulleyClampView();
-    _pDist = dist; _pMidX = midX; _pMidY = midY;
-  }
-
-  function pinchEnd(e) {
-    if (e.touches.length < 2) { _pulley._pinching = false; }
-  }
-
-  // Capture-phase touchstart so it fires before pointerdown handlers
-  cv.addEventListener('touchstart', function(e) {
-    if (e.touches.length >= 2) { pinchStart(e); if (e.cancelable) e.preventDefault(); }
-  }, { passive: false, capture: true });
-  cv.addEventListener('touchmove', pinchMove, { passive: false });
-  cv.addEventListener('touchend', pinchEnd);
-  cv.addEventListener('touchcancel', pinchEnd);
-})();
+// ---- pinch-to-zoom REMOVED (Jane 2026-05-30) ----
+// The two-finger pinch/pan view-zoom pushed scene elements out of the canvas on
+// phones. Removed entirely; the scene now uses a fixed content-fit framing (see
+// _pulleyFrame) so everything stays on-canvas at a good size with no gestures.
+// _pulley._viewZoom stays at 1 and _pinching stays false for any legacy refs.
 
 /* ===== RESCUE THE DAUGHTERS (lane-defense) ===== */
 /* ============================================================================
