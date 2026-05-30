@@ -2581,7 +2581,7 @@
       </div>
     </div>
     <style>
-      #pulleyIntroOverlay .piPanel { width:100%; max-width:980px; height:100%; margin:0 auto; display:flex; flex-direction:column; align-items:stretch; gap:8px; min-height:0; }
+      #pulleyIntroOverlay .piPanel { width:100%; max-width:1000px; height:100%; margin:0 auto; display:flex; flex-direction:column; align-items:stretch; justify-content:center; gap:14px; min-height:0; }
       #pulleyIntroOverlay .piContent { display:flex; flex-direction:column; align-items:center; gap:8px; flex-shrink:0; width:100%; }
       #pulleyIntroOverlay .piLogo { height:32px; width:auto; flex-shrink:0; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.6)); animation:piFade .6s both; }
       #pulleyIntroOverlay .piTitle { color:#ffe0a0; font-size:clamp(20px,4.2vw,32px); font-weight:800; letter-spacing:.5px; line-height:1.1; text-shadow:0 3px 8px rgba(0,0,0,.6),0 0 22px rgba(255,205,120,.45); text-align:center; flex-shrink:0; margin:0; animation:piPop .6s .15s both; }
@@ -2599,12 +2599,20 @@
          naturally on every viewport without overlapping each other — and the
          rope JS positions endpoints from the rendered bounding rects so the
          arc always lands on the actual gripping hands. */
-      #pulleyIntroOverlay .piStageWrap { flex:1 1 auto; min-height:0; min-width:0; width:100%; display:flex; align-items:stretch; justify-content:center; }
-      #pulleyIntroOverlay .piStage { position:relative; width:100%; max-width:1100px; height:100%; min-height:0; }
+      /* 2026-05-30 (Jane: "desktop/landscape has a big empty middle"). The wrap
+         no longer greedily absorbs ALL leftover height (flex:1 → figures pinned
+         far below the cards). It's a BOUNDED hero banner (aspect-locked, capped
+         by max-height) that the centred panel sits flush against — so the cards
+         and the big illustration read as one composed scene with no dead band. */
+      #pulleyIntroOverlay .piStageWrap { flex:0 1 auto; min-height:0; min-width:0; width:100%; display:flex; align-items:flex-end; justify-content:center; }
+      /* Wide 3:1 banner: with 3 figures side-by-side the figures are WIDTH-bound,
+         so the stage height is matched to their natural height (no empty band
+         above them). max-height caps it on very tall desktops. */
+      #pulleyIntroOverlay .piStage { position:relative; width:100%; max-width:1040px; height:auto; aspect-ratio:3/1; max-height:42vh; min-height:230px; }
       #pulleyIntroOverlay .piStage > img { position:absolute; bottom:0; filter:drop-shadow(0 6px 14px rgba(0,0,0,.55)); pointer-events:none; }
-      #pulleyIntroOverlay .piStage .piWell  { left:50%; transform:translateX(-50%); height:auto; width:auto; max-height:92%; max-width:26%; bottom:0; opacity:.96; animation:piWellRise 1s ease-out both; }
-      #pulleyIntroOverlay .piStage .piMoses { left:2%;  height:auto; width:auto; max-height:84%; max-width:34%; opacity:.97; animation:piMosesIn .7s ease-out both,piBob 2.8s ease-in-out infinite; transform-origin:bottom left; }
-      #pulleyIntroOverlay .piStage .piShep  { right:2%; height:auto; width:auto; max-height:82%; max-width:34%; opacity:.95; animation:piShepIn .7s ease-out both,piLean 2.2s ease-in-out infinite; transform-origin:bottom right; }
+      #pulleyIntroOverlay .piStage .piWell  { left:50%; transform:translateX(-50%); height:auto; width:auto; max-height:90%; max-width:22%; bottom:0; opacity:.96; animation:piWellRise 1s ease-out both; }
+      #pulleyIntroOverlay .piStage .piMoses { left:3%;  height:auto; width:auto; max-height:100%; max-width:33%; opacity:.97; animation:piMosesIn .7s ease-out both,piBob 2.8s ease-in-out infinite; transform-origin:bottom left; }
+      #pulleyIntroOverlay .piStage .piShep  { right:3%; height:auto; width:auto; max-height:98%; max-width:33%; opacity:.95; animation:piShepIn .7s ease-out both,piLean 2.2s ease-in-out infinite; transform-origin:bottom right; }
       #pulleyIntroOverlay .piStage .piRope  { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0; animation:piRopeIn .9s .6s ease-out forwards; }
       @keyframes piFade     { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:none;} }
       @keyframes piPop      { 0%{opacity:0;transform:scale(.85);} 70%{transform:scale(1.05);} 100%{opacity:1;transform:scale(1);} }
@@ -2642,12 +2650,15 @@
         #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx { font-size:clamp(13px,3vw,16px); line-height:1.3; }
         #pulleyIntroOverlay #pulleyHowTo .ptStep .ptTx b { font-size:clamp(14px,3.2vw,17px); display:inline; margin-right:4px; }
         #pulleyIntroOverlay .piBtn { font-size:clamp(20px,5vw,28px); padding:14px 30px; width:min(85%,380px); }
-        /* Stage: tight 2:1 aspect so characters fill ~90% of height */
+        /* 2026-05-30 (Jane: "portrait figures are small"). The old 2:1 aspect
+           collapsed the stage HEIGHT to half the (narrow) phone width, shrinking
+           the figures. A taller 3:2 stage + a bigger figure footprint lets the
+           characters fill the vertical space the tall portrait screen gives us. */
         #pulleyIntroOverlay .piStageWrap { flex:0 0 auto; width:100%; align-items:flex-end; }
-        #pulleyIntroOverlay .piStage { height:auto; width:100%; aspect-ratio:2/1; max-height:50vh; min-height:160px; max-width:none; }
-        #pulleyIntroOverlay .piStage .piWell  { visibility:visible; max-height:70%; max-width:24%; }
-        #pulleyIntroOverlay .piStage .piMoses { max-height:96%; max-width:48%; left:0%; }
-        #pulleyIntroOverlay .piStage .piShep  { max-height:94%; max-width:48%; right:0%; }
+        #pulleyIntroOverlay .piStage { height:auto; width:100%; aspect-ratio:3/2; max-height:46vh; min-height:250px; max-width:none; }
+        #pulleyIntroOverlay .piStage .piWell  { visibility:visible; max-height:74%; max-width:26%; }
+        #pulleyIntroOverlay .piStage .piMoses { max-height:100%; max-width:52%; left:-1%; }
+        #pulleyIntroOverlay .piStage .piShep  { max-height:98%; max-width:52%; right:-1%; }
       }
       /* LANDSCAPE PHONES — 2026-05-27 (Jane: "intro landscape center
          everything. i don't want in two columns left and right"). Stays as a
@@ -9272,6 +9283,54 @@ function _pulleyAttachIntroRopeListeners() {
   });
 }
 try { document.addEventListener('DOMContentLoaded', _pulleyAttachIntroRopeListeners); _pulleyAttachIntroRopeListeners(); } catch(e){}
+// 2026-05-30 (Jane: "the images on the intro page are moving back and forth and
+// the rope is moving out of their hands"). ROOT CAUSE: the figures run infinite
+// idle animations (piBob / piLean) but the rope was only re-anchored at a few
+// fixed timeouts, so after the last one it froze while the hands kept moving.
+// Drive the re-anchor EVERY frame while the intro overlay is visible so the
+// rope tracks the live bobbing hands on every device (figures stay alive).
+function _pulleyIntroRopeTick() {
+  const ov = document.getElementById('pulleyIntroOverlay');
+  if (!ov || getComputedStyle(ov).display === 'none') { _pulley._introRopeRaf = 0; return; }
+  _pulleyUpdateIntroRope();
+  _pulley._introRopeRaf = requestAnimationFrame(_pulleyIntroRopeTick);
+}
+function _pulleyStartIntroRopeLoop() {
+  try { cancelAnimationFrame(_pulley._introRopeRaf); } catch(e){}
+  _pulley._introRopeRaf = requestAnimationFrame(_pulleyIntroRopeTick);
+}
+function _pulleyStopIntroRopeLoop() {
+  try { cancelAnimationFrame(_pulley._introRopeRaf); } catch(e){}
+  _pulley._introRopeRaf = 0;
+}
+// 2026-05-30 (Jane: "on the game intro page, the background music doesn't start
+// playing on phone"). ROOT CAUSE: mobile browsers block audio.play() until the
+// element has been started UNMUTED inside a real user gesture; the muted-prime
+// unlockAudio() doesn't grant that on iOS. So the intro bed stayed silent until
+// gameplay. Fix: the player's FIRST touch while the well is open starts the bed
+// (a fresh gesture is always allowed), which also unlocks the element for the
+// later GO-time restart. Re-armed each time the game opens.
+function _pulleyPrimeWellMusicOnGesture() {
+  const start = () => {
+    try {
+      if (_soundOn && audio.wellMusic && audio.wellMusic.paused) {
+        audio.wellMusic.loop = true;
+        if (!(audio.wellMusic.currentTime > 0)) audio.wellMusic.currentTime = 0;
+        audio.wellMusic.volume = 0.18;
+        audio.wellMusic.play().catch(()=>{});
+      }
+    } catch(e){}
+    cleanup();
+  };
+  const cleanup = () => {
+    try { document.removeEventListener('pointerdown', start); } catch(e){}
+    try { document.removeEventListener('touchstart', start); } catch(e){}
+    try { document.removeEventListener('click', start); } catch(e){}
+  };
+  try { document.addEventListener('pointerdown', start, { once:true, passive:true }); } catch(e){}
+  try { document.addEventListener('touchstart', start, { once:true, passive:true }); } catch(e){}
+  try { document.addEventListener('click', start, { once:true }); } catch(e){}
+}
 
 function openWellPulleyGame(gate) {
   _pulley.gate = gate; _pulley.lastFrame = 0;
@@ -9292,7 +9351,8 @@ function openWellPulleyGame(gate) {
   // hands once layout settles + images load. Multiple retries to survive slow
   // image-decode on phones (load event also re-runs it).
   _pulleyAttachIntroRopeListeners();
-  [40, 200, 600, 1200, 2200, 3500].forEach(d => setTimeout(_pulleyUpdateIntroRope, d));
+  _pulleyStartIntroRopeLoop();
+  _pulleyPrimeWellMusicOnGesture();
   _pulleyUpdateHud();
   document.getElementById('pulleyFeedback').textContent = 'Drag from Moses to aim — fill every pot before the shepherd!';
 }
@@ -9563,6 +9623,7 @@ try { window.addEventListener('resize',            () => { const ch = document.g
 function _pulleyStartGame() {
   const intro = document.getElementById('pulleyIntroOverlay'); if (intro) intro.style.display = 'none';
   _pulley.intro = false; _pulley.lastFrame = 0;
+  _pulleyStopIntroRopeLoop();
   _pulley.zoom = 1.16; _pulley.zoomTarget = 1; _pulley.shake = 7;   // cinematic entry punch-in (parity with rescue)
   try { play('click') || play('pop'); } catch(e){}   // button-select SFX
   _pulleyMaybeShowOrientPopup();
@@ -9596,6 +9657,7 @@ function _pulleyRetry() {
 }
 function _closePulleyGame() {
   cancelAnimationFrame(_pulley.rafId);
+  _pulleyStopIntroRopeLoop();
   const modal = document.getElementById('wellPulleyModal');
   modal.style.display = 'none'; modal.classList.remove('active');
   // stop the well-game music bed and bring the scene BGM back
@@ -9798,6 +9860,32 @@ function _pulleyFrame(now) {
   const needW = Math.max(W, Math.round(cssW * dpr));
   const needH = Math.max(H, Math.round(cssH * dpr));
   if (canvas.width !== needW || canvas.height !== needH) { canvas.width = needW; canvas.height = needH; }
+  // -- GAME WORLD TRANSFORM (computed up-front so the BACKGROUND can share it) --
+  // 2026-05-30 (Jane: "the agent made only the foreground zoomable/movable but
+  // the background stays fixed"). ROOT CAUSE: the bg was painted at identity
+  // BEFORE the view-zoom transform was applied, so pinch-zoom/pan only moved the
+  // sprites. We now compute the view-zoom first and paint the desert under the
+  // SAME zoom+pan so the whole world moves as one.
+  const gs = Math.min(needW / W, needH / H);
+  const goffX = (needW - W * gs) / 2;
+  const goffY = (needH - H * gs) / 2;
+  _pulley._gs = gs; _pulley._goffX = goffX; _pulley._goffY = goffY;
+  // user-controlled view-zoom (pinch-to-zoom). _viewCx/_viewCy = logical point
+  // that sits at the centre of the canvas. Defaults match the well-scene centre.
+  const vz = _pulley._viewZoom || 1;
+  const vcx = _pulley._viewCx != null ? _pulley._viewCx : 300;
+  const vcy = _pulley._viewCy != null ? _pulley._viewCy : 170;
+  const effGs  = vz * gs;
+  const effOffX = needW / 2 - vcx * effGs;
+  const effOffY = needH / 2 - vcy * effGs;
+  _pulley._effGs = effGs; _pulley._effOffX = effOffX; _pulley._effOffY = effOffY;
+  // Background lockstep: at the default view (vz=1, centred on 300/170) this
+  // resolves to the identity COVER draw (no regression); under zoom/pan it
+  // scales by vz + pans with the world. offXd/offYd = the bg's default offset.
+  const _bgOffXd = needW / 2 - 300 * gs;
+  const _bgOffYd = needH / 2 - 170 * gs;
+  const _bgTx = effOffX - vz * _bgOffXd;
+  const _bgTy = effOffY - vz * _bgOffYd;
   // -- BACKGROUND (covers the full canvas, no clipping of sky/sun) --
   // 2026-05-27 (Jane: "where is the game background on portrait? pathetic"
   // + "landscape background is being cropped and cut on the top"). Painted
@@ -9805,7 +9893,7 @@ function _pulleyFrame(now) {
   // and we use FIT-TO-HEIGHT instead of COVER so the sun + sky are always
   // visible — any horizontal slack is filled with sky/sand-matched bands so
   // the canvas reads as one continuous desert scene with NO cropping.
-  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.setTransform(vz, 0, 0, vz, _bgTx, _bgTy);
   c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
   const _bgImg = _pImg('scene3Bg') || _pImg('midian');
   if (_bgImg) {
@@ -9836,27 +9924,15 @@ function _pulleyFrame(now) {
     else           { sw = iw; sh = iw / car; sx = 0; sy = (ih - sh) / 2; }
     c.drawImage(_bgImg, sx, sy, sw, sh, 0, 0, needW, needH);
   } else {
+    c.setTransform(1, 0, 0, 1, 0, 0);   // fallback gradient always covers full canvas
     const sky = c.createLinearGradient(0, 0, 0, needH);
     sky.addColorStop(0.00, '#f6c08a');
     sky.addColorStop(0.55, '#e8a878');
     sky.addColorStop(1.00, '#cd8b58');
     c.fillStyle = sky; c.fillRect(0, 0, needW, needH);
   }
-  // -- GAME WORLD TRANSFORM: uniform scale, centered (letterboxed) --
-  // Base scale fits the 600×340 logical world into the canvas backing pixels.
-  const gs = Math.min(needW / W, needH / H);
-  const goffX = (needW - W * gs) / 2;
-  const goffY = (needH - H * gs) / 2;
-  _pulley._gs = gs; _pulley._goffX = goffX; _pulley._goffY = goffY;
-  // 2026-05-29: user-controlled view-zoom (pinch-to-zoom on portrait).
-  // _viewCx/_viewCy is the logical point that sits at the centre of the canvas.
-  const vz = _pulley._viewZoom || 1;
-  const vcx = _pulley._viewCx != null ? _pulley._viewCx : 300;
-  const vcy = _pulley._viewCy != null ? _pulley._viewCy : 170;
-  const effGs  = vz * gs;
-  const effOffX = needW / 2 - vcx * effGs;
-  const effOffY = needH / 2 - vcy * effGs;
-  _pulley._effGs = effGs; _pulley._effOffX = effOffX; _pulley._effOffY = effOffY;
+  // -- GAME WORLD TRANSFORM: apply the view-zoom computed up-front (shared with
+  //    the background above so the whole scene zooms/pans as one). --
   c.setTransform(effGs, 0, 0, effGs, effOffX, effOffY);
   c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
   const rawDt = Math.min(60, now - (_pulley.lastFrame || now));
