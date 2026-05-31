@@ -9210,6 +9210,7 @@ function _pulleyReset() {
   // the CONTENT rect so elements are large with nothing cut. Pinch is removed.
   _pulley._viewZoom = 1;
   _pulley._viewCx = 300; _pulley._viewCy = 201; _pulley._pinching = false;
+  _pulley._spread = 1; _pulley._spreadDraw = false;   // landscape horizontal spread (recomputed each frame)
   _pulley.potsLostToSteal = 0; _pulley.ownGoals = 0; _pulley.earnedStars = 3; _pulley.winPanelShown = false;
   _pulley.stealNo = 0; _pulley.countdown = 0; _pulley.go = 0;
   _pulley.shepX = _pulley.shepHomeX; _pulley.mosesX = _pulley.mosesHomeX;
@@ -9382,7 +9383,7 @@ function _pulleyCanvasPos(e) {
   const eg  = _pulley._effGs   || _pulley._gs || 1;
   const eox = _pulley._effOffX != null ? _pulley._effOffX : (_pulley._goffX || 0);
   const eoy = _pulley._effOffY != null ? _pulley._effOffY : (_pulley._goffY || 0);
-  return { x: (bx - eox) / eg, y: (by - eoy) / eg };
+  return { x: _SXi((bx - eox) / eg), y: (by - eoy) / eg };   // invert the landscape spread so aim maps to the unspread gameplay space
 }
 function _pulleyAimStart(e) {
   if (_pulley._pinching) return;  // pinch-to-zoom in progress — don't aim
@@ -9498,7 +9499,10 @@ function _pulleyWin() {
   // Moses/the shepherd off the canvas edges (an off-centre/strong zoom pushed
   // edge content off-screen — that was the clipping in the celebration shot).
   _pulley.zoomFx = 300; _pulley.zoomFy = 196;
-  _pulley.zoom = 1.16; _pulley.zoomTarget = 1.05; _pulley.shake = 10;   // gentle victory punch-in
+  // 2026-05-30 (Jane: "during the win moment MOSES + the left bubble get cut").
+  // The 1.16x punch magnified the scene enough to shove the edge labels/bubble
+  // off-canvas. Gentler punch (1.08→1.0) keeps the whole scene on-screen.
+  _pulley.zoom = 1.08; _pulley.zoomTarget = 1.0; _pulley.shake = 9;   // gentle victory punch-in (no edge clipping)
   _pulleyFlash(255, 226, 120, 0.55);                                    // gold win flash
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = '\u{1F389} All pots filled! The flock comes to drink!';
@@ -9672,6 +9676,7 @@ function _pulleyRetry() {
 function _closePulleyGame() {
   cancelAnimationFrame(_pulley.rafId);
   _pulleyStopIntroRopeLoop();
+  _pulley._spreadDraw = false;   // never leave the spread gate open for the shared _pDrawFit
   const modal = document.getElementById('wellPulleyModal');
   modal.style.display = 'none'; modal.classList.remove('active');
   // stop the well-game music bed and bring the scene BGM back
@@ -9774,11 +9779,25 @@ function _pImg(key) {
   const im = (typeof IMG !== 'undefined' && IMG) ? IMG[key] : null;
   return (im && (im.width || im.naturalWidth)) ? im : null;
 }
+// 2026-05-30 (Jane: "on landscape spread the elements across the wide game area
+// so everything appears larger"). On a WIDE (height-bound) landscape canvas the
+// 600-wide scene letterboxes with big side bands; we spread element X-positions
+// outward from centre (300) to fill the width WITHOUT stretching sprites.
+// _pulley._spread is 1 on portrait/desktop (width-bound) so those are UNCHANGED.
+// _pulley._spreadDraw gates it to the well-scene draw only (so the shared
+// _pDrawFit used by the rescue game is never affected). Physics/collision stay
+// in unspread space; only DRAW positions (here) and INPUT (inverse) are mapped.
+function _SX(x) { return (_pulley._spreadDraw && _pulley._spread && _pulley._spread !== 1) ? (300 + (x - 300) * _pulley._spread) : x; }
+// INVERSE for INPUT: maps a touch's spread-logical x back to the unspread 600-wide
+// gameplay space (so aim targets match pot.x). NOT gated on _spreadDraw — input
+// fires outside the draw — but _spread is 1 on portrait/desktop so it's identity there.
+function _SXi(x) { return (_pulley._spread && _pulley._spread !== 1) ? (300 + (x - 300) / _pulley._spread) : x; }
 function _pDraw(c, keys, x, y, w, h, flip) {
   let im = null;
   const list = Array.isArray(keys) ? keys : [keys];
   for (const k of list) { im = _pImg(k); if (im) break; }
   if (!im) return false;
+  if (_pulley._spreadDraw && _pulley._spread && _pulley._spread !== 1) x = _SX(x + w / 2) - w / 2;   // spread the sprite's CENTRE, keep its width
   if (flip) { c.save(); c.translate(x + w, y); c.scale(-1, 1); c.drawImage(im, 0, 0, w, h); c.restore(); }
   else c.drawImage(im, x, y, w, h);
   return true;
@@ -9791,6 +9810,7 @@ function _pDrawFit(c, keys, cx, baseY, maxW, maxH, flip) {
   const list = Array.isArray(keys) ? keys : [keys];
   for (const k of list) { im = _pImg(k); if (im) break; }
   if (!im) return false;
+  cx = _SX(cx);   // gated: only spreads during the well-scene draw (rescue game unaffected)
   const nw = im.naturalWidth || im.width, nh = im.naturalHeight || im.height;
   const s = Math.min(maxW / nw, maxH / nh);
   const w = nw * s, h = nh * s, x = cx - w / 2, y = baseY - h;
@@ -9810,7 +9830,7 @@ function _pulleySayBubble(c, tipX, tipY, text, alpha) {
   // 2026-05-26 (Jane: "'The flock is watered' text on the left side is getting
   // cut"). Bigger margin (18px instead of 8) so the bubble clears the canvas's
   // rounded-corner / border-radius region on every viewport.
-  let bx = Math.max(18, Math.min(LOGW - w - 18, tipX - w / 2));
+  let bx = Math.max(28, Math.min(LOGW - w - 28, tipX - w / 2));   // wider margin so the win punch never clips the bubble at the edge
   const ry = tipY - 14 - h;
   c.beginPath();
   if (c.roundRect) c.roundRect(bx, ry, w, h, 8); else c.rect(bx, ry, w, h);
@@ -9823,12 +9843,13 @@ function _pulleySayBubble(c, tipX, tipY, text, alpha) {
   c.restore();
 }
 function _pPot(c, p, now) {
-  const w = 38, h = 42, x = p.x - w / 2, y = p.y - h;
+  const px = _SX(p.x);   // spread the pot's draw position (gameplay/collision still use p.x)
+  const w = 38, h = 42, x = px - w / 2, y = p.y - h;
   if (p.onRock) {
-    c.fillStyle = '#9a8a66'; c.beginPath(); c.ellipse(p.x, p.y + 2, 24, 10, 0, 0, Math.PI * 2); c.fill();
-    c.fillStyle = '#7c6e50'; c.beginPath(); c.ellipse(p.x, p.y - 4, 20, 9, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#9a8a66'; c.beginPath(); c.ellipse(px, p.y + 2, 24, 10, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#7c6e50'; c.beginPath(); c.ellipse(px, p.y - 4, 20, 9, 0, 0, Math.PI * 2); c.fill();
   } else {
-    c.fillStyle = 'rgba(70,50,30,0.18)'; c.beginPath(); c.ellipse(p.x, p.y, 19, 5, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(70,50,30,0.18)'; c.beginPath(); c.ellipse(px, p.y, 19, 5, 0, 0, Math.PI * 2); c.fill();
   }
   const pop = p.pop ? Math.sin(p.pop * Math.PI) * 4 : 0;
   c.save(); if (!p.done && p.fill <= 0) c.globalAlpha = 0.95;
@@ -9839,17 +9860,17 @@ function _pPot(c, p, now) {
   const f = Math.max(0, Math.min(1, p.fill / 100));
   if (f > 0) {
     c.fillStyle = 'rgba(95,190,255,' + (0.45 + 0.45 * f).toFixed(2) + ')';
-    c.beginPath(); c.ellipse(p.x, y + 9 - pop, w * 0.20 * (0.6 + 0.4 * f), 4 * (0.6 + 0.4 * f), 0, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(px, y + 9 - pop, w * 0.20 * (0.6 + 0.4 * f), 4 * (0.6 + 0.4 * f), 0, 0, Math.PI * 2); c.fill();
   }
   // mini fill bar above the pot
-  const bw = 32, bx = p.x - bw / 2, by = y - 10 - pop;
+  const bw = 32, bx = px - bw / 2, by = y - 10 - pop;
   c.fillStyle = 'rgba(0,0,0,0.32)'; c.fillRect(bx, by, bw, 5);
   c.fillStyle = p.done ? '#7fe0a0' : (p.mine ? '#5bbcff' : '#a0d090'); c.fillRect(bx, by, bw * f, 5);
   c.strokeStyle = 'rgba(255,255,255,0.4)'; c.lineWidth = 1; c.strokeRect(bx, by, bw, 5);
   if (p.done) {
     c.fillStyle = '#eafff0'; c.font = 'bold 13px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText('✓', p.x, by - 7);
-    if (Math.random() < 0.12) _pulley.drops.push({ x: p.x + (Math.random() - 0.5) * 24, y: y - pop, vx: (Math.random() - 0.5) * 1.4, vy: -0.8 - Math.random(), t: 0, life: 22 });
+    c.fillText('✓', px, by - 7);
+    if (Math.random() < 0.12) _pulley.drops.push({ x: px + (Math.random() - 0.5) * 24, y: y - pop, vx: (Math.random() - 0.5) * 1.4, vy: -0.8 - Math.random(), t: 0, life: 22 });
   }
 }
 // full-canvas color flash (juice): red on a stolen pot, green on a save, gold on
@@ -9890,6 +9911,14 @@ function _pulleyFrame(now) {
   const effOffX = needW / 2 - _cCx * effGs;
   const effOffY = needH / 2 - _cCy * effGs;
   _pulley._effGs = effGs; _pulley._effOffX = effOffX; _pulley._effOffY = effOffY;
+  // Horizontal SPREAD — landscape only. When the canvas is WIDER than the scene
+  // (height-bound effGs → side bands), spread element X-positions outward from
+  // centre so they reach the canvas edges and fill the width. The factor is
+  // EXACTLY 1 when width-bound (portrait + desktop → unchanged); clamped so very
+  // wide foldables don't over-spread. Applied to DRAW positions (_SX) + inverted
+  // for INPUT; physics/collision stay in the unspread 600-wide space.
+  _pulley._spread = Math.max(1, Math.min(1.55, needW / (_cW * effGs)));
+  _pulley._spreadDraw = true;
   // -- BACKGROUND (covers the full canvas, no clipping of sky/sun) --
   // 2026-05-27 (Jane: "where is the game background on portrait? pathetic"
   // + "landscape background is being cropped and cut on the top"). Painted
@@ -10124,7 +10153,7 @@ function _pulleyFrame(now) {
     // 2026-05-26: a second camera punch-in ~1.6s into the celebration so the
     // jumping daughters + flock get a fresh "wow" beat before the modal.
     if (!_pulley._cel2 && _pulley.celebrate > 1.6) {
-      _pulley._cel2 = true; _pulley.zoom = 1.12; _pulley.zoomTarget = 1.05; _pulley.shake = 6;
+      _pulley._cel2 = true; _pulley.zoom = 1.07; _pulley.zoomTarget = 1.0; _pulley.shake = 6;
       // 2026-05-26 (Jane: "the victory music starts off and then again starts
       // off"). Use a light chime here, NOT wellCheer again (that double-played).
       try { play('chime') || play('coin'); } catch(e){}
@@ -10147,19 +10176,21 @@ function _pulleyFrame(now) {
   // 2026-05-27: background is now painted PRE-transform in COVER mode by
   // _pulleyFrame so it fills the full canvas (any aspect) — no per-frame
   // stretch into the 600x340 logical box anymore.
-  c.fillStyle = 'rgba(255,240,180,0.35)'; c.beginPath(); c.arc(W - 60, 46, 32, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(255,240,180,0.35)'; c.beginPath(); c.arc(_SX(W - 60), 46, 32, 0, Math.PI * 2); c.fill();
 
   // side zones + centre divider so it's obvious which pots are whose
-  c.fillStyle = 'rgba(80,150,220,0.12)'; c.beginPath(); c.ellipse(216, 302, 110, 30, 0, 0, Math.PI * 2); c.fill();
-  c.fillStyle = 'rgba(170,130,70,0.13)'; c.beginPath(); c.ellipse(384, 302, 110, 30, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(80,150,220,0.12)'; c.beginPath(); c.ellipse(_SX(216), 302, 110, 30, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(170,130,70,0.13)'; c.beginPath(); c.ellipse(_SX(384), 302, 110, 30, 0, 0, Math.PI * 2); c.fill();
   // small cairn divider at centre
   c.fillStyle = '#9a8a66'; c.beginPath(); c.ellipse(300, 300, 12, 6, 0, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#867655'; c.beginPath(); c.ellipse(300, 293, 9, 5, 0, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#9a8a66'; c.beginPath(); c.ellipse(300, 287, 6, 4, 0, 0, Math.PI * 2); c.fill();
-  // side captions above each cluster
-  c.font = 'bold 12px Georgia'; c.textBaseline = 'alphabetic'; c.textAlign = 'center';
-  c.fillStyle = 'rgba(190,228,255,0.95)'; c.fillText('YOUR POTS', 216, 318);
-  c.fillStyle = 'rgba(255,214,184,0.95)'; c.fillText('HIS POTS', 384, 318);
+  // side captions above each cluster — 2026-05-30 (Jane: bigger + different
+  // colour + must not get cut). Dark outline so they pop on any background.
+  c.font = 'bold 14px Georgia'; c.textBaseline = 'alphabetic'; c.textAlign = 'center';
+  c.lineJoin = 'round'; c.lineWidth = 3.5; c.strokeStyle = 'rgba(18,10,4,0.9)';
+  c.strokeText('YOUR POTS', _SX(210), 318); c.fillStyle = '#8fe6ff'; c.fillText('YOUR POTS', _SX(210), 318);
+  c.strokeText('HIS POTS', _SX(388), 318);  c.fillStyle = '#ffc266'; c.fillText('HIS POTS', _SX(388), 318);
 
   // wells (real art); shepherd's is mirrored so its bucket faces him
   _pDraw(c, ['midianWell', 'wellMouth'], 52, 86, 132, 150);
@@ -10180,6 +10211,7 @@ function _pulleyFrame(now) {
   // reads as held. (Hand offsets may need a final nudge once the real art lands.)
   c.lineCap = 'round';
   const _rope = (px, py, hx, hy) => {
+    px = _SX(px); hx = _SX(hx);   // spread the rope endpoints to match the spread well + figure/bucket
     c.strokeStyle = '#8a6a3a'; c.lineWidth = 5;
     c.beginPath(); c.moveTo(px, py); c.quadraticCurveTo((px + hx) / 2, Math.min(py, hy) + 16, hx, hy); c.stroke();
     c.strokeStyle = '#c9a86a'; c.lineWidth = 2;
@@ -10319,7 +10351,7 @@ function _pulleyFrame(now) {
   if (!_pulley.over && !_pulley.proj && !_pulley.aiming) {
     const tgt = _pulley.pots.find(p => p.mine && !p.done && p.fill <= 0) || _pulley.pots.find(p => p.mine && !p.done);
     if (tgt) { c.strokeStyle = 'rgba(120,220,255,' + (0.3 + 0.25 * Math.sin(now / 240)).toFixed(2) + ')'; c.lineWidth = 2.5;
-      c.beginPath(); c.arc(tgt.x, tgt.y - 30, 20 + Math.sin(now / 240) * 3, 0, Math.PI * 2); c.stroke(); }
+      c.beginPath(); c.arc(_SX(tgt.x), tgt.y - 30, 20 + Math.sin(now / 240) * 3, 0, Math.PI * 2); c.stroke(); }
   }
 
   // name tags
@@ -10328,8 +10360,12 @@ function _pulleyFrame(now) {
   // landscape — rounded canvas border was clipping them). Moved up to y=320
   // (well clear of any canvas-corner rounding at every viewport).
   // Labels move with the zoomed view — they're part of the game world.
-  c.fillStyle = '#cfeaff'; c.textAlign = 'left';  c.fillText('MOSES (YOU)', 18, 320);
-  c.fillStyle = '#ffd0b0'; c.textAlign = 'right'; c.fillText('RUDE SHEPHERD', W - 18, 320);
+  // 2026-05-30 (Jane: bigger + recolour + must not be cut at the sides). Inset
+  // from the edges (48 / W-48) so even the gentle win punch keeps them on-canvas,
+  // with a dark outline for contrast.
+  c.font = 'bold 14px Georgia'; c.lineJoin = 'round'; c.lineWidth = 3.5; c.strokeStyle = 'rgba(18,10,4,0.9)';
+  c.textAlign = 'left';  c.strokeText('MOSES (YOU)', _SX(44), 320);     c.fillStyle = '#8fe6ff'; c.fillText('MOSES (YOU)', _SX(44), 320);
+  c.textAlign = 'right'; c.strokeText('RUDE SHEPHERD', _SX(W - 44), 320); c.fillStyle = '#ffc266'; c.fillText('RUDE SHEPHERD', _SX(W - 44), 320);
 
   // aim preview
   if (_pulley.aiming) {
@@ -10346,10 +10382,10 @@ function _pulleyFrame(now) {
         pvy += _pulley.GRAV * step; pvx += _pulley.curWind * step;
         px += pvx * step; py += pvy * step;
         if (py > _pulley.GROUND + 4 || px > W + 20 || px < -20) break;
-        if (t % 3 === 0) { c.beginPath(); c.arc(px, py, 2.1, 0, Math.PI * 2); c.fill(); }
+        if (t % 3 === 0) { c.beginPath(); c.arc(_SX(px), py, 2.1, 0, Math.PI * 2); c.fill(); }
       }
       c.strokeStyle = '#ffe06a'; c.lineWidth = 3;
-      c.beginPath(); c.moveTo(_pulley.L.x, _pulley.L.y); c.lineTo(_pulley.L.x + dir.x * 42, _pulley.L.y + dir.y * 42); c.stroke();
+      c.beginPath(); c.moveTo(_SX(_pulley.L.x), _pulley.L.y); c.lineTo(_SX(_pulley.L.x + dir.x * 42), _pulley.L.y + dir.y * 42); c.stroke();
       const ang = Math.round(Math.atan2(-ay, ax) * 180 / Math.PI);
       c.fillStyle = 'rgba(20,40,70,0.82)'; c.fillRect(W / 2 - 108, 8, 216, 26);
       c.strokeStyle = 'rgba(255,224,106,0.7)'; c.lineWidth = 1.5; c.strokeRect(W / 2 - 108, 8, 216, 26);
@@ -10366,9 +10402,9 @@ function _pulleyFrame(now) {
 
   // projectile glob + trail
   if (_pulley.proj) {
-    for (const tp of _pulley.proj.trail) { c.fillStyle = 'rgba(120,200,255,0.45)'; c.beginPath(); c.arc(tp.x, tp.y, 2.2, 0, Math.PI * 2); c.fill(); }
-    c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(_pulley.proj.x, _pulley.proj.y, 6.5, 0, Math.PI * 2); c.fill();
-    c.fillStyle = 'rgba(255,255,255,0.8)'; c.beginPath(); c.arc(_pulley.proj.x - 2, _pulley.proj.y - 2, 2.2, 0, Math.PI * 2); c.fill();
+    for (const tp of _pulley.proj.trail) { c.fillStyle = 'rgba(120,200,255,0.45)'; c.beginPath(); c.arc(_SX(tp.x), tp.y, 2.2, 0, Math.PI * 2); c.fill(); }
+    c.fillStyle = '#5bbcff'; c.beginPath(); c.arc(_SX(_pulley.proj.x), _pulley.proj.y, 6.5, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.8)'; c.beginPath(); c.arc(_SX(_pulley.proj.x) - 2, _pulley.proj.y - 2, 2.2, 0, Math.PI * 2); c.fill();
   }
 
   // RIVAL POUR STREAM — 2026-05-26 (Jane: "the opponent's water stream is blue
@@ -10386,14 +10422,14 @@ function _pulleyFrame(now) {
       const flow = (now / 85) % 1;   // animates droplets travelling down the arc
       for (let i = 0; i <= 12; i++) {
         let u = (i / 12) + flow / 12; if (u > 1) u -= 1;
-        const x = bx + (tx - bx) * u, y = by + (ty - by) * u - 46 * Math.sin(Math.PI * u);
+        const x = _SX(bx + (tx - bx) * u), y = by + (ty - by) * u - 46 * Math.sin(Math.PI * u);
         const r = (2.4 - u * 0.8) * (0.5 + 0.5 * pour);
         c.fillStyle = 'rgba(20,60,110,' + (0.42 * pour).toFixed(2) + ')'; c.beginPath(); c.arc(x, y, r + 0.8, 0, Math.PI * 2); c.fill();
         c.fillStyle = 'rgba(150,215,255,' + (0.92 * pour).toFixed(2) + ')'; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
       }
       // splash burst where the water lands in the pot
       c.fillStyle = 'rgba(150,215,255,' + (0.75 * pour).toFixed(2) + ')';
-      c.beginPath(); c.arc(tx, ty, 2 + 3 * pour, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(_SX(tx), ty, 2 + 3 * pour, 0, Math.PI * 2); c.fill();
       c.fillStyle = 'rgba(255,255,255,' + (0.6 * pour).toFixed(2) + ')';
       c.beginPath(); c.arc(tx - 2, ty - 2, 1.6, 0, Math.PI * 2); c.fill();
     }
@@ -10401,9 +10437,9 @@ function _pulleyFrame(now) {
 
   // banter
   if (_pulley.mosesSay) { _pulley.mosesSay.t += dt; if (_pulley.mosesSay.t > 2600) _pulley.mosesSay = null;
-    else { const s = _pulley.mosesSay, a = s.t < 200 ? s.t / 200 : (s.t > 2200 ? Math.max(0, (2600 - s.t) / 400) : 1); _pulleySayBubble(c, 96, 156, s.text, a); } }
+    else { const s = _pulley.mosesSay, a = s.t < 200 ? s.t / 200 : (s.t > 2200 ? Math.max(0, (2600 - s.t) / 400) : 1); _pulleySayBubble(c, _SX(96), 156, s.text, a); } }
   if (_pulley.shepSay) { _pulley.shepSay.t += dt; if (_pulley.shepSay.t > 2600) _pulley.shepSay = null;
-    else { const s = _pulley.shepSay, a = s.t < 200 ? s.t / 200 : (s.t > 2200 ? Math.max(0, (2600 - s.t) / 400) : 1); _pulleySayBubble(c, 510, 156, s.text, a); } }
+    else { const s = _pulley.shepSay, a = s.t < 200 ? s.t / 200 : (s.t > 2200 ? Math.max(0, (2600 - s.t) / 400) : 1); _pulleySayBubble(c, _SX(510), 156, s.text, a); } }
 
   // floating cues (big ones get a dark pill behind them for readability)
   for (let i = _pulley.cues.length - 1; i >= 0; i--) {
@@ -10415,10 +10451,10 @@ function _pulleyFrame(now) {
     c.font = q.big ? 'bold 22px Georgia' : 'bold 18px Georgia';
     c.textAlign = 'center'; c.textBaseline = 'middle';
     // keep the (big) pill fully on-canvas so the text is never clipped at an edge
-    let cx = q.x;
+    let cx = _SX(q.x);
     if (q.big) {
       const tw = c.measureText(q.text).width, half = tw / 2 + 14;
-      cx = Math.max(half + 2, Math.min(W - half - 2, q.x));
+      cx = Math.max(half + 2, Math.min(W - half - 2, _SX(q.x)));
       c.fillStyle = 'rgba(10,24,40,0.78)';
       c.beginPath();
       if (c.roundRect) c.roundRect(cx - half, cy - 17, half * 2, 34, 9); else c.rect(cx - half, cy - 17, half * 2, 34);
@@ -10436,7 +10472,7 @@ function _pulleyFrame(now) {
     c.globalAlpha = a;
     if (!_pDraw(c, fx.key, fx.x - s / 2, fx.y - s / 2, s, s)) {
       c.fillStyle = fx.key === 'dustPuff' ? 'rgba(214,180,120,0.6)' : 'rgba(120,200,255,0.6)';
-      c.beginPath(); c.arc(fx.x, fx.y, s / 2, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(_SX(fx.x), fx.y, s / 2, 0, Math.PI * 2); c.fill();
     }
     c.globalAlpha = 1;
   }
@@ -10446,9 +10482,9 @@ function _pulleyFrame(now) {
     const d = _pulley.drops[i]; d.t++; d.x += d.vx; d.y += d.vy; d.vy += d.conf ? 0.04 : 0.18;
     if (d.t > d.life) { _pulley.drops.splice(i, 1); continue; }
     const a = Math.max(0, 1 - d.t / d.life);
-    if (d.conf) { c.fillStyle = ['#ffd86a', '#7fd0ff', '#ff8aa0', '#9affb0'][i % 4]; c.globalAlpha = a; c.fillRect(d.x, d.y, 4, 4); c.globalAlpha = 1; }
-    else if (d.sand) { c.fillStyle = 'rgba(214,180,120,' + (a * 0.9).toFixed(2) + ')'; c.beginPath(); c.arc(d.x, d.y, 2.8, 0, Math.PI * 2); c.fill(); }
-    else { c.fillStyle = 'rgba(120,200,255,' + a.toFixed(2) + ')'; c.beginPath(); c.arc(d.x, d.y, 2.4, 0, Math.PI * 2); c.fill(); }
+    if (d.conf) { c.fillStyle = ['#ffd86a', '#7fd0ff', '#ff8aa0', '#9affb0'][i % 4]; c.globalAlpha = a; c.fillRect(_SX(d.x), d.y, 4, 4); c.globalAlpha = 1; }
+    else if (d.sand) { c.fillStyle = 'rgba(214,180,120,' + (a * 0.9).toFixed(2) + ')'; c.beginPath(); c.arc(_SX(d.x), d.y, 2.8, 0, Math.PI * 2); c.fill(); }
+    else { c.fillStyle = 'rgba(120,200,255,' + a.toFixed(2) + ')'; c.beginPath(); c.arc(_SX(d.x), d.y, 2.4, 0, Math.PI * 2); c.fill(); }
   }
 
   // MATCH POINT banner + slow-mo vignette during the nail-biter finish
@@ -10496,6 +10532,7 @@ function _pulleyFrame(now) {
     c.fillRect(0, 0, W, H);
     f.a *= 0.85;
   }
+  _pulley._spreadDraw = false;   // close the spread gate so the shared _pDrawFit (rescue game) is never affected
 }
 
 // Wire up the SHOO button + the canvas aim (drag to set angle/power, release to fire)
