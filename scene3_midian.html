@@ -2975,6 +2975,11 @@
   #pulleyBar{height:16px !important;margin:1px 0 3px !important;}
   #pulleyPullBtn,#pulleyShooBtn{font-size:16px !important;padding:6px !important;}
   #pulleyFeedback{font-size:13px !important;min-height:16px !important;margin-top:3px !important;}
+  /* 2026-05-30 (Jane: "when the SHOO bar appears everything zooms out / looks
+     smaller"). The SHOO button was IN-FLOW, so showing it shrank the flex canvas
+     above it (re-fit → smaller scene). Float it as an overlay so the canvas keeps
+     its full height and the scene never shrinks. Landscape phones only. */
+  #pulleyShooBtn{position:fixed !important;left:50% !important;bottom:46px !important;transform:translateX(-50%) !important;width:min(60%,430px) !important;flex:none !important;z-index:8 !important;border-radius:14px !important;box-shadow:0 4px 16px rgba(0,0,0,0.5) !important;}
 }
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
 @keyframes pulleyConfFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(105vh) rotate(720deg);opacity:0.9}}
@@ -3025,6 +3030,7 @@
   #pulleyWinOverlay .pWinTitle{font-size:21px;}
   #pulleyWinOverlay .pStar{font-size:30px;margin:0 2px;}
   #pulleyWinOverlay .pWinSheep{width:auto !important;max-height:38px;}
+  #pulleyWinOverlay .pWinSheep:nth-child(3){max-height:74px;}   /* the middle image is Moses — keep him clearly bigger than the sheep */
   #pulleyLoseOverlay .pWinCard img{max-height:52px;width:auto !important;}
   #pulleyWinOverlay .pWinCard .btn,#pulleyLoseOverlay .pWinCard .btn{padding:8px 18px !important;font-size:15px !important;}
 }
@@ -9526,7 +9532,7 @@ function _pulleyWin() {
   const keys = [['sheep', 'sheepRight'], ['lamb', 'lambAlt'], ['sheepRight', 'sheep'], ['lamb', 'sheep'], ['sheep', 'sheepRight']];
   for (let i = 0; i < 5; i++) {
     const tp = mine[i % mine.length];
-    _pulley.flock.push({ key: keys[i], x: -40 - i * 46, y: 306, tx: Math.max(70, Math.min(290, tp.x + (i % 2 ? 14 : -14))), vx: 1, drinking: false, ph: Math.random() * 6 });
+    _pulley.flock.push({ key: keys[i], x: -40 - i * 46, y: (window.innerHeight > window.innerWidth) ? 326 : 306, tx: Math.max(70, Math.min(290, tp.x + (i % 2 ? 14 : -14))), vx: 1, drinking: false, ph: Math.random() * 6 });
   }
   // star rating — generous to keep kids motivated: a clean-ish run still earns 3,
   // and you can never drop below 2 stars for finishing the race.
@@ -9859,6 +9865,12 @@ function _pPot(c, p, now) {
   if (p.onRock) {
     c.fillStyle = '#9a8a66'; c.beginPath(); c.ellipse(px, p.y + 2, 24, 10, 0, 0, Math.PI * 2); c.fill();
     c.fillStyle = '#7c6e50'; c.beginPath(); c.ellipse(px, p.y - 4, 20, 9, 0, 0, Math.PI * 2); c.fill();
+  } else if (_pulley._isPortrait) {
+    // 2026-05-30 (Jane: "front pots look like they're floating on portrait"):
+    // a sandy mound + firmer shadow so they clearly sit on the ground. Portrait
+    // only — desktop is unchanged.
+    c.fillStyle = 'rgba(196,156,100,0.6)'; c.beginPath(); c.ellipse(px, p.y + 1, 22, 7, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(60,42,24,0.30)'; c.beginPath(); c.ellipse(px, p.y + 3, 17, 4.5, 0, 0, Math.PI * 2); c.fill();
   } else {
     c.fillStyle = 'rgba(70,50,30,0.18)'; c.beginPath(); c.ellipse(px, p.y, 19, 5, 0, 0, Math.PI * 2); c.fill();
   }
@@ -9935,6 +9947,7 @@ function _pulleyFrame(now) {
   // for INPUT; physics/collision stay in the unspread 600-wide space.
   _pulley._spread = Math.max(1, Math.min(1.55, needW / (_cW * effGs)));
   _pulley._spreadDraw = true;
+  _pulley._isPortrait = needH > needW;   // portrait-only tweaks (front-pot base, front flock) read this
   // -- BACKGROUND (covers the full canvas, no clipping of sky/sun) --
   // 2026-05-27 (Jane: "where is the game background on portrait? pathetic"
   // + "landscape background is being cropped and cut on the top"). Painted
@@ -10251,7 +10264,11 @@ function _pulleyFrame(now) {
     // 2026-05-26 (Jane: "no rope drawn to both their hands ... make sure it goes
     // to their hands"). Second segment = the part they PULL: pulley beam down to
     // Moses's gripping hands (with a grip knot).
-    _rope(116, 106, mIdleX + 72, mIdleY + 30);
+    // 2026-05-30 (Jane: landscape rope doesn't reach the hands): the hand offset
+    // must NOT be magnified by the spread (the sprite isn't stretched). Spread the
+    // figure CENTRE and add the fixed pixel offset back via /_spread so _rope's _SX
+    // lands exactly on the gripping hand. Identity (= mIdleX+72) when _spread is 1.
+    _rope(116, 106, (mIdleX + 65) + 7 / (_pulley._spread || 1), mIdleY + 30);
   }
   // Rival's rope + draw-bucket mirror Moses' so he visibly works his OWN well/bucket.
   const _RL = { x: 500, y: 176 };
@@ -10267,7 +10284,7 @@ function _pulleyFrame(now) {
     // gang's animated position). So anchor the rope-to-hands to orange's home.
     const _gangBusyNow = (_pulley.steal && _pulley.steal.who !== 0) || (_pulley.shepCarry && _pulley.shepCarry.who !== 0) || !!_pulley.stealReturn;
     const _oHandX = _gangBusyNow ? Math.min(_pulley.shepHomeX, 452) : Math.min(sIdleX, 452);
-    _rope(512, 106, _oHandX + 44, sIdleY + 30);
+    _rope(512, 106, (_oHandX + 65) - 21 / (_pulley._spread || 1), sIdleY + 30);   // spread-safe hand anchor (= _oHandX+44 when _spread is 1)
   }
   c.lineCap = 'butt';
 
@@ -10354,11 +10371,14 @@ function _pulleyFrame(now) {
   // flock standing clear at the front edges (aspect-preserved so they aren't squished).
   // On a win the whole front flock hops for joy (staggered phases so they don't sync).
   const _hop = (ph) => _pulley.win ? -Math.abs(Math.sin(now / 150 + ph)) * 16 : 0;
-  // 2026-05-30 (Jane: "text overlapping the sheep"): stand the front animals a
-  // little higher (y≈305) so they clear the caption strip at y318-320 below them.
-  _pDrawFit(c, ['sheep', 'sheepRight'], 96, 305 + _hop(0),   52, 44);
-  _pDrawFit(c, ['lamb', 'lambAlt'],     132, 303 + _hop(1.2), 34, 30);
-  _pDrawFit(c, ['goat'],                506, 305 + _hop(2.1), 52, 46);
+  // 2026-05-30: on desktop/landscape stand the front animals a little higher
+  // (y≈305) so they clear the caption strip. On PORTRAIT (Jane: "sheep can be in
+  // front of the text, plenty of space in the front") drop them to the front
+  // (y≈326) — overlapping the labels there is fine.
+  const _flY = _pulley._isPortrait ? 326 : 305;
+  _pDrawFit(c, ['sheep', 'sheepRight'], 96, _flY + _hop(0),       52, 44);
+  _pDrawFit(c, ['lamb', 'lambAlt'],     132, _flY - 2 + _hop(1.2), 34, 30);
+  _pDrawFit(c, ['goat'],                506, _flY + _hop(2.1),     52, 46);
   // victory flock — real sheep run in, then hop for joy at the pots
   if (_pulley.flock) for (const s of _pulley.flock) {
     const jy = s.drinking ? -Math.abs(Math.sin(now / 150 + s.ph)) * 14 : 0;
