@@ -3014,9 +3014,20 @@
   border:3px solid #e6b760;border-radius:22px;padding:26px clamp(24px,5vw,46px);
   box-shadow:0 0 0 2px rgba(255,232,168,0.28) inset,0 14px 44px rgba(0,0,0,0.6);
   max-width:min(92vw,560px);
-  /* never let a tall card (or its art) spill past the screen — scroll inside instead */
-  max-height:92vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;box-sizing:border-box;}
+  /* never let a tall card (or its art) spill past the screen — scroll inside instead.
+     2026-05-30 (Jane: win/lose modal cut on landscape top+bottom): svh accounts for
+     the mobile URL bar (vh over-reports height in landscape → card taller than visible). */
+  max-height:92vh;max-height:92svh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;box-sizing:border-box;}
 .pWinCard img,#rescueLoseOverlay .rLoseCard img,#rescuePausedOverlay .rPauseCard img{max-width:100%;}
+/* Short landscape phones: compact the WELL win/lose card so it fits without clipping. */
+@media (orientation:landscape) and (max-height:600px){
+  #pulleyWinOverlay .pWinCard,#pulleyLoseOverlay .pWinCard{padding:12px clamp(18px,4vw,34px);gap:5px;max-height:95svh;max-height:95vh;}
+  #pulleyWinOverlay .pWinTitle{font-size:21px;}
+  #pulleyWinOverlay .pStar{font-size:30px;margin:0 2px;}
+  #pulleyWinOverlay .pWinSheep{width:auto !important;max-height:38px;}
+  #pulleyLoseOverlay .pWinCard img{max-height:52px;width:auto !important;}
+  #pulleyWinOverlay .pWinCard .btn,#pulleyLoseOverlay .pWinCard .btn{padding:8px 18px !important;font-size:15px !important;}
+}
 #rescuePausedOverlay .rPauseCard{display:flex;flex-direction:column;align-items:center;gap:14px;}
 #rescueLoseOverlay .rLoseCard{background:linear-gradient(160deg,rgba(60,20,16,0.96),rgba(30,10,8,0.97));border-color:#e0884a;}
 .pWinTitle{font-family:Georgia,'Times New Roman',serif;font-weight:bold;font-size:30px;letter-spacing:.5px;
@@ -9515,7 +9526,7 @@ function _pulleyWin() {
   const keys = [['sheep', 'sheepRight'], ['lamb', 'lambAlt'], ['sheepRight', 'sheep'], ['lamb', 'sheep'], ['sheep', 'sheepRight']];
   for (let i = 0; i < 5; i++) {
     const tp = mine[i % mine.length];
-    _pulley.flock.push({ key: keys[i], x: -40 - i * 46, y: 326, tx: Math.max(70, Math.min(290, tp.x + (i % 2 ? 14 : -14))), vx: 1, drinking: false, ph: Math.random() * 6 });
+    _pulley.flock.push({ key: keys[i], x: -40 - i * 46, y: 306, tx: Math.max(70, Math.min(290, tp.x + (i % 2 ? 14 : -14))), vx: 1, drinking: false, ph: Math.random() * 6 });
   }
   // star rating — generous to keep kids motivated: a clean-ish run still earns 3,
   // and you can never drop below 2 stars for finishing the race.
@@ -9905,11 +9916,16 @@ function _pulleyFrame(now) {
   // width-bound (the wide scene's inherent limit; the desert bg fills the slack).
   const gs = Math.min(needW / W, needH / H);
   _pulley._gs = gs; _pulley._goffX = (needW - W * gs) / 2; _pulley._goffY = (needH - H * gs) / 2;
-  // content rect: x[6..594], y[70..332] — the live gameplay minus empty sky.
-  const _cW = 588, _cH = 262, _cCx = 6 + _cW / 2, _cCy = 70 + _cH / 2;
+  // content rect: x[6..594], y[92..332] — the live gameplay. 2026-05-30 (Jane:
+  // "characters floating, not on the ground" + "landscape elements too tiny").
+  // Tightened at the TOP (drop empty sky) so the scene scales LARGER on
+  // height-bound landscape, and biased toward the BOTTOM so figures stand on the
+  // ground instead of floating in the middle (width-bound portrait/desktop).
+  const _cX = 6, _cY = 92, _cW = 588, _cH = 240, _cCx = _cX + _cW / 2;
   const effGs  = Math.min(needW / _cW, needH / _cH);
   const effOffX = needW / 2 - _cCx * effGs;
-  const effOffY = needH / 2 - _cCy * effGs;
+  const _slackY = Math.max(0, needH - _cH * effGs);   // vertical slack (≈0 when height-bound landscape)
+  const effOffY = 0.80 * _slackY - _cY * effGs;        // push content DOWN (grounded); resolves to an exact fill when height-bound
   _pulley._effGs = effGs; _pulley._effOffX = effOffX; _pulley._effOffY = effOffY;
   // Horizontal SPREAD — landscape only. When the canvas is WIDER than the scene
   // (height-bound effGs → side bands), spread element X-positions outward from
@@ -10189,8 +10205,8 @@ function _pulleyFrame(now) {
   // colour + must not get cut). Dark outline so they pop on any background.
   c.font = 'bold 14px Georgia'; c.textBaseline = 'alphabetic'; c.textAlign = 'center';
   c.lineJoin = 'round'; c.lineWidth = 3.5; c.strokeStyle = 'rgba(18,10,4,0.9)';
-  c.strokeText('YOUR POTS', _SX(210), 318); c.fillStyle = '#8fe6ff'; c.fillText('YOUR POTS', _SX(210), 318);
-  c.strokeText('HIS POTS', _SX(388), 318);  c.fillStyle = '#ffc266'; c.fillText('HIS POTS', _SX(388), 318);
+  c.strokeText('YOUR POTS', _SX(206), 318); c.fillStyle = '#8fe6ff'; c.fillText('YOUR POTS', _SX(206), 318);
+  c.strokeText('HIS POTS', _SX(364), 318);  c.fillStyle = '#ffc266'; c.fillText('HIS POTS', _SX(364), 318);
 
   // wells (real art); shepherd's is mirrored so its bucket faces him
   _pDraw(c, ['midianWell', 'wellMouth'], 52, 86, 132, 150);
@@ -10338,9 +10354,11 @@ function _pulleyFrame(now) {
   // flock standing clear at the front edges (aspect-preserved so they aren't squished).
   // On a win the whole front flock hops for joy (staggered phases so they don't sync).
   const _hop = (ph) => _pulley.win ? -Math.abs(Math.sin(now / 150 + ph)) * 16 : 0;
-  _pDrawFit(c, ['sheep', 'sheepRight'], 96, 326 + _hop(0),   52, 44);
-  _pDrawFit(c, ['lamb', 'lambAlt'],     132, 324 + _hop(1.2), 34, 30);
-  _pDrawFit(c, ['goat'],                506, 326 + _hop(2.1), 52, 46);
+  // 2026-05-30 (Jane: "text overlapping the sheep"): stand the front animals a
+  // little higher (y≈305) so they clear the caption strip at y318-320 below them.
+  _pDrawFit(c, ['sheep', 'sheepRight'], 96, 305 + _hop(0),   52, 44);
+  _pDrawFit(c, ['lamb', 'lambAlt'],     132, 303 + _hop(1.2), 34, 30);
+  _pDrawFit(c, ['goat'],                506, 305 + _hop(2.1), 52, 46);
   // victory flock — real sheep run in, then hop for joy at the pots
   if (_pulley.flock) for (const s of _pulley.flock) {
     const jy = s.drinking ? -Math.abs(Math.sin(now / 150 + s.ph)) * 14 : 0;
@@ -10487,14 +10505,27 @@ function _pulleyFrame(now) {
     else { c.fillStyle = 'rgba(120,200,255,' + a.toFixed(2) + ')'; c.beginPath(); c.arc(_SX(d.x), d.y, 2.4, 0, Math.PI * 2); c.fill(); }
   }
 
-  // MATCH POINT banner + slow-mo vignette during the nail-biter finish
+  // MATCH POINT banner + slow-mo vignette during the nail-biter finish.
+  // 2026-05-30 (Jane: "on landscape I don't see MATCH POINT"). It was drawn at
+  // logical y≈21 which sits ABOVE the content rect, so it cropped off the top on
+  // height-bound landscape. Draw it in SCREEN space (identity transform) pinned
+  // to the top-centre of the canvas + sized to the canvas, so it's always shown.
   if (_pulley.matchPoint && !_pulley.over) {
-    if (_pulley.slowmo > 0) { c.fillStyle = 'rgba(0,0,0,0.12)'; c.fillRect(0, 0, W, H); }
     const pulse = 0.6 + 0.4 * Math.sin(now / 140);
-    c.fillStyle = 'rgba(120,20,20,0.5)'; c.fillRect(W / 2 - 120, 6, 240, 30);
-    c.strokeStyle = 'rgba(255,120,90,' + pulse.toFixed(2) + ')'; c.lineWidth = 2; c.strokeRect(W / 2 - 120, 6, 240, 30);
-    c.fillStyle = '#ffd86a'; c.font = 'bold 19px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.globalAlpha = pulse; c.fillText('★ MATCH POINT ★', W / 2, 21); c.globalAlpha = 1;
+    c.save();
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    if (_pulley.slowmo > 0) { c.fillStyle = 'rgba(0,0,0,0.12)'; c.fillRect(0, 0, needW, needH); }
+    const _mpF = Math.max(15, Math.round(needH * 0.05));
+    c.font = 'bold ' + _mpF + 'px Georgia'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const _mpTxt = '★ MATCH POINT ★';
+    const _mpW = c.measureText(_mpTxt).width + _mpF * 1.5;
+    const _mpH = _mpF * 1.7, _mpX = needW / 2 - _mpW / 2, _mpY = Math.max(6, Math.round(needH * 0.03));
+    c.beginPath();
+    if (c.roundRect) c.roundRect(_mpX, _mpY, _mpW, _mpH, _mpH * 0.3); else c.rect(_mpX, _mpY, _mpW, _mpH);
+    c.fillStyle = 'rgba(120,20,20,0.62)'; c.fill();
+    c.strokeStyle = 'rgba(255,120,90,' + pulse.toFixed(2) + ')'; c.lineWidth = Math.max(2, needH * 0.006); c.stroke();
+    c.fillStyle = '#ffd86a'; c.globalAlpha = pulse; c.fillText(_mpTxt, needW / 2, _mpY + _mpH / 2); c.globalAlpha = 1;
+    c.restore();
   }
 
   // win glow only — the message + stars are shown in the rich DOM panel (no canvas
