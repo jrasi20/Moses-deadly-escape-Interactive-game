@@ -2537,7 +2537,7 @@
       <div id="pulleyZone" style="position:absolute;top:0;bottom:0;left:38%;width:24%;background:linear-gradient(90deg,#2f9a4d,#86ebab);box-shadow:0 0 10px #86ebab;"></div>
       <div id="pulleyMarker" style="position:absolute;top:-3px;bottom:-3px;left:0;width:6px;background:#fff;border-radius:3px;box-shadow:0 0 10px #fff,0 0 4px #ffe0a0;"></div>
     </div>
-    <div style="display:flex;gap:10px;align-items:stretch;">
+    <div id="pulleyBtnRow" style="display:flex;gap:10px;align-items:center;">
       <button class="btn" id="pulleyPullBtn" style="flex:1;font-size:19px;padding:8px 10px;background:linear-gradient(135deg,#2a6a9a,#4a9aca);border:2px solid #7ab8d8;letter-spacing:2px;">PULL! 💧</button>
       <button class="btn" id="pulleyShooBtn" style="display:none;flex:1;font-size:19px;padding:8px 10px;background:linear-gradient(135deg,#c0432a,#e07a3a);border:2px solid #ffb070;letter-spacing:2px;animation:pulleyShooFlash 0.4s steps(2) infinite;">SHOO! ✋</button>
     </div>
@@ -2975,16 +2975,12 @@
   #pulleyBar{height:16px !important;margin:1px 0 3px !important;}
   #pulleyPullBtn,#pulleyShooBtn{font-size:16px !important;padding:6px !important;}
   #pulleyFeedback{font-size:13px !important;min-height:16px !important;margin-top:3px !important;}
-  /* 2026-05-30 (Jane: "when the SHOO bar appears everything zooms out / looks
-     smaller"). The SHOO button was IN-FLOW, so showing it shrank the flex canvas
-     above it (re-fit → smaller scene). Float it as an overlay so the canvas keeps
-     its full height and the scene never shrinks. Landscape phones only. */
-  /* 2026-05-30 (Jane: SHOO still covers the commentary). There is no text-free
-     strip between the name tags (canvas bottom) and the commentary (below the
-     canvas), so float it OVER the lower scene — above the captions and clear of
-     BOTH the labels and the verse/feedback. It covers a little gameplay only
-     while a steal is happening, then disappears. */
-  #pulleyShooBtn{position:fixed !important;left:50% !important;bottom:32% !important;bottom:32dvh !important;transform:translateX(-50%) !important;width:min(52%,360px) !important;padding:8px 10px !important;flex:none !important;z-index:8 !important;border-radius:13px !important;box-shadow:0 5px 18px rgba(0,0,0,0.55) !important;}
+  /* 2026-05-30 (Jane: put the SHOO bar back in the brown pane ABOVE the
+     commentary, but make it THIN). Keep it IN-FLOW in the button row (between the
+     canvas and the feedback/verse), and RESERVE the row's height always so
+     showing SHOO never shrinks the canvas (no jump). Thin bar. */
+  #pulleyBtnRow{min-height:30px !important;height:30px !important;margin:2px 0 1px !important;overflow:visible !important;}
+  #pulleyShooBtn{flex:1 !important;padding:0 10px !important;height:30px !important;min-height:0 !important;line-height:30px !important;font-size:14px !important;letter-spacing:1px !important;border-radius:11px !important;box-sizing:border-box !important;}
 }
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
 @keyframes pulleyConfFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(105vh) rotate(720deg);opacity:0.9}}
@@ -9543,7 +9539,7 @@ function _pulleyWin() {
   const keys = [['sheep', 'sheepRight'], ['lamb', 'lambAlt'], ['sheepRight', 'sheep'], ['lamb', 'sheep'], ['sheep', 'sheepRight']];
   for (let i = 0; i < 5; i++) {
     const tp = mine[i % mine.length];
-    _pulley.flock.push({ key: keys[i], x: -40 - i * 46, y: (window.innerHeight > window.innerWidth) ? 326 : 306, tx: Math.max(70, Math.min(290, tp.x + (i % 2 ? 14 : -14))), vx: 1, drinking: false, ph: Math.random() * 6 });
+    _pulley.flock.push({ key: keys[i], x: -40 - i * 46, y: (window.innerHeight > window.innerWidth) ? 368 : 306, tx: Math.max(70, Math.min(290, tp.x + (i % 2 ? 14 : -14))), vx: 1, drinking: false, ph: Math.random() * 6 });
   }
   // star rating — generous to keep kids motivated: a clean-ish run still earns 3,
   // and you can never drop below 2 stars for finishing the race.
