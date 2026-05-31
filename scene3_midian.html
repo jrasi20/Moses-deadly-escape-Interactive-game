@@ -2974,13 +2974,18 @@
   #pulleyCanvas{width:100% !important;height:100% !important;}
   #pulleyBar{height:16px !important;margin:1px 0 3px !important;}
   #pulleyPullBtn,#pulleyShooBtn{font-size:16px !important;padding:6px !important;}
-  #pulleyFeedback{font-size:13px !important;min-height:16px !important;margin-top:3px !important;}
-  /* 2026-05-30 (Jane: put the SHOO bar back in the brown pane ABOVE the
-     commentary, but make it THIN). Keep it IN-FLOW in the button row (between the
-     canvas and the feedback/verse), and RESERVE the row's height always so
-     showing SHOO never shrinks the canvas (no jump). Thin bar. */
-  #pulleyBtnRow{min-height:30px !important;height:30px !important;margin:2px 0 1px !important;overflow:visible !important;}
-  #pulleyShooBtn{flex:1 !important;padding:0 10px !important;height:30px !important;min-height:0 !important;line-height:30px !important;font-size:14px !important;letter-spacing:1px !important;border-radius:11px !important;box-sizing:border-box !important;}
+  /* reserve the feedback line at the SHOO-button height so it doesn't grow (no
+     canvas shrink) when it becomes the button during a steal. */
+  #pulleyFeedback{font-size:13px !important;height:26px !important;min-height:26px !important;line-height:1.1 !important;display:flex !important;align-items:center !important;justify-content:center !important;margin-top:2px !important;box-sizing:border-box !important;overflow:hidden !important;}
+  /* 2026-05-30 (Jane: "more play area + SHOO must not hide any text or image").
+     There's no spare strip on a short landscape, so don't give SHOO its own row
+     (that ate play area). HIDE the separate SHOO bar and collapse its row back to
+     the canvas (bigger play area); while a steal is active the FEEDBACK line
+     itself becomes the SHOO button — it's already on-screen, so it costs no play
+     area and hides nothing. */
+  #pulleyShooBtn{display:none !important;}
+  #pulleyBtnRow{min-height:0 !important;height:auto !important;margin:0 !important;}
+  #pulleyFeedback.pulleyFbShoo{background:linear-gradient(135deg,#c0432a,#e07a3a) !important;color:#fff !important;border:2px solid #ffb070 !important;border-radius:11px !important;padding:0 18px !important;margin:2px auto 1px !important;max-width:78% !important;white-space:nowrap !important;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.45);animation:pulleyShooFlash 0.4s steps(2) infinite;}
 }
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
 @keyframes pulleyConfFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(105vh) rotate(720deg);opacity:0.9}}
@@ -10010,6 +10015,9 @@ function _pulleyFrame(now) {
   const dt = (_pulley.slowmo > 0) ? rawDt * 0.5 : rawDt;
   const dts = dt / 1000;
   const fb = document.getElementById('pulleyFeedback');
+  // Style the feedback line as the SHOO button while a steal is active (landscape
+  // turns this into the tap target; the class is a no-op on other viewports).
+  if (fb) fb.classList.toggle('pulleyFbShoo', !!(_pulley.steal && !_pulley.over && !_pulley.mosesRun));
 
   // ===== 3-2-1-GO COUNTDOWN (parity with the rescue game) =====
   // Holds the race (no rival fill / steals / aiming) while the beeps play; on GO
@@ -10607,6 +10615,16 @@ function _pulleyFrame(now) {
   if (shoo) {
     shoo.addEventListener('click', _pulleyShoo);
     shoo.addEventListener('touchend', (e) => { e.preventDefault(); _pulleyShoo(); });
+  }
+  // 2026-05-30 (Jane: more landscape play area + SHOO must not hide any text or
+  // image). On landscape the separate SHOO bar is hidden; the feedback line ITSELF
+  // becomes the SHOO button while a steal is active (it's already on-screen, so it
+  // costs no play area and hides nothing). Make the feedback tappable here.
+  const fbBtn = document.getElementById('pulleyFeedback');
+  if (fbBtn) {
+    const fbShoo = (e) => { if (_pulley.steal && !_pulley.over && !_pulley.mosesRun && !_pulley.paused) { if (e && e.cancelable) e.preventDefault(); _pulleyShoo(); } };
+    fbBtn.addEventListener('click', fbShoo);
+    fbBtn.addEventListener('touchend', (e) => { e.preventDefault(); fbShoo(e); });
   }
   const startBtn = document.getElementById('pulleyStartBtn'); if (startBtn) { startBtn.addEventListener('click', _pulleyStartGame); startBtn.addEventListener('touchend', (e) => { e.preventDefault(); _pulleyStartGame(); }); }
   const pauseBtn = document.getElementById('pulleyPauseBtn'); if (pauseBtn) pauseBtn.addEventListener('click', _pulleyPause);
