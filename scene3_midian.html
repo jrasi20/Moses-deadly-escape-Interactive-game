@@ -2974,21 +2974,19 @@
   #pulleyCanvas{width:100% !important;height:100% !important;}
   #pulleyBar{height:16px !important;margin:1px 0 3px !important;}
   #pulleyPullBtn,#pulleyShooBtn{font-size:16px !important;padding:6px !important;}
-  /* reserve the feedback line at the SHOO-button height so it doesn't grow (no
-     canvas shrink) when it becomes the button during a steal. */
-  #pulleyFeedback{font-size:13px !important;height:26px !important;min-height:26px !important;line-height:1.1 !important;display:flex !important;align-items:center !important;justify-content:center !important;margin-top:2px !important;box-sizing:border-box !important;overflow:hidden !important;}
-  /* 2026-05-30 (Jane: "more play area + SHOO must not hide any text or image").
-     There's no spare strip on a short landscape, so don't give SHOO its own row
-     (that ate play area). HIDE the separate SHOO bar and collapse its row back to
-     the canvas (bigger play area); while a steal is active the FEEDBACK line
-     itself becomes the SHOO button — it's already on-screen, so it costs no play
-     area and hides nothing. */
-  #pulleyShooBtn{display:none !important;}
-  #pulleyBtnRow{min-height:0 !important;height:auto !important;margin:0 !important;}
-  /* 2026-05-30 (Jane: drop the Bible verse on landscape — not needed; keep the
-     commentary). Hiding it hands its space to the canvas for more play area. */
+  /* commentary line kept as-is (just compact for landscape). */
+  #pulleyFeedback{font-size:13px !important;min-height:15px !important;line-height:1.2 !important;margin-top:2px !important;}
+  /* 2026-05-30 (Jane: keep a DEDICATED SHOO bar + keep the commentary; don't
+     combine them). The verse is dropped on landscape to make room. The SHOO bar
+     lives in its own reserved row ABOVE the commentary, so it never sits at/over
+     the bottom border (can't be clipped) and showing it never shrinks the canvas
+     (the row height is reserved → no jump). */
   #pulleyVerse{display:none !important;}
-  #pulleyFeedback.pulleyFbShoo{background:linear-gradient(135deg,#c0432a,#e07a3a) !important;color:#fff !important;border:2px solid #ffb070 !important;border-radius:11px !important;padding:0 18px !important;margin:2px auto 1px !important;max-width:78% !important;white-space:nowrap !important;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.45);animation:pulleyShooFlash 0.4s steps(2) infinite;}
+  #pulleyBtnRow{min-height:28px !important;height:28px !important;margin:2px 0 1px !important;}
+  #pulleyShooBtn{flex:1 !important;height:28px !important;min-height:0 !important;line-height:28px !important;padding:0 12px !important;font-size:14px !important;letter-spacing:1px !important;border-radius:11px !important;box-sizing:border-box !important;max-width:none !important;}
+  /* safe-area bottom padding so nothing touches the lower border on phones with a
+     home indicator / rounded corners (varies by device). */
+  #wellGameRoot{padding-bottom:max(8px,env(safe-area-inset-bottom)) !important;}
 }
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
 @keyframes pulleyConfFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(105vh) rotate(720deg);opacity:0.9}}
