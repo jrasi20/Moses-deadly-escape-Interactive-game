@@ -2979,9 +2979,12 @@
      smaller"). The SHOO button was IN-FLOW, so showing it shrank the flex canvas
      above it (re-fit → smaller scene). Float it as an overlay so the canvas keeps
      its full height and the scene never shrinks. Landscape phones only. */
-  /* sit it at the very bottom (over the feedback line, BELOW the canvas's name
-     tags) so it never covers the MOSES (YOU)/RUDE SHEPHERD captions. */
-  #pulleyShooBtn{position:fixed !important;left:50% !important;bottom:8px !important;transform:translateX(-50%) !important;width:min(56%,400px) !important;padding:7px 10px !important;flex:none !important;z-index:8 !important;border-radius:13px !important;box-shadow:0 4px 16px rgba(0,0,0,0.55) !important;}
+  /* 2026-05-30 (Jane: SHOO still covers the commentary). There is no text-free
+     strip between the name tags (canvas bottom) and the commentary (below the
+     canvas), so float it OVER the lower scene — above the captions and clear of
+     BOTH the labels and the verse/feedback. It covers a little gameplay only
+     while a steal is happening, then disappears. */
+  #pulleyShooBtn{position:fixed !important;left:50% !important;bottom:30% !important;transform:translateX(-50%) !important;width:min(54%,380px) !important;padding:8px 10px !important;flex:none !important;z-index:8 !important;border-radius:13px !important;box-shadow:0 5px 18px rgba(0,0,0,0.55) !important;}
 }
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
 @keyframes pulleyConfFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(105vh) rotate(720deg);opacity:0.9}}
@@ -10404,7 +10407,11 @@ function _pulleyFrame(now) {
   // desktop/landscape they stand higher (y≈305, clear of the captions); on
   // PORTRAIT they drop to the front (y≈326) where Jane wants them ahead of the text.
   const _hop = (ph) => _pulley.win ? -Math.abs(Math.sin(now / 150 + ph)) * 16 : 0;
-  const _flY = _pulley._isPortrait ? 326 : 305;
+  // 2026-05-30 (Jane: "sheep are still on the text"). On PORTRAIT drop them BELOW
+  // the name tags (y≈368) into the open front desert so they no longer sit on the
+  // MOSES (YOU) / RUDE SHEPHERD captions. Desktop/landscape keep y≈305 (above the
+  // captions, no overlap) — unchanged.
+  const _flY = _pulley._isPortrait ? 368 : 305;
   _pDrawFit(c, ['sheep', 'sheepRight'], 96, _flY + _hop(0),       52, 44);
   _pDrawFit(c, ['lamb', 'lambAlt'],     132, _flY - 2 + _hop(1.2), 34, 30);
   _pDrawFit(c, ['goat'],                506, _flY + _hop(2.1),     52, 46);
