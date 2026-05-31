@@ -2985,6 +2985,9 @@
      area and hides nothing. */
   #pulleyShooBtn{display:none !important;}
   #pulleyBtnRow{min-height:0 !important;height:auto !important;margin:0 !important;}
+  /* 2026-05-30 (Jane: drop the Bible verse on landscape — not needed; keep the
+     commentary). Hiding it hands its space to the canvas for more play area. */
+  #pulleyVerse{display:none !important;}
   #pulleyFeedback.pulleyFbShoo{background:linear-gradient(135deg,#c0432a,#e07a3a) !important;color:#fff !important;border:2px solid #ffb070 !important;border-radius:11px !important;padding:0 18px !important;margin:2px auto 1px !important;max-width:78% !important;white-space:nowrap !important;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.45);animation:pulleyShooFlash 0.4s steps(2) infinite;}
 }
 @keyframes pulleyShooFlash{0%{filter:brightness(1)}100%{filter:brightness(1.65)}}
