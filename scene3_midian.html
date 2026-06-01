@@ -2892,18 +2892,22 @@
       /* 2026-05-30 (Jane: reduce the bottom brown pane so the lanes/sprites are
          bigger on landscape). Shrink the control bar hard — the playfield gets the
          reclaimed height. */
+      /* 2026-05-31 (Jane: landscape shepherds too tiny). Squeeze the bottom control bar even
+         harder so the canvas above it gets MORE height — taller lanes + bigger sprites — while
+         the buttons stay tap-friendly. */
       @media (orientation:landscape) and (max-height:480px){
-        #rescuePlayArea{gap:2px !important;}
-        #rescueSidePanel{gap:4px !important;margin:0 auto !important;}
+        #rescueGameRoot{padding:3px 6px max(3px,env(safe-area-inset-bottom)) !important;}
+        #rescuePlayArea{gap:1px !important;}
+        #rescueSidePanel{gap:3px !important;margin:0 auto !important;}
         #rescueFeedback{display:none !important;}
-        #rescueHudRow{margin:1px 6px 0 !important;font-size:12px !important;}
-        #rescueWeaponBar{gap:5px;}
-        #rescueWeaponBar .rwBtn{padding:3px 3px;}
-        #rescueWeaponBar .rwBtn .rwIco{font-size:20px;}
-        #rescueWeaponBar .rwBtn .rwLbl{font-size:10.5px;margin-top:0;}
-        #rescueWeaponBar .rwBtn .rwPrice{font-size:10px;}
-        #rescueLaneCtl .rwLaneBtn{height:42px;width:60px;font-size:24px;}
-        #rescueLaneCtl{gap:6px !important;}
+        #rescueHudRow{margin:1px 6px 0 !important;font-size:11.5px !important;}
+        #rescueWeaponBar{gap:4px;}
+        #rescueWeaponBar .rwBtn{padding:2px 3px;}
+        #rescueWeaponBar .rwBtn .rwIco{font-size:18px;}
+        #rescueWeaponBar .rwBtn .rwLbl{font-size:10px;margin-top:0;}
+        #rescueWeaponBar .rwBtn .rwPrice{font-size:9.5px;}
+        #rescueLaneCtl .rwLaneBtn{height:34px;width:54px;font-size:22px;}
+        #rescueLaneCtl{gap:5px !important;}
       }
       /* loadout screen on short landscape (unchanged) */
       @media (orientation:landscape) and (max-height:560px){
@@ -3093,10 +3097,10 @@
 #rescueWinOverlay .rWinDancers img{height:56px;animation:rWinDance 1.05s ease-in-out infinite;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));}
 /* ---- rescue treasure-bag burst (animated, not stagnant) ---- */
 @keyframes rBagPop{0%{transform:scale(0) rotate(-30deg);opacity:0}55%{transform:scale(1.25) rotate(8deg);opacity:1}75%{transform:scale(.92) rotate(-5deg)}100%{transform:scale(1) rotate(0)}}
-@keyframes rBagBob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-5px) rotate(3deg)}}
+@keyframes rBagBob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-3px) rotate(2deg)}}
 /* 2026-05-30 (Jane: money-bags pulsing over the text). Reserve the bob room so
    the bobbing bags stay in their own band and never overlap the text around them. */
-#rescueWinOverlay .rWinTreasure{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;min-height:74px;margin:16px 0 14px;padding:6px 0;}
+#rescueWinOverlay .rWinTreasure{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;min-height:76px;margin:18px 0 18px;padding:8px 0;}
 #rescueWinOverlay .rWinTreasure img{height:50px;transform-origin:center bottom;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));}
 #rescueWinOverlay .rWinTreasure .rwCount{font-family:Georgia,serif;font-weight:bold;font-size:26px;color:#ffe07a;text-shadow:0 2px 6px rgba(0,0,0,.6),0 0 16px rgba(255,200,70,.75);}
 @keyframes rCoinFly{0%{transform:translate(0,0) scale(.4) rotate(0);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1) rotate(220deg);opacity:0}}
@@ -3121,7 +3125,7 @@
   #rescueLoseOverlay .rLoseDecor,#rescueWinOverlay .rWinDancers{flex-wrap:nowrap;margin:0;}
   #rescueLoseOverlay .rLoseDecor img,#rescueWinOverlay .rWinDancers img{height:clamp(34px,11vh,46px);}
   #rescueWinOverlay .rWinDancers{min-height:0;gap:3px;}
-  #rescueWinOverlay .rWinTreasure{min-height:54px;gap:4px;margin:12px 0 10px;padding:4px 0;}
+  #rescueWinOverlay .rWinTreasure{min-height:58px;gap:4px;margin:14px 0 16px;padding:5px 0;}
   #rescueWinOverlay .rWinTreasure img{height:clamp(30px,9vh,40px);}
   #rescueWinOverlay .rWinTreasure .rwCount{font-size:19px;}
   #rescueLoseOverlay .rLoseIco{font-size:30px;}
@@ -11265,8 +11269,11 @@ function _rescueFrame(now) {
   // margins hard so the 7 lanes are as TALL as possible. Desktop (tall canvas) keeps its roomier
   // margins untouched.
   const _shortLand = (cssW > cssH) && (cssH < 470);
-  const _topM = _shortLand ? Math.max(12, H * 0.035) : Math.max(30, H * 0.07);
-  const _botM = _shortLand ? Math.max(10, H * 0.03) : Math.max(24, H * 0.05);
+  _rescue._shortLand = _shortLand;
+  // short-landscape keeps small margins (lanes stay tall) but reserves a little more at the
+  // BOTTOM so the farthest lane's feet + shadow never clip the canvas edge.
+  const _topM = _shortLand ? Math.max(14, H * 0.045) : Math.max(30, H * 0.07);
+  const _botM = _shortLand ? Math.max(20, H * 0.075) : Math.max(24, H * 0.05);
   _rescue.laneGap = (H - _topM - _botM) / _rescue.LANES;
   for (let _i = 0; _i < _rescue.LANES; _i++) _rescue.laneY[_i] = _topM + _rescue.laneGap * (_i + 0.5);
   _rescue.H = H;
@@ -11358,7 +11365,7 @@ function _rescueFrame(now) {
   { const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#9ad06a'); g.addColorStop(1, '#6aa84a'); c.fillStyle = g; c.fillRect(-4, -4, W + 8, H + 8); }
   _pDraw(c, ['rescueBg2', 'rescueBg', 'scene3Bg', 'midian'], -4, -4, W + 8, H + 8);
   c.fillStyle = 'rgba(40,24,10,0.16)'; c.fillRect(0, 30, _rescue.GRABX, H - 60);
-  const mag = _rescue.mag || 1, gap = _rescue.laneGap || 60, halfLane = gap / 2, yOff = gap * 0.46;
+  const mag = _rescue.mag || 1, gap = _rescue.laneGap || 60, halfLane = gap / 2, yOff = gap * (_rescue._shortLand ? 0.33 : 0.46);
   for (let i = 0; i < _rescue.LANES; i++) {
     const ly = _rescue.laneY[i], arrowH = Math.min(15, gap * 0.24);
     c.fillStyle = (i % 2 === 0) ? 'rgba(50,32,14,0.26)' : 'rgba(255,248,222,0.13)'; c.fillRect(0, ly - halfLane, W, gap);
@@ -11421,13 +11428,16 @@ function _rescueFrame(now) {
     const prox = Math.max(0, Math.min(1, (W - f.x) / (W - _rescue.GRABX))), zoom = 1 + prox * ((f.type === 'boss' || f.type === 'cartboss') ? 0.34 : 0.1);
     const isCart = f.type === 'cartboss';
     // sized to sit WITHIN a lane; mag scales sprites up as the lanes spread to fill the screen
-    const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = (isCart ? 120 : 78) * f.scale * mag * zoom * (1 + sq * 0.12);
-    // 2026-05-31 (Jane: the advancing shepherds looked much SMALLER than the carry-off
-    // (kidnap) sprite — the size jump was jarring). Bumped the walking-shepherd base
-    // size up and raised the lane-gap cap so they read close to the kidnap sprite on
-    // every device, while still mostly sitting inside their lane (the bold dividers keep
-    // each lane readable even with a little overlap).
-    const sh = Math.min((isCart ? 98 : 100) * f.scale * mag * zoom * (1 - sq * 0.1), _rescue.laneGap * (isCart ? 1.5 : 1.55));
+    const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = (isCart ? 124 : 82) * f.scale * mag * zoom * (1 + sq * 0.12);
+    // 2026-05-31 (Jane: advancing shepherds too small on landscape; the Mighty Shepherd +
+    // cart-boss must look TALLER & mightier). The lane-fit cap now scales with the foe's own
+    // f.scale, so bosses tower over the rank-and-file instead of all being flattened to the
+    // same lane-height. _headroom keeps any sprite from poking off the TOP edge on the highest
+    // lane (sprites are feet-anchored at yb and rise to yb-sh), which fixed the "farthest lane
+    // gets cut" clipping without shrinking the roomier lanes.
+    const _capMul = (isCart ? 1.45 : 1.32) + 0.46 * f.scale;
+    const _headroom = yb - 1;
+    const sh = Math.min((isCart ? 102 : 104) * f.scale * mag * zoom * (1 - sq * 0.1), _rescue.laneGap * _capMul, _headroom);
     if (f.hitT > 0) { c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(now / 26); }
     const _bphase = f.type === 'boss' ? (f.hp / f.maxhp > 0.6 ? 'resBoss' : (f.hp / f.maxhp > 0.3 ? 'resBoss1' : 'resBoss2')) : null;
     const fk = f.type === 'boss' ? [_bphase, 'resBoss', 'shepherdBoss', 'shepHelpB'] : (f.fk || ['resShepNormal', 'shepherdLeft', 'shepPull']);
@@ -11489,7 +11499,10 @@ function _rescueFrame(now) {
       : (wk === 'torch') ? ['resMosesTorch', 'resMosesThrow', 'mosesShove', 'moses']
       : ['resMosesBoth', 'resMosesThrow', 'mosesShove', 'moses'];
     c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _rescue.mosesY + yOff, 24 * mag, 8 * mag, 0, 0, Math.PI * 2); c.fill();
-    _pDrawFit(c, pose, _rescue.mosesX + (throwing ? 6 : 0), _rescue.mosesY + yOff + 2 + (throwing ? 0 : mbob), 84 * mag, 116 * mag);
+    // cap Moses' height to the headroom above his feet so his head never clips the top edge
+    // when he stands on the highest lane (he is the tallest figure on the field).
+    const _mFeet = _rescue.mosesY + yOff + 2 + (throwing ? 0 : mbob), _mH = Math.min(116 * mag, _mFeet - 1);
+    _pDrawFit(c, pose, _rescue.mosesX + (throwing ? 6 : 0), _mFeet, 84 * mag * (_mH / (116 * mag)), _mH);
   }
   // staff swing — a big bright slash arc + the staff swept down-and-right when the Staff fires
   if (_rescue.swing) {
