@@ -11467,7 +11467,12 @@ function _rescueFrame(now) {
     // anchored, NO clamp/nudge), so every lane holds exactly one cleanly-separated figure; bosses
     // are a touch bigger and are spawned mid-field (never an edge lane). Portrait/desktop keep the
     // roomy, towering sizes where there is height to spare.
-    const _capMul = _rescue._shortLand ? (isCart ? (1.8 + 0.55 * f.scale) : (1.75 + 0.45 * f.scale)) : ((isCart ? 1.5 : 1.32) + 0.42 * f.scale);
+    // 2026-05-31 (Jane: make the Mighty Shepherd + cart-boss BIGGER). Bosses spawn mid-field
+    // (interior lanes) so they have the headroom to tower; give them a much larger lane-gap cap
+    // than the rank-and-file (whose size is unchanged).
+    const _capMul = _rescue._shortLand
+      ? (isCart ? (2.3 + 0.7 * f.scale) : (f.type === 'boss' ? (2.2 + 0.6 * f.scale) : (1.75 + 0.45 * f.scale)))
+      : ((isCart ? 1.5 : 1.32) + 0.42 * f.scale);
     const sh = Math.min((isCart ? 104 : 106) * f.scale * mag * zoom * (1 - sq * 0.1), _rescue.laneGap * _capMul);
     const yb = _rescue.laneY[f.lane] + yOff;
     c.fillStyle = 'rgba(20,10,4,0.22)'; c.beginPath(); c.ellipse(f.x, yb + 2, 22 * f.scale * mag, 7 * f.scale * mag, 0, 0, Math.PI * 2); c.fill();
@@ -11521,8 +11526,8 @@ function _rescueFrame(now) {
     // 2026-05-31 (Jane: the kidnap sprites looked HUGE next to the walking shepherds). On short-
     // landscape cap the carry sprite to a lane-relative size so it reads close to the (now bigger)
     // shepherds — no jarring size jump. Desktop/portrait keep the full dramatic size.
-    const _kw = _rescue._shortLand ? Math.min(112 * sc, _rescue.laneGap * 2.6) : 112 * sc;
-    const _kh = _rescue._shortLand ? Math.min(104 * sc, _rescue.laneGap * 2.45) : 104 * sc;
+    const _kw = _rescue._shortLand ? Math.min(170 * sc, _rescue.laneGap * 3.2) : 112 * sc;
+    const _kh = _rescue._shortLand ? Math.min(158 * sc, _rescue.laneGap * 3.0) : 104 * sc;
     // carry sprite faces right (direction of escape) — no flip; fall back to plain shepherd + dragged girl
     if (!_pDrawFit(c, kd.carry || ['shepKidnapNormal'], kd.x, ly + 2 - stride, _kw, _kh)) {
       _pDrawFit(c, ['resShepNormal', 'shepherdLeft'], kd.x, ly - stride, 60 * sc, 80 * sc, true);
