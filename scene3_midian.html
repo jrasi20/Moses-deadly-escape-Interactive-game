@@ -11304,7 +11304,7 @@ function _rescueFrame(now) {
   // the 7 lane bands still tile evenly (uniform lanes), but we reserve a TOP headroom strip (sky)
   // so the figures — which are feet-anchored and rise upward — can be drawn much larger without
   // their heads clipping off the top edge on the highest lane. (Desktop / portrait untouched.)
-  const _topM = _shortLand ? Math.max(34, H * 0.14) : Math.max(30, H * 0.07);
+  const _topM = _shortLand ? Math.max(44, H * 0.165) : Math.max(30, H * 0.07);
   const _botM = _shortLand ? Math.max(10, H * 0.045) : Math.max(24, H * 0.05);
   _rescue.laneGap = (H - _topM - _botM) / _rescue.LANES;
   for (let _i = 0; _i < _rescue.LANES; _i++) _rescue.laneY[_i] = _topM + _rescue.laneGap * (_i + 0.5);
@@ -11423,7 +11423,7 @@ function _rescueFrame(now) {
     // Each daughter is sized to FIT her own lane on short-landscape (feet-anchored, NO clamp) so
     // there is exactly ONE cleanly-separated daughter per lane — the old oversized+clamped version
     // piled them up at the top and looked like an extra "8th" daughter. Portrait/desktop stay roomy.
-    const _dMaxH = Math.min(96 * mag, _rescue.laneGap * (_rescue._shortLand ? 1.58 : 1.2));
+    const _dMaxH = Math.min(110 * mag, _rescue.laneGap * (_rescue._shortLand ? 1.82 : 1.2));
     const _dFeet = ly + yOff - 2;
     // Supply cache (water pots): on short-landscape draw it BEHIND the daughter so it never hides
     // her (Jane: the pots were covering the daughters). On desktop/portrait keep it in FRONT at her
@@ -11481,8 +11481,11 @@ function _rescueFrame(now) {
     else if (f.type === 'big' || f.type === 'boss') { c.fillStyle = 'rgba(180,30,20,' + (0.18 + 0.1 * Math.sin(now / 160)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 42 * f.scale * mag, 38 * f.scale * mag, 52 * f.scale * mag, 0, 0, Math.PI * 2); c.fill(); }
     const bob = (f.snared > 0) ? 0 : Math.sin(now / 165 + f.x * 0.07) * 2.4 * f.scale;
     if (f.hitT > 0) { c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(now / 26); }
-    const _bphase = f.type === 'boss' ? (f.hp / f.maxhp > 0.6 ? 'resBoss' : (f.hp / f.maxhp > 0.3 ? 'resBoss1' : 'resBoss2')) : null;
-    const fk = f.type === 'boss' ? [_bphase, 'resBoss', 'shepherdBoss', 'shepHelpB'] : (f.fk || ['resShepNormal', 'shepherdLeft', 'shepPull']);
+    // 2026-05-31 (Jane: the Mighty Shepherd "changed into 4 other shepherd images" when hit). The
+    // old per-HP phase swap (resBoss → resBoss1 → resBoss2) used three DIFFERENT-looking boss
+    // sprites, so taking damage looked like he morphed into other people. Keep ONE consistent boss
+    // sprite for the whole fight — the HP bar + hit-flash already convey the damage.
+    const fk = f.type === 'boss' ? ['resBoss', 'shepherdBoss', 'shepHelpB', 'resShepNormal'] : (f.fk || ['resShepNormal', 'shepherdLeft', 'shepPull']);
     if (!_pDrawFit(c, fk, f.x, yb + bob, sw, sh)) { c.fillStyle = '#c08040'; c.fillRect(f.x - 16, yb + bob - 50, 32, 50); }
     if (f.hitT > 0) c.restore();
     if (f.snared > 0) { c.strokeStyle = 'rgba(200,220,255,0.7)'; c.lineWidth = 1; for (let gx = -14; gx <= 14; gx += 7) { c.beginPath(); c.moveTo(f.x + gx, yb - 60 * f.scale * mag); c.lineTo(f.x + gx, yb); c.stroke(); } }
@@ -11526,8 +11529,8 @@ function _rescueFrame(now) {
     // 2026-05-31 (Jane: the kidnap sprites looked HUGE next to the walking shepherds). On short-
     // landscape cap the carry sprite to a lane-relative size so it reads close to the (now bigger)
     // shepherds — no jarring size jump. Desktop/portrait keep the full dramatic size.
-    const _kw = _rescue._shortLand ? Math.min(170 * sc, _rescue.laneGap * 3.2) : 112 * sc;
-    const _kh = _rescue._shortLand ? Math.min(158 * sc, _rescue.laneGap * 3.0) : 104 * sc;
+    const _kw = _rescue._shortLand ? Math.min(215 * sc, _rescue.laneGap * 3.85) : 112 * sc;
+    const _kh = _rescue._shortLand ? Math.min(200 * sc, _rescue.laneGap * 3.6) : 104 * sc;
     // carry sprite faces right (direction of escape) — no flip; fall back to plain shepherd + dragged girl
     if (!_pDrawFit(c, kd.carry || ['shepKidnapNormal'], kd.x, ly + 2 - stride, _kw, _kh)) {
       _pDrawFit(c, ['resShepNormal', 'shepherdLeft'], kd.x, ly - stride, 60 * sc, 80 * sc, true);
@@ -11548,7 +11551,7 @@ function _rescueFrame(now) {
     // Moses is sized to FIT his lane on short-landscape, feet-anchored with NO clamp, so he moves
     // cleanly to every lane (the old clamp pinned the top lanes together and blocked him from
     // moving up). Portrait/desktop keep him full height.
-    const _mH = _rescue._shortLand ? Math.min(116 * mag, _rescue.laneGap * 2.05) : 116 * mag;
+    const _mH = _rescue._shortLand ? Math.min(116 * mag, _rescue.laneGap * 2.3) : 116 * mag;
     const _mFeet = _rescue.mosesY + yOff + 2 + (throwing ? 0 : mbob);
     c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _mFeet - 2, 24 * mag, 8 * mag, 0, 0, Math.PI * 2); c.fill();
     _pDrawFit(c, pose, _rescue.mosesX + (throwing ? 6 : 0), _mFeet, 84 * mag, _mH);
