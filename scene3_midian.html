@@ -3133,16 +3133,20 @@
    character sprites) stays on screen. Landscape is wide, so the decor row / dancers fit
    in a single row when shrunk — keep them visible, just smaller, and tighten the rest. */
 @media (max-height:480px){
-  .pWinCard,#rescueLoseOverlay .rLoseCard,#rescuePausedOverlay .rPauseCard{padding:10px clamp(14px,3.5vw,28px);gap:4px;max-height:97vh;}
+  /* 2026-05-31 (Jane: the win modal is cut off top & bottom on landscape). Cap the card to the
+     URL-bar-safe viewport height and let it scroll, and tighten every row so the whole card fits
+     between the screen edges. */
+  .pWinCard,#rescueLoseOverlay .rLoseCard,#rescuePausedOverlay .rPauseCard{padding:8px clamp(12px,3vw,24px);gap:3px;max-height:95svh;max-height:95dvh;overflow-y:auto;}
   #rescueLoseOverlay .rLoseDecor,#rescueWinOverlay .rWinDancers{flex-wrap:nowrap;margin:0;}
-  #rescueLoseOverlay .rLoseDecor img,#rescueWinOverlay .rWinDancers img{height:clamp(34px,11vh,46px);}
+  #rescueLoseOverlay .rLoseDecor img,#rescueWinOverlay .rWinDancers img{height:clamp(30px,10vh,42px);}
   #rescueWinOverlay .rWinDancers{min-height:0;gap:3px;}
-  #rescueWinOverlay .rWinTreasure{min-height:58px;gap:4px;margin:14px 0 16px;padding:5px 0;}
-  #rescueWinOverlay .rWinTreasure img{height:clamp(30px,9vh,40px);}
-  #rescueWinOverlay .rWinTreasure .rwCount{font-size:19px;}
+  #rescueWinOverlay .rWinTreasure{min-height:40px;gap:4px;margin:6px 0 8px;padding:2px 0;}
+  #rescueWinOverlay .rWinTreasure img{height:clamp(26px,8vh,36px);}
+  #rescueWinOverlay .rWinTreasure .rwCount{font-size:18px;}
   #rescueLoseOverlay .rLoseIco{font-size:30px;}
-  .pWinTitle{font-size:20px;}
-  .pStar{font-size:26px;margin:0 2px;}
+  .pWinTitle{font-size:19px;}
+  .pStar{font-size:24px;margin:0 2px;}
+  #rescueWinOverlay .pWinCard .pWinBtns,#rescueLoseOverlay .rLoseCard .pWinBtns{margin-top:4px;}
 }
 </style>
 
@@ -11290,11 +11294,12 @@ function _rescueFrame(now) {
   // margins untouched.
   const _shortLand = (cssW > cssH) && (cssH < 470);
   _rescue._shortLand = _shortLand;
-  // 2026-05-31 (Jane: the first & last lanes looked bigger than the rest). On short-landscape
-  // use TINY, SYMMETRIC margins so all 7 lane bands tile the canvas evenly — every lane is the
-  // same height. (Desktop / portrait keep their roomier margins, which read fine there.)
-  const _topM = _shortLand ? Math.max(3, H * 0.012) : Math.max(30, H * 0.07);
-  const _botM = _shortLand ? Math.max(3, H * 0.012) : Math.max(24, H * 0.05);
+  // 2026-05-31 (Jane: landscape characters look like ants — make them BIGGER). On short-landscape
+  // the 7 lane bands still tile evenly (uniform lanes), but we reserve a TOP headroom strip (sky)
+  // so the figures — which are feet-anchored and rise upward — can be drawn much larger without
+  // their heads clipping off the top edge on the highest lane. (Desktop / portrait untouched.)
+  const _topM = _shortLand ? Math.max(26, H * 0.11) : Math.max(30, H * 0.07);
+  const _botM = _shortLand ? Math.max(10, H * 0.045) : Math.max(24, H * 0.05);
   _rescue.laneGap = (H - _topM - _botM) / _rescue.LANES;
   for (let _i = 0; _i < _rescue.LANES; _i++) _rescue.laneY[_i] = _topM + _rescue.laneGap * (_i + 0.5);
   _rescue.H = H;
@@ -11386,7 +11391,7 @@ function _rescueFrame(now) {
   { const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#9ad06a'); g.addColorStop(1, '#6aa84a'); c.fillStyle = g; c.fillRect(-4, -4, W + 8, H + 8); }
   _pDraw(c, ['rescueBg2', 'rescueBg', 'scene3Bg', 'midian'], -4, -4, W + 8, H + 8);
   c.fillStyle = 'rgba(40,24,10,0.16)'; c.fillRect(0, 30, _rescue.GRABX, H - 60);
-  const mag = _rescue.mag || 1, gap = _rescue.laneGap || 60, halfLane = gap / 2, yOff = gap * (_rescue._shortLand ? 0.40 : 0.46);
+  const mag = _rescue.mag || 1, gap = _rescue.laneGap || 60, halfLane = gap / 2, yOff = gap * (_rescue._shortLand ? 0.36 : 0.46);
   for (let i = 0; i < _rescue.LANES; i++) {
     const ly = _rescue.laneY[i], arrowH = Math.min(15, gap * 0.24);
     c.fillStyle = (i % 2 === 0) ? 'rgba(50,32,14,0.26)' : 'rgba(255,248,222,0.13)'; c.fillRect(0, ly - halfLane, W, gap);
@@ -11412,11 +11417,17 @@ function _rescueFrame(now) {
     // Each daughter is sized to FIT her own lane on short-landscape (feet-anchored, NO clamp) so
     // there is exactly ONE cleanly-separated daughter per lane — the old oversized+clamped version
     // piled them up at the top and looked like an extra "8th" daughter. Portrait/desktop stay roomy.
-    const _dMaxH = Math.min(96 * mag, _rescue.laneGap * (_rescue._shortLand ? 1.05 : 1.2));
+    const _dMaxH = Math.min(96 * mag, _rescue.laneGap * (_rescue._shortLand ? 1.4 : 1.2));
     const _dFeet = ly + yOff - 2;
-    // Draw the supply cache (water pots) AFTER the daughter so it always reads on top of her feet
-    // instead of being covered, with its x clamped so the leftmost pot never clips the canvas edge.
-    if (_rescue.laneDaughter[i]) { const dgb = Math.sin(now / 360 + i) * 1.4; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 30, _dFeet + dgb, 60 * mag, _dMaxH); _rescueDrawCache(c, Math.max(10, 8 + 20 * mag), _dFeet + 2, mag); }
+    // Supply cache (water pots): on short-landscape draw it BEHIND the daughter so it never hides
+    // her (Jane: the pots were covering the daughters). On desktop/portrait keep it in FRONT at her
+    // feet (where drawing it behind had hidden it instead — must not change those views).
+    const _potX = Math.max(10, 8 + 20 * mag);
+    if (_rescue.laneDaughter[i]) { const dgb = Math.sin(now / 360 + i) * 1.4;
+      if (_rescue._shortLand) _rescueDrawCache(c, _potX, _dFeet + 2, mag);
+      _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 30, _dFeet + dgb, 60 * mag, _dMaxH);
+      if (!_rescue._shortLand) _rescueDrawCache(c, _potX, _dFeet + 2, mag);
+    }
     else { c.globalAlpha = 0.16; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 30, _dFeet, 48 * mag, Math.min(72 * mag, _rescue.laneGap)); c.globalAlpha = 1; }
   }
   // red alarm flash over a lane where a daughter was just taken
@@ -11450,7 +11461,7 @@ function _rescueFrame(now) {
     // anchored, NO clamp/nudge), so every lane holds exactly one cleanly-separated figure; bosses
     // are a touch bigger and are spawned mid-field (never an edge lane). Portrait/desktop keep the
     // roomy, towering sizes where there is height to spare.
-    const _capMul = _rescue._shortLand ? (isCart ? 1.4 : (0.85 + 0.18 * f.scale)) : ((isCart ? 1.5 : 1.32) + 0.42 * f.scale);
+    const _capMul = _rescue._shortLand ? (isCart ? (1.5 + 0.5 * f.scale) : (1.4 + 0.4 * f.scale)) : ((isCart ? 1.5 : 1.32) + 0.42 * f.scale);
     const sh = Math.min((isCart ? 104 : 106) * f.scale * mag * zoom * (1 - sq * 0.1), _rescue.laneGap * _capMul);
     const yb = _rescue.laneY[f.lane] + yOff;
     c.fillStyle = 'rgba(20,10,4,0.22)'; c.beginPath(); c.ellipse(f.x, yb + 2, 22 * f.scale * mag, 7 * f.scale * mag, 0, 0, Math.PI * 2); c.fill();
@@ -11501,8 +11512,13 @@ function _rescueFrame(now) {
     // dust kicks at his feet as he flees
     if (kd.t > 0.32 && (kd.t * 60 | 0) % 6 === 0) _rescueFx('dustPuff', kd.x - 26 * sc, ly + 2, 26, 12);
     c.save(); c.translate(kd.x, ly - stride); c.rotate(sway); c.scale(grabPop, grabPop); c.translate(-kd.x, -(ly - stride));
+    // 2026-05-31 (Jane: the kidnap sprites looked HUGE next to the walking shepherds). On short-
+    // landscape cap the carry sprite to a lane-relative size so it reads close to the (now bigger)
+    // shepherds — no jarring size jump. Desktop/portrait keep the full dramatic size.
+    const _kw = _rescue._shortLand ? Math.min(112 * sc, _rescue.laneGap * 2.1) : 112 * sc;
+    const _kh = _rescue._shortLand ? Math.min(104 * sc, _rescue.laneGap * 1.95) : 104 * sc;
     // carry sprite faces right (direction of escape) — no flip; fall back to plain shepherd + dragged girl
-    if (!_pDrawFit(c, kd.carry || ['shepKidnapNormal'], kd.x, ly + 2 - stride, 112 * sc, 104 * sc)) {
+    if (!_pDrawFit(c, kd.carry || ['shepKidnapNormal'], kd.x, ly + 2 - stride, _kw, _kh)) {
       _pDrawFit(c, ['resShepNormal', 'shepherdLeft'], kd.x, ly - stride, 60 * sc, 80 * sc, true);
       const _kn = (kd.idx % 7) + 1; _pDrawFit(c, ['kidnap' + _kn, 'daughterR' + _kn, 'daughter' + _kn, 'daughter1'], kd.x - 36 * sc, ly - 1, 42 * sc, 58 * sc);
     }
@@ -11521,7 +11537,7 @@ function _rescueFrame(now) {
     // Moses is sized to FIT his lane on short-landscape, feet-anchored with NO clamp, so he moves
     // cleanly to every lane (the old clamp pinned the top lanes together and blocked him from
     // moving up). Portrait/desktop keep him full height.
-    const _mH = _rescue._shortLand ? Math.min(116 * mag, _rescue.laneGap * 1.12) : 116 * mag;
+    const _mH = _rescue._shortLand ? Math.min(116 * mag, _rescue.laneGap * 1.55) : 116 * mag;
     const _mFeet = _rescue.mosesY + yOff + 2 + (throwing ? 0 : mbob);
     c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _mFeet - 2, 24 * mag, 8 * mag, 0, 0, Math.PI * 2); c.fill();
     _pDrawFit(c, pose, _rescue.mosesX + (throwing ? 6 : 0), _mFeet, 84 * mag, _mH);
