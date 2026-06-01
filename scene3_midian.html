@@ -2758,7 +2758,7 @@
     <button id="rescuePauseBtn" aria-label="Pause" style="display:none;position:absolute;top:6px;right:6px;z-index:6;width:38px;height:38px;border-radius:50%;border:2px solid #d8a86a;background:rgba(40,24,10,0.6);color:#ffe0a0;font-size:17px;cursor:pointer;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,0.4);">⏸</button>
     <div id="rescueKicker" style="color:#ffe0a0;font-size:11px;letter-spacing:1.5px;text-align:center;margin-bottom:4px;padding:0 52px;">~ RESCUE THE DAUGHTERS ~</div>
     <h2 id="rescueH2" style="color:#ffe0a0;text-align:center;margin:0 0 8px;font-size:18px;padding:0 52px;line-height:1.2;">Drive off the rude shepherds!</h2>
-    <div id="rescueRotateHint" aria-hidden="true">🔄 Turn your phone sideways for a bigger game!</div>
+    <div id="rescueRotateHint" aria-hidden="true">📱 Tip: hold your phone upright for bigger figures!</div>
     <div id="rescuePlayArea">
       <div id="rescueStage">
         <canvas id="rescueCanvas" width="760" height="470" style="display:block;border-radius:8px;border:2px solid #6a4a2a;background:#e8c890;"></canvas>
@@ -2859,10 +2859,22 @@
       #rescueHudRow{margin:6px 4px 4px !important;}
       #rescueFeedback{margin-top:5px;}
       #rescueRotateHint{display:none;}
-      /* PORTRAIT: canvas is width-limited, so fill width; controls slim below; rotate nudge */
+      /* 2026-05-31 (Jane: "why ask kids to view in landscape if it's limited?"). This 7-lane game
+         is naturally a PORTRAIT game — upright gives much taller lanes + bigger figures. So we no
+         longer nag portrait players to rotate; instead LANDSCAPE players get a brief, auto-fading
+         pill suggesting they hold upright. It overlays the canvas (position:absolute) so it steals
+         no playfield height, and fades out after a few seconds. */
+      @keyframes rescueHintIn{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+      @keyframes rescueHintOut{to{opacity:0;visibility:hidden}}
+      @media (orientation:landscape) and (max-height:540px){
+        #rescueRotateHint{display:block;position:absolute;top:4px;left:50%;z-index:6;transform:translateX(-50%);
+          text-align:center;color:#ffe8b8;font-size:11px;font-weight:bold;background:rgba(40,24,10,0.74);
+          border:1px solid rgba(216,168,106,0.55);border-radius:999px;padding:3px 12px;line-height:1.2;white-space:nowrap;
+          pointer-events:none;animation:rescueHintIn .5s ease both, rescueHintOut .8s ease 6s forwards;}
+      }
+      /* PORTRAIT: canvas is width-limited, so fill width; controls slim below */
       @media (orientation:portrait){
-        /* keep the hint clear of the absolutely-positioned pause button (top-right). */
-        #rescueRotateHint{display:block;text-align:center;color:#ffe0a0;font-size:11.5px;font-weight:bold;background:rgba(40,24,10,0.55);border:1px solid rgba(216,168,106,0.5);border-radius:10px;padding:4px 10px;margin:2px 56px 3px 6px;line-height:1.2;}
+        #rescueRotateHint{display:none;}
         /* 2026-05-30 (Jane: bigger game area). Compact the control panel so the
            playfield canvas above it gets more height — keep buttons tap-friendly. */
         #rescueLaneCtl{margin:3px 0 1px !important;gap:20px !important;}
@@ -11052,6 +11064,14 @@ function _rescueSpawn() {
   // ---- which lane does he charge? (only lanes that still have a daughter) ----
   const withD = []; for (let i = 0; i < _rescue.LANES; i++) if (_rescue.laneDaughter[i]) withD.push(i);
   let pool = withD.length ? withD : [Math.floor(Math.random() * _rescue.LANES)];
+  // 2026-05-31 (Jane: don't send the BIG shepherds down an edge lane — they're tall and the top/
+  // bottom lanes have the least headroom). Steer the boss / cart-boss / brute to interior lanes
+  // (prefer the true middle 2–4), so the oversized sprites never crowd the canvas edge.
+  if (type === 'boss' || type === 'cartboss' || type === 'big') {
+    const mid = pool.filter(l => l >= 2 && l <= 4);
+    const interior = pool.filter(l => l >= 1 && l <= _rescue.LANES - 2);
+    pool = mid.length ? mid : (interior.length ? interior : pool);
+  }
   let lane;
   if (_rescue.spawned === 0) {
     // GENTLE OPENER: one slow shepherd straight down the middle so kids learn move-then-throw
@@ -11366,7 +11386,7 @@ function _rescueFrame(now) {
   { const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#9ad06a'); g.addColorStop(1, '#6aa84a'); c.fillStyle = g; c.fillRect(-4, -4, W + 8, H + 8); }
   _pDraw(c, ['rescueBg2', 'rescueBg', 'scene3Bg', 'midian'], -4, -4, W + 8, H + 8);
   c.fillStyle = 'rgba(40,24,10,0.16)'; c.fillRect(0, 30, _rescue.GRABX, H - 60);
-  const mag = _rescue.mag || 1, gap = _rescue.laneGap || 60, halfLane = gap / 2, yOff = gap * (_rescue._shortLand ? 0.33 : 0.46);
+  const mag = _rescue.mag || 1, gap = _rescue.laneGap || 60, halfLane = gap / 2, yOff = gap * (_rescue._shortLand ? 0.40 : 0.46);
   for (let i = 0; i < _rescue.LANES; i++) {
     const ly = _rescue.laneY[i], arrowH = Math.min(15, gap * 0.24);
     c.fillStyle = (i % 2 === 0) ? 'rgba(50,32,14,0.26)' : 'rgba(255,248,222,0.13)'; c.fillRect(0, ly - halfLane, W, gap);
@@ -11389,11 +11409,11 @@ function _rescueFrame(now) {
     // 2026-05-30 (Jane: space between Moses & the daughters; no clutter). Daughters
     // sit further LEFT (x30, pots x8) and their height is capped to the lane gap so
     // they don't spill into neighbouring lanes or crowd Moses at high portrait mag.
-    // 2026-05-31 (Jane: make the daughters bigger). On short-landscape the daughters now use a
-    // larger lane-gap multiplier so they read clearly; their feet are nudged (like the shepherds)
-    // so a bigger daughter is never cut on the top/bottom edge lane.
-    const _dMaxH = Math.min(96 * mag, _rescue.laneGap * (_rescue._shortLand ? 1.62 : 1.2));
-    const _dFeet = Math.max(Math.min(_dMaxH + 1, H * 0.5), Math.min(H - 4, ly + yOff - 2));
+    // Each daughter is sized to FIT her own lane on short-landscape (feet-anchored, NO clamp) so
+    // there is exactly ONE cleanly-separated daughter per lane — the old oversized+clamped version
+    // piled them up at the top and looked like an extra "8th" daughter. Portrait/desktop stay roomy.
+    const _dMaxH = Math.min(96 * mag, _rescue.laneGap * (_rescue._shortLand ? 1.05 : 1.2));
+    const _dFeet = ly + yOff - 2;
     // Draw the supply cache (water pots) AFTER the daughter so it always reads on top of her feet
     // instead of being covered, with its x clamped so the leftmost pot never clips the canvas edge.
     if (_rescue.laneDaughter[i]) { const dgb = Math.sin(now / 360 + i) * 1.4; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 30, _dFeet + dgb, 60 * mag, _dMaxH); _rescueDrawCache(c, Math.max(10, 8 + 20 * mag), _dFeet + 2, mag); }
@@ -11425,18 +11445,14 @@ function _rescueFrame(now) {
     // the boss/cart-boss LOOMS dramatically as it bears down; lesser shepherds grow only a little
     const prox = Math.max(0, Math.min(1, (W - f.x) / (W - _rescue.GRABX))), zoom = 1 + prox * ((f.type === 'boss' || isCart) ? 0.34 : 0.1);
     const sq = f.hitT > 0 ? f.hitT / 0.16 : 0, sw = (isCart ? 124 : 82) * f.scale * mag * zoom * (1 + sq * 0.12);
-    // 2026-05-31 (Jane: every lane's shepherd must be the SAME size — no more far-lane shrink —
-    // and the Mighty Shepherd + cart-boss must tower). The cap scales with the foe's own f.scale
-    // so bosses loom over the rank-and-file, and there is NO per-lane height shrink: a shepherd is
-    // identical on lane 1 and lane 7.
-    const _capMul = (isCart ? 1.5 : 1.32) + 0.42 * f.scale;
+    // 2026-05-31 (Jane: on landscape, sprites bigger than a lane piled up, clipped, and blocked
+    // Moses from moving). On short-landscape each shepherd is sized to FIT its own lane (feet-
+    // anchored, NO clamp/nudge), so every lane holds exactly one cleanly-separated figure; bosses
+    // are a touch bigger and are spawned mid-field (never an edge lane). Portrait/desktop keep the
+    // roomy, towering sizes where there is height to spare.
+    const _capMul = _rescue._shortLand ? (isCart ? 1.4 : (0.85 + 0.18 * f.scale)) : ((isCart ? 1.5 : 1.32) + 0.42 * f.scale);
     const sh = Math.min((isCart ? 104 : 106) * f.scale * mag * zoom * (1 - sq * 0.1), _rescue.laneGap * _capMul);
-    // ...then NUDGE the feet (never the size) so an equal-sized sprite on the top/bottom lane stays
-    // fully on-canvas instead of being cut. Only the edge lanes get a small vertical nudge; hit
-    // detection still uses the true lane, so this is purely visual.
-    let yb = _rescue.laneY[f.lane] + yOff;
-    const _drawH = f.dying ? 70 * f.scale * mag : sh, _shRy = 7 * f.scale * mag;
-    yb = Math.max(Math.min(_drawH + 1, H * 0.5), Math.min(Math.max(H - 2 - _shRy, H * 0.5), yb));
+    const yb = _rescue.laneY[f.lane] + yOff;
     c.fillStyle = 'rgba(20,10,4,0.22)'; c.beginPath(); c.ellipse(f.x, yb + 2, 22 * f.scale * mag, 7 * f.scale * mag, 0, 0, Math.PI * 2); c.fill();
     if (f.dying) { const k = 1 - f.dying / (f.type === 'boss' ? 0.4 : 0.5); c.save(); c.globalAlpha = Math.max(0, 1 - k); c.translate(f.x, yb); c.rotate(k * 0.4); c.translate(-f.x, -yb + k * 20); _pDrawFit(c, ['resShepFall', 'shepherdFall', 'shepherdLeft'], f.x, yb, 70 * f.scale * mag, 70 * f.scale * mag); c.restore(); continue; }
     if (isCart) { c.fillStyle = 'rgba(255,200,70,' + (0.20 + 0.12 * Math.sin(now / 150)).toFixed(2) + ')'; c.beginPath(); c.ellipse(f.x, yb - 46 * f.scale * mag, 54 * f.scale * mag, 54 * f.scale * mag, 0, 0, Math.PI * 2); c.fill(); }
@@ -11502,12 +11518,11 @@ function _rescueFrame(now) {
       : (wk === 'sling' || wk === 'volley') ? ['resMosesSling', 'resMosesThrow', 'mosesShove', 'moses']
       : (wk === 'torch') ? ['resMosesTorch', 'resMosesThrow', 'mosesShove', 'moses']
       : ['resMosesBoth', 'resMosesThrow', 'mosesShove', 'moses'];
-    // Moses keeps ONE fixed size on every lane (no top-lane shrink); instead his feet are nudged
-    // so his head never clips the top edge and his feet never clip the bottom — same trick as the
-    // shepherds, so he reads identically wherever he stands.
-    const _mH = 116 * mag;
-    let _mFeet = _rescue.mosesY + yOff + 2 + (throwing ? 0 : mbob);
-    _mFeet = Math.max(Math.min(_mH + 1, H * 0.5), Math.min(H - 4, _mFeet));
+    // Moses is sized to FIT his lane on short-landscape, feet-anchored with NO clamp, so he moves
+    // cleanly to every lane (the old clamp pinned the top lanes together and blocked him from
+    // moving up). Portrait/desktop keep him full height.
+    const _mH = _rescue._shortLand ? Math.min(116 * mag, _rescue.laneGap * 1.12) : 116 * mag;
+    const _mFeet = _rescue.mosesY + yOff + 2 + (throwing ? 0 : mbob);
     c.fillStyle = 'rgba(20,10,4,0.25)'; c.beginPath(); c.ellipse(_rescue.mosesX, _mFeet - 2, 24 * mag, 8 * mag, 0, 0, Math.PI * 2); c.fill();
     _pDrawFit(c, pose, _rescue.mosesX + (throwing ? 6 : 0), _mFeet, 84 * mag, _mH);
   }
