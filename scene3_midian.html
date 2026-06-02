@@ -10736,14 +10736,14 @@ function _pulleyFrame(now) {
    Standalone: ?rescuetest=1  (&diff=easy|medium|hard)
    ========================================================================== */
 const _RES_ROSTER = {
-  staff:   { name: 'Shepherd Staff', icon: '🦯', tint: '#c98a3a', desc: 'A close swing — strong, but only hits the shepherd right beside Moses. Always free.', rng: 1, dmg: 5, spd: 4, cost: 0,   cd: 0.5,  melee: true, mrange: 120, starReq: 0,  bagReq: 0 },
-  sling:   { name: 'Sling',          icon: '🎯', tint: '#3a9ad8', desc: 'Quick stones flung far. Cheap, fast, low damage — your workhorse.',               rng: 5, dmg: 1, spd: 5, cost: 2,   cd: 0.3,  projSpeed: 780, starReq: 0,  bagReq: 0 },
-  pot:     { name: 'Water Pot',      icon: '🏺', tint: '#2bb3a3', desc: 'A heavy jar that splashes the shepherd it strikes.',                                rng: 3, dmg: 2, spd: 3, cost: 5,   cd: 0.55, projSpeed: 540, starReq: 0,  bagReq: 0 },
-  net:     { name: 'Throwing Net',   icon: '🕸️', tint: '#9a6ad8', desc: 'Tangles a shepherd so he is stuck in place for a few seconds.',                      rng: 3, dmg: 0, spd: 3, cost: 7,   cd: 0.9,  projSpeed: 520, snare: 3.5, starReq: 0,  bagReq: 25 },
-  volley:  { name: 'Pebble Volley',  icon: '🌾', tint: '#5fc04a', desc: 'Flings three stones at once down the lane.',                                        rng: 5, dmg: 1, spd: 3, cost: 9,   cd: 0.95, projSpeed: 720, multi: 3, starReq: 0,  bagReq: 80 },
-  torch:   { name: 'Torch',          icon: '🔥', tint: '#ee6a2e', desc: 'Sets the whole lane ablaze — burns every shepherd over time.',                      rng: 5, dmg: 3, spd: 2, cost: 12,  cd: 1.6,  laneBurn: 5, starReq: 0,  bagReq: 120 },
-  sheep:   { name: 'Ram Sheep',      icon: '🐏', tint: '#d8b65a', desc: 'A charging ram bowls over EVERY shepherd in the lane.',                             rng: 5, dmg: 5, spd: 2, cost: 18,  cd: 0.9,  ram: 'sheep', starReq: 0,  bagReq: 50 },
-  boulder: { name: 'Boulder',        icon: '🪨', tint: '#9090a8', desc: 'A giant rock rolls down the lane, crushing all in its path.',                       rng: 5, dmg: 5, spd: 2, cost: 28,  cd: 1.1,  ram: 'boulder', starReq: 0, bagReq: 180 },
+  staff:   { name: 'Shepherd Staff', icon: '🦯', tint: '#c98a3a', desc: 'A close swing — strong, but only hits the shepherd right beside Moses. Always free.', rng: 1, dmg: 5, spd: 4, cost: 0,   cd: 0.7,  melee: true, mrange: 120, starReq: 0,  bagReq: 0 },
+  sling:   { name: 'Sling',          icon: '🎯', tint: '#3a9ad8', desc: 'Quick stones flung far. Cheap, fast, low damage — your workhorse.',               rng: 5, dmg: 1, spd: 5, cost: 2,   cd: 0.6,  projSpeed: 780, starReq: 0,  bagReq: 0 },
+  pot:     { name: 'Water Pot',      icon: '🏺', tint: '#2bb3a3', desc: 'A heavy jar that splashes the shepherd it strikes.',                                rng: 3, dmg: 2, spd: 3, cost: 5,   cd: 0.9,  projSpeed: 540, starReq: 0,  bagReq: 0 },
+  net:     { name: 'Throwing Net',   icon: '🕸️', tint: '#9a6ad8', desc: 'Tangles a shepherd so he is stuck in place for a few seconds.',                      rng: 3, dmg: 0, spd: 3, cost: 7,   cd: 1.2,  projSpeed: 520, snare: 3.5, starReq: 0,  bagReq: 25 },
+  volley:  { name: 'Pebble Volley',  icon: '🌾', tint: '#5fc04a', desc: 'Flings three stones at once down the lane.',                                        rng: 5, dmg: 1, spd: 3, cost: 9,   cd: 1.3,  projSpeed: 720, multi: 3, starReq: 0,  bagReq: 80 },
+  torch:   { name: 'Torch',          icon: '🔥', tint: '#ee6a2e', desc: 'Sets the whole lane ablaze — burns every shepherd over time.',                      rng: 5, dmg: 3, spd: 2, cost: 12,  cd: 2.0,  laneBurn: 5, starReq: 0,  bagReq: 120 },
+  sheep:   { name: 'Ram Sheep',      icon: '🐏', tint: '#d8b65a', desc: 'A charging ram bowls over EVERY shepherd in the lane.',                             rng: 5, dmg: 5, spd: 2, cost: 18,  cd: 1.5,  ram: 'sheep', starReq: 0,  bagReq: 50 },
+  boulder: { name: 'Boulder',        icon: '🪨', tint: '#9090a8', desc: 'A giant rock rolls down the lane, crushing all in its path.',                       rng: 5, dmg: 5, spd: 2, cost: 28,  cd: 1.8,  ram: 'boulder', starReq: 0, bagReq: 180 },
 };
 const _RES_ORDER = ['staff', 'sling', 'pot', 'net', 'volley', 'torch', 'sheep', 'boulder'];
 // real art for the weapon cards / bar (falls back to the emoji icon when absent)
@@ -11153,7 +11153,7 @@ function _rescueWin() {
   // full celebration + victory cheer only when ALL seven are saved; otherwise a modest sfx
   if (_rescue.perfect) { try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){} }
   else { try { play('chime') || play('pop'); } catch(e){} }
-  setTimeout(() => { if (_rescue.over && _rescue.win) _rescueShowWinPanel(); }, 2000);
+  setTimeout(() => { if (_rescue.over && _rescue.win) _rescueShowWinPanel(); }, 1100);
 }
 function _rescueShowWinPanel() {
   _rescue.winPanelShown = true; const stars = _rescue.stars; const perfect = !!_rescue.perfect; const saved = 7 - _rescue.daughtersLost;
@@ -11182,7 +11182,10 @@ function _rescueShowWinPanel() {
   }
   try {
     setTimeout(() => play('coin'), 200);
-    if (perfect) { setTimeout(() => play('coin'), 420); setTimeout(() => play('chime'), 640); setTimeout(() => { try { play('wellCheer') || play('levelUp') || play('success'); } catch(e){} }, 300); }
+    // NOTE: the victory cheer already fired the instant the round was won (in _rescueWin) — do NOT
+    // replay it here, or the celebration "starts then restarts" (Jane 2026-05-31). Just sweeten the
+    // modal with coins + a chime.
+    if (perfect) { setTimeout(() => play('coin'), 420); setTimeout(() => play('chime'), 640); }
     else {
       // WELL TRIED (not a perfect rescue): a gentle cover-page music bed + the "well tried" sting
       setTimeout(() => { try { play('wellTried') || play('chime') || play('pop'); } catch(e){} }, 260);
@@ -11298,7 +11301,11 @@ function _rescueFrame(now) {
   // SHORT-LANDSCAPE (phones, canvas under ~470 css-px tall) is height-starved: trim the top/bottom
   // margins hard so the 7 lanes are as TALL as possible. Desktop (tall canvas) keeps its roomier
   // margins untouched.
-  const _shortLand = (cssW > cssH) && (cssH < 470);
+  // 2026-05-31 (Jane: on replay the characters sometimes shrink). Detect short-landscape from the
+  // STABLE viewport, not the canvas's live size — during the loadout→game transition the canvas can
+  // briefly report its fallback 760×470, which flipped this flag false and rendered desktop-sized
+  // (tiny) sprites until the next resize. The viewport orientation/height never has that race.
+  const _shortLand = (window.innerWidth > window.innerHeight) && (window.innerHeight < 560);
   _rescue._shortLand = _shortLand;
   // 2026-05-31 (Jane: landscape characters look like ants — make them BIGGER). On short-landscape
   // the 7 lane bands still tile evenly (uniform lanes), but we reserve a TOP headroom strip (sky)
