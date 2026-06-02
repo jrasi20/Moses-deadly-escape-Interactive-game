@@ -3352,7 +3352,13 @@
 <div class="cinematic" id="transCinematic">
   <div class="cin-panel">
     <div class="cin-art">
-      <img src="assets/images/scene2_background.png" alt="" class="cin-scene-img" onerror="this.style.display='none'">
+      <!-- 2026-06-01 (Jane): per-panel illustration. src is rewritten per panel
+           by showTransPanel2() so each of the 5 panels gets its OWN
+           trans-2to3-*.png — was previously a single scene2_background.png
+           sat under every panel, so the kid never saw the actual narration
+           illustrations. Falls back invisible via onerror if any panel
+           PNG hasn't dropped yet. -->
+      <img src="assets/images/trans-2to3-1-forty-days.png" alt="" class="cin-scene-img" id="transSceneImg" onerror="this.style.display='none'">
       <div class="cin-overlay"></div>
     </div>
     <div class="cin-text" id="transText">Loading...</div>
@@ -11769,14 +11775,55 @@ function _renderJourneyPanel(){
   host.innerHTML = html;
 }
 /* ---------- TRANSITION CINEMATIC 2→3 ---------- */
+// 2026-06-01 (Jane: "wire all images and audio after scene 2, before scene 3").
+// Per-panel images now wired from NARRATION_SCRIPTS_AND_PROMPTS_bundle1 §6.
+// Panels with multiple frames (`images:` array) cross-fade through their
+// frames at 5500 ms per frame and STOP on the last frame — same pattern
+// scene 1 uses for its CIN_PANELS (so kids feel a single epic world).
 const TRANS_2TO3_PANELS = [
-  { text: "Forty days Moses wandered the desert. His water ran dry. His feet burned. His lips cracked.", cap: "THE JOURNEY CONTINUES · PANEL 1 of 5", audio: "trans-2to3-1-forty-days.mp3" },
-  { text: '"God of my fathers," he prayed, "don\'t let me die out here. Keep my steps steady."', cap: "PANEL 2 of 5", audio: "trans-2to3-2-prayer.mp3" },
-  { text: "Through shimmering heat, he saw something shining — a stone well! And girls drawing water.", cap: "PANEL 3 of 5", audio: "trans-2to3-3-the-well.mp3" },
-  { text: "Then rogue shepherds burst in, shoving the sisters aside. Moses' old courage roared back to life.", cap: "PANEL 4 of 5", audio: "trans-2to3-4-shepherds.mp3" },
-  { text: "He wasn't a scared runaway anymore. He was a protector. And God was about to open a new door.", cap: "PANEL 5 of 5", audio: "trans-2to3-5-protector.mp3" },
+  {
+    text: "Forty days Moses wandered the desert. His water ran dry. His feet burned. His lips cracked.",
+    cap: "THE JOURNEY CONTINUES · PANEL 1 of 5",
+    audio: "trans-2to3-1-forty-days.mp3",
+    image: 'assets/images/trans-2to3-1-forty-days.png',
+  },
+  {
+    text: '"God of my fathers," he prayed, "don\'t let me die out here. Keep my steps steady."',
+    cap: "PANEL 2 of 5",
+    audio: "trans-2to3-2-prayer.mp3",
+    images: [
+      'assets/images/trans-2to3-2-prayer_1.png',
+      'assets/images/trans-2to3-2-prayer_2.png',
+    ],
+  },
+  {
+    text: "Through shimmering heat, he saw something shining — a stone well! And girls drawing water.",
+    cap: "PANEL 3 of 5",
+    audio: "trans-2to3-3-the-well.mp3",
+    image: 'assets/images/trans-2to3-3-the-well.png',
+  },
+  {
+    text: "Then rogue shepherds burst in, shoving the sisters aside. Moses' old courage roared back to life.",
+    cap: "PANEL 4 of 5",
+    audio: "trans-2to3-4-shepherds.mp3",
+    image: 'assets/images/trans-2to3-4-shepherds.png',
+  },
+  {
+    text: "He wasn't a scared runaway anymore. He was a protector. And God was about to open a new door.",
+    cap: "PANEL 5 of 5",
+    audio: "trans-2to3-5-protector.mp3",
+    images: [
+      'assets/images/trans-2to3-5-protector_1.png',
+      'assets/images/trans-2to3-5-protector_2.png',
+    ],
+  },
 ];
 let _transStep2 = 0;
+// 2026-06-01: panel frame-cycler — stops on panel change + on cinematic close.
+let _transFrameTimer2 = null;
+function _stopTransFrameCycle2(){
+  if (_transFrameTimer2) { clearTimeout(_transFrameTimer2); _transFrameTimer2 = null; }
+}
 function _playTransAudio2(p) {
   try { const a = audio.transNarrate || $('audTransNarrate'); if (!a || !p.audio) return; a.pause(); a.src = 'assets/audio/' + p.audio; a.currentTime = 0; a.volume = 0.85; a.play().catch(()=>{}); } catch(e){}
 }
@@ -11786,10 +11833,47 @@ function showTransPanel2() {
   const cEl = $('transCaption');  if (cEl) cEl.textContent = p.cap;
   const pEl = $('transProgress'); if (pEl) pEl.textContent = (_transStep2+1) + ' of ' + TRANS_2TO3_PANELS.length;
   const nEl = $('transNextBtn');  if (nEl) nEl.textContent = (_transStep2 === TRANS_2TO3_PANELS.length-1) ? 'Begin Scene 3' : 'Next';
+  // 2026-06-01 — swap the panel illustration. Handles single `image` or a
+  // multi-frame `images: []` array. Multi-frame panels advance once
+  // through the frames every 5.5s and stop on the last frame.
+  _stopTransFrameCycle2();
+  const img = document.getElementById('transSceneImg');
+  if (img) {
+    const frames = Array.isArray(p.images) && p.images.length
+      ? p.images
+      : (p.image ? [p.image] : []);
+    if (frames.length) {
+      img.style.display = '';
+      img.src = frames[0];
+      if (frames.length > 1) {
+        let _i = 1;
+        const _step = () => {
+          try {
+            img.style.transition = 'opacity 0.18s ease';
+            img.style.opacity = '0';
+            setTimeout(() => {
+              img.src = frames[_i];
+              _i++;
+              requestAnimationFrame(() => { img.style.opacity = '1'; });
+              if (_i < frames.length) {
+                _transFrameTimer2 = setTimeout(_step, 5500);
+              } else {
+                _transFrameTimer2 = null;
+              }
+            }, 180);
+          } catch(e){}
+        };
+        _transFrameTimer2 = setTimeout(_step, 5500);
+      }
+    }
+  }
   _playTransAudio2(p);
 }
 function _stopTransAudio2() {
   try { const a = audio.transNarrate || $('audTransNarrate'); if (a) { a.pause(); a.currentTime = 0; } } catch(e){}
+  // 2026-06-01: also halt the panel-image cycler so it doesn't keep
+  // painting frames into a hidden modal after Skip.
+  _stopTransFrameCycle2();
 }
 function openTransCinematic2() {
   _transStep2 = 0;

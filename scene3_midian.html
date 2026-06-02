@@ -38,16 +38,161 @@
   button { cursor:pointer; border:none; outline:none; }
 
   /* ============ COVER PAGE ============ */
+  /* 2026-06-01 (Jane: "look at scene 1 as source of truth and fix all that was
+     fixed for scene 1 ... make the entire game 1 epic world"). Cover layered
+     1:1 with scene1_palace.html so Scene 3 feels like the same world:
+       1. .cover-bg-img    — scene3 background, slow ken-burns zoom
+       2. .cover-bg-veil   — dark gradient overlay so text/cards stay readable
+       3. .cover-dust      — drifting golden dust motes (pure CSS)
+       4. .cover-portrait  — Moses head in a gold ring above the title
+       5. .cover-hero-row  — Midian props float gently above the scene chip
+     All decoration layers use pointer-events:none + z-index:-1/-2 so wheel
+     scroll always lands on the .cover-page itself. */
   .cover-page {
     position:fixed; inset:0;
     background:
       radial-gradient(ellipse at top, #c77d3a 0%, #7a3a13 55%, #3a1405 100%);
     overflow-y:auto;
+    overflow-x:hidden;
     -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
     display:flex; flex-direction:column; align-items:center;
     padding:22px 16px 40px;
-    min-height:100vh; height:auto;
+    box-sizing:border-box;
+    min-height:100vh; min-height:100dvh; height:auto;
     z-index:10;
+    isolation:isolate;
+  }
+  .cover-bg-img {
+    position:fixed; inset:0;
+    background-image: url('assets/images/scene3%20background.png');
+    background-size: cover;
+    background-position: center 40%;
+    background-repeat: no-repeat;
+    z-index:-2;
+    pointer-events:none;
+    animation: coverKenBurns 22s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  @keyframes coverKenBurns {
+    0%   { transform: scale(1.00) translate(0,        0); }
+    100% { transform: scale(1.06) translate(-1.5%, -1.0%); }
+  }
+  .cover-bg-veil {
+    position:fixed; inset:0;
+    z-index:-1;
+    pointer-events:none;
+    /* Warmer veil for Midian: gold-tinted top fading to deep ochre at the
+       bottom so the dust + portrait + cards stay readable without losing
+       the oasis-at-golden-hour vibe. */
+    background:
+      linear-gradient(180deg,
+        rgba(20,8,2,0.22)  0%,
+        rgba(40,18,6,0.48) 35%,
+        rgba(25,8,2,0.75)  78%,
+        rgba(10,3,0,0.92)  100%),
+      radial-gradient(ellipse at 50% 35%,
+        rgba(255,180,90,0.18) 0%,
+        rgba(0,0,0,0)         60%);
+  }
+  .cover-dust {
+    position:fixed; inset:0;
+    z-index:-1;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .cover-dust span {
+    position:absolute;
+    width:3px; height:3px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,225,160,0.85), rgba(255,200,120,0));
+    animation: coverDustDrift 14s linear infinite;
+    opacity:0.55;
+  }
+  .cover-dust span:nth-child(1) { left:10%; animation-delay:-2s;  animation-duration:18s; }
+  .cover-dust span:nth-child(2) { left:23%; animation-delay:-7s;  animation-duration:22s; width:2px; height:2px; }
+  .cover-dust span:nth-child(3) { left:40%; animation-delay:-11s; animation-duration:16s; }
+  .cover-dust span:nth-child(4) { left:55%; animation-delay:-3s;  animation-duration:24s; width:4px; height:4px; }
+  .cover-dust span:nth-child(5) { left:71%; animation-delay:-9s;  animation-duration:20s; }
+  .cover-dust span:nth-child(6) { left:84%; animation-delay:-5s;  animation-duration:17s; width:2px; height:2px; }
+  @keyframes coverDustDrift {
+    0%   { transform: translate(0, 110vh)  rotate(0deg);   opacity:0; }
+    8%   { opacity:0.55; }
+    50%  { transform: translate(20px, 50vh) rotate(180deg); opacity:0.7; }
+    92%  { opacity:0.4; }
+    100% { transform: translate(-10px, -10vh) rotate(360deg); opacity:0; }
+  }
+  /* Moses portrait — kid sees protagonist FIRST. Ported from scene 1. */
+  .cover-portrait {
+    width:clamp(110px, 24vw, 168px);
+    height:clamp(110px, 24vw, 168px);
+    flex:0 0 auto;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 50% 38%,
+        rgba(255,210,100,0.40) 0%,
+        rgba(120,50,10,0.60)  70%,
+        rgba(50,20,4,0.80)    100%);
+    border:5px solid #ffd976;
+    box-shadow:
+      0 0 0 2px rgba(0,0,0,0.55),
+      0 0 28px rgba(255,200,90,0.55),
+      0 8px 24px rgba(0,0,0,0.55);
+    overflow:hidden;
+    margin: 4px auto 14px;
+    position:relative;
+    animation: coverPortraitPulse 4.2s ease-in-out infinite alternate;
+  }
+  .cover-portrait img {
+    position:absolute;
+    width:140%; height:auto;
+    left:50%; top:6%;
+    transform:translateX(-50%);
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.55));
+  }
+  @keyframes coverPortraitPulse {
+    0%   { box-shadow: 0 0 0 2px rgba(0,0,0,0.55), 0 0 22px rgba(255,200,90,0.40), 0 8px 24px rgba(0,0,0,0.55); }
+    100% { box-shadow: 0 0 0 2px rgba(0,0,0,0.55), 0 0 36px rgba(255,215,118,0.75), 0 8px 24px rgba(0,0,0,0.55); }
+  }
+  /* Hero tagline — "3-second hook" copy below the subtitle. */
+  .cover-tagline {
+    color:#ffeecf;
+    font-size:clamp(13px, 3.4vw, 17px);
+    text-align:center;
+    margin: 6px 4px 14px;
+    line-height:1.45;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.7);
+    max-width: 32ch;
+    font-style:italic;
+  }
+  /* Midian hero sprite row — well, daughter, kind shepherd, lamb, jethro
+     tent. Same float keyframe + staggered delays as scene 1 so the bundle
+     feels visually consistent. */
+  .cover-hero-row {
+    display:flex; align-items:flex-end; justify-content:center;
+    gap:14px; margin: 4px 4px 14px;
+    flex-wrap:wrap; max-width:560px;
+  }
+  .cover-hero-row img {
+    height: clamp(72px, 16vw, 110px);
+    width: auto;
+    max-width: 130px;
+    object-fit: contain;
+    animation: coverHeroFloat 3s ease-in-out infinite;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.55));
+  }
+  .cover-hero-row img.tall {
+    height: clamp(96px, 22vw, 140px);
+    max-width: 180px;
+    animation-duration: 4s;
+  }
+  .cover-hero-row img:nth-child(2) { animation-delay: 0.4s; }
+  .cover-hero-row img:nth-child(3) { animation-delay: 0.8s; }
+  .cover-hero-row img:nth-child(4) { animation-delay: 1.2s; }
+  .cover-hero-row img:nth-child(5) { animation-delay: 1.6s; }
+  @keyframes coverHeroFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
   }
   .cover-page .logo {
     width:clamp(100px, 22vw, 160px);
@@ -2132,9 +2277,36 @@
 
 <!-- ================ COVER PAGE ================ -->
 <div class="cover-page" id="coverPage" style="display:none;">
+  <!-- 2026-06-01 (Jane: "look at scene 1 as source of truth"). Cinematic
+       chrome ported from scene 1: bg image (ken-burns) + dark gradient veil
+       + drifting golden dust motes. Decoration layers are all
+       pointer-events:none + z-index:-1/-2 so wheel scroll passes through. -->
+  <div class="cover-bg-img"  aria-hidden="true"></div>
+  <div class="cover-bg-veil" aria-hidden="true"></div>
+  <div class="cover-dust"    aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+
   <img src="assets/images/logo%201.png" alt="Bible Explorer Kids" class="logo" onerror="this.style.display='none'">
   <h1 class="cover-title">Moses' Escape<br>to Midian</h1>
   <div class="cover-subtitle">Interactive Bible Adventure</div>
+  <!-- 3-second hook tagline -->
+  <div class="cover-tagline">Stand up for the sisters. Water the flock. Find your new family.</div>
+
+  <!-- Moses portrait in gold-framed circle -->
+  <div class="cover-portrait" aria-label="Moses">
+    <img src="assets/images/moses%20front%20facing.png" alt="Moses" onerror="this.style.display='none'">
+  </div>
+
+  <!-- Midian hero sprite row: well, daughter, kind shepherd, lamb, jethro tent -->
+  <div class="cover-hero-row" aria-hidden="true">
+    <img src="assets/images/midian%20well.png"          alt="" onerror="this.src='assets/images/color%20well.png'; this.onerror=function(){this.style.display='none';};">
+    <img src="assets/images/jethro%20daughter.png"      alt="" onerror="this.src='assets/images/daughter%201%20front%20facing.png'; this.onerror=function(){this.style.display='none';};">
+    <img src="assets/images/kind%20shepherd.png"        alt="" class="tall" onerror="this.src='assets/images/orange%20shepherd%20heave%202.png'; this.onerror=function(){this.style.display='none';};">
+    <img src="assets/images/lamb.png"                   alt="" onerror="this.src='assets/images/lamb%201.png'; this.onerror=function(){this.style.display='none';};">
+    <img src="assets/images/jethro%20tent.png"          alt="" onerror="this.style.display='none'">
+  </div>
+
   <div class="cover-scene-chip">SCENE 3 - THE WELL OF MIDIAN</div>
 
   <div class="story-card">
@@ -2197,7 +2369,12 @@
 <div class="cinematic" id="openingCinematic">
   <div class="cin-panel">
     <div class="cin-art">
-      <img src="assets/images/scene1%20background.png" alt="" class="cin-scene-img" onerror="this.style.display='none'">
+      <!-- 2026-06-01 (Jane: "wire all images and audio... before scene 3").
+           Scene 3 opening cinematic was painting the Scene 1 palace
+           background under every panel — wrong scene. Default to the
+           canonical `intro scene 3.png` from NARRATION_SCRIPTS_AND_PROMPTS
+           §7. Per-panel swaps happen in showCinPanel(). -->
+      <img src="assets/images/intro%20scene%203.png" alt="" class="cin-scene-img" id="cinSceneImg" onerror="this.style.display='none'">
       <div class="cin-overlay"></div>
     </div>
     <div class="cin-text" id="cinText">Loading...</div>
@@ -2218,7 +2395,10 @@
 <div class="cinematic" id="closingCinematic">
   <div class="cin-panel">
     <div class="cin-art">
-      <img src="assets/images/scene3%20background.png" alt="" class="cin-scene-img" onerror="this.style.display='none'">
+      <!-- 2026-06-01 (Jane): per-panel illustration. src rewritten by
+           showClosePanel() so each of the 5 closing panels gets its own
+           closing-*.png from NARRATION_SCRIPTS_AND_PROMPTS §8. -->
+      <img src="assets/images/closing-1-daughters-home.png" alt="" class="cin-scene-img" id="closeSceneImg" onerror="this.style.display='none'">
       <div class="cin-overlay" style="background:linear-gradient(180deg,rgba(26,15,8,0.3),rgba(26,15,8,0.75));"></div>
     </div>
     <div class="cin-text" id="closeText">Loading...</div>
@@ -2237,7 +2417,10 @@
 <div class="cinematic" id="epilogueCinematic">
   <div class="cin-panel">
     <div class="cin-art">
-      <img src="assets/images/scene3_background.png" alt="" class="cin-scene-img" onerror="this.style.display:'none'">
+      <!-- 2026-06-01 (Jane): per-panel illustration. src rewritten by
+           showEpilPanel() so each of the 3 epilogue panels gets its own
+           epilogue-*.png from NARRATION_SCRIPTS_AND_PROMPTS §9. -->
+      <img src="assets/images/epilogue-1-years-pass.png" alt="" class="cin-scene-img" id="epilSceneImg" onerror="this.style.display='none'">
       <div class="cin-overlay" style="background:linear-gradient(180deg,rgba(10,5,30,0.25),rgba(10,5,30,0.72));"></div>
     </div>
     <div class="cin-text" id="epilText">Loading...</div>
@@ -8015,31 +8198,41 @@ $('cinSkipBtn').addEventListener('click', () => {
    Calls the provided onDone callback when the user taps past the last
    panel OR hits Skip — typically that callback opens the win modal.
 */
+// 2026-06-01 (Jane: "wire all images and audio... after scene 3"). Closing
+// panels now ship per-panel images from NARRATION_SCRIPTS_AND_PROMPTS_bundle1
+// \u00a78 alongside the existing per-panel audio. showClosePanel() swaps the
+// illustration as the kid taps Next so each beat of the Jethro / Zipporah /
+// Gershom story has its own art instead of a static brown background.
 const CLOSING_PANELS = [
   {
     text: "The seven sisters ran home early. Their water jars were full. Their faces shone with joy.",
     cap:  "REFUGE IN MIDIAN \u00b7 Exodus 2:18\u201322 \u00b7 PANEL 1 of 5",
-    audio: "closing-1-daughters-home.mp3"
+    audio: "closing-1-daughters-home.mp3",
+    image: 'assets/images/closing-1-daughters-home.png',
   },
   {
     text: "Jethro stood at his tent. \u201cHow did you get back so soon?\u201d he asked. \u201cAn Egyptian rescued us!\u201d the daughters answered.",
     cap:  "PANEL 2 of 5",
-    audio: "closing-2-jethro-question.mp3"
+    audio: "closing-2-jethro-question.mp3",
+    image: 'assets/images/closing-2-jethro-question.png',
   },
   {
     text: "\u201cWhere is he?\u201d Jethro said. \u201cBring him here. Let him eat with us.\u201d And Moses walked through the tent door.",
     cap:  "PANEL 3 of 5",
-    audio: "closing-3-welcome.mp3"
+    audio: "closing-3-welcome.mp3",
+    image: 'assets/images/closing-3-welcome.png',
   },
   {
     text: "Moses stayed. He worked with the flocks. And one day, Jethro gave him his daughter Zipporah to be his wife. (Exodus 2:21)",
     cap:  "PANEL 4 of 5",
-    audio: "closing-4-zipporah.mp3"
+    audio: "closing-4-zipporah.mp3",
+    image: 'assets/images/closing-4-zipporah.png',
   },
   {
     text: "Moses became a shepherd in Midian. He named his son Gershom \u2014 \u201cI have been a stranger in a strange land.\u201d But far away, on the mountain\u2026 God was already preparing what came next.",
     cap:  "PANEL 5 of 5",
-    audio: "closing-5-shepherd-mountain.mp3"
+    audio: "closing-5-shepherd-mountain.mp3",
+    image: 'assets/images/closing-5-shepherd-mountain.png',
   },
 ];
 let _closingOnDoneCb = null;
@@ -8068,6 +8261,21 @@ function showClosePanel() {
   const cEl = $('closeCaption');  if (cEl) cEl.textContent = p.cap;
   const pEl = $('closeProgress'); if (pEl) pEl.textContent = (game.closeStep+1) + ' of ' + CLOSING_PANELS.length;
   const nEl = $('closeNextBtn');  if (nEl) nEl.textContent = (game.closeStep === CLOSING_PANELS.length-1) ? 'Finish Scene' : 'Next';
+  // 2026-06-01 — swap illustration per panel with a quick cross-fade so the
+  // kid sees Jethro's tent → Zipporah → shepherd-mountain art beats instead
+  // of one static scene3 background.
+  try {
+    const img = document.getElementById('closeSceneImg');
+    if (img && p.image) {
+      img.style.transition = 'opacity 0.22s ease';
+      img.style.opacity = '0';
+      setTimeout(() => {
+        img.src = p.image;
+        img.style.display = '';
+        requestAnimationFrame(() => { img.style.opacity = '1'; });
+      }, 180);
+    }
+  } catch(e){}
   _playClosingPanelAudio(p);
 }
 function _stopClosingAudio() {
@@ -8102,21 +8310,26 @@ function _finishClosingCinematic() {
    3 panels with per-panel voice-over. Plays after "Print Certificate" click.
    After the last panel (or Skip), triggers _doDownloadCertificate().
 */
+// 2026-06-01 (Jane): epilogue panels now ship per-panel images from
+// NARRATION_SCRIPTS_AND_PROMPTS_bundle1 §9, swapped by showEpiloguePanel().
 const EPILOGUE_PANELS = [
   {
     text: "And many years went by. Moses tended the flock. His beard grew long. His sons grew tall. Egypt felt very far away.",
     cap:  "EPILOGUE · Exodus 2:23–25 · PANEL 1 of 3",
-    audio: "epilogue-1-years-pass.mp3"
+    audio: "epilogue-1-years-pass.mp3",
+    image: 'assets/images/epilogue-1-years-pass.png',
   },
   {
     text: "Back in Egypt, the Hebrews still groaned under Pharaoh's whip. They cried out to God. And God heard them. He remembered his promise to Abraham, Isaac, and Jacob.",
     cap:  "PANEL 2 of 3",
-    audio: "epilogue-2-god-hears.mp3"
+    audio: "epilogue-2-god-hears.mp3",
+    image: 'assets/images/epilogue-2-god-hears.png',
   },
   {
     text: "One day, Moses led the flock far across the desert — all the way to the mountain of God. And there, something he could not explain… began to burn. But that… is the next story.",
     cap:  "PANEL 3 of 3 · Coming in Bundle 2: The Calling",
-    audio: "epilogue-3-mountain-calls.mp3"
+    audio: "epilogue-3-mountain-calls.mp3",
+    image: 'assets/images/epilogue-3-mountain-calls.png',
   },
 ];
 let _epilOnDoneCb = null;
@@ -8137,6 +8350,19 @@ function showEpiloguePanel() {
   const cEl = $('epilCaption');  if (cEl) cEl.textContent = p.cap;
   const pEl = $('epilProgress'); if (pEl) pEl.textContent = ((game.epilStep||0)+1) + ' of ' + EPILOGUE_PANELS.length;
   const nEl = $('epilNextBtn');  if (nEl) nEl.textContent = ((game.epilStep||0) === EPILOGUE_PANELS.length-1) ? 'Get Certificate' : 'Next';
+  // 2026-06-01 — swap epilogue illustration per panel with a short cross-fade.
+  try {
+    const img = document.getElementById('epilSceneImg');
+    if (img && p.image) {
+      img.style.transition = 'opacity 0.22s ease';
+      img.style.opacity = '0';
+      setTimeout(() => {
+        img.src = p.image;
+        img.style.display = '';
+        requestAnimationFrame(() => { img.style.opacity = '1'; });
+      }, 180);
+    }
+  } catch(e){}
   _playEpiloguePanelAudio(p);
 }
 function _stopEpilogueAudio() {
