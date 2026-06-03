@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bundle 1 — Cover & Thumbnail Studio · Bible Explorer Kids</title>
+<style>
+  /* ===== Fonts: bold poster fonts, with offline fallbacks ===== */
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Baloo+2:wght@600;800&family=Luckiest+Guy&display=swap');
+  :root{ --ink:#2a1206; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ background:#1c1c22; color:#eee; font-family:'Baloo 2',system-ui,Arial,sans-serif; padding:28px; }
+  h1.page{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:22px; margin-bottom:4px; }
+  .sub{ color:#9aa; font-size:14px; margin-bottom:22px; max-width:900px; line-height:1.5; }
+  .block{ margin:34px 0 48px; }
+  .blabel{ font-weight:800; font-size:16px; color:#ffd86b; margin-bottom:6px; }
+  .bmeta{ color:#9aa; font-size:13px; margin-bottom:12px; }
+  .scaler{ transform-origin:top left; }
+  /* the actual export targets are .panel — true pixel size */
+  .panel{ position:relative; overflow:hidden; font-family:'Baloo 2',sans-serif; color:var(--ink); }
+
+  .poster{ font-family:'Luckiest Guy','Anton',Impact,'Arial Black',sans-serif; }
+  .anton{ font-family:'Anton',Impact,'Arial Black',sans-serif; }
+
+  /* ============ PANEL A — ETSY / TPT SQUARE COVER 2000x2000 ============ */
+  #coverA{ width:2000px; height:2000px;
+    background:
+      radial-gradient(120% 80% at 50% 0%, #ffe9b0 0%, #f4c25a 38%, #d98a2b 70%, #9c4f17 100%);
+  }
+  #coverA .topbar{ display:flex; align-items:center; gap:28px; padding:54px 70px 0; }
+  #coverA .topbar img{ height:200px; filter:drop-shadow(0 8px 14px rgba(0,0,0,.25)); }
+  #coverA .brandtag{ font-weight:800; font-size:40px; color:#7a3a10; letter-spacing:1px; }
+  #coverA .brandtag b{ display:block; font-size:30px; color:#9c5a1f; font-weight:600; }
+  #coverA .title{ text-align:center; margin-top:6px; }
+  #coverA .title .t1{ font-size:158px; line-height:.9; color:#fff;
+    -webkit-text-stroke:10px #5c2a0a; text-shadow:0 10px 0 #5c2a0a, 0 16px 22px rgba(0,0,0,.35); }
+  #coverA .title .t2{ font-size:70px; color:#b8350f; margin-top:18px;
+    -webkit-text-stroke:3px #fff; text-shadow:0 4px 0 #7a1c08; }
+  #coverA .ribbon{ display:inline-block; margin:26px auto 0; background:#1f6b4a; color:#fff;
+    font-weight:800; font-size:46px; padding:16px 46px; border-radius:60px;
+    box-shadow:0 8px 0 #0d3b27; }
+  /* hero screenshots row */
+  #coverA .heroes{ display:flex; gap:34px; justify-content:center; padding:40px 70px 0; }
+  #coverA .shot{ width:560px; height:430px; border-radius:34px; border:12px solid #fff;
+    background-size:cover; background-position:center;
+    box-shadow:0 18px 36px rgba(0,0,0,.4); position:relative; }
+  #coverA .shot .tag{ position:absolute; left:18px; bottom:18px; background:#000a;
+    color:#fff; font-weight:800; font-size:30px; padding:8px 22px; border-radius:30px; }
+  #coverA .shot.s1{ background-image:url('assets/images/cover-palace-bg.png'); }
+  #coverA .shot.s2{ background-image:url('assets/images/intro scene 3.png'); }
+  #coverA .moses{ position:absolute; right:150px; top:1450px; height:360px; z-index:5;
+    filter:drop-shadow(0 16px 22px rgba(0,0,0,.45)); transform:scaleX(-1); }
+  /* feature badges */
+  #coverA .feats{ display:grid; grid-template-columns:1fr 1fr; gap:24px 34px;
+    padding:54px 90px 0; }
+  #coverA .feat{ display:flex; align-items:center; gap:22px; background:#fff;
+    border-radius:26px; padding:24px 30px; box-shadow:0 10px 0 #c98a3a;
+    font-weight:800; font-size:46px; color:#5c2a0a; }
+  #coverA .feat .ic{ font-size:62px; }
+  #coverA .scanplay{ position:absolute; left:90px; top:1470px; display:flex; align-items:center;
+    gap:30px; background:#fff; border-radius:30px; padding:30px 40px; box-shadow:0 12px 0 #c98a3a; }
+  #coverA .scanplay .qr{ width:170px; height:170px; border-radius:18px;
+    background:
+      conic-gradient(#222 90deg,#fff 0 180deg,#222 0 270deg,#fff 0) 0 0/56px 56px,
+      #fff; border:8px solid #222; }
+  #coverA .scanplay .sp{ font-weight:800; color:#5c2a0a; line-height:1.05; }
+  #coverA .scanplay .sp b{ font-size:60px; display:block; }
+  #coverA .scanplay .sp span{ font-size:40px; color:#1f6b4a; }
+  #coverA .footer{ position:absolute; bottom:0; left:0; right:0; height:150px;
+    background:#5c2a0a; color:#ffd86b; display:flex; align-items:center;
+    justify-content:center; gap:40px; font-weight:800; font-size:50px; }
+  #coverA .footer .ages{ background:#ffd86b; color:#5c2a0a; padding:8px 30px; border-radius:40px; }
+
+  /* ============ PANEL B — YOUTUBE THUMBNAIL 1280x720 ============ */
+  #thumbB{ width:1280px; height:720px;
+    background:url('assets/images/intro scene 3.png') center/cover; }
+  #thumbB::after{ content:''; position:absolute; inset:0;
+    background:linear-gradient(90deg, #000c 0%, #0008 42%, #0000 70%); }
+  #thumbB .moses{ position:absolute; right:-30px; bottom:-20px; height:760px; z-index:3;
+    filter:drop-shadow(-10px 10px 18px #000a); }
+  #thumbB .txt{ position:absolute; left:56px; top:60px; z-index:4; width:720px; }
+  #thumbB .kicker{ display:inline-block; background:#e8231a; color:#fff; font-weight:800;
+    font-size:34px; padding:8px 24px; border-radius:12px; margin-bottom:18px;
+    transform:rotate(-2deg); box-shadow:0 6px 0 #7d0f0a; }
+  #thumbB .big{ font-size:130px; line-height:.92; color:#ffe14d;
+    -webkit-text-stroke:8px #1a0d03; text-shadow:0 8px 0 #1a0d03, 0 14px 18px #000a; }
+  #thumbB .big .red{ color:#fff; -webkit-text-stroke:8px #b8120b; }
+  #thumbB .badge{ position:absolute; right:34px; top:30px; z-index:5;
+    width:230px; height:230px; border-radius:50%; background:#1f6b4a; color:#fff;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; font-weight:800; transform:rotate(8deg);
+    border:10px solid #fff; box-shadow:0 10px 22px #000a; }
+  #thumbB .badge .n{ font-size:96px; line-height:.8; }
+  #thumbB .badge .l{ font-size:30px; }
+
+  /* ============ PANEL C — SHORTS / PIN VERTICAL 1080x1920 ============ */
+  #shortC{ width:1080px; height:1920px;
+    background:url('assets/images/cover-palace-bg.png') center/cover; }
+  #shortC::after{ content:''; position:absolute; inset:0;
+    background:linear-gradient(180deg,#000b 0%,#0003 30%,#0006 64%,#000d 100%); }
+  #shortC .top{ position:absolute; top:70px; left:0; right:0; text-align:center; z-index:4; }
+  #shortC .top .q{ font-size:118px; line-height:.95; color:#ffe14d; padding:0 50px;
+    -webkit-text-stroke:7px #1a0d03; text-shadow:0 8px 0 #1a0d03; }
+  #shortC .moses{ position:absolute; left:50%; top:760px; transform:translateX(-50%);
+    height:720px; z-index:3; filter:drop-shadow(0 14px 20px #000b); }
+  #shortC .arrow{ position:absolute; top:660px; left:50%; transform:translateX(-50%);
+    font-size:120px; z-index:4; }
+  #shortC .bottom{ position:absolute; bottom:90px; left:0; right:0; text-align:center; z-index:4; }
+  #shortC .bottom .b1{ font-size:88px; color:#fff; -webkit-text-stroke:6px #b8120b;
+    text-shadow:0 6px 0 #7d0f0a; }
+  #shortC .bottom .b2{ display:inline-block; margin-top:24px; background:#1f6b4a; color:#fff;
+    font-weight:800; font-size:54px; padding:16px 50px; border-radius:60px; }
+
+  /* controls */
+  .btn{ display:inline-block; margin:10px 8px 0 0; background:#3a6df0; color:#fff;
+    border:0; border-radius:10px; padding:12px 20px; font-weight:800; font-size:15px;
+    cursor:pointer; font-family:inherit; }
+  .note{ background:#262630; border-left:4px solid #ffd86b; padding:14px 18px;
+    border-radius:8px; font-size:14px; line-height:1.6; color:#cdd; max-width:1000px; }
+  code{ background:#000; padding:2px 7px; border-radius:5px; color:#9fe; }
+</style>
+</head>
+<body>
+
+<h1 class="page">🎨 Bundle 1 — Cover &amp; Thumbnail Studio</h1>
+<p class="sub">Three ready-to-export designs built from your real game art. Each panel below is rendered at the exact pixel size its platform wants. Use the <b>Download PNG</b> button (run via a local server — see note at the bottom), or in Chrome right-click the panel → <i>Inspect</i> → right-click the highlighted <code>&lt;div class="panel"&gt;</code> → <b>Capture node screenshot</b> for a pixel-perfect file.</p>
+
+<!-- ============ A: ETSY / TPT SQUARE COVER ============ -->
+<div class="block">
+  <div class="blabel">A · Etsy + TPT Cover — 2000 × 2000 (square)</div>
+  <div class="bmeta">Shows the whole bundle at a glance: brand, title, both games, the 20 printables, ages. Use as Etsy listing image #1 and the TPT thumbnail.</div>
+  <button class="btn" onclick="dl('coverA','BundleVista-EtsyTPT-Cover-2000.png')">⬇ Download PNG</button>
+  <div class="scaler" data-w="2000">
+    <div id="coverA" class="panel">
+      <div class="topbar">
+        <img src="assets/images/logo 1.png" alt="Bible Explorer Kids">
+        <div class="brandtag">BIBLE EXPLORER KIDS<b>presents · Bundle 1</b></div>
+      </div>
+      <div class="title">
+        <div class="t1 poster">MOSES</div>
+        <div class="t2 poster">A DELIVERER IS BORN</div>
+      </div>
+      <div style="text-align:center"><span class="ribbon">📖 Interactive Bible Adventure + Printable Pack</span></div>
+      <div class="heroes">
+        <div class="shot s1"><span class="tag">🕵 Stealth &amp; Escape</span></div>
+        <div class="shot s2"><span class="tag">🐑 Rescue at the Well</span></div>
+      </div>
+      <img class="moses" src="assets/images/moses adult.png" alt="Moses">
+      <div class="scanplay">
+        <div class="qr"></div>
+        <div class="sp"><b>SCAN &amp; PLAY</b><span>No app · No login</span></div>
+      </div>
+      <div class="feats">
+        <div class="feat"><span class="ic">🖍️</span> 20 Printable Activities · All Ages</div>
+        <div class="feat"><span class="ic">🎮</span> 2 QR-Scan Bible Games</div>
+        <div class="feat"><span class="ic">📱</span> Plays on Any Phone or Tablet</div>
+        <div class="feat"><span class="ic">📖</span> 100% Scripture-True · Exodus</div>
+      </div>
+      <div class="footer">
+        <span class="ages">Ages 3–12</span> Sunday School · Homeschool · Family Devotion
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ B: YOUTUBE THUMBNAIL ============ -->
+<div class="block">
+  <div class="blabel">B · YouTube Thumbnail — 1280 × 720 (16:9)</div>
+  <div class="bmeta">Big emotion, 3 words, Moses bursting out of frame, a curiosity badge. Designed to be readable at tiny size on a phone feed.</div>
+  <button class="btn" onclick="dl('thumbB','MosesEscape-YouTube-Thumb-1280x720.png')">⬇ Download PNG</button>
+  <div class="scaler" data-w="1280">
+    <div id="thumbB" class="panel">
+      <div class="txt">
+        <span class="kicker poster">A BIBLE GAME?!</span>
+        <div class="big poster">CAN YOU<br><span class="red">SAVE</span><br>MOSES?</div>
+      </div>
+      <div class="badge"><span class="n poster">20</span><span class="l">FREE<br>PRINTABLES</span></div>
+      <img class="moses" src="assets/images/moses adult.png" alt="Moses">
+    </div>
+  </div>
+</div>
+
+<!-- ============ C: SHORTS / PINTEREST VERTICAL ============ -->
+<div class="block">
+  <div class="blabel">C · Shorts / Pinterest Cover — 1080 × 1920 (9:16)</div>
+  <div class="bmeta">Vertical cover for a YouTube Short end-card or a Pinterest pin that drives to Etsy.</div>
+  <button class="btn" onclick="dl('shortC','Moses-Shorts-Pin-1080x1920.png')">⬇ Download PNG</button>
+  <div class="scaler" data-w="1080">
+    <div id="shortC" class="panel">
+      <div class="top"><div class="q poster">PHARAOH WANTS<br>MOSES GONE.</div></div>
+      <div class="arrow">👇</div>
+      <img class="moses" src="assets/images/moses adult.png" alt="Moses">
+      <div class="bottom">
+        <div class="b1 poster">Help him escape!</div><br>
+        <span class="b2">🎮 Play + 20 Printables</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+<b>How to export crisp PNGs (pick one):</b><br>
+1. <b>Local server (best for the Download buttons):</b> from the repo folder run <code>python3 -m http.server 8099</code>, open <code>http://localhost:8099/cover-studio.html</code>, then click <b>⬇ Download PNG</b>. (Opening as a <code>file://</code> path blocks PNG export for security — the buttons only work over http.)<br>
+2. <b>Chrome DevTools (no server needed, pixel-perfect):</b> right-click a design → <b>Inspect</b> → in the panel, right-click the highlighted <code>&lt;div class="panel"&gt;</code> → <b>Capture node screenshot</b>.<br>
+3. <b>Edit the words:</b> all text is plain HTML — change a headline by editing the text inside the panel. Swap a background by changing the image filename in the CSS at the top.
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+  // Scale each full-size panel down to fit the screen for preview (export still full res)
+  function fit(){
+    var max = Math.min(window.innerWidth - 80, 1100);
+    document.querySelectorAll('.scaler').forEach(function(s){
+      var w = +s.dataset.w, k = Math.min(1, max / w);
+      s.style.transform = 'scale(' + k + ')';
+      s.style.height = (s.firstElementChild.offsetHeight * k) + 'px';
+      s.style.marginBottom = '8px';
+    });
+  }
+  window.addEventListener('resize', fit); window.addEventListener('load', fit); fit();
+
+  function dl(id, name){
+    var el = document.getElementById(id);
+    if(typeof html2canvas === 'undefined'){
+      alert('Download needs internet (for html2canvas) AND must be opened over http://localhost — see the note. Otherwise use DevTools → Capture node screenshot.');
+      return;
+    }
+    html2canvas(el, {scale:1, useCORS:true, backgroundColor:null, width:el.offsetWidth, height:el.offsetHeight})
+      .then(function(canvas){
+        var a = document.createElement('a');
+        a.download = name; a.href = canvas.toDataURL('image/png'); a.click();
+      }).catch(function(e){ alert('Export failed: ' + e + '\\nTry the DevTools method in the note.'); });
+  }
+</script>
+</body>
+</html>
