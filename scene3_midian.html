@@ -2107,11 +2107,17 @@
     -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
   }
   .final-stage-card.active { display:flex; animation: fscFade .4s ease-out; }
+  /* #145: the sun is now an IN-FLOW element at the top of the centred text
+     column (was position:absolute;top:15%, which on short/landscape phones
+     dropped the sun ON TOP of the eyebrow + title). Sized by vmin so it
+     scales down on small screens; glow tightened so it no longer washes out
+     the text directly beneath it. */
   .fsc-sun {
-    position:absolute; left:50%; top:15%; width:180px; height:180px; margin-left:-90px;
+    position:relative; flex:0 0 auto; margin:0 auto 14px;
+    width:clamp(92px,20vmin,168px); height:clamp(92px,20vmin,168px);
     border-radius:50%; pointer-events:none;
     background:radial-gradient(circle at 50% 46%, #fff4cc 0%, #ffd166 28%, #ff8a3c 60%, rgba(255,110,60,0) 74%);
-    box-shadow:0 0 110px 36px rgba(255,150,70,0.42);
+    box-shadow:0 0 70px 18px rgba(255,150,70,0.36);
     animation: fscSun 3.4s ease-in-out infinite;
   }
   .final-stage-card.won {
@@ -2121,17 +2127,23 @@
   }
   .final-stage-card.won .fsc-sun {
     background:radial-gradient(circle at 50% 46%, #fffbe0 0%, #ffe27a 30%, #8fe28a 62%, rgba(120,220,130,0) 76%);
-    box-shadow:0 0 120px 40px rgba(150,230,120,0.45);
+    box-shadow:0 0 76px 20px rgba(150,230,120,0.4);
   }
-  .fsc-box { position:relative; text-align:center; max-width:560px; padding:6px 24px 12px; }
+  /* #145: flex column so sun + text stack as one centred unit (no overlap). */
+  .fsc-box {
+    position:relative; text-align:center; max-width:560px; padding:6px 24px 12px;
+    display:flex; flex-direction:column; align-items:center;
+  }
   .final-stage-card.active .fsc-box { animation: fscPop .6s cubic-bezier(0.34,1.56,0.64,1); }
   .fsc-eyebrow {
-    color:#ffd24a; font-weight:800; letter-spacing:5px; font-size:14px;
-    text-shadow:0 0 14px rgba(255,170,60,0.95); margin-bottom:10px;
+    color:#ffd24a; font-weight:800; letter-spacing:5px; font-size:13px;
+    /* #145: dark drop-shadow layer so the gold eyebrow stays legible even if
+       the sun's halo grazes it (gold-on-bright-gold was invisible before). */
+    text-shadow:0 1px 5px rgba(40,8,0,0.6), 0 0 14px rgba(255,170,60,0.7); margin:0 0 10px;
   }
-  .final-stage-card.won .fsc-eyebrow { color:#bff6a8; text-shadow:0 0 14px rgba(150,240,120,0.9); }
+  .final-stage-card.won .fsc-eyebrow { color:#bff6a8; text-shadow:0 1px 5px rgba(8,28,4,0.6), 0 0 14px rgba(150,240,120,0.8); }
   .fsc-title {
-    color:#fff; font-size:33px; line-height:1.12; font-weight:800; margin:0 0 12px;
+    color:#fff; font-size:clamp(25px,5.6vw,33px); line-height:1.14; font-weight:800; margin:0 0 12px;
     letter-spacing:0.5px; text-shadow:0 3px 0 #7a1020, 0 0 28px rgba(255,200,120,0.7);
   }
   .final-stage-card.won .fsc-title { text-shadow:0 3px 0 #18491e, 0 0 28px rgba(180,255,160,0.7); }
@@ -2807,6 +2819,21 @@
   .tip-popup-body { font-size:14.5px; line-height:1.45; color:#fff5d8; margin-bottom:14px; }
   .tip-popup-btn { background:#ffd976; color:#5a1d06; border:none; border-radius:10px; font-family:Georgia,serif; font-weight:800; font-size:15px; padding:10px 24px; cursor:pointer; min-width:110px; min-height:44px; box-shadow:0 3px 10px rgba(0,0,0,0.4); }
   @media (orientation:landscape) and (max-height:500px){ .tip-popup-overlay{ padding-bottom:5%; } .tip-popup-card{ padding:10px 16px; max-width:min(380px,70vw); } .tip-popup-icon{font-size:24px;} .tip-popup-title{font-size:15px;} .tip-popup-body{font-size:13px;} }
+  /* #137 Jane 2026-06-04: tap-a-targeted-sheep SHOO modal (gold/brown chrome to match the tip popup) */
+  .wolf-shoo-overlay { position:fixed; inset:0; z-index:57; background:rgba(20,4,2,0.62); display:none; align-items:center; justify-content:center; padding:16px; }
+  .wolf-shoo-overlay.active { display:flex; }
+  .wolf-shoo-card { background:linear-gradient(160deg,#3a1508,#5a2510); border:3px solid #ffd976; border-radius:16px; padding:20px 22px; max-width:min(420px,92vw); max-height:88vh; overflow-y:auto; color:#fff8e7; box-shadow:0 8px 32px rgba(0,0,0,0.6),0 0 26px rgba(255,120,40,0.4); text-align:center; font-family:Georgia,serif; animation:wolfShooIn 0.3s cubic-bezier(.2,1.4,.4,1.0); }
+  .wolf-shoo-icon { font-size:38px; line-height:1; margin-bottom:6px; animation:wolfShooBob 0.9s ease-in-out infinite; }
+  .wolf-shoo-title { font-size:18px; font-weight:800; color:#ffcf6b; margin-bottom:6px; }
+  .wolf-shoo-body { font-size:14px; line-height:1.4; color:#fff5d8; margin-bottom:12px; }
+  .wolf-shoo-bar-track { height:20px; background:rgba(0,0,0,0.4); border:2px solid #ffd976; border-radius:12px; overflow:hidden; margin-bottom:14px; }
+  .wolf-shoo-bar-fill { height:100%; width:0%; background:linear-gradient(90deg,#ffb14a,#ff7a2f); border-radius:10px; transition:width 0.08s linear; }
+  .wolf-shoo-btn { background:linear-gradient(160deg,#ffd976,#ff9f3a); color:#5a1d06; border:none; border-radius:12px; font-family:Georgia,serif; font-weight:800; font-size:20px; padding:14px 30px; cursor:pointer; min-width:160px; min-height:56px; box-shadow:0 4px 12px rgba(0,0,0,0.45); display:block; width:100%; margin-bottom:10px; user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent; }
+  .wolf-shoo-btn:active { transform:scale(0.96); }
+  .wolf-shoo-close { background:transparent; color:#ffd976; border:1px solid rgba(255,217,118,0.5); border-radius:10px; font-family:Georgia,serif; font-weight:700; font-size:13px; padding:8px 18px; cursor:pointer; min-height:40px; }
+  @keyframes wolfShooIn { from{opacity:0;transform:translateY(20px) scale(0.92);} to{opacity:1;transform:translateY(0) scale(1);} }
+  @keyframes wolfShooBob { 0%,100%{transform:translateY(0) rotate(-4deg);} 50%{transform:translateY(-5px) rotate(4deg);} }
+  @media (orientation:landscape) and (max-height:500px){ .wolf-shoo-card{ padding:10px 16px; max-width:min(380px,72vw); } .wolf-shoo-icon{font-size:26px;} .wolf-shoo-title{font-size:15px;} .wolf-shoo-body{font-size:12.5px;margin-bottom:8px;} .wolf-shoo-btn{font-size:17px;min-height:48px;padding:10px 24px;} }
   @keyframes tipPopIn { 0% { transform:translateY(40px) scale(0.85); opacity:0; } 100% { transform:translateY(0) scale(1); opacity:1; } }
 </style>
 </head>
@@ -2888,6 +2915,15 @@
     </div>
     <div style="font-size:12px;color:#ffd976;text-align:center;opacity:0.85;margin-top:6px;">
       Easy: 4 min - Medium: 3 min - Hard: 2 min
+    </div>
+    <!-- #141 Jane 2026-06-04: tutorial-mode toggle (default ON for first play;
+         persists in the shared localStorage bek.bundle1.tutMode key). Mirrored by
+         the in-game pause-modal toggle. -->
+    <div style="margin-top:12px;display:flex;align-items:center;justify-content:center;gap:10px;color:#ffd976;font-size:13px;">
+      <label for="tutModeToggle" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-weight:700;">
+        <input type="checkbox" id="tutModeToggle" checked style="width:18px;height:18px;cursor:pointer;accent-color:#ffd976;">
+        <span>Show tutorials (for new players)</span>
+      </label>
     </div>
   </div>
 
@@ -3175,8 +3211,17 @@
     <button class="btn" id="resumeBtn">Resume</button>
     <button class="btn ghost" id="restartBtn">Restart Scene</button>
     <button class="btn ghost" id="quitBtn">Main Menu</button>
+    <!-- #141 Jane 2026-06-04: surface the tutorial toggle inside the pause modal so
+         kids / parents can switch tutorial pop-ups on / off mid-game (mirrors the
+         cover-page toggle; both write the shared bek.bundle1.tutMode key). -->
+    <div style="margin-top:14px;padding:10px 14px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,215,118,0.35);border-radius:10px;color:#ffd976;font-size:13.5px;">
+      <label for="tutModeTogglePause" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-weight:700;">
+        <input type="checkbox" id="tutModeTogglePause" style="width:18px;height:18px;cursor:pointer;accent-color:#ffd976;">
+        <span>Show tutorial pop-ups</span>
+      </label>
+    </div>
     <div style="margin-top:10px;font-size:12px;color:#ffd976;opacity:0.7;">
-      Tip: Stay in cover — jar piles, palms, and reeds [#] — to avoid the rude shepherds!
+      Tip: Solve the well-side checkpoints to earn blue crystals, then cross the stream to rescue Jethro&rsquo;s daughters and reach his tent!
     </div>
   </div>
 </div>
@@ -3249,8 +3294,8 @@
 <!-- Scene 3 — Mario-style FINAL TRIAL stage card (#58). Cosmetic framing overlay
      shown going INTO and coming OUT of the daughter-rescue. Tap or wait to dismiss. -->
 <div class="final-stage-card" id="finalStageCard" aria-hidden="true">
-  <div class="fsc-sun" aria-hidden="true"></div>
   <div class="fsc-box">
+    <div class="fsc-sun" aria-hidden="true"></div>
     <div class="fsc-eyebrow" id="fscEyebrow">&#9733; FINAL TRIAL &#9733;</div>
     <h1 class="fsc-title" id="fscTitle">Save Jethro&rsquo;s Daughters</h1>
     <p class="fsc-sub" id="fscSub">The sun is sinking over Midian.</p>
@@ -3314,6 +3359,17 @@
     <button class="tip-popup-btn" id="tipPopupBtn">Got it!</button>
   </div>
 </div>
+<!-- ===== #137 WOLF-SHOO MODAL — tap a targeted (danger-ringed) sheep during the raid to drive its wolf off ===== -->
+<div class="wolf-shoo-overlay" id="wolfShooOverlay" role="dialog" aria-modal="true" aria-labelledby="wolfShooTitle">
+  <div class="wolf-shoo-card">
+    <div class="wolf-shoo-icon" aria-hidden="true">🐺</div>
+    <div class="wolf-shoo-title" id="wolfShooTitle">A wolf is targeting Jethro's flock!</div>
+    <div class="wolf-shoo-body" id="wolfShooBody">Tap SHOO! fast to scare the wolf away from the sheep!</div>
+    <div class="wolf-shoo-bar-track" aria-hidden="true"><div class="wolf-shoo-bar-fill" id="wolfShooBarFill"></div></div>
+    <button class="wolf-shoo-btn" id="wolfShooBtn">SHOO! 🐺</button>
+    <button class="wolf-shoo-close" id="wolfShooClose">Leave it for now</button>
+  </div>
+</div>
 <div class="modal-overlay" id="truthChestModal" style="z-index:42;">
   <div class="modal-content" style="background:linear-gradient(155deg,#2a0a4a,#4a1080 55%,#7b1fa2);border:3px solid #ffd700;max-width:420px;">
     <div style="color:#ffd700;font-size:12px;letter-spacing:1.5px;text-align:center;">~ A TREASURE CHEST APPEARS ~</div>
@@ -3347,7 +3403,7 @@
       <span class="tc-label">&#9733; Truth Card Collected! &#9733;</span>
       <div class="tc-body" id="midTruthText"></div>
     </div>
-    <button class="btn" id="midChestContinueBtn">Continue to the Midian well -></button>
+    <button class="btn" id="midChestContinueBtn">Keep going -></button>
   </div>
 </div>
 
@@ -4077,6 +4133,10 @@
 <audio id="audReachedExit"    preload="auto" src="assets/audio/reached%20exit.mp3"></audio>
 <audio id="audAllComplete"    preload="auto" src="assets/audio/all%20challenges%20complete.mp3"></audio>
 <audio id="audLevelUp"        preload="auto" src="assets/audio/level%20up%202.mp3"></audio>
+<!-- #127 Jane 2026-06-03: triumphant fanfare layered over level-up when the 3rd/final checkpoint question is solved -->
+<audio id="audSuccessTrumpet" preload="auto" src="assets/audio/success%20trumpet.mp3"></audio>
+<!-- #128 Jane 2026-06-03: warm chime played when Moses greets a person on a real Interact press (vendor / servant / Zipporah) -->
+<audio id="audLevelUp1"       preload="auto" src="assets/audio/level%20up.mp3"></audio>
 <audio id="audCorrect"        preload="auto" src="assets/audio/correct%20answer.mp3"></audio>
 <audio id="audCollectCrown"   preload="auto" src="assets/audio/collect%20crown.mp3"></audio>
 <audio id="audChestOpen"      preload="auto" src="assets/audio/treasure%20chest%20open.mp3"></audio>
@@ -4088,6 +4148,8 @@
 <audio id="audWellMusic"   loop preload="auto" src="assets/audio/well%20game%20music.mp3"></audio>
 <!-- Rescue mini-game audio -->
 <audio id="audPuzzleBg"    loop preload="auto" src="assets/audio/puzzle%20background.mp3"></audio>
+<!-- #126 Jane 2026-06-03: dedicated CHALLENGE/checkpoint modal bed (was wrongly sharing the rescue game's puzzle background) -->
+<audio id="audChallengeMusic" loop preload="auto" src="assets/audio/challenge%20modal.mp3"></audio>
 <audio id="audWaveShep"         preload="auto" src="assets/audio/wave%20of%20shepherds.mp3"></audio>
 <audio id="audBossAlert"        preload="auto" src="assets/audio/alert.mp3"></audio>
 <audio id="audGirlScream"       preload="auto" src="assets/audio/girl%20scream.mp3"></audio>
@@ -4101,6 +4163,16 @@
 <audio id="audEpicTransition"   preload="auto" src="assets/audio/epic%20transition.mp3"></audio>
 <audio id="audRaceCountdown"    preload="auto" src="assets/audio/race%20countdown.mp3"></audio>
 <audio id="audWhooshReady"      preload="auto" src="assets/audio/whoosh%20ready.mp3"></audio>
+<!-- #129 Jane 2026-06-03: consistent modal open/close UI cues. Own elements so their
+     volumes stay independent of the gameplay 'pop'/'whooshReady' and the protected mini-games. -->
+<audio id="audModalOpen"        preload="auto" src="assets/audio/whoosh%20ready.mp3"></audio>
+<audio id="audModalClose"       preload="auto" src="assets/audio/pop.mp3"></audio>
+<!-- #130 Jane 2026-06-04: WOLF-RAID sequence beds. When the crossing is built and the
+     wolves charge the stranded flock, BOTH of these loop until every wolf is shooed off.
+     Own elements (loop) so the shared one-shot epicTransition/bossAlert used by the
+     protected rescue game keep their non-looping behaviour. -->
+<audio id="audWolfEpic"  loop preload="auto" src="assets/audio/epic%20transition.mp3"></audio>
+<audio id="audWolfAlert" loop preload="auto" src="assets/audio/alert.mp3"></audio>
 <audio id="audPotFill"          preload="auto" src="assets/audio/pot%20fill%20ding.mp3"></audio>
 <audio id="audSandThud"         preload="auto" src="assets/audio/sand%20thud.mp3"></audio>
 <audio id="audStealWhoosh"      preload="auto" src="assets/audio/steal%20whoosh.mp3"></audio>
@@ -4287,6 +4359,8 @@ const audio = {
   reachedExit:   $('audReachedExit'),    // Moses walks into the exit tile
   allComplete:   $('audAllComplete'),    // all 9 gates cleared fanfare
   levelUp:       $('audLevelUp'),        // victory/win modal fanfare
+  successTrumpet:$('audSuccessTrumpet'), // #127 fanfare for clearing a full checkpoint (3rd question)
+  levelUp1:      $('audLevelUp1'),       // #128 greeting chime on a real Interact with a person
   correct:       $('audCorrect'),        // correct answer on challenge
   collectCrown:  $('audCollectCrown'),   // hidden royal circlet pickup
   chestOpen:     $('audChestOpen'),      // treasure chest truth-card reveal
@@ -4320,6 +4394,7 @@ const audio = {
   sheepBleat:    $('audSheepBleat'),     // flock bleats when it trots in on a win
   gameOver:      $('audGameOver'),       // failure sting on a loss (game over 2.mp3, shared by both mini-games)
   puzzleBg:      $('audPuzzleBg'),        // rescue mini-game looping music bed
+  challengeMusic:$('audChallengeMusic'),  // #126 dedicated bed for the trivia/checkpoint challenge modal
   waveShep:      $('audWaveShep'),        // rescue: a new wave of shepherds charges in
   bossAlert:     $('audBossAlert'),       // rescue: the mighty shepherd (boss) approaches
   girlScream:    $('audGirlScream'),      // rescue: a daughter is taken
@@ -4333,6 +4408,10 @@ const audio = {
   epicTransition:$('audEpicTransition'),  // rescue: victory transition
   raceCountdown: $('audRaceCountdown'),   // rescue: 3-2-1 countdown beeps before the assault
   whooshReady:   $('audWhooshReady'),     // rescue: GO! launch whoosh
+  modalOpen:     $('audModalOpen'),       // #129 gentle whoosh when a UI modal opens
+  modalClose:    $('audModalClose'),      // #129 soft pop when a UI modal closes
+  wolfEpic:      $('audWolfEpic'),        // #130 looping epic bed during the crossing wolf raid
+  wolfAlert:     $('audWolfAlert'),       // #130 looping alarm during the crossing wolf raid
   // #108 Jane 2026-06-03: quiet overworld ambience one-shots (zone-based; see scheduleAmbience)
   ambChimes:     $('audAmbChimes'),       // ambience: soft wind chime shimmer (marketplace/breeze)
   ambCamel:      $('audAmbCamel'),         // ambience: distant camel grunt (marketplace caravan)
@@ -4341,20 +4420,19 @@ const audio = {
   ambSheep:      $('audAmbSheep'),         // ambience: far-off sheep bleat (pasture)
 };
 // volumes
-// #97 Jane 2026-06-02: "cut the scene 3 background music and only play the music
-// meant for challenge modal as kids enter challenge modal." The Midian overworld
-// now plays NO music bed. We neutralise the shared `bgm` track at the source so
-// EVERY legacy code path (startScene1's setMusic('bgm'), mini-game resume, the
-// chase-tension restore, etc.) stays silent regardless of which path fired it.
-// The only in-scene music is the challenge-modal puzzle bed (see openChallenge /
-// _closeChallengeModalAudio). Overriding play() to a resolved no-op keeps every
-// `audio.bgm.play().catch()` call safe.
+// #125 Jane 2026-06-03: RESTORE the soft Midian overworld music bed. #97 had
+// neutralised `bgm` at the source ("cut the scene 3 bg music"), but the
+// over-removal left the overworld dead-silent and Jane now wants the gentle bed
+// (midian calm.mp3) back together with the zone ambience. We simply set a soft
+// bed volume and leave `setMusic('bgm')` (fired in _startScene1Core, mini-game
+// resume, etc.) working as designed. The bed is DUCKED out everywhere it would
+// otherwise double up: mini-games save _prevBgmVolume + pause it, _killAllGameMusic
+// stops it on every screen transition, and openChallenge / _closeChallengeModalAudio
+// pause+restore it around the challenge-modal puzzle bed (added for #125 below).
 try {
-  audio.bgm.volume = 0;
-  audio.bgm.pause();
-  audio.bgm.play = function(){ return Promise.resolve(); };
-  // The chase "alerted" tension loop is also overworld music — silence it too,
-  // so the challenge-modal puzzle bed is genuinely the ONLY music in the scene.
+  audio.bgm.volume = 0.28;   // gentle overworld bed — sits under voice lines + sparse zone ambience
+  // The chase "alerted" tension loop stays OFF in the overworld (the wolf
+  // sequence manages its own audio — see #130). Only the calm `bgm` bed returns.
   if (audio.alerted) {
     audio.alerted.volume = 0;
     audio.alerted.pause();
@@ -4395,6 +4473,8 @@ if (audio.hint)          audio.hint.volume          = 0.60;
 if (audio.reachedExit)   audio.reachedExit.volume   = 0.85;
 if (audio.allComplete)   audio.allComplete.volume   = 0.85;
 if (audio.levelUp)       audio.levelUp.volume       = 0.85;
+if (audio.successTrumpet) audio.successTrumpet.volume = 0.85;
+if (audio.levelUp1)      audio.levelUp1.volume      = 0.8;
 if (audio.correct)       audio.correct.volume       = 0.75;
 if (audio.collectCrown)  audio.collectCrown.volume  = 0.75;
 if (audio.chestOpen)     audio.chestOpen.volume     = 0.75;
@@ -4432,6 +4512,15 @@ if (audio.ambCamel)      audio.ambCamel.volume      = 0.22;
 if (audio.ambWaterA)     audio.ambWaterA.volume     = 0.20;
 if (audio.ambWaterB)     audio.ambWaterB.volume     = 0.20;
 if (audio.ambSheep)      audio.ambSheep.volume      = 0.22;
+// #126 Jane 2026-06-03: challenge/checkpoint modal music bed (own track, not the rescue puzzle bed).
+if (audio.challengeMusic) audio.challengeMusic.volume = 0.18;
+// #129 Jane 2026-06-03: modal open/close UI cues — gentle so they polish without nagging.
+if (audio.modalOpen)  audio.modalOpen.volume  = 0.32;
+if (audio.modalClose) audio.modalClose.volume = 0.42;
+// #130 Jane 2026-06-04: wolf-raid loop beds — epic music bed + a recurring alert, layered
+// (the calm overworld bgm is ducked while these play, so it isn't "double music").
+if (audio.wolfEpic)  audio.wolfEpic.volume  = 0.50;
+if (audio.wolfAlert) audio.wolfAlert.volume = 0.30;
 
 let audioUnlocked = false;
 // v3.28 (Scene 3 port — CANONICAL §10): track silent-switch / muted-device
@@ -4529,7 +4618,7 @@ function _setSoundOn(on){
 // Used on transitions (menu return, win, pause, scene end) so no loop bleeds
 // across screens regardless of which code path started it.
 function _killAllGameMusic(){
-  const tracks = ['bgm','narration','alerted','cinNarrate','closeNarrate','epilNarrate','wellMusic','coverMusic','puzzleBg'];
+  const tracks = ['bgm','narration','alerted','cinNarrate','closeNarrate','epilNarrate','wellMusic','coverMusic','puzzleBg','challengeMusic','wolfEpic','wolfAlert'];
   tracks.forEach(k => { const a = audio[k]; if (!a) return; try { a.pause(); a.currentTime = 0; } catch(e){} });
 }
 try { window._killAllGameMusic = _killAllGameMusic; } catch(e){}
@@ -4586,6 +4675,42 @@ function play(name) {
   _lastPlayAt[name] = now;
   try { a.currentTime = 0; a.play().catch(()=>{}); return true; } catch(e){ return false; }
 }
+
+// #129 Jane 2026-06-03: CONSISTENT MODAL OPEN/CLOSE SOUND DESIGN.
+// Before this, most modals opened SILENTLY and closed on a bare 'click'. Give every
+// non-protected UI modal a gentle, uniform whoosh-in / pop-out cue from ONE central
+// class-watcher, so the design stays consistent no matter which code path opened the
+// modal — and so we never have to edit each call site (or the protected mini-games).
+function _modalOpenSfx(){  try { play('modalOpen');  } catch(e){} }
+function _modalCloseSfx(){ try { play('modalClose'); } catch(e){} }
+function _initModalSfxObservers(){
+  // PROTECTED mini-games (#wellPulleyModal, #rescueModal) are intentionally EXCLUDED —
+  // they own their own audio and must not be touched. Cinematics + the transient
+  // sceneBanner are excluded too (they have their own beds / feel).
+  const ids = ['dialogModal','challengeModal','dangerModal','winModal','pauseModal',
+               'tutorialModal','lessonModal','truthChestModal','mapPeekOverlay'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || el._modalSfxWired) return;
+    el._modalSfxWired = true;
+    let wasActive = el.classList.contains('active');
+    try {
+      new MutationObserver(() => {
+        const isActive = el.classList.contains('active');
+        if (isActive === wasActive) return;   // coalesced / no-op mutations: ignore
+        wasActive = isActive;
+        if (isActive) _modalOpenSfx(); else _modalCloseSfx();
+      }).observe(el, { attributes: true, attributeFilter: ['class'] });
+    } catch(e){}
+  });
+}
+try {
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', _initModalSfxObservers);
+  } else {
+    _initModalSfxObservers();
+  }
+} catch(e){}
 
 // #115 Jane 2026-06-03: SINGLE-CHANNEL VOICE LINES.
 // The shepherd-confrontation dialogue beats are scheduled by beat DURATION, but
@@ -4998,8 +5123,13 @@ function _preRender(srcImg, _maxDimOverride) {
     // device pixel ratio so the cache never sits below the on-screen draw size.
     // dpr=1 phones/desktops keep the small memory-friendly cache; retina/hi-DPI
     // (where the softness actually shows) get a 2x-larger, crisp cache.
-    const _dprMul = ((window.devicePixelRatio || 1) >= 1.5) ? 2 : 1;
-    const maxDim = (_maxDimOverride || 512) * _dprMul;
+    // #120 Jane 2026-06-03: the old _dprMul=2 made maxDim 1024 on retina, so a
+    // 1024-source sprite passed straight through UNCHANGED (no downscale) and
+    // then drew per-frame at a single-step 4-10x downscale = the exact blur Jane
+    // kept reporting. Match Scene 2 EXACTLY: cap at 512 and let the multi-step
+    // bicubic loop below produce a crisp intermediate (browsers downscale a
+    // 512 cache to the on-screen size cleanly; they smear a raw 1024 in one step).
+    const maxDim = _maxDimOverride || 512;
     const w0 = srcImg.naturalWidth || srcImg.width;
     const h0 = srcImg.naturalHeight || srcImg.height;
     if (!w0 || !h0) return srcImg;
@@ -5087,6 +5217,26 @@ const SPRITE_QUALITY_DOWNSCALE = new Set([
   'oasisTile',     // tile-6 — 1.45× TILE (small; 256px is plenty)
 ]);
 
+// #120 Jane 2026-06-03: LARGE STATIC overworld art that was previously left at
+// full 1024 res in SKIP_PRERENDER and drew per-frame at a single-step 4-10x
+// downscale (the persistent "all images blurry" report). Multi-step downscale
+// to a 512 cache = crisp at every realistic draw size (tents/wells draw ≤~320px).
+// EXCLUDES protected well/rescue mini-game sprites (wellMouth/wellBucket/midianWell,
+// res*, kidnap*, shepKidnap*, daughter4-7, daughterR*) — those keep their current
+// path so this fix can't regress the two locked mini-games.
+const SPRITE_BIG_STATIC = new Set([
+  'midianStart','midianMarketStall','desertExitNew',
+  'jethroTent','jethroExisting','jethroDaughter',
+  'midianPalm','oliveTree','terebinth','jarPile','sheepPenWall','reedsCluster',
+  'wildflowers','hearth','waterJar','shepherdStaff','scrollStrategy',
+  'appleTree','orangeTree',
+  'vendorFront','vendorBack','vendorLeft','vendorRight',
+  'sheep','sheepLeft','sheepRight','sheepBack','lamb','lambAlt','goat',
+  'daughter1','daughter2','daughter3',
+  'shepherdFront','shepherdLeft','shepherdRight','shepherdBack','shepherdLeftAlt',
+  'shepherd2Front','shepherd3Front','shepherd4','shepherd5'
+]);
+
 for (const k in IMG_SRC) {
   const img = new Image();
   // 2026-05-21 (Jane: "when I go to main menu and come back, sprites don't
@@ -5107,6 +5257,15 @@ for (const k in IMG_SRC) {
       const bled = SPRITE_BLEED.has(k) ? _alphaBleed(src) : src;
       if (SPRITE_QUALITY_DOWNSCALE.has(k)) {
         IMG[k] = _preRender(bled, 256);
+      } else if (SPRITE_BIG_STATIC.has(k)) {
+        // #120 Jane 2026-06-03: large static overworld art (market stalls, tent,
+        // start art, trees, jars, pen wall, vendor, sheep, daughters, shepherds).
+        // These were stuck in SKIP_PRERENDER at full 1024 res and drew at a
+        // single-step 4-10x downscale = blur. Route them through the multi-step
+        // bicubic 512 cache so they read crisp at every on-screen size. NOTE:
+        // protected well/rescue mini-game sprites are intentionally NOT in this
+        // set (their bugs are handled separately).
+        IMG[k] = _preRender(bled, 512);
       } else if (SKIP_PRERENDER.has(k)) {
         IMG[k] = bled;
       } else {
@@ -5250,6 +5409,36 @@ function tileAt(tx, ty) {
   return MAP[ty][tx];
 }
 function setTile(tx, ty, v) { if (ty>=0&&ty<MAP_H&&tx>=0&&tx<MAP_W) MAP[ty][tx] = v; }
+// Jane #148: Jethro's tent renders as a ~3×3-tile sprite RIGHT-anchored on the
+// topmost EXIT tile (tile 7), extending UP and LEFT. Without a collision
+// footprint Moses walks straight THROUGH the canvas art. Mark the tent's upper
+// body solid so he has to walk AROUND it and approach the door from the front.
+// The EXIT tile's own row (the door) + everything below it stay walkable so the
+// exit is always reachable, and the door tile itself is never blocked.
+let _tentBodyTiles = null;
+function _getTentBodyTiles(){
+  if (_tentBodyTiles) return _tentBodyTiles;
+  const set = new Set();
+  // topmost tile-7 = Jethro's tent door (matches window._topmostExit render)
+  let topY = MAP_H, topX = -1;
+  for (let y = 0; y < MAP_H; y++){
+    for (let x = 0; x < MAP_W; x++){
+      if (MAP[y] && MAP[y][x] === 7 && y < topY){ topY = y; topX = x; }
+    }
+  }
+  if (topX >= 0){
+    // upper body = the 3-wide (door col-1 .. col-3) x 2-tall (door row-1 .. row-2)
+    // block above-and-left of the door. Door row + below stay open for approach.
+    for (let dr = 1; dr <= 2; dr++){
+      for (let dc = 1; dc <= 3; dc++){
+        const bx = topX - dc, by = topY - dr;
+        if (bx >= 0 && by >= 0) set.add(by * 100 + bx);
+      }
+    }
+  }
+  _tentBodyTiles = set;
+  return set;
+}
 function isWalkable(tx, ty) {
   const t = tileAt(tx, ty);
   // Scene 3: the stream blocks Moses unless he's on a stepping stone.
@@ -5266,6 +5455,8 @@ function isWalkable(tx, ty) {
   // onto it actually triggers onHazardHit. Previously it was solid → silent bump.
   // On Scene 1 the palace TORCH is still treated as solid (via walls in that map).
   if (game.scene === 2) {
+    // Jethro's tent body is SOLID (Jane #148) — never blocks the EXIT door (7).
+    if (t !== 7 && _getTentBodyTiles().has(ty * 100 + tx)) return false;
     return t === 0 || t === 2 || t === 5 || t === 6 || t === 7 || t === 8 || t === 9;
   }
   return t === 0 || t === 5 || t === 6 || t === 7 || t === 8 || t === 9;
@@ -5697,7 +5888,8 @@ function updateStubbornGoat(dt){
    ========================================================================== */
 const zipporahNPC = {
   tx: 18, ty: 4,        // near the well, north of the pool
-  eyeCatchDone: false,
+  eyeCatchDone: false,  // one-time proximity NOTICE (glitter + star) has fired
+  talked: false,        // #128: dialog only opens on a real Interact press
   swayPhase: Math.random() * Math.PI * 2,
 };
 function updateZipporahNPC() {
@@ -5710,15 +5902,11 @@ function updateZipporahNPC() {
     try { updateHudStars(); } catch(e){}
     try { spawnGlitterBurstAtPlayer(18); } catch(e){}
     try { play('chime'); } catch(e){}
-    try { toast('Zipporah notices Moses across the well... ⭐ +1 star!'); } catch(e){}
-    setTimeout(() => {
-      try {
-        openDialog('Zipporah, Daughter of Jethro',
-          '"Are you the stranger who drove off those shepherds?"\n\n' +
-          'Her father Jethro later said: "Why did you leave the man? Invite him to eat bread!" (Exodus 2:20)\n\n' +
-          '"Moses agreed to stay — and Jethro gave him his daughter Zipporah in marriage." (Exodus 2:21)');
-      } catch(e){}
-    }, 1000);
+    // #128 Jane 2026-06-03: the proximity beat is now a one-time NOTICE only —
+    // it no longer auto-opens Zipporah's dialog (Jane: modals popping up on their
+    // own). The kid CHOOSES to greet her by stepping up and pressing Interact;
+    // interact() opens the dialog + plays the level-up greeting chime.
+    try { toast('Zipporah notices Moses by the well... ⭐ +1 star! Press Interact to greet her.'); } catch(e){}
   }
 }
 function drawZipporahNPC() {
@@ -5791,8 +5979,9 @@ function drawZipporahNPC() {
     ctx.fillStyle = '#8a4a18';
     ctx.beginPath(); ctx.ellipse(jx, jy - 5, 4, 2.5, 0, 0, Math.PI * 2); ctx.fill();
   }
-  // "!" prompt above before eye-catch fires
-  if (!zipporahNPC.eyeCatchDone) {
+  // "!" prompt above until Moses has actually GREETED her (#128: persists past the
+  // proximity notice so the kid knows she can be talked to via Interact).
+  if (!zipporahNPC.talked) {
     const bob = Math.sin(now / 210) * 2;
     ctx.fillStyle = '#ffe066';
     ctx.font = 'bold 11px Georgia';
@@ -5890,10 +6079,25 @@ function isScene3StreamBlocker(tx, ty, allowSteppingStones){
       // trees scattered through the open Midian grassland. Vector fallbacks below.
       appleTree:     'apple%20tree.png',
       orangeTree:    'orange%20tree.png',
+      // #146 Jane 2026-06-03: "image is not wired for old stone marker." The
+      // kind:'scroll' interactables (Old Stone Marker / Weathered Tablet) only
+      // ever drew a hand-coded vector scroll. Wire the real stone-tablet art.
+      stoneMarker:   'stone%20tablet.png',
     };
     for (const key in want) {
       const im = new Image();
-      im.onload  = ((k, img) => () => { IMG[k] = img; })(key, im);
+      // #146 / blur root-cause (Jane 2026-06-03): these optional décor sprites
+      // (trees, market stalls, dates, rocks, wolves, crystal) were assigned to
+      // IMG.* at FULL 1024² resolution — they bypass the main _store/_preRender
+      // pipeline entirely, so the #120 SPRITE_BIG_STATIC reroute never reached
+      // them. THAT is why trees/stalls/dates still looked blurry. Route them
+      // through the same 512-cap multi-step bicubic downscale used everywhere
+      // else, so they render crisp. Falls back to full-res if _preRender is
+      // unavailable or throws.
+      im.onload  = ((k, img) => () => {
+        try { IMG[k] = (typeof _preRender === 'function') ? _preRender(img, 512) : img; }
+        catch(e) { IMG[k] = img; }
+      })(key, im);
       im.onerror = () => {};
       im.src = 'assets/images/' + want[key];
     }
@@ -6675,14 +6879,26 @@ const scene3Herd = {
   spawned:false, done:false, builtToastShown:false, nearHintShown:false, raidToastShown:false,
   sheep:[], total:0, across:0, trail:[], slotNext:0,
   _ltx:0, _lty:0, idleMs:0, celebrateAt:0,
+  // #150 Jane 2026-06-03: one-shot guard so reaching the tent with stranded
+  // sheep warns the player ONCE before letting them leave the flock behind.
+  _exitWarned:false,
   // #117 Jane 2026-06-03: wolf-raid that fires the moment the crossing is built.
   wolves:[], wolvesIncoming:false, wolvesCleared:false, wolfSpeed:0.024,
+  // #138 Jane 2026-06-04: a SECOND, self-resolving raid that hits the flock once it
+  // is gathering in the pen. Kept on its OWN fields (never reuses wolves/wolvesCleared)
+  // so it can't reopen the graze→follow gate or block the rescue from completing.
+  penWolves:[], penRaidArmed:false, penRaidDone:false, penRaidNextAt:0,
+  _penWolfSpeed:0.022, _penRaidDeadline:0,
 };
 function resetScene3Herd(){
   scene3Herd.spawned=false; scene3Herd.done=false; scene3Herd.builtToastShown=false;
   scene3Herd.nearHintShown=false; scene3Herd.raidToastShown=false; scene3Herd.sheep=[]; scene3Herd.total=0; scene3Herd.across=0;
   scene3Herd.trail=[]; scene3Herd.slotNext=0; scene3Herd._ltx=0; scene3Herd._lty=0; scene3Herd.idleMs=0; scene3Herd.celebrateAt=0;
+  scene3Herd._exitWarned=false;
   scene3Herd.wolves=[]; scene3Herd.wolvesIncoming=false; scene3Herd.wolvesCleared=false; scene3Herd.wolfSpeed=0.024;
+  scene3Herd.penWolves=[]; scene3Herd.penRaidArmed=false; scene3Herd.penRaidDone=false; scene3Herd.penRaidNextAt=0;
+  scene3Herd._penWolfSpeed=0.022; scene3Herd._penRaidDeadline=0;
+  try { _stopWolfRaidAudio(); } catch(e){}   // #130: kill any lingering raid loops + un-duck the bed on (re)start
 }
 function _herdWalkable(tx,ty){ return (typeof MAP!=='undefined' && MAP[ty] && MAP[ty][tx]===0); }
 function _herdCrossingBuilt(){ try{ return _scene3CrystalCount()>=3; }catch(e){ return false; } }
@@ -6770,6 +6986,247 @@ function _herdUpdateWolves(dt, now){
     try { toast('🎉 The wolves are driven off! Now walk by the flock and lead them across to the pen.'); } catch(e){}
   }
 }
+// #138 Jane 2026-06-04: PEN RAID — a SECOND wolf wave once the rescued flock is
+// gathering in the pen, so the kid keeps shooing even after the river crossing.
+// Self-contained on penWolves[]/penRaid* fields (never touches the first-wave
+// wolves/wolvesCleared machinery, so the graze→follow gate stays open) and it
+// ALWAYS self-resolves (a hard despawn deadline) so it can never soft-lock the
+// rescue. Same shoo feel as the first wave: run straight at a pen wolf OR tap a
+// menaced sheep to open the SHOO! bar.
+const SCENE3_PEN_WOLF_CFG = {
+  easy:   { wolves: 1, speed: 0.018 },
+  medium: { wolves: 2, speed: 0.022 },
+  hard:   { wolves: 2, speed: 0.030 },
+};
+function _herdPenRaidActive(){
+  return scene3Herd.penRaidArmed && !scene3Herd.penRaidDone &&
+         scene3Herd.penWolves.some(w => w.state!=='flee' && w.state!=='gone');
+}
+function _herdNearestPenSheep(wx,wy){
+  let best=null, bestD=1e9;
+  for (const s of scene3Herd.sheep){
+    if (s.state!=='arrived' && s.state!=='follow') continue;   // the flock near/in the pen
+    const d=Math.hypot(s.px-wx, s.py-wy);
+    if (d<bestD){ bestD=d; best=s; }
+  }
+  return best;
+}
+function _herdMaybeStartPenRaid(now){
+  if (scene3Herd.penRaidArmed || scene3Herd.penRaidDone) return;
+  if (!scene3Herd.wolvesCleared) return;          // only AFTER the first wave is driven off
+  if (scene3Herd.done) return;                    // not once the whole flock is celebrated in
+  const arrived = scene3Herd.sheep.filter(s=>s.state==='arrived').length;
+  if (arrived < 2) return;                         // wait until a couple sheep are penned
+  if (!scene3Herd.penRaidNextAt){ scene3Herd.penRaidNextAt = now + 2600; return; }  // brief beat first
+  if (now < scene3Herd.penRaidNextAt) return;
+  // spawn the pen wave from the EAST edge, charging WEST into the pen.
+  const cfg = SCENE3_PEN_WOLF_CFG[(typeof game!=='undefined'&&game.difficulty)] || SCENE3_PEN_WOLF_CFG.easy;
+  scene3Herd.penWolves = [];
+  scene3Herd._penWolfSpeed = cfg.speed;
+  const p = SCENE3_HERD_PEN;
+  for (let i=0;i<cfg.wolves;i++){
+    const ex = (p.x1 + 3 + i) * TILE;             // a few tiles east of the pen
+    const ey = (p.y0 + 1 + i*2) * TILE;
+    scene3Herd.penWolves.push({ id:100+i, px:ex, py:ey, vx:0, vy:0, dir:-1, state:'charge', fleeUntil:0, _born:now });
+  }
+  scene3Herd.penRaidArmed = true;
+  scene3Herd._penRaidDeadline = now + 16000;      // hard safety: self-despawn so it never soft-locks
+  try{ toast('🐺 Wolves slipped toward the pen! Shoo them off the flock!'); }catch(e){}
+  try{ if(audio.fox){ audio.fox.currentTime=0; audio.fox.volume=0.5; audio.fox.play().catch(()=>{}); } }catch(e){}
+  try{ _cameraPunch(1.10, 600, ((p.x0+p.x1+1)/2)*TILE - camera.px, ((p.y0+p.y1+1)/2)*TILE - camera.py); }catch(e){}
+}
+function _herdUpdatePenWolves(dt, now){
+  if (!scene3Herd.penRaidArmed || scene3Herd.penRaidDone) return;
+  if (!scene3Herd.penWolves.length) return;
+  // safety net: the pen skirmish self-resolves so the rescue can never stall.
+  if (scene3Herd._penRaidDeadline && now >= scene3Herd._penRaidDeadline){
+    for (const w of scene3Herd.penWolves){
+      if (w.state!=='gone' && w.state!=='flee'){
+        w.state='flee'; w.fleeUntil = now + 900;
+        w.vx = 0.07; w.vy = 0; w.dir = 1;          // bolt back east off the map
+      }
+    }
+  }
+  const frozen = (window._guardFreezeUntil && now < window._guardFreezeUntil);
+  const shooR = TILE * 1.7;
+  for (const w of scene3Herd.penWolves){
+    if (w.state==='gone') continue;
+    if (w.state==='flee'){
+      w.px += (w.vx||0)*dt; w.py += (w.vy||0)*dt;
+      if (now >= w.fleeUntil) w.state='gone';
+      continue;
+    }
+    if (frozen) continue;                          // ❄️ Foe Freeze holds the pen wolves too
+    const dM = Math.hypot(player.px - w.px, player.py - w.py);
+    if (dM < shooR){
+      // Moses ran at the pen wolf — it bolts off the east edge.
+      w.state='flee'; w.fleeUntil = now + 1400;
+      const ang = Math.atan2(w.py - player.py, w.px - player.px);
+      w.vx = Math.cos(ang)*0.07; w.vy = Math.sin(ang)*0.07; w.dir = w.vx<0?-1:1;
+      try { if (audio.fox){ audio.fox.currentTime=0; audio.fox.volume=0.45; audio.fox.play().catch(()=>{}); } } catch(e){}
+      try { spawnGlitterBurstAtPlayer(10); } catch(e){}
+      try { play('pop')||play('chime'); } catch(e){}
+      try { toast('🐺 You drove a wolf out of the pen!'); } catch(e){}
+      continue;
+    }
+    // charge the nearest penned/following sheep; pin (menace) once on top of it
+    const s = _herdNearestPenSheep(w.px, w.py);
+    if (!s) continue;
+    const dS = Math.hypot(s.px - w.px, s.py - w.py);
+    if (dS > TILE*0.7){
+      const ang = Math.atan2(s.py - w.py, s.px - w.px);
+      const sp = (scene3Herd._penWolfSpeed||0.022) * dt * TILE;
+      w.px += Math.cos(ang)*sp; w.py += Math.sin(ang)*sp;
+      w.dir = Math.cos(ang)<0?-1:1;
+    } else {
+      w.px = s.px - TILE*0.4; w.py = s.py;          // menacing the penned sheep
+    }
+  }
+  // every pen wolf driven off → the pen is safe; the rescue continues unblocked
+  const stillThreat = scene3Herd.penWolves.some(w => w.state!=='flee' && w.state!=='gone');
+  if (!stillThreat){
+    scene3Herd.penRaidDone = true;
+    try { play('success')||play('levelUp')||play('chime'); } catch(e){}
+    try { spawnGlitterBurstAtPlayer(14); } catch(e){}
+    try { toast('🎉 The pen is safe — the flock can rest easy!'); } catch(e){}
+  }
+}
+// #137 Jane 2026-06-04: TAP-TO-SHOO modal. During the raid the kid can TAP a
+// targeted (grazing, danger-ringed) sheep to open a focused "shoo bar" — mash the
+// SHOO! button to fill the bar before it drains, and the wolf menacing that sheep
+// flees (same outcome as physically running at it). Pure alternate input; the
+// run-at-wolf mechanic still works. Never traps the kid (a "leave it" button closes
+// harmlessly). World pauses (state='tutorial') while the modal is open so the raid
+// freezes — resume restores the prior state. Reuses fox sfx + glitter for feel.
+const _wolfShoo = { open:false, sheep:null, wolf:null, fill:0, prevState:null, _raf:0, _lastT:0 };
+const _WOLF_SHOO_TAP = 18;          // fill added per SHOO! tap
+const _WOLF_SHOO_DRAIN = 0.009;     // fill drained per ms (~9/sec) — keeps it lively but kid-fair
+function _herdNearestWolfTo(x, y){
+  let best=null, bestD=1e9;
+  // #138: scan BOTH the first-wave wolves and the pen-raid wolves so a tap during
+  // either threat resolves to the correct live wolf.
+  const pools = [scene3Herd.wolves||[], scene3Herd.penWolves||[]];
+  for (const pool of pools){
+    for (const w of pool){
+      if (w.state==='flee' || w.state==='gone') continue;
+      const d=Math.hypot(w.px-x, w.py-y);
+      if (d<bestD){ bestD=d; best=w; }
+    }
+  }
+  return best;
+}
+function _wolfShooRenderBar(){
+  try { const f=document.getElementById('wolfShooBarFill'); if (f) f.style.width = Math.max(0,Math.min(100,_wolfShoo.fill)).toFixed(1)+'%'; } catch(e){}
+}
+function _wolfShooLoop(t){
+  if (!_wolfShoo.open) return;
+  const dt = _wolfShoo._lastT ? (t - _wolfShoo._lastT) : 16;
+  _wolfShoo._lastT = t;
+  _wolfShoo.fill = Math.max(0, _wolfShoo.fill - _WOLF_SHOO_DRAIN*dt);
+  _wolfShooRenderBar();
+  _wolfShoo._raf = requestAnimationFrame(_wolfShooLoop);
+}
+function _openWolfShooModal(sheep, wolf){
+  const overlay = document.getElementById('wolfShooOverlay');
+  if (!overlay) return;
+  // #138: open during EITHER the first wave OR the pen raid (both are live wolf threats).
+  if (!((scene3Herd.wolvesIncoming && !scene3Herd.wolvesCleared) || _herdPenRaidActive())) return;
+  if (_wolfShoo.open) return;
+  const sx = sheep ? sheep.px : player.px, sy = sheep ? sheep.py : player.py;
+  _wolfShoo.open = true; _wolfShoo.sheep = sheep || null;
+  _wolfShoo.wolf = wolf || _herdNearestWolfTo(sx, sy);
+  _wolfShoo.fill = 0; _wolfShoo._lastT = 0;
+  _wolfShooRenderBar();
+  overlay.classList.add('active');
+  if (game.state !== 'tutorial'){ _wolfShoo.prevState = game.state; game.state = 'tutorial'; }
+  try { if (audio.fox){ audio.fox.currentTime=0; audio.fox.volume=0.4; audio.fox.play().catch(()=>{}); } } catch(e){}
+  try { play('chime'); } catch(e){}
+  cancelAnimationFrame(_wolfShoo._raf);
+  _wolfShoo._raf = requestAnimationFrame(_wolfShooLoop);
+}
+function _wolfShooTap(){
+  if (!_wolfShoo.open) return;
+  _wolfShoo.fill = Math.min(100, _wolfShoo.fill + _WOLF_SHOO_TAP);
+  _wolfShooRenderBar();
+  try { play('pop'); } catch(e){}
+  try { spawnGlitterBurstAtPlayer(4); } catch(e){}
+  if (_wolfShoo.fill >= 100) _wolfShooSuccess();
+}
+function _wolfShooSuccess(){
+  const now = performance.now();
+  const sx = _wolfShoo.sheep ? _wolfShoo.sheep.px : player.px;
+  const sy = _wolfShoo.sheep ? _wolfShoo.sheep.py : player.py;
+  let w = _wolfShoo.wolf;
+  if (!w || w.state==='flee' || w.state==='gone'){ w = _herdNearestWolfTo(sx, sy); }  // re-validate
+  if (w){
+    w.state='flee'; w.fleeUntil = now + 1400;
+    const ang = Math.atan2(w.py - sy, w.px - sx);
+    w.vx = Math.cos(ang)*0.07; w.vy = Math.sin(ang)*0.07; w.dir = w.vx<0?-1:1;
+  }
+  try { if (audio.fox){ audio.fox.currentTime=0; audio.fox.volume=0.5; audio.fox.play().catch(()=>{}); } } catch(e){}
+  try { spawnGlitterBurstAtPlayer(12); } catch(e){}
+  try { play('success')||play('chime'); } catch(e){}
+  try { toast('🐺 You shooed the wolf away from the flock!'); } catch(e){}
+  // #138: the tapped wolf can belong to EITHER wave — re-check both and resolve each.
+  // mirror _herdUpdateWolves: if that was the last first-wave threat, the flock can now follow
+  const firstThreat = scene3Herd.wolves.some(x => x.state!=='flee' && x.state!=='gone');
+  if (!firstThreat && scene3Herd.wolves.length && !scene3Herd.wolvesCleared){
+    scene3Herd.wolvesCleared = true;
+    try { spawnGlitterBurstAtPlayer(16); } catch(e){}
+    try { toast('🎉 The wolves are driven off! Now walk by the flock and lead them across to the pen.'); } catch(e){}
+  }
+  // mirror _herdUpdatePenWolves: if that was the last pen-wave threat, the pen is safe
+  const penThreat = scene3Herd.penWolves.some(x => x.state!=='flee' && x.state!=='gone');
+  if (!penThreat && scene3Herd.penWolves.length && !scene3Herd.penRaidDone){
+    scene3Herd.penRaidDone = true;
+    try { spawnGlitterBurstAtPlayer(14); } catch(e){}
+    try { toast('🎉 The pen is safe — the flock can rest easy!'); } catch(e){}
+  }
+  _closeWolfShooModal();
+}
+function _closeWolfShooModal(){
+  const overlay = document.getElementById('wolfShooOverlay');
+  if (overlay) overlay.classList.remove('active');
+  cancelAnimationFrame(_wolfShoo._raf); _wolfShoo._raf = 0;
+  _wolfShoo.open = false; _wolfShoo.sheep = null; _wolfShoo.wolf = null; _wolfShoo.fill = 0; _wolfShoo._lastT = 0;
+  if (game.state === 'tutorial'){ game.state = (_wolfShoo.prevState != null ? _wolfShoo.prevState : 'playing'); _wolfShoo.prevState = null; }
+}
+(function _wireWolfShoo(){
+  const btn = document.getElementById('wolfShooBtn');
+  if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); _wolfShooTap(); });
+  const close = document.getElementById('wolfShooClose');
+  if (close) close.addEventListener('click', () => { try { play('click'); } catch(e){} _closeWolfShooModal(); });
+})();
+// #130 Jane 2026-06-04: WOLF-RAID AUDIO. While the crossing wolf attack is on, duck the
+// calm Midian bed and LOOP both the epic transition + the alert; restore the bed once the
+// last wolf is shooed off. Driven from the per-frame raid STATE (not a one-shot event) so
+// it self-heals across a pause/resume — togglePause() stops every track and resumes via
+// setMusic('bgm'), which would otherwise leave these non-_LOOP_TRACKS loops dead.
+let _wolfRaidAudioOn = false, _wolfRaidPrevBgmVol = null;
+function _startWolfRaidAudio(){
+  _wolfRaidAudioOn = true;
+  // duck the overworld bed (idempotent: only act while it's actually playing)
+  try { if (audio.bgm && !audio.bgm.paused){ if (_wolfRaidPrevBgmVol == null) _wolfRaidPrevBgmVol = audio.bgm.volume; audio.bgm.pause(); } } catch(e){}
+  // (re)start either loop if it isn't currently sounding (covers first start, pause/resume, autoplay rejects)
+  try { if (audio.wolfEpic  && audio.wolfEpic.paused){  audio.wolfEpic.loop=true;  audio.wolfEpic.volume=0.50; audio.wolfEpic.play().catch(()=>{}); } } catch(e){}
+  try { if (audio.wolfAlert && audio.wolfAlert.paused){ audio.wolfAlert.loop=true; audio.wolfAlert.volume=0.30; audio.wolfAlert.play().catch(()=>{}); } } catch(e){}
+}
+function _stopWolfRaidAudio(){
+  const epicOn  = audio.wolfEpic  && !audio.wolfEpic.paused;
+  const alertOn = audio.wolfAlert && !audio.wolfAlert.paused;
+  if (!_wolfRaidAudioOn && !epicOn && !alertOn) return;   // nothing to do — cheap no-op on idle frames
+  _wolfRaidAudioOn = false;
+  try { if (audio.wolfEpic){  audio.wolfEpic.pause();  audio.wolfEpic.currentTime  = 0; } } catch(e){}
+  try { if (audio.wolfAlert){ audio.wolfAlert.pause(); audio.wolfAlert.currentTime = 0; } } catch(e){}
+  // restore the calm overworld bed (honors master-mute via the .muted flag on the element)
+  try { if (audio.bgm){ if (_wolfRaidPrevBgmVol != null) audio.bgm.volume = _wolfRaidPrevBgmVol; audio.bgm.play().catch(()=>{}); } } catch(e){}
+  _wolfRaidPrevBgmVol = null;
+}
+function _syncWolfRaidAudio(){
+  // #138: keep the epic/alert bed running during the PEN raid too, not just the first wave.
+  const raidActive = !!((scene3Herd.wolvesIncoming && !scene3Herd.wolvesCleared) || _herdPenRaidActive());
+  if (raidActive) _startWolfRaidAudio(); else _stopWolfRaidAudio();
+}
 function initScene3Herd(){
   scene3Herd.sheep=[];
   // a stranded cluster on the WEST bank, a few tiles from the river
@@ -6792,6 +7249,8 @@ function initScene3Herd(){
 function _herdComplete(){
   if (scene3Herd.done) return;
   scene3Herd.done=true; scene3Herd.celebrateAt=performance.now();
+  // #138: clear any lingering pen wolves so the victory celebration is clean.
+  scene3Herd.penWolves=[]; scene3Herd.penRaidDone=true;
   try{ play('success')||play('levelUp')||play('chime'); }catch(e){}
   try{ game.stars+=5; updateHudStars(); }catch(e){}
   try{ game.treasureBags=(game.treasureBags||0)+40; }catch(e){}
@@ -6829,6 +7288,9 @@ function updateScene3Herd(dt){
     }
   }
   _herdUpdateWolves(dt, now);
+  _herdMaybeStartPenRaid(now);   // #138: arm a 2nd wave once the flock is gathering in the pen
+  _herdUpdatePenWolves(dt, now); // #138: drive + resolve that pen wave (self-despawns; never soft-locks)
+  _syncWolfRaidAudio();   // #130: epic transition + alert loop while the raid is on; bed restores on clear
   // Record Moses' breadcrumb trail in SHORT segments so the line hugs his path.
   const ddx=player.px-scene3Herd._ltx, ddy=player.py-scene3Herd._lty;
   let grew=false;
@@ -6899,9 +7361,17 @@ function updateScene3Herd(dt){
         tgt = idx>=0 ? trail[idx] : (trail[0]||{x:player.px,y:player.py});
       }
       const tx=tgt.x + s.jx, ty=tgt.y + s.jy;
-      const k=Math.min(1, dt/170);
-      const odx=tx-s.px;
-      s.px += odx*k; s.py += (ty-s.py)*k;
+      // #138 Jane 2026-06-04: WALK toward the lead point at a BOUNDED speed so the
+      // flock follows naturally and NEVER teleports — even when a freshly-recruited
+      // sheep's trail anchor sits many tiles back along Moses' earlier wander (the old
+      // proportional lerp yanked across that whole gap in a single frame → a visible
+      // snap, ~1 tile per frame at 60fps and double that at 30fps). The cap is per-ms
+      // (frame-rate independent) and a touch faster than Moses' own step so stragglers
+      // still close the gap and settle into a tidy conga line behind him.
+      const odx=tx-s.px, ody=ty-s.py;
+      const dist=Math.hypot(odx,ody);
+      const step=Math.min(dist, TILE*0.011*dt);
+      if (dist>0.01){ s.px += odx/dist*step; s.py += ody/dist*step; }
       if (Math.abs(odx)>0.4) s.dir = odx<0?-1:1;
       s.tx=Math.round(s.px/TILE); s.ty=Math.round(s.py/TILE);
       s.hop = (typeof isScene3StreamTile==='function' && isScene3StreamTile(s.tx,s.ty)) ? Math.abs(Math.sin(now/110 + s.id))*3 : 0;
@@ -7076,6 +7546,21 @@ function drawScene3Herd(){
       ctx.beginPath(); ctx.moveTo(cx-5,ay); ctx.lineTo(cx+5,ay); ctx.lineTo(cx,ay+6); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
+    // #138: during the PEN raid, a penned/following sheep being menaced by a pen
+    // wolf gets the same pulsing red danger ring (cue to run at it or tap to SHOO).
+    if (_herdPenRaidActive() && (s.state==='arrived' || s.state==='follow')){
+      const menaced = scene3Herd.penWolves.some(w => w.state!=='flee' && w.state!=='gone' && Math.hypot(w.px-s.px, w.py-s.py) < TILE*1.7);
+      if (menaced){
+        const cx=s.px-camera.px+TILE/2, cy=s.py-camera.py+TILE/2;
+        const dp=0.45+0.4*Math.sin(now/110 + s.id);
+        ctx.save();
+        ctx.strokeStyle='rgba(255,60,40,'+dp.toFixed(2)+')'; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.arc(cx, cy, TILE*0.62, 0, Math.PI*2); ctx.stroke();
+        ctx.fillStyle='#ff5a4a'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center';
+        ctx.fillText('!', cx, s.py-camera.py-2); ctx.textAlign='start';
+        ctx.restore();
+      }
+    }
   }
   // #117: draw the raiding wolves above the sheep (uses the existing flock-wolf art).
   if (scene3Herd.wolves && scene3Herd.wolves.length){
@@ -7084,10 +7569,20 @@ function drawScene3Herd(){
       try { _drawFlockWolf(w.px + TILE*0.5, w.py + TILE*0.6, w.dir); } catch(e){}
     }
   }
+  // #138: draw the pen-raid wolves the same way.
+  if (scene3Herd.penWolves && scene3Herd.penWolves.length){
+    for (const w of scene3Herd.penWolves){
+      if (w.state==='gone') continue;
+      try { _drawFlockWolf(w.px + TILE*0.5, w.py + TILE*0.6, w.dir); } catch(e){}
+    }
+  }
   if (built && !scene3Herd.done && scene3Herd.total>0){
     if (scene3Herd.wolvesIncoming && !scene3Herd.wolvesCleared){
       const rem=scene3Herd.wolves.filter(w=>w.state!=='flee'&&w.state!=='gone').length;
       _drawHerdCounter('🐺 Shoo the wolves!  '+rem+' left');
+    } else if (_herdPenRaidActive()){
+      const rem=scene3Herd.penWolves.filter(w=>w.state!=='flee'&&w.state!=='gone').length;
+      _drawHerdCounter('🐺 Wolves at the pen!  '+rem+' left');
     } else {
       _drawHerdCounter('🐑 Flock across: '+scene3Herd.across+'/'+scene3Herd.total);
     }
@@ -7279,10 +7774,11 @@ function _checkScene3JarDrop() {
     { toast: 'A clay jar shatters at the well — water everywhere!', dialog: '"Those shepherds again…\n\nEvery time we come to water the flock they try to drive us away.\n\n"But you stepped in — our father Jethro will want to hear about this." (Exodus 2:19-20)' },
   ];
   const line = lines[_scene3JarDrop.count - 1];
+  // #128 Jane 2026-06-03: this daughter beat used to AUTO-OPEN a full "Jethro's
+  // Daughter" dialog modal while the kid was just walking past the well — one of
+  // the "modals popping up on their own" Jane flagged. Keep the flavour as a
+  // non-blocking toast only; story modals now appear ONLY on a real Interact.
   try { toast(line.toast); } catch(e){}
-  setTimeout(function() {
-    try { openDialog("Jethro's Daughter", line.dialog); } catch(e){}
-  }, 1200);
 }
 
 /* ===== END PHASE C STEP 8 ===== */
@@ -8094,6 +8590,98 @@ const CHALLENGE_BANK = {
       correct:0,
       clue:'A priest and shepherd in the land of Midian. He welcomed a stranger who rescued his daughters at the well. He later became Moses’ father-in-law.',
       verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
+    // ===== #136 VARIETY PACK (Jane 2026-06-04) — expand pool to cut cross-run repeats =====
+    { id:'nve1', type:'trivia', q:'What did the daughters fill with water for their flock?',
+      options:['Troughs','Baskets','Drinking cups','Clay bowls'], correct:0,
+      verse:'"They came to draw water and fill the troughs..." (Exodus 2:16 NIV)' },
+    { id:'nve2', type:'trivia', q:'What did Moses give the thirsty flock at the well?',
+      options:['Hay','Water','Bread','Salt'], correct:1,
+      verse:'"He drew water for them and watered their flock." (Exodus 2:17 NIV)' },
+    { id:'nve3', type:'trivia', q:'What kind of animals did the daughters bring to the well?',
+      options:['A flock of sheep','Camels','Horses','Oxen'], correct:0,
+      verse:'"...to water their father\'s flock." (Exodus 2:16 NIV)' },
+    { id:'nve4', type:'trivia', q:'Who told their father about the kind stranger at the well?',
+      options:['The shepherds','The seven daughters','Some travelers','The soldiers'], correct:1,
+      verse:'"When the girls returned to Reuel their father..." (Exodus 2:18 NIV)' },
+    { id:'nve5', type:'trivia', q:'What did Jethro want to share with the stranger who helped his daughters?',
+      options:['A bag of gold','A meal of bread','A camel','A sword'], correct:1,
+      verse:'"Invite him to have something to eat." (Exodus 2:20 NIV)' },
+    { id:'nve6', type:'trivia', q:'Whose daughter did Moses marry in Midian?',
+      options:['The king\'s','The priest Jethro\'s','A shepherd\'s','A merchant\'s'], correct:1,
+      verse:'"[Jethro] gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
+    { id:'nve7', type:'trivia', q:'Where did tired Moses rest when he first reached Midian?',
+      options:['By a well','In a cave','Under a boat','On a hilltop'], correct:0,
+      verse:'"...and sat down by a well." (Exodus 2:15 NIV)' },
+    { id:'nve8', type:'tf', q:'True or False: Moses helped water the daughters\' flock at the well.',
+      options:['True','False'], correct:0,
+      verse:'"He drew water for them and watered their flock." (Exodus 2:17 NIV)' },
+    { id:'nve9', type:'tf', q:'True or False: The priest of Midian had seven sons.',
+      options:['True','False'], correct:1,
+      verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV). They were daughters, not sons.' },
+    { id:'nve10', type:'tf', q:'True or False: Moses ran to the land of Midian to be safe.',
+      options:['True','False'], correct:0,
+      verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
+    { id:'nve11', type:'tf', q:'True or False: Jethro told his daughters to send the stranger away.',
+      options:['True','False'], correct:1,
+      verse:'"Why did you leave him? Invite him to have something to eat." (Exodus 2:20 NIV)' },
+    { id:'nve12', type:'tf', q:'True or False: Moses married Zipporah in Midian.',
+      options:['True','False'], correct:0,
+      verse:'"[Jethro] gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
+    { id:'nve13', type:'tf', q:'True or False: Moses sat down by a well when he reached Midian.',
+      options:['True','False'], correct:0,
+      verse:'"...and sat down by a well." (Exodus 2:15 NIV)' },
+    { id:'nve14', type:'fill', q:'Jethro was the _______ of Midian.',
+      options:['king','priest','soldier','merchant'], correct:1,
+      clue:'A holy man who served God and led worship in Midian. He had seven daughters.',
+      verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
+    { id:'nve15', type:'fill', q:'Moses drew _______ from the well for the flock.',
+      options:['water','milk','oil','honey'], correct:0,
+      verse:'"He drew water for them and watered their flock." (Exodus 2:17 NIV)' },
+    { id:'nve16', type:'unscramble', q:'Unscramble the desert land where Moses found a new home:',
+      answer:'MIDIAN',
+      clue:'A desert land far from Egypt, with a well where Moses met seven sisters.',
+      verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
+    { id:'nve17', type:'unscramble', q:'Unscramble the woolly animals Moses watered:',
+      answer:'SHEEP',
+      clue:'The flock the daughters brought to the well, and the animals Moses later tended for Jethro.',
+      verse:'"He drew water for them and watered their flock." (Exodus 2:17 NIV)' },
+    { id:'nve18', type:'spot', q:'Which is NOT something Moses did at the well?',
+      options:['Watered the flock','Helped the daughters','Stopped rude shepherds','Built a pyramid'],
+      answer:'Built a pyramid',
+      clue:'Three happened at the Midian well. One belongs back in Egypt.',
+      verse:'Exodus 2:16-17 NIV' },
+    { id:'nve19', type:'spot', q:'Which does NOT belong in the desert of Midian?',
+      options:['Well','Sheep','Sand','Iceberg'],
+      answer:'Iceberg',
+      clue:'Three fit a hot, dry desert. One is made of ice from a frozen sea.',
+      verse:'The Midian desert is hot and dry.' },
+    { id:'nve20', type:'spot', q:'Which person did Moses NOT meet in Midian?',
+      options:['Jethro','Zipporah','Gershom','Pharaoh'],
+      answer:'Pharaoh',
+      clue:'Three are part of Moses\' Midian family. One is the king he fled from.',
+      verse:'Exodus 2:15-22 NIV' },
+    { id:'nve21', type:'spot', q:'Which one is NOT an animal at the well?',
+      options:['Sheep','Goat','Lamb','Tent'],
+      answer:'Tent',
+      clue:'Three are animals at the well. One is where Jethro lived.',
+      verse:'Exodus 2:16 NIV' },
+    { id:'nve22', type:'spot', q:'Which does NOT belong at a desert well?',
+      options:['Water','Troughs','Flocks','Snowman'],
+      answer:'Snowman',
+      clue:'Three are found at the well. One is made of snow.',
+      verse:'Exodus 2:16-17 NIV' },
+    { id:'nve23', type:'pair', q:'Find the lonely item with no match:',
+      items:[{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/well bucket.png',alt:'Bucket',key:'well'},{src:'assets/images/well bucket.png',alt:'Bucket',key:'well'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/jethro tent.png',alt:'Tent',key:'tent'},{src:'assets/images/jethro tent.png',alt:'Tent',key:'tent'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/goat.png',alt:'Goat',key:'goat'}],
+      answer:'goat',
+      verse:'Moses tended the flock in Midian. (Exodus 3:1)' },
+    { id:'nve24', type:'pair', q:'Which item stands alone?',
+      items:[{src:'assets/images/midian well.png',alt:'Well',key:'well'},{src:'assets/images/midian well.png',alt:'Well',key:'well'},{src:'assets/images/reeds.png',alt:'Reeds',key:'reed'},{src:'assets/images/reeds.png',alt:'Reeds',key:'reed'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/color zipporah.png',alt:'Zipporah',key:'bride'}],
+      answer:'bride',
+      verse:'Moses married Zipporah, one faithful wife. (Exodus 2:21)' },
+    { id:'nve25', type:'memory', q:'Flip the cards and match all the Midian pairs!',
+      verse:'God watched over Moses in the land of Midian.' },
+    { id:'nve26', type:'maze', q:'Guide Moses across the desert to the well!',
+      verse:'"He sat down by a well." (Exodus 2:15 NIV)' },
   ],
   medium: [
     // --- Moses as a young man: the turning point ---
@@ -8339,6 +8927,98 @@ const CHALLENGE_BANK = {
       correct:0,
       clue:'A brave young girl stands quietly near the river, watching and waiting to see if her baby brother is safe.',
       verse:'"His sister stood at a distance to see what would happen to him." (Exodus 2:4 NIV)' },
+    // ===== #136 VARIETY PACK (Jane 2026-06-04) — expand pool to cut cross-run repeats =====
+    { id:'nvm1', type:'trivia', q:'Why did the daughters think Moses was an Egyptian?',
+      options:['His language','His clothing and looks','His chariot','His crown'], correct:1,
+      verse:'"An Egyptian rescued us from the shepherds." (Exodus 2:19 NIV). They judged by his appearance.' },
+    { id:'nvm2', type:'trivia', q:'What did Moses do with Jethro\'s flock for many years?',
+      options:['Sold them','Tended them','Counted them','Painted them'], correct:1,
+      verse:'"Now Moses was tending the flock of Jethro his father-in-law..." (Exodus 3:1 NIV)' },
+    { id:'nvm3', type:'trivia', q:'According to Acts, how old was Moses when he left Egypt?',
+      options:['Twenty','Thirty','Forty','Sixty'], correct:2,
+      clue:'Stephen says Moses was forty (Acts 7:23).',
+      verse:'"When Moses was forty years old, he decided to visit his own people." (Acts 7:23 NIV)' },
+    { id:'nvm4', type:'trivia', q:'What stirred Moses to act before he fled Egypt?',
+      options:['He was bored','He saw a Hebrew being beaten','He wanted gold','Pharaoh ordered it'], correct:1,
+      verse:'"He saw an Egyptian beating a Hebrew, one of his own people." (Exodus 2:11 NIV)' },
+    { id:'nvm5', type:'trivia', q:'After helping the daughters, what did Moses agree to do?',
+      options:['Return to Egypt','Stay with Jethro','Travel to Canaan','Become a king'], correct:1,
+      verse:'"Moses agreed to stay with the man..." (Exodus 2:21 NIV)' },
+    { id:'nvm6', type:'trivia', q:'What does the name Gershom tell us about how Moses felt?',
+      options:['Like a king','Like a stranger in a foreign land','Like a priest','Like a soldier'], correct:1,
+      verse:'"...for he said, I have become a foreigner in a foreign land." (Exodus 2:22 NIV)' },
+    { id:'nvm7', type:'trivia', q:'Reuel, named in Exodus 2:18, is another name for whom?',
+      options:['A rude shepherd','Jethro','Moses\' brother','A son of Moses'], correct:1,
+      verse:'"When the girls returned to Reuel their father..." (Exodus 2:18 NIV). Reuel and Jethro are the same man.' },
+    { id:'nvm8', type:'tf', q:'True or False: Acts says Moses was forty years old when he left Egypt.',
+      options:['True','False'], correct:0,
+      verse:'"When Moses was forty years old, he decided to visit his own people." (Acts 7:23 NIV)' },
+    { id:'nvm9', type:'tf', q:'True or False: Moses tended Jethro\'s flock in the wilderness.',
+      options:['True','False'], correct:0,
+      verse:'"Now Moses was tending the flock of Jethro his father-in-law..." (Exodus 3:1 NIV)' },
+    { id:'nvm10', type:'tf', q:'True or False: The daughters first told their father a Hebrew had rescued them.',
+      options:['True','False'], correct:1,
+      verse:'"An Egyptian rescued us from the shepherds." (Exodus 2:19 NIV). They said an Egyptian.' },
+    { id:'nvm11', type:'tf', q:'True or False: Moses stayed only one day in Midian before going back to Egypt.',
+      options:['True','False'], correct:1,
+      verse:'"Moses agreed to stay with the man..." (Exodus 2:21 NIV). He stayed many years.' },
+    { id:'nvm12', type:'tf', q:'True or False: Jethro is also called Reuel in the Bible.',
+      options:['True','False'], correct:0,
+      verse:'"When the girls returned to Reuel their father..." (Exodus 2:18 NIV)' },
+    { id:'nvm13', type:'tf', q:'True or False: In Midian, Moses became a shepherd after being raised in Egypt.',
+      options:['True','False'], correct:0,
+      verse:'"Now Moses was tending the flock of Jethro..." (Exodus 3:1 NIV)' },
+    { id:'nvm14', type:'fill', q:'Moses agreed to _______ with Jethro, who gave him Zipporah.',
+      options:['leave','stay','fight','trade'], correct:1,
+      verse:'"Moses agreed to stay with the man..." (Exodus 2:21 NIV)' },
+    { id:'nvm15', type:'fill', q:'The daughters said, "An _______ rescued us from the shepherds."',
+      options:['Egyptian','angel','Israelite','elder'], correct:0,
+      verse:'"An Egyptian rescued us from the shepherds." (Exodus 2:19 NIV)' },
+    { id:'nvm16', type:'unscramble', q:'Unscramble the job Moses did in Midian:',
+      answer:'SHEPHERD',
+      clue:'A person who cares for sheep. Moses did this for Jethro for many years.',
+      verse:'"Now Moses was tending the flock of Jethro..." (Exodus 3:1 NIV)' },
+    { id:'nvm17', type:'unscramble', q:'Unscramble what Moses filled with water for the flock:',
+      answer:'TROUGHS',
+      clue:'Long stone channels by the well where the flock drinks.',
+      verse:'"They came to draw water and fill the troughs..." (Exodus 2:16 NIV)' },
+    { id:'nvm18', type:'spot', q:'Which is NOT part of Moses\' life in Midian?',
+      options:['Shepherding','Marriage','A burning palace','A well'],
+      answer:'A burning palace',
+      clue:'Three belong to Moses\' quiet years in Midian. One never happened.',
+      verse:'Exodus 2:15-22 NIV' },
+    { id:'nvm19', type:'spot', q:'Which word does NOT describe Jethro?',
+      options:['Priest','Shepherd','Host','Pharaoh'],
+      answer:'Pharaoh',
+      clue:'Three describe the kind man of Midian. One is the ruler of Egypt.',
+      verse:'Exodus 2:16-20 NIV' },
+    { id:'nvm20', type:'spot', q:'Which is NOT true of the rude shepherds at the well?',
+      options:['They drove the daughters away','They came to the well','Moses stopped them','They built Moses a tent'],
+      answer:'They built Moses a tent',
+      clue:'Three are true from Exodus 2. One never happened.',
+      verse:'"Some shepherds came along and drove them away..." (Exodus 2:17 NIV)' },
+    { id:'nvm21', type:'spot', q:'Which name is NOT from Moses\' Midian family?',
+      options:['Jethro','Zipporah','Gershom','Aaron'],
+      answer:'Aaron',
+      clue:'Three belong to Midian. Aaron was Moses\' brother back in Egypt.',
+      verse:'Exodus 2:16-22 NIV' },
+    { id:'nvm22', type:'spot', q:'Which does NOT belong at the desert well?',
+      options:['Water troughs','Thirsty flocks','Seven daughters','A royal throne'],
+      answer:'A royal throne',
+      clue:'Three fit the well of Midian. One belongs in a palace.',
+      verse:'Exodus 2:16 NIV' },
+    { id:'nvm23', type:'pair', q:'One item has no twin — tap it:',
+      items:[{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/midian well.png',alt:'Well',key:'well'},{src:'assets/images/midian well.png',alt:'Well',key:'well'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/jethro tent.png',alt:'Tent',key:'tent'},{src:'assets/images/jethro tent.png',alt:'Tent',key:'tent'},{src:'assets/images/color zipporah.png',alt:'Zipporah',key:'bride'},{src:'assets/images/color zipporah.png',alt:'Zipporah',key:'bride'},{src:'assets/images/hearth.png',alt:'Fire',key:'fire'}],
+      answer:'fire',
+      verse:'Jethro welcomed Moses to his hearth. (Exodus 2:20)' },
+    { id:'nvm24', type:'pair', q:'Spot the single item with no pair:',
+      items:[{src:'assets/images/well bucket.png',alt:'Bucket',key:'well'},{src:'assets/images/well bucket.png',alt:'Bucket',key:'well'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/reeds.png',alt:'Reeds',key:'reed'},{src:'assets/images/reeds.png',alt:'Reeds',key:'reed'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/goat.png',alt:'Goat',key:'goat'},{src:'assets/images/goat.png',alt:'Goat',key:'goat'},{src:'assets/images/golden sunbeam.png',alt:'Sun',key:'sun'}],
+      answer:'sun',
+      verse:'A new day dawned for Moses in Midian.' },
+    { id:'nvm25', type:'memory', q:'Match the Midian well pairs from memory!',
+      verse:'God remembered Moses in the desert. (Exodus 2:24-25)' },
+    { id:'nvm26', type:'maze', q:'Lead the shepherd Moses safely to Jethro\'s tent!',
+      verse:'"Moses agreed to stay with the man." (Exodus 2:21 NIV)' },
   ],
   hard: [
     // --- Deeper details from Exodus 1-2 and the Moses faith passages ---
@@ -8589,6 +9269,98 @@ const CHALLENGE_BANK = {
       correct:0,
       clue:'A Hebrew man raised with royal wealth and power. By faith he made a choice that cost him everything.',
       verse:'"By faith Moses, when he had grown up, refused to be known as the son of Pharaoh\'s daughter." (Hebrews 11:24 NIV)' },
+    // ===== #136 VARIETY PACK (Jane 2026-06-04) — expand pool to cut cross-run repeats =====
+    { id:'nvh1', type:'trivia', q:'Hebrews 11 says Moses refused to be called the son of whom?',
+      options:['Pharaoh','Pharaoh\'s daughter','Jethro','The priest'], correct:1,
+      verse:'"By faith Moses...refused to be known as the son of Pharaoh\'s daughter." (Hebrews 11:24 NIV)' },
+    { id:'nvh2', type:'trivia', q:'In Hebrews 11, Moses chose to suffer with God\'s people rather than enjoy what?',
+      options:['The riches of Midian','The fleeting pleasures of sin','A shepherd\'s life','A long journey'], correct:1,
+      verse:'"He chose to be mistreated...rather than to enjoy the fleeting pleasures of sin." (Hebrews 11:25 NIV)' },
+    { id:'nvh3', type:'trivia', q:'Hebrews 11 says Moses left Egypt not fearing what?',
+      options:['The sea','The king\'s anger','The desert','The shepherds'], correct:1,
+      verse:'"By faith he left Egypt, not fearing the king\'s anger." (Hebrews 11:27 NIV)' },
+    { id:'nvh4', type:'trivia', q:'Acts 7 says Moses was powerful in speech and _______.',
+      options:['silence','action','wealth','height'], correct:1,
+      verse:'"Moses was educated in all the wisdom of the Egyptians and was powerful in speech and action." (Acts 7:22 NIV)' },
+    { id:'nvh5', type:'trivia', q:'According to Acts 7, how many years did Moses spend before God called him at the bush?',
+      options:['Ten','Twenty','Forty','Seventy'], correct:2,
+      clue:'Stephen marks Moses\' life in spans of forty years (Acts 7:30).',
+      verse:'"After forty years had passed..." (Acts 7:30 NIV)' },
+    { id:'nvh6', type:'trivia', q:'Why did Moses flee Egypt, according to Exodus 2?',
+      options:['He was hungry','Pharaoh sought to kill him','He wanted treasure','He grew bored'], correct:1,
+      verse:'"When Pharaoh heard of this, he tried to kill Moses, but Moses fled..." (Exodus 2:15 NIV)' },
+    { id:'nvh7', type:'trivia', q:'What did Moses regard as greater wealth than Egypt\'s treasures?',
+      options:['The gold of Midian','Disgrace for the sake of Christ','A flock of sheep','A royal crown'], correct:1,
+      verse:'"He regarded disgrace for the sake of Christ as of greater value than the treasures of Egypt." (Hebrews 11:26 NIV)' },
+    { id:'nvh8', type:'tf', q:'True or False: Hebrews 11 says Moses chose mistreatment with God\'s people over the pleasures of sin.',
+      options:['True','False'], correct:0,
+      verse:'"He chose to be mistreated along with the people of God..." (Hebrews 11:25 NIV)' },
+    { id:'nvh9', type:'tf', q:'True or False: Acts 7 says Moses was about forty when he went to his own people.',
+      options:['True','False'], correct:0,
+      verse:'"When Moses was forty years old, he decided to visit his own people." (Acts 7:23 NIV)' },
+    { id:'nvh10', type:'tf', q:'True or False: Moses left Egypt because he feared the king\'s anger more than God.',
+      options:['True','False'], correct:1,
+      verse:'"By faith he left Egypt, not fearing the king\'s anger." (Hebrews 11:27 NIV)' },
+    { id:'nvh11', type:'tf', q:'True or False: Hebrews 11 calls Moses\' brave choice an act of faith.',
+      options:['True','False'], correct:0,
+      verse:'"By faith Moses, when he had grown up, refused..." (Hebrews 11:24 NIV)' },
+    { id:'nvh12', type:'tf', q:'True or False: Acts 7 says Moses spent forty years in Midian.',
+      options:['True','False'], correct:0,
+      verse:'"After forty years had passed, an angel appeared to Moses..." (Acts 7:30 NIV)' },
+    { id:'nvh13', type:'tf', q:'True or False: Moses thought Egypt\'s treasures were worth more than serving God.',
+      options:['True','False'], correct:1,
+      verse:'"He regarded disgrace for the sake of Christ as of greater value than the treasures of Egypt." (Hebrews 11:26 NIV)' },
+    { id:'nvh14', type:'fill', q:'By faith Moses refused to be known as the son of Pharaoh\'s _______.',
+      options:['son','daughter','servant','priest'], correct:1,
+      verse:'"...refused to be known as the son of Pharaoh\'s daughter." (Hebrews 11:24 NIV)' },
+    { id:'nvh15', type:'fill', q:'Moses left Egypt, not fearing the king\'s _______.',
+      options:['army','anger','palace','crown'], correct:1,
+      verse:'"By faith he left Egypt, not fearing the king\'s anger." (Hebrews 11:27 NIV)' },
+    { id:'nvh16', type:'unscramble', q:'Unscramble the ruler of Egypt whose anger Moses fled:',
+      answer:'PHARAOH',
+      clue:'The king of Egypt who tried to kill Moses, so Moses ran to Midian.',
+      verse:'"...but Moses fled from Pharaoh." (Exodus 2:15 NIV)' },
+    { id:'nvh17', type:'unscramble', q:'Unscramble what Hebrews 11 says guided Moses\' brave choices:',
+      answer:'FAITH',
+      clue:'Trusting God even when it costs everything. Hebrews 11 repeats, "By ____ Moses..."',
+      verse:'"By faith Moses, when he had grown up, refused..." (Hebrews 11:24 NIV)' },
+    { id:'nvh18', type:'spot', q:'Which is NOT part of Moses\' faith choice in Hebrews 11?',
+      options:['Refusing Pharaoh\'s palace','Suffering with God\'s people','Leaving Egypt by faith','Building the pyramids'],
+      answer:'Building the pyramids',
+      clue:'Three are acts of faith in Hebrews 11. One never happened.',
+      verse:'Hebrews 11:24-27 NIV' },
+    { id:'nvh19', type:'spot', q:'Which did Moses NOT turn away from in Hebrews 11?',
+      options:['Egypt\'s treasures','A royal title','Sinful pleasures','God\'s reward'],
+      answer:'God\'s reward',
+      clue:'Three were things Moses gave up. One was the reward he looked ahead to.',
+      verse:'"He was looking ahead to his reward." (Hebrews 11:26 NIV)' },
+    { id:'nvh20', type:'spot', q:'Which book does NOT tell about Moses in Midian or his flight?',
+      options:['Exodus','Acts','Hebrews','Revelation'],
+      answer:'Revelation',
+      clue:'Three speak of Moses leaving Egypt. One is John\'s vision of the end.',
+      verse:'Exodus 2; Acts 7; Hebrews 11' },
+    { id:'nvh21', type:'spot', q:'Which is NOT a reason Moses left Egypt?',
+      options:['He had killed an Egyptian','Pharaoh sought his life','By faith he chose God\'s people','He wanted Pharaoh\'s throne'],
+      answer:'He wanted Pharaoh\'s throne',
+      clue:'Three are true reasons. One is the opposite of his choice of faith.',
+      verse:'Exodus 2:11-15; Hebrews 11:24-27 NIV' },
+    { id:'nvh22', type:'spot', q:'Which does NOT fit Moses\' life in Acts 7?',
+      options:['Forty years in Egypt','Forty years in Midian','Eighty when God called him','Seven daughters of his own'],
+      answer:'Seven daughters of his own',
+      clue:'Acts 7 marks Moses\' life in forties. The odd one counts Jethro\'s daughters.',
+      verse:'Acts 7:23, 7:30 NIV' },
+    { id:'nvh23', type:'pair', q:'Tap the item with NO pair:',
+      items:[{src:'assets/images/jethro tent.png',alt:'Tent',key:'tent'},{src:'assets/images/jethro tent.png',alt:'Tent',key:'tent'},{src:'assets/images/midian well.png',alt:'Well',key:'well'},{src:'assets/images/midian well.png',alt:'Well',key:'well'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/color zipporah.png',alt:'Zipporah',key:'bride'},{src:'assets/images/color zipporah.png',alt:'Zipporah',key:'bride'},{src:'assets/images/star 7.png',alt:'Star',key:'star'}],
+      answer:'star',
+      verse:'God led Moses by faith through the desert.' },
+    { id:'nvh24', type:'pair', q:'Which item stands alone?',
+      items:[{src:'assets/images/golden sunbeam.png',alt:'Sun',key:'sun'},{src:'assets/images/golden sunbeam.png',alt:'Sun',key:'sun'},{src:'assets/images/hearth.png',alt:'Fire',key:'fire'},{src:'assets/images/hearth.png',alt:'Fire',key:'fire'},{src:'assets/images/reeds.png',alt:'Reeds',key:'reed'},{src:'assets/images/reeds.png',alt:'Reeds',key:'reed'},{src:'assets/images/goat.png',alt:'Goat',key:'goat'},{src:'assets/images/goat.png',alt:'Goat',key:'goat'},{src:'assets/images/well bucket.png',alt:'Bucket',key:'well'},{src:'assets/images/well bucket.png',alt:'Bucket',key:'well'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'}],
+      answer:'jar',
+      verse:'Moses drew water for the flock at the well. (Exodus 2:17)' },
+    { id:'nvh25', type:'memory', q:'Test your memory — match all the Midian pairs!',
+      verse:'By faith Moses endured. (Hebrews 11:27)' },
+    { id:'nvh26', type:'maze', q:'Help Moses leave Egypt and reach the safety of Midian!',
+      verse:'"By faith he left Egypt." (Hebrews 11:27 NIV)' },
   ],
 };
 // v2.1 MANDATORY CHECKPOINTS
@@ -9105,8 +9877,11 @@ function attemptMove(dir) {
                     || ((fc.tx + fd) === nx && fc.ty === ny)
                     || ((fc.tx - fd) === nx && fc.ty === ny);
       if (fcBlocks) {
+        // #124 Jane 2026-06-03: in Scene 3 this 'friendlyCamel' entity is a
+        // wandering SHEEP, so the old "The camel is grazing" toast was both
+        // wrong AND boring overhead spam every time Moses bumped it. Block it
+        // silently (just the pop cue, same as a guard) — no nagging toast.
         play('pop');
-        try { toast('The camel is grazing — walk around it!'); } catch(e){}
         return;
       }
     }
@@ -9343,7 +10118,24 @@ function attemptMove(dir) {
         const solvedGates = (typeof challengeGates !== 'undefined' && challengeGates)
           ? challengeGates.filter(g => g && g.solved).length : 0;
         if (totalGates > 0 && solvedGates >= totalGates) {
-          onReachExit();
+          // #150 Jane: gates are all clear — but if Jethro's flock is still
+          // stranded, WARN once before letting Moses leave them behind. Herding
+          // is optional by design (never a softlock), so a second step onto the
+          // tent proceeds to the exit regardless.
+          const _herdActive = (typeof scene3Herd !== 'undefined' && scene3Herd.spawned && !scene3Herd.done);
+          const _herdLeft = _herdActive ? Math.max(0, scene3Herd.total - scene3Herd.across) : 0;
+          if (_herdLeft > 0 && !scene3Herd._exitWarned) {
+            scene3Herd._exitWarned = true;
+            try { play('error'); } catch(e){}
+            try {
+              openDialog('Wait — don’t leave the flock!',
+                'Jethro’s sheep are still stranded! ' + _herdLeft + ' of ' + scene3Herd.total +
+                ' haven’t reached the pen. Lead them across the stepping stones so they’re safe.\n\n' +
+                'When you’re ready, step onto the tent again to enter Jethro’s home.');
+            } catch(e){}
+          } else {
+            onReachExit();
+          }
         } else {
           const remaining = Math.max(0, totalGates - solvedGates);
           try { toast('The exit is sealed! Clear all ' + totalGates + ' Checkpoints first. (' + remaining + ' still remaining.)'); } catch(e){}
@@ -9402,6 +10194,44 @@ document.addEventListener('touchend', e => {
   if (Math.abs(dx) > Math.abs(dy)) handleDirInput(dx > 0 ? 'right' : 'left');
   else handleDirInput(dy > 0 ? 'down' : 'up');
 }, { passive: true });
+
+// #137 Jane 2026-06-04: TAP a danger-ringed sheep during the wolf raid to open the
+// SHOO modal. Pointer events unify mouse + touch (cross-device). Only live during the
+// raid; converts the tap from client px → world px (the canvas is CSS-px draw space
+// with a camera offset, and the backing store is DPR-scaled, so scale the hit by
+// CANVAS_W/rect.width). A tap on empty ground does nothing — movement stays on swipe.
+canvas.addEventListener('pointerdown', e => {
+  try {
+    if (game.scene !== 2 || game.state !== 'playing') return;
+    if (typeof scene3Herd === 'undefined' || !scene3Herd.spawned) return;
+    // #138: a live threat is EITHER the first wave OR the pen raid.
+    const firstRaid = (scene3Herd.wolvesIncoming && !scene3Herd.wolvesCleared);
+    const penRaid = _herdPenRaidActive();
+    if (!(firstRaid || penRaid)) return;
+    if (_wolfShoo.open) return;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const worldX = (e.clientX - rect.left) * (CANVAS_W / rect.width)  + camera.px;
+    const worldY = (e.clientY - rect.top)  * (CANVAS_H / rect.height) + camera.py;
+    let hit=null, bestD=1e9;
+    for (const s of scene3Herd.sheep){
+      // first wave: tap a grazing (danger-ringed) sheep on the west bank.
+      // pen raid: tap a penned/following sheep being menaced by a pen wolf.
+      let eligible = false;
+      if (firstRaid && s.state === 'graze') eligible = true;
+      else if (penRaid && (s.state === 'arrived' || s.state === 'follow')){
+        eligible = scene3Herd.penWolves.some(w => w.state!=='flee' && w.state!=='gone' && Math.hypot(w.px - s.px, w.py - s.py) < TILE*2.2);
+      }
+      if (!eligible) continue;
+      const d = Math.hypot((s.px + TILE/2) - worldX, (s.py + TILE/2) - worldY);
+      if (d < TILE*1.1 && d < bestD){ bestD=d; hit=s; }
+    }
+    if (hit){
+      e.preventDefault();
+      _openWolfShooModal(hit, _herdNearestWolfTo(hit.px, hit.py));
+    }
+  } catch(err){}
+}, { passive: false });
 
 /* D-pad + buttons */
 document.querySelectorAll('.dpad-btn').forEach(btn => {
@@ -10298,7 +11128,7 @@ function _startScene1Core() {
   // reset Scene 3 one-shot flags so they fire again on a fresh run
   try { _scene3StoneTipShown = false; } catch(e){}
   try { _scene3SS.active = false; _scene3SS.shown = false; } catch(e){}
-  try { zipporahNPC.eyeCatchDone = false; } catch(e){}
+  try { zipporahNPC.eyeCatchDone = false; zipporahNPC.talked = false; } catch(e){}
   try { _scene3LastShepherdToastShown = false; } catch(e){}
   try { _scene3Ram.active = false; _scene3Ram._inited = false; } catch(e){}
   try { _scene3JarDrop.count = 0; _scene3JarDrop.nextAt = 0; } catch(e){}
@@ -10503,6 +11333,17 @@ $('tutNextBtn').addEventListener('click', () => {
    the world (state='tutorial') and restores the prior state on dismiss. */
 const TUT_MODE_KEY = 'bek.bundle1.tutMode';
 function _tutModeOn(){ try { return localStorage.getItem(TUT_MODE_KEY) !== '0'; } catch(e){ return true; } }
+// #141 Jane 2026-06-04: persist the tutorial-mode choice (shared key across all three
+// scenes). Paired with the cover-page + pause-modal toggles wired below so a kid /
+// parent can switch tutorial pop-ups on or off either before or mid-play.
+function _setTutMode(on){ try { localStorage.setItem(TUT_MODE_KEY, on ? '1' : '0'); } catch(e){} }
+function _syncTutToggles(){
+  try {
+    const on = _tutModeOn();
+    const cov = document.getElementById('tutModeToggle');     if (cov) cov.checked = on;
+    const pau = document.getElementById('tutModeTogglePause'); if (pau) pau.checked = on;
+  } catch(e){}
+}
 const _firstEventSeen = { river:false, flock:false, shepherd:false, checkpoint:false, crown:false };
 function _resetFirstEventSeen(){ for (const k in _firstEventSeen) _firstEventSeen[k] = false; }
 let _tipPopupPrevState = null;
@@ -10530,6 +11371,33 @@ function _hideTipPopup(){
   const btn = document.getElementById('tipPopupBtn');
   if (btn) btn.addEventListener('click', () => { try { play('click'); } catch(e){} _hideTipPopup(); });
 })();
+// #141 Jane 2026-06-04: wire the cover-page + pause-modal tutorial toggles. Both
+// read/write the shared bek.bundle1.tutMode key and mirror each other so the kid /
+// parent sees one consistent setting wherever they flip it.
+(function _wireTutToggles(){
+  const cov = document.getElementById('tutModeToggle');
+  if (cov && !cov._wired){
+    cov._wired = true;
+    cov.checked = _tutModeOn();
+    cov.addEventListener('change', () => {
+      _setTutMode(!!cov.checked);
+      const pau = document.getElementById('tutModeTogglePause');
+      if (pau) pau.checked = cov.checked;        // keep both in sync
+      try { play('click'); } catch(e){}
+    });
+  }
+  const pau = document.getElementById('tutModeTogglePause');
+  if (pau && !pau._wired){
+    pau._wired = true;
+    pau.checked = _tutModeOn();
+    pau.addEventListener('change', () => {
+      _setTutMode(!!pau.checked);
+      const c = document.getElementById('tutModeToggle');
+      if (c) c.checked = pau.checked;            // keep both in sync
+      try { play('click'); } catch(e){}
+    });
+  }
+})();
 // Proximity scan — called each playing frame. Cheap distance checks; each popup
 // fires at most once per scene run (registry reset on scene start/reset).
 function _checkScene3Tips(){
@@ -10549,7 +11417,7 @@ function _checkScene3Tips(){
     for (const s of scene3Herd.sheep){
       if (s.state === 'graze' && Math.max(Math.abs(Math.round(s.px/TILE)-px), Math.abs(Math.round(s.py/TILE)-py)) <= 2){
         showTipPopup('flock', { icon:'🐑', title:'A Lost Flock',
-          body:'These sheep are stranded! Once the crossing is built, walk close and they’ll follow you across the stepping stones. Watch out — a rude shepherd may rush to scatter them, so hurry, freeze him, or reach the stones!' });
+          body:'These sheep are stranded! The moment you build the crossing, hungry wolves rush in and target Jethro’s flock — a red ring marks a sheep in danger. Run straight at a wolf to scare it off, or TAP a ringed sheep to open the SHOO! bar and drive its wolf away. Clear every wolf, then walk close and the flock will follow you across to the pen.' });
         return;
       }
     }
@@ -10560,7 +11428,7 @@ function _checkScene3Tips(){
       if (sh.shovedOff || sh.caught) continue;
       if (Math.max(Math.abs(sh.tx-px), Math.abs(sh.ty-py)) <= 3){
         showTipPopup('shepherd', { icon:'🧔', title:'Rude Shepherds',
-          body:'Three rude shepherds guard the well. Bump into one and you’ll lose a heart — but solve his checkpoint riddle and he’ll back off. ❄️ Foe Freeze stops them; ⚡ Speed Burst helps you slip past.' });
+          body:'Three rude shepherds block the way to the well. They won’t hurt Moses — they just shove him back a step. Solve the Bible Checkpoint right beside each one to drive him off and earn a blue crystal! ❄️ Foe Freeze stops them; ⚡ Speed Burst helps you slip past.' });
         return;
       }
     }
@@ -10779,7 +11647,7 @@ function interact(){
     const sdx = Math.abs(player.tx - servantNPC.tx);
     const sdy = Math.abs(player.ty - servantNPC.ty);
     if (Math.max(sdx, sdy) <= 1) {
-      play('chime');
+      play('levelUp1') || play('chime');   // #128 greeting chime on a real Interact
       openDialog('A Fellow Traveler', '"Peace to you, stranger. Pharaoh\u2019s scouts ride hard - stay low behind the dunes, and may the God of your fathers guard your steps."');
       return;
     }
@@ -10813,11 +11681,29 @@ function interact(){
       return;
     }
   }
-  // contextual fallback based on where Moses is
+  // #128 Jane 2026-06-03: ZIPPORAH greets Moses ONLY on a real Interact press
+  // (was auto-opening on proximity). Generous reach (Chebyshev <= 3) so she's
+  // easy to greet from the well plaza, and a warm level-up chime rewards saying
+  // hello. The "!" prompt over her head clears once talked.
+  if (typeof zipporahNPC !== 'undefined') {
+    const zdx = Math.abs(player.tx - zipporahNPC.tx);
+    const zdy = Math.abs(player.ty - zipporahNPC.ty);
+    if (Math.max(zdx, zdy) <= 3) {
+      zipporahNPC.talked = true;
+      try { play('levelUp1') || play('chime'); } catch(e){}
+      openDialog('Zipporah, Daughter of Jethro',
+        '"Are you the stranger who drove off those shepherds?"\n\n' +
+        'Her father Jethro later said: "Why did you leave the man? Invite him to eat bread!" (Exodus 2:20)\n\n' +
+        '"Moses agreed to stay — and Jethro gave him his daughter Zipporah in marriage." (Exodus 2:21)');
+      return;
+    }
+  }
+  // #139 Jane 2026-06-03: the old empty-Interact fallbacks were stale desert /
+  // stealth lines ("hiding", "look for travelers") that made no sense in the
+  // peaceful Midian market. Give the child the actual Scene-3 goal instead.
   const nearExit = (player.tx >= 35);
-  if (nearExit) toast('The Midian well is just ahead - keep going!');
-  else if (player.crouched) toast('You are hiding well. Move when the coast is clear.');
-  else toast('Look for travelers, markers, and water skins to interact with.');
+  if (nearExit) toast('Jethro’s tent is just ahead — finish the market puzzles and lead the flock across first!');
+  else toast('Solve the market checkpoints to earn blue crystals, then cross the stream to help Jethro’s daughters and their flock!');
 }
 
 function triggerInteractable(obj){
@@ -10827,7 +11713,7 @@ function triggerInteractable(obj){
   // their line to "(You have already visited here.)", which read as the vendor
   // disappearing after Moses talked to him).
   if (obj.reward === 'hint') {
-    play('chime');
+    play('levelUp1') || play('chime');   // #128 greeting chime — hint NPCs are manual-Interact only
     openDialog(obj.name, obj.body);
     return;
   }
@@ -10837,6 +11723,12 @@ function triggerInteractable(obj){
   }
   obj.used = true;
   play('chime');
+  // #123 Jane 2026-06-03: bread / dates / waterskin already show all their info
+  // on the pickup modal (openDialog at the end of this fn), so the extra overhead
+  // toast was redundant noise. Suppress the toast for those auto-pickup food/water
+  // kinds — keep the modal, the reward and the particle burst.
+  const _noToast = (obj.kind === 'bread' || obj.kind === 'dates' ||
+                    obj.kind === 'jug'   || obj.kind === 'waterskin' || obj.kind === 'water');
   // award reward
   if (obj.reward === 'heal') {
     // v3.3 LANE 3 (Jane 2026-04-23): heal pickups (waterskin) were the only
@@ -10846,18 +11738,18 @@ function triggerInteractable(obj){
       game.hearts++; updateHudHearts();
       try { spawnGlitterBurstAtPlayer(16); } catch(e){}
       try { play('coin') || play('chime'); } catch(e){}
-      try { toast((obj.name || 'Heart') + ' restored! +1 heart'); } catch(e){}
+      if (!_noToast) { try { toast((obj.name || 'Heart') + ' restored! +1 heart'); } catch(e){} }
     } else {
-      try { toast(obj.name + ' — but Moses is already at full hearts!'); } catch(e){}
+      if (!_noToast) { try { toast(obj.name + ' — but Moses is already at full hearts!'); } catch(e){} }
     }
   } else if (obj.reward === 'stars2') {
     game.stars += 2; updateHudStars();
     spawnGlitterBurstAtPlayer(12);
-    try { toast((obj.name || 'Item') + ' picked up! +2 stars'); } catch(e){}
+    if (!_noToast) { try { toast((obj.name || 'Item') + ' picked up! +2 stars'); } catch(e){} }
   } else if (obj.reward === 'stars3') {
     game.stars += 3; updateHudStars();
     spawnGlitterBurstAtPlayer(14);
-    try { toast((obj.name || 'Item') + ' picked up! +3 stars'); } catch(e){}
+    if (!_noToast) { try { toast((obj.name || 'Item') + ' picked up! +3 stars'); } catch(e){} }
   } else if (obj.reward === 'stars50') {
     game.stars += 50;
     game.crownFound = true;
@@ -10983,8 +11875,8 @@ function playChestAnim(bodyId, lidId, raysId, stageId, cardId){
 $('actionBtn').addEventListener('click', () => { unlockAudio(); interact(); });
 /* rotating contextual hints */
 const HINT_POOL = [
-  "Head east! The Midian well is on the far side.",
-  "Reeds, palms, and jar piles [#] hide Moses — stay in cover to avoid the shepherds!",
+  "Head east! Jethro's tent waits past the well on the far side.",
+  "Solve the checkpoints to earn blue crystals, then cross the stream to help Jethro's daughters!",
   "Gold ! marks mean you can interact - press Interact!",
   "Fire and hot sand burn - walking into them hurts!",
   "Collect stars for bonus points.",
@@ -11005,24 +11897,29 @@ $('hintBtn').addEventListener('click', () => {
   play('click');
   try { play('hint'); } catch(e){}  // v2.2.7 hint-chime reveal
   let ctxHint = null;
-  // nearest unsolved challenge gate
+  // #140 Jane: the hint used to fall through to a single fixed line
+  // ("checkpoint 3 tiles south") because the old guard/crouch stealth branches
+  // never fire in Scene 3 (no looking guards here). Give a live TWO-AXIS
+  // direction to the nearest unsolved checkpoint so it updates as Moses moves,
+  // then route to Jethro's tent once every checkpoint is cleared.
   const nextGate = challengeGates.find(g => !g.solved);
   const exit = findTileOfType(7);
 
-  if (guards.some(g => g.state === 'alerted')) {
-    ctxHint = "A shepherd is coming! Duck into reeds, palms, or jar piles to hide.";
-  } else if (isAnyGuardLooking() && !player.crouched) {
-    ctxHint = "A shepherd can see you! Move into cover.";
-  } else if (player.crouched) {
-    ctxHint = "You are hidden — cover is blocking the shepherd’s view.";
-  } else if (nextGate) {
+  if (nextGate) {
     const dx = nextGate.tx - player.tx, dy = nextGate.ty - player.ty;
-    const dir = Math.abs(dx) > Math.abs(dy) ? (dx>0?'east':'west') : (dy>0?'south':'north');
+    const adx = Math.abs(dx), ady = Math.abs(dy);
+    const parts = [];
+    if (adx >= 1) parts.push(adx + (adx > 1 ? ' tiles ' : ' tile ') + (dx > 0 ? 'east' : 'west'));
+    if (ady >= 1) parts.push(ady + (ady > 1 ? ' tiles ' : ' tile ') + (dy > 0 ? 'south' : 'north'));
+    const where = parts.length ? parts.join(' & ') : 'right where you are standing';
     const remaining = nextGate.questions.length - nextGate.bundleIndex;
-    ctxHint = "A Bible checkpoint waits " + dir + " - " + remaining + " questions to clear it.";
+    ctxHint = "Next checkpoint is " + where + " — answer " + remaining +
+              (remaining === 1 ? " question" : " questions") + " to earn a blue crystal!";
   } else if (exit) {
     const dx = exit.x - player.tx, dy = exit.y - player.ty;
-    if (Math.abs(dx) + Math.abs(dy) < 6) ctxHint = "You are close to the Midian well - go now!";
+    ctxHint = (Math.abs(dx) + Math.abs(dy) < 6)
+      ? "Jethro's tent is close — cross the stream and lead the flock in!"
+      : "Head east to Jethro's tent — rescue the daughters and bring the flock across!";
   }
 
   const msg = ctxHint || HINT_POOL[hintIndex % HINT_POOL.length];
@@ -11080,20 +11977,22 @@ function getHintForQuestion(q){
   if (q.clue) return q.clue;
 
   // --- Layer 2: type-specific gameplay coaching ---
+  // #135 Jane 2026-06-04: clues must be SHORT & CRISP — one line, not a passage.
+  // Kids should get the answer right after reading. (Was flowery multi-sentence.)
   const byType = {
-    match:      'Riddle: every name on the left has a friend on the right. People pair with what they DID; places pair with what HAPPENS there. Find the handshake.',
-    sequence:   'Riddle: a Bible story is like a rope — each knot comes after another. Which knot is tied FIRST? Which is LAST? Line them up like stepping-stones.',
-    seq:        'Riddle: a Bible story is like a rope — each knot comes after another. Which knot is tied FIRST? Which is LAST? Line them up like stepping-stones.',
-    unscramble: 'Riddle: the letters in front of you carry the answer inside them — like a treasure in a broken pot. Whisper the sounds out loud and the word hides less well.',
-    unscr:      'Riddle: the letters in front of you carry the answer inside them — like a treasure in a broken pot. Whisper the sounds out loud and the word hides less well.',
-    memory:     'Riddle: twins wear the same face. Turn two cards; if they do not smile the same, remember where they hid, and keep hunting their twin.',
-    maze:       'Riddle: walls say NO; open floor says YES. Trace a path with your eyes BEFORE your finger — then walk the one the walls allow.',
-    spot:       'Riddle: three belong to one family; one is a stranger wearing a mask. Ask each name, "Are you a PERSON of Israel, or a PLACE?" The odd one out is hiding in plain sight.',
-    pair:       'Riddle: each picture has a twin — except one lonely face. Count in pairs; the one left without a partner is your answer.',
-    count:      'Riddle: your eyes are a shepherd and the things on screen are a flock. Only count the sheep the question is asking for — leave the goats alone.',
-    tf:         'Riddle: the Bible tells the true story. Read the sentence with a careful eye — is even ONE word a pebble in the shoe? If yes, it is False.',
-    fill:       'Riddle: the blank is a missing stone in a wall. Which word makes the wall stand straight when you slot it in?',
-    trivia:     'Riddle: every answer sleeps inside the Bible story. Picture the scene in your head — the person, the place, the moment — and the right one will stand up.',
+    match:      'Match each name to what they did.',
+    sequence:   'Put the events in order — first to last.',
+    seq:        'Put the events in order — first to last.',
+    unscramble: 'Sound out the letters — the word pops out.',
+    unscr:      'Sound out the letters — the word pops out.',
+    memory:     'Flip two cards; remember where each picture hides.',
+    maze:       'Trace the open path with your eyes, then walk it.',
+    spot:       'Three belong together; one is the odd one out.',
+    pair:       'Every picture has a twin — find the lonely one.',
+    count:      'Count only what the question asks, one by one.',
+    tf:         'If even one word is wrong, it is False.',
+    fill:       'Which word makes the sentence true?',
+    trivia:     'Picture the scene — the answer is in the story.',
   };
   const typeHint = byType[q.type];
 
@@ -11105,69 +12004,74 @@ function getHintForQuestion(q){
   const text  = (q.q || q.prompt || '').toLowerCase();
   const hasWord = (...words) => words.some(w => new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b', 'i').test(text));
   const topic = (() => {
+    // #135 Jane 2026-06-04: every clue trimmed to ONE crisp line that points
+    // straight at the answer. The catch-all `hasWord('moses')` rule was REMOVED —
+    // because almost every question contains "Moses", it fired the generic
+    // "Moses grew up a Hebrew" line as the default on unrelated questions (e.g.
+    // "how old was Moses?", "find the odd one out"). Unmatched questions now fall
+    // through to the crisp type hint / verse hint instead of an irrelevant blurb.
     if (hasWord('basket','papyrus','reed','reeds'))
-      return 'Moses\' mom made a waterproof basket from papyrus reeds and hid him in the Nile (Exodus 2:3).';
+      return 'A papyrus basket hid baby Moses on the Nile (Exodus 2:3).';
     if (hasWord('nile','river'))
-      return 'The Nile is the big river in Egypt. Pharaoh\'s daughter went there to bathe (Exodus 2:5).';
+      return 'The great river of Egypt — the Nile (Exodus 2:5).';
     if (text.indexOf("pharaoh's daughter") !== -1 || hasWord('princess'))
-      return 'Pharaoh\'s daughter found baby Moses, loved him, and raised him as her son (Exodus 2:6-10).';
+      return 'Pharaoh\'s daughter found and raised baby Moses (Exodus 2:5-10).';
     if (hasWord('pharaoh'))
-      return 'Pharaoh was the king of Egypt. He feared the Hebrews and made them slaves (Exodus 1:8-11).';
+      return 'The king of Egypt who enslaved the Hebrews (Exodus 1:8-11).';
     if (hasWord('midwives','midwife','shiphrah','puah'))
-      return 'Shiphrah and Puah feared God more than the king and saved baby boys (Exodus 1:15-21).';
+      return 'The God-fearing midwives — Shiphrah and Puah (Exodus 1:15-21).';
     if (hasWord('miriam','sister'))
-      return 'Miriam was Moses\' big sister. She watched the basket from the reeds (Exodus 2:4).';
+      return 'Moses\' big sister who watched the basket — Miriam (Exodus 2:4).';
     if (hasWord('jochebed','mother'))
-      return 'Jochebed was Moses\' real mother -- a brave Hebrew woman (Exodus 2:1-2).';
+      return 'Moses\' brave Hebrew mother — Jochebed (Exodus 2:1-2).';
     if (hasWord('aaron','brother'))
-      return 'Aaron was Moses\' older brother, from the family the Lord remembered in his covenant (Exodus 2:24-25).';
+      return 'Moses\' older brother — Aaron (Exodus 4:14).';
     // KILLED is more specific than EGYPT/HEBREWS so it wins if both apply.
     if (hasWord('kill','killed','struck','slew','slain'))
-      return 'Moses saw an Egyptian beating a Hebrew, and struck him down (Exodus 2:11-12).';
+      return 'Moses struck the Egyptian beating a Hebrew (Exodus 2:11-12).';
+    // age question — must beat the generic fallbacks ("how old was Moses?").
+    if (hasWord('forty','40') || ((hasWord('old') || hasWord('age')) && hasWord('moses')))
+      return 'Stephen says Moses was forty (Acts 7:23).';
     if (hasWord('midian','jethro','zipporah','reuel'))
-      return 'Moses fled to Midian, a desert land. Jethro took him in and gave him Zipporah as wife (Exodus 2:15-21).';
+      return 'The desert land where Moses fled — Midian (Exodus 2:15).';
     // Gershom: only match the NAME directly; removed the generic 'son' keyword
     // because it fires on 'person', 'lesson', 'reason', etc.
     if (hasWord('gershom'))
-      return 'Gershom was Moses\' son -- his name means "a stranger there" (Exodus 2:22).';
+      return 'Moses\' son — his name means "a stranger there" (Exodus 2:22).';
     if (hasWord('well','shepherd') || text.indexOf('seven sisters') !== -1)
-      return 'At a well in Midian, Moses rescued seven sisters and watered their flock (Exodus 2:16-17).';
+      return 'Moses helped seven sisters at the well (Exodus 2:16-17).';
     if (hasWord('flee','fled','ran','escape','escaped','exile'))
-      return 'When Pharaoh heard, Moses fled Egypt and went to Midian (Exodus 2:15).';
+      return 'Moses fled from Pharaoh to Midian (Exodus 2:15).';
     if (hasWord('egyptian'))
-      return 'An Egyptian overseer was beating a Hebrew slave. Moses stepped in (Exodus 2:11).';
+      return 'An Egyptian was beating a Hebrew slave (Exodus 2:11).';
     if (hasWord('hebrew','hebrews','israelite','israelites','slave','slaves'))
-      return 'The Hebrews were God\'s people, forced to build for Pharaoh (Exodus 1:11-14).';
+      return 'God\'s people, enslaved in Egypt (Exodus 1:11-14).';
     // Joseph / new-king-who-forgot-Joseph clue — must come BEFORE generic egypt fallback.
-    // Questions like "Egypt's new king did not know or remember ___" contain 'egypt' but
-    // the answer is about Joseph, not the pyramids.
     if (hasWord('joseph') || (hasWord('new king') && hasWord('remember','know','knew')))
-      return 'Joseph saved Egypt from famine long before Moses, but the new Pharaoh forgot him (Exodus 1:8).';
+      return 'The new king forgot Joseph (Exodus 1:8).';
     // Hebrews 11 faith-chapter matchers — also must beat the generic egypt fallback.
     if (hasWord('persevered','invisible','endured'))
-      return 'Hebrews 11:27: "By faith he left Egypt... he persevered because he saw him who is INVISIBLE." Moses kept going because he trusted the God he could not see with his eyes.';
+      return 'He "saw him who is invisible" and kept going (Hebrews 11:27).';
     if (hasWord('treasures') && (hasWord('egypt') || hasWord('moses') || hasWord('chose')))
-      return 'Hebrews 11:24-26: by faith, Moses refused the palace and chose disgrace for the sake of Christ over the treasures of Egypt — he was looking ahead to a greater reward.';
+      return 'Moses chose God over the treasures of Egypt (Hebrews 11:24-26).';
     if (hasWord('reward','recompense','looking ahead','greater'))
-      return 'Hebrews 11:26: "He regarded disgrace for the sake of Christ as of greater value than the treasures of Egypt, because he was looking ahead to his reward."';
+      return 'Moses looked ahead to his reward (Hebrews 11:26).';
     if (hasWord('refused','renounced') && hasWord('pharaoh','daughter','son'))
-      return 'Hebrews 11:24: "By faith Moses, when he had grown up, refused to be known as the son of Pharaoh\'s daughter."';
+      return 'Moses refused to be called Pharaoh\'s grandson (Hebrews 11:24).';
     if (hasWord('mistreated','disgrace','suffer') && hasWord('people','god'))
-      return 'Hebrews 11:25: "He chose to be mistreated along with the people of God rather than enjoy the fleeting pleasures of sin."';
+      return 'Moses chose to suffer with God\'s people (Hebrews 11:25).';
     if (hasWord('faith'))
-      return 'Hebrews 11 teaches that Moses\' family hid him by faith (Hebrews 11:23-24).';
+      return 'By faith Moses\' family hid him (Hebrews 11:23).';
     if (hasWord('egypt'))
-      return 'Egypt was the land where the Hebrews were slaves. Pyramids are there.';
+      return 'The land where the Hebrews were enslaved — Egypt.';
     if (hasWord('staff','rod'))
-      return 'A shepherd\'s staff. Later God would use Moses\' staff to do miracles.';
+      return 'A shepherd\'s staff — later God\'s tool for miracles.';
     if (hasWord('flock','sheep','lamb','lambs'))
-      return 'Moses tended Jethro\'s flock for 40 years before God called him.';
+      return 'Moses tended Jethro\'s flock in Midian (Exodus 3:1).';
     if (hasWord('desert','wilderness','sand'))
-      return 'Midian was a wilderness country east of Egypt -- long walks and hot sun.';
+      return 'The wilderness east of Egypt — Midian.';
     if (hasWord('guard','guards','soldier','soldiers','palace'))
-      return 'Pharaoh\'s palace was full of guards. Moses had to escape quietly.';
-    if (hasWord('moses'))
-      return 'Moses was a Hebrew baby adopted into Pharaoh\'s palace. God had big plans for him.';
+      return 'Moses grew up in Pharaoh\'s palace.';
     return null;
   })();
 
@@ -11178,12 +12082,13 @@ function getHintForQuestion(q){
     if (ref) verseHint = 'Check ' + ref[1] + ' in your Bible for the answer.';
   }
 
-  // Assemble the best available hint. Combine type coaching + topic if both are useful.
-  if (topic && typeHint) return typeHint + ' ' + topic;
-  if (topic)             return topic;
-  if (typeHint)          return typeHint;
-  if (verseHint)         return verseHint;
-  return 'Think about the Moses story and choose your best guess.';
+  // #135 Jane 2026-06-04: pick ONE crisp clue — never concatenate type + topic
+  // (that produced the long passages). Prefer the content hint, then the puzzle
+  // nudge, then the verse pointer, then a short generic.
+  if (topic)     return topic;
+  if (typeHint)  return typeHint;
+  if (verseHint) return verseHint;
+  return 'Picture the Bible scene — the answer is there.';
 }
 
 /* ============================================================================
@@ -14087,7 +14992,14 @@ function renderMatch3(gate, q, container){
     cross: { name:'Pharaoh blaster',  img:'assets/images/color%20pharaoh%202.png' },
     color: { name:'Princess blaster', img:'assets/images/newest%20princess.png' },
   };
-  const target = q.target || 9;
+  // #151 Jane 2026-06-03: HARDEN the win-goal so the board can never be cleared in a
+  // single move. A single first cascade can clear up to ~9 tiles, so the legacy
+  // `q.target || 9` fallback was a real one-move trapdoor whenever a target failed to
+  // arrive. Floor the goal to a difficulty-appropriate minimum (the same 14/20/28 the
+  // bespoke builder uses) — when q.target is set this is a no-op; when it is missing or
+  // too small it guarantees several moves are always required.
+  const _m3goalFloor = ({ easy: 14, medium: 20, hard: 28 })[game.difficulty] || 20;
+  const target = Math.max(_m3goalFloor, q.target || 0);
   let crushed = 0, sel = null, busy = false, board = [], special = [], _blasterTaught = false, _blasterGifted = false;
   const rnd = () => Math.floor(Math.random() * N);
 
@@ -14800,19 +15712,21 @@ function openChallenge(gate) {
   // v3.6: fully silence movement/tension loops so the quiz is quiet-calm.
   try { audio.footstep.pause(); audio.footstep.currentTime = 0; } catch(e){}
   try { if (audio.alerted) { audio.alerted.pause(); _alertMusicOn = false; } } catch(e){}
-  // #97 Jane 2026-06-02: the Midian overworld is silent (bgm neutralised at
-  // load). The dedicated CHALLENGE-MODAL music starts here, the moment a kid
-  // enters the checkpoint challenge — and stops again in
-  // _closeChallengeModalAudio() when the modal closes. (puzzle background.mp3,
-  // the same bed used by the protected rescue game; here it is the only music
-  // the player hears in the scene.)
+  // #125 Jane 2026-06-03: the overworld now has a soft `bgm` bed again, so DUCK it
+  // here (save its volume, pause it) before starting the dedicated CHALLENGE-MODAL
+  // music — otherwise the puzzle bed would double up over the overworld bed (the
+  // "wrong music / two musics" Jane reported). _closeChallengeModalAudio restores it.
+  try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); } } catch(e){}
   try { if (audio.narration) { audio.narration.pause(); audio.narration.currentTime = 0; } } catch(e){}
+  // #126 Jane 2026-06-03: play the DEDICATED challenge-modal bed (challenge modal.mp3),
+  // NOT the rescue mini-game's puzzle background.mp3 — that shared track was the
+  // "wrong music" Jane heard on checkpoints. The rescue game keeps puzzleBg for itself.
   try {
-    if (audio.puzzleBg) {
-      audio.puzzleBg.volume = 0.18;
-      audio.puzzleBg.loop = true;
-      audio.puzzleBg.currentTime = 0;
-      audio.puzzleBg.play().catch(()=>{});
+    if (audio.challengeMusic) {
+      audio.challengeMusic.volume = 0.18;
+      audio.challengeMusic.loop = true;
+      audio.challengeMusic.currentTime = 0;
+      audio.challengeMusic.play().catch(()=>{});
     }
   } catch(e){}
   const idx = gate.bundleIndex;
@@ -15928,6 +16842,13 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
       if (gate.bundleIndex >= gate.questions.length) {
         // whole bundle cleared -> gate/ascent solved
         gate.solved = true;
+        // #127 Jane 2026-06-03: the FINAL (3rd) checkpoint question is solved here
+        // (bundleIndex has reached questions.length). Layer a triumphant fanfare —
+        // success trumpet + level-up sting — so finishing a whole checkpoint feels
+        // like a real win. (These names are NOT in MODAL_AUDIO_DENY, so they sound
+        // even though the challenge modal is still .active for one more frame.)
+        try { play('successTrumpet'); } catch(e){}
+        try { play('levelUp'); } catch(e){}
         const isClimb = (gate.kind === 'climb');
         const perfect = (gate.bundleCorrect === gate.questions.length && gate.strikes === 0);
         // River-crossing concept: every gate that reaches this trivia path is one
@@ -16125,15 +17046,25 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
   }
 }
 // v2.2.2 helper: stop the challenge-modal music + narration bed on modal close.
-// #97 Jane 2026-06-02: the challenge bed is now the puzzle music started in
-// openChallenge; stop it here so the overworld returns to silence. (bgm stays
-// neutralised — there is no overworld music to restore.)
+// #125 Jane 2026-06-03: the overworld now has a soft `bgm` bed, so after stopping
+// the challenge puzzle bed we RESTORE the overworld bed (at the volume openChallenge
+// saved) so free play isn't left silent. (When the close path is a full reload —
+// chExitBtn — the scene-start re-fires setMusic('bgm') instead, so this is harmless.)
 function _closeChallengeModalAudio(){
   try {
     if (audio.narration) { audio.narration.pause(); audio.narration.currentTime = 0; }
   } catch(e){}
+  // #126 Jane 2026-06-03: stop the dedicated challenge bed (challenge modal.mp3).
+  // (Also defensively stop puzzleBg in case an older code path left it running —
+  // harmless for the rescue game, which manages its own puzzleBg lifecycle.)
   try {
-    if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; }
+    if (audio.challengeMusic) { audio.challengeMusic.pause(); audio.challengeMusic.currentTime = 0; }
+  } catch(e){}
+  try {
+    if (audio.bgm) {
+      if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume;
+      audio.bgm.play().catch(()=>{});
+    }
   } catch(e){}
 }
 $('chExitBtn').addEventListener('click', () => {
@@ -17521,6 +18452,8 @@ function togglePause(){
   if (game.state === 'playing') {
     game.state = 'paused';
     $('pauseModal').classList.add('active');
+    // #141: reflect the current tutorial-mode setting on every pause open.
+    try { _syncTutToggles(); } catch(e){}
     // v3.8 Jane punchlist: "when game is paused, the sound effects should NOT
     // continue" + "cover music needs to play when paused". Fully silence every
     // audio element (SFX + loops) then kick on the soft 'narration' bed as
@@ -17897,27 +18830,75 @@ function updateRudeShepherds(dt) {
         continue;  // skip patrol/chase/taunt/contact while lured
       } else { s._decoyLured = false; }
     } else { s._decoyLured = false; }
-    // Patrol: step within patrolRadius around post every advanceMs ms
+    // #134 Jane 2026-06-04: ACTIVE AI. Previously a shepherd only entered
+    // chaseMode AFTER the player solved a shepherd checkpoint (streamChaseActive),
+    // and even then it stepped in X only — locked to its post row, so it could
+    // never converge on Moses or guard the ford. Now: (1) a shepherd gives chase
+    // on SIGHT when Moses is on the SAME side of the river and within range (once
+    // its spawn grace is up), and (2) chase steps in BOTH axes toward Moses — or
+    // toward the west foot of the stepping stones once the ford is built, planting
+    // the shepherd between Moses and the crossing. He is hard-capped WEST of the
+    // stream (can never occupy a stone) and the ford has THREE entry rows (11-13),
+    // so a lone west shepherd can never fully wall it (no softlock — honours #12);
+    // contact still only shoves Moses back, never costs a heart (honours #104).
+    const _shepSide  = (s.postTx < SCENE3_STREAM_COL_MIN) ? 'w' : 'e';
+    const _mosesSide = (player.tx < SCENE3_STREAM_COL_MIN) ? 'w'
+                     : (player.tx > SCENE3_STREAM_COL_MAX ? 'e' : 'm');
+    const _sightCheby = Math.max(Math.abs(s.tx - player.tx), Math.abs(s.ty - player.ty));
+    if (!moses_hidden && _mosesSide === _shepSide && _sightCheby <= 5 && now >= (s.spawnGraceUntil || 0)) {
+      s.chaseMode = true;   // saw Moses on his side of the river — give chase
+    }
+    // Patrol / chase: step every `speed` ms (chase is faster).
     s.tick = (s.tick || 0) + dt;
     const speed = s.chaseMode ? Math.min(s.advanceMs, 1100) : (s.advanceMs || 2800);
     if (s.tick >= speed) {
       s.tick = 0;
-      let nextX;
       if (s.chaseMode && !moses_hidden) {
-        // Chase mode (angry after first defeat): step toward Moses within extended radius
-        nextX = s.tx + (player.tx > s.tx ? 1 : (player.tx < s.tx ? -1 : 0));
-        nextX = Math.max(s.postTx - 6, Math.min(s.postTx + 6, nextX));
+        // Converge on Moses in X AND Y, leashed ±6 tiles around the post.
+        let tgX = player.tx, tgY = player.ty;
+        try {
+          const _fordBuilt = (typeof _scene3CrystalCount === 'function') && _scene3CrystalCount() >= 3;
+          if (_fordBuilt && _shepSide === 'w' && _mosesSide === 'w') {
+            tgX = SCENE3_STREAM_COL_MIN - 1;                 // col 10 — west foot of the stones
+            tgY = Math.max(11, Math.min(13, player.ty));     // line up on Moses' ford row
+            game.streamChaseActive = true;                   // arm the "crossed → stuck" payoff
+          }
+        } catch(e){}
+        tgX = Math.max(s.postTx - 6, Math.min(s.postTx + 6, tgX));
+        tgY = Math.max(s.postTy - 6, Math.min(s.postTy + 6, tgY));
+        const _dX = tgX - s.tx, _dY = tgY - s.ty;
+        // try the larger-gap axis first, fall back to the other if blocked
+        const _cands = [];
+        if (Math.abs(_dX) >= Math.abs(_dY)) {
+          if (_dX !== 0) _cands.push([s.tx + Math.sign(_dX), s.ty]);
+          if (_dY !== 0) _cands.push([s.tx, s.ty + Math.sign(_dY)]);
+        } else {
+          if (_dY !== 0) _cands.push([s.tx, s.ty + Math.sign(_dY)]);
+          if (_dX !== 0) _cands.push([s.tx + Math.sign(_dX), s.ty]);
+        }
+        for (const _c of _cands) {
+          const _nx = _c[0], _ny = _c[1];
+          if (_nx < 1 || _nx >= MAP_W - 1 || _ny < 1 || _ny >= MAP_H - 1) continue;
+          let _blocked = false;
+          // Stream (incl. stones) is impassable for shepherds — keeps them stranded
+          // on the west bank so the crossing is Moses' escape.
+          try { if (typeof isScene3StreamBlocker === 'function' && isScene3StreamBlocker(_nx, _ny, false)) _blocked = true; } catch(e){}
+          if (_blocked) continue;
+          if (_nx !== s.tx) s.dir = _nx > s.tx ? 'right' : 'left';
+          s.tx = _nx; s.ty = _ny;
+          break;
+        }
       } else {
+        // Patrol: random X step within patrolRadius around the post.
         const step = (Math.random() < 0.5) ? 1 : -1;
-        nextX = Math.max(s.postTx - s.patrolRadius, Math.min(s.postTx + s.patrolRadius, s.tx + step));
-      }
-      // Stream is impassable for shepherds
-      try {
-        if (typeof isScene3StreamBlocker === 'function' && isScene3StreamBlocker(nextX, s.ty, false)) nextX = s.tx;
-      } catch(e){}
-      if (nextX !== s.tx && nextX >= 1 && nextX < MAP_W - 1) {
-        s.dir = nextX > s.tx ? 'right' : 'left';
-        s.tx = nextX;
+        let nextX = Math.max(s.postTx - s.patrolRadius, Math.min(s.postTx + s.patrolRadius, s.tx + step));
+        try {
+          if (typeof isScene3StreamBlocker === 'function' && isScene3StreamBlocker(nextX, s.ty, false)) nextX = s.tx;
+        } catch(e){}
+        if (nextX !== s.tx && nextX >= 1 && nextX < MAP_W - 1) {
+          s.dir = nextX > s.tx ? 'right' : 'left';
+          s.tx = nextX;
+        }
       }
     }
     // Taunt when Moses enters 3-tile radius
@@ -17940,7 +18921,7 @@ function updateRudeShepherds(dt) {
         player.px = bx * TILE; player.py = by * TILE;
         try { updateCamera(); } catch(e){}
       }
-      try { toast('A shepherd shoves Moses back! Find his checkpoint riddle to drive him off.'); } catch(e){}
+      try { toast('A shepherd shoves Moses back! Solve the Bible Checkpoint beside him to drive him off.'); } catch(e){}
     }
     // Proximity vignette pulse
     if (cheby <= 3 && !moses_hidden && now - (_scoutCloseWarnAt || 0) > 3500) {
@@ -18265,17 +19246,31 @@ function drawPursuitScouts(ctx){
       const bBot = sy - 2;
       ctx.save();
       ctx.font = 'bold 9px Georgia';
-      const maxTw = 128;
-      let txt = s.tauntText;
-      // Strip surrounding quotes for display so bubble text is clean
-      if (txt.startsWith('"') && txt.endsWith('"')) txt = txt.slice(1, -1);
-      while (ctx.measureText(txt).width > maxTw - 12 && txt.length > 4) txt = txt.slice(0, -1);
-      const tw = ctx.measureText(txt).width + 12;
-      const bh = 20;
+      // #143 Jane: the bubble used to CHOP the taunt mid-word ("...daughters don")
+      // to fit a fixed 128px width. Widen + word-WRAP onto up to 2 lines so the
+      // full line ("Those daughters don't need your help!") is readable.
+      const maxTw = 150;
+      let raw = s.tauntText;
+      if (raw.startsWith('"') && raw.endsWith('"')) raw = raw.slice(1, -1);
+      const words = raw.split(' ');
+      const lines = [];
+      let cur = '';
+      for (const w of words) {
+        const test = cur ? cur + ' ' + w : w;
+        if (ctx.measureText(test).width > maxTw - 14 && cur) { lines.push(cur); cur = w; }
+        else cur = test;
+      }
+      if (cur) lines.push(cur);
+      if (lines.length > 2) { lines[1] = lines[1] + '…'; lines.length = 2; }
+      const lineH = 12;
+      let tw = 0;
+      for (const ln of lines) tw = Math.max(tw, ctx.measureText(ln).width);
+      tw += 14;
+      const bh = 8 + lines.length * lineH;
       const bL = bCx - tw / 2, bT = bBot - bh - 7;
       // Bubble body (rounded rect path)
       ctx.beginPath();
-      const r = 4;
+      const r = 5;
       ctx.moveTo(bL + r, bT);
       ctx.lineTo(bL + tw - r, bT); ctx.quadraticCurveTo(bL + tw, bT, bL + tw, bT + r);
       ctx.lineTo(bL + tw, bT + bh - r); ctx.quadraticCurveTo(bL + tw, bT + bh, bL + tw - r, bT + bh);
@@ -18288,11 +19283,13 @@ function drawPursuitScouts(ctx){
       ctx.strokeStyle = '#b05010';
       ctx.lineWidth = 1.5;
       ctx.stroke();
-      // Text
+      // Text (centered, 1-2 wrapped lines)
       ctx.fillStyle = '#4a1a00';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(txt, bCx, bT + bh / 2);
+      for (let li = 0; li < lines.length; li++) {
+        ctx.fillText(lines[li], bCx, bT + 4 + lineH / 2 + li * lineH);
+      }
       ctx.restore();
     }
   }
@@ -20013,6 +21010,9 @@ function _renderInner(){
   // paint OVER Moses and he disappears INTO Jethro's doorway as he arrives.
   // Nulling it each frame means an off-screen exit never leaves a stale draw.
   window._scene3DeferredExitDraw = null;
+  // #119: START art is deferred too (set in drawTile t===8) so neighbouring
+  // grass tiles can't paint over its right-hand overflow. Null + replay below.
+  window._scene3DeferredStartDraw = null;
 
   for (let ty = sy; ty < ey; ty++) {
     for (let tx = sx; tx < ex; tx++) {
@@ -20022,6 +21022,9 @@ function _renderInner(){
       drawTile(t, dx, dy, tx, ty);
     }
   }
+  // #119: replay the START art now that every ground tile is painted, so the
+  // full (wider-than-a-tile) START sprite sits ON TOP of the grass, uncut.
+  try { if (window._scene3DeferredStartDraw) window._scene3DeferredStartDraw(); } catch(e){}
 
   // v3.7 PASS A Jane 2026-04-24: cliff concept REMOVED. Jane: "let's remove
   // cliff concept? its not doing anything much." The east edge of the map
@@ -20196,7 +21199,11 @@ function drawInteractPrompt(){
   }
   if (!nearest) return;
   const bx = nearest.tx * TILE - camera.px + TILE/2;
-  const by = nearest.ty * TILE - camera.py - 4;
+  let by = nearest.ty * TILE - camera.py - 4;
+  // #131 Jane 2026-06-03: NPCs (the market VENDOR / servant) are drawn ~1.5 tiles
+  // tall, so the prompt bubble anchored at the tile top sat right ON the vendor's
+  // FACE. Lift the bubble above the head for NPC kinds so it never covers them.
+  if (nearest.kind === 'servant' || nearest.kind === 'vendor') by -= TILE * 0.95;
   const bobble = Math.sin(performance.now() / 280) * 2;
   // label
   // v2.3.5 Jane: every pickable object now labels as TAKE (bread, water, crown)
@@ -20209,10 +21216,12 @@ function drawInteractPrompt(){
   // crown, scroll. Now bubble reads "TAKE: Travel Bread" so the child knows
   // what they are about to pick up before they tap Interact. NPC short
   // names are derived from the object data (no new assets needed).
+  // #131 Jane 2026-06-03: NPCs read "INTERACT" (the action button is also
+  // labelled "Interact"), not the legacy "TALK".
   const verb = (nearest.kind === 'truthchest') ? 'OPEN'
              : (nearest.kind === 'dog') ? 'PET'
              : (_pickKinds.indexOf(nearest.kind) >= 0) ? 'TAKE'
-             : 'TALK';
+             : 'INTERACT';
   // shorten the full title to <= 18 chars so the bubble fits on phones
   const _shortName = (() => {
     const n = nearest.name || nearest.kind || '';
@@ -20620,8 +21629,11 @@ function drawInteractable(obj){
     if (!_ready(_vend)) _vend = IMG.vendorFront;
     const npcImg = _ready(_vend) ? _vend : (_ready(IMG.servant) ? IMG.servant : null);
     if (npcImg) {
-      // v3.4: draw at 1.5x TILE so the vendor reads at the same size as Moses/guards
-      const SRV_SCALE = 1.5;
+      // #132 Jane 2026-06-03: "make the vendor larger." Bumped 1.5 -> 1.9 so the
+      // stall-keeper reads as a prominent, friendly market figure (clearly bigger
+      // than Moses ~1.5). The prompt bubble lift in drawInteractPrompt was raised
+      // to match so the "INTERACT" label still clears the taller head.
+      const SRV_SCALE = 1.9;
       const sz = TILE * SRV_SCALE;
       const sox = dx + (TILE - sz) / 2;
       const soy = dy + TILE - sz + 2;
@@ -20637,19 +21649,44 @@ function drawInteractable(obj){
       ctx.beginPath(); ctx.arc(dx+TILE/2, dy+10, 5, 0, Math.PI*2); ctx.fill();
     }
   } else if (obj.kind === 'scroll') {
-    ctx.fillStyle = '#f0d58a';
-    ctx.fillRect(dx+6, dy+10, TILE-12, TILE-18);
-    ctx.strokeStyle = '#7a4809';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(dx+6.5, dy+10.5, TILE-13, TILE-19);
-    ctx.fillStyle = '#7a4809';
-    ctx.fillRect(dx+8, dy+12, TILE-16, 1);
-    ctx.fillRect(dx+8, dy+15, TILE-16, 1);
-    ctx.fillRect(dx+8, dy+18, TILE-16, 1);
-    // scroll ends
-    ctx.fillStyle = '#c38b28';
-    ctx.fillRect(dx+4, dy+8, 3, TILE-14);
-    ctx.fillRect(dx+TILE-7, dy+8, 3, TILE-14);
+    // #146 Jane 2026-06-03: the Old Stone Marker / Weathered Tablet now render
+    // the real stone-tablet PNG (aspect-preserved, bottom-anchored, soft shadow
+    // + gentle bob). Falls back to the hand-drawn scroll vector if the art has
+    // not loaded yet so the pickup is never invisible.
+    const _stoneOK = (IMG.stoneMarker && IMG.stoneMarker.complete && IMG.stoneMarker.naturalWidth);
+    if (_stoneOK) {
+      const natW = IMG.stoneMarker.naturalWidth || 1, natH = IMG.stoneMarker.naturalHeight || 1;
+      const ar = natW / natH;
+      const drawH = Math.round(TILE * 1.15);
+      const drawW = Math.round(drawH * ar);
+      const bob = Math.sin(performance.now()/300 + obj.tx) * 1.3;
+      const ox = Math.round(dx + TILE/2 - drawW/2);
+      const oy = Math.round(dy + TILE - drawH + 2 + bob);
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.33)';
+      ctx.beginPath();
+      ctx.ellipse(dx+TILE/2, dy+TILE-3, TILE*0.4, 4, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.shadowColor = 'rgba(10,6,2,0.4)';
+      ctx.shadowBlur = 3;
+      ctx.shadowOffsetY = 2;
+      ctx.drawImage(IMG.stoneMarker, ox, oy, drawW, drawH);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#f0d58a';
+      ctx.fillRect(dx+6, dy+10, TILE-12, TILE-18);
+      ctx.strokeStyle = '#7a4809';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(dx+6.5, dy+10.5, TILE-13, TILE-19);
+      ctx.fillStyle = '#7a4809';
+      ctx.fillRect(dx+8, dy+12, TILE-16, 1);
+      ctx.fillRect(dx+8, dy+15, TILE-16, 1);
+      ctx.fillRect(dx+8, dy+18, TILE-16, 1);
+      // scroll ends
+      ctx.fillStyle = '#c38b28';
+      ctx.fillRect(dx+4, dy+8, 3, TILE-14);
+      ctx.fillRect(dx+TILE-7, dy+8, 3, TILE-14);
+    }
   } else if (obj.kind === 'jug') {
     // #82 (Jane: "instead of this provide water skin.png") — the on-map waterskin
     // pickup carries kind:'jug', which used to draw a tiny brown canvas pot. Render
@@ -21811,11 +22848,11 @@ function drawTile(t, dx, dy, tx, ty){
         // share ONE clamped on-screen centre. At the right-edge exit column
         // (col 34) "dx + TILE/2" pushed both off the right canvas edge, so the
         // word EXIT was clipped; _safeAnchorX pulls the pill back on-screen.
-        const labelY = dy + TILE + 12;
+        const labelY = dy + TILE + 16;
         const exitLabel = _allGatesSolved ? 'GO! EXIT' : 'EXIT';
-        ctx.font = 'bold 12px Georgia';
+        ctx.font = 'bold 17px Georgia';
         const lblTextW = ctx.measureText(exitLabel).width;
-        const pillW = lblTextW + 14, pillH = 18;
+        const pillW = lblTextW + 18, pillH = 24;
         const pillX = _safeAnchorX(dx, pillW);
         const labelCX = pillX + pillW/2;   // shared clamped centre
         const goPulse = _allGatesSolved
@@ -21950,10 +22987,16 @@ function drawTile(t, dx, dy, tx, ty){
       ctx.beginPath(); ctx.ellipse(dx+TILE-8, dy+TILE-8, 2, 5, 0, 0, Math.PI*2); ctx.fill();
       // sparkling "GO" indicator
       const sA = 0.6 + Math.sin(now/250) * 0.3;
-      ctx.fillStyle = 'rgba(255,255,220,' + sA.toFixed(2) + ')';
-      ctx.font = 'bold 9px Georgia';
+      ctx.save();
+      ctx.font = 'bold 15px Georgia';
       ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(60,30,0,0.85)';
+      ctx.strokeText('EXIT', ecx, ecy + 3);
+      ctx.fillStyle = 'rgba(255,255,220,' + sA.toFixed(2) + ')';
       ctx.fillText('EXIT', ecx, ecy + 3);
+      ctx.restore();
     }
   } else if (t === 8) {
     // v3.28 (Scene 3 port — CANONICAL §11c): beefier breathing pulse so
@@ -21996,6 +23039,13 @@ function drawTile(t, dx, dy, tx, ty){
     // the canvas edge during normal play (intro pan intentionally lets it scroll off).
     // #90: prefer the bespoke Midian START art when Jane's asset is loaded,
     // falling back to the generic desert start otherwise.
+    // #119 Jane 2026-06-03: DEFER the START art draw. It is ~2.5xTILE wide and
+    // overflows into the grass tiles to its right; those tiles draw LATER in the
+    // same single-pass tile loop, so their ground paint was covering the START
+    // art's right edge ("the grass tile is on the start image"). Queue it here
+    // and replay right after the loop (above ground, below decor/characters) —
+    // exactly how the EXIT tent is deferred via _scene3DeferredExitDraw.
+    window._scene3DeferredStartDraw = (function(dx, dy){ return function(){
     const _startImg = (IMG.midianStart && IMG.midianStart.complete && IMG.midianStart.naturalWidth) ? IMG.midianStart : IMG.desertStart;
     if ((game.scene === 2 || game.scene === 3) && _startImg && _startImg.complete && _startImg.naturalWidth) {
       const dsAR = (_startImg.naturalWidth || 1) / (_startImg.naturalHeight || 1);
@@ -22038,6 +23088,7 @@ function drawTile(t, dx, dy, tx, ty){
       ctx.fillText(startLabel, dx + TILE/2, labelY);
       ctx.restore();
     }
+    }; })(dx, dy);
   } else if (t === 6) {
     // Scene 2: OASIS tile - lush palm + blue water puddle that restores 1 heart.
     // v2.2.8 FIX (Jane): draw IMG.oasisTile PNG as the base, then layer the
@@ -23310,21 +24361,37 @@ function drawMiniMap(){
         for (let x=0; x<MAP_W; x++){
           const t = MAP[y][x];
           if (t === 8) {
+            // #147 Jane: keep the marker box + letter fully on-canvas (was
+            // clipped at the right-edge EXIT column). Clamp + centre the glyph.
+            const bx = Math.max(0, Math.min(x*MINI_CELL_X - 3, MINI_W - 9));
+            const by = Math.max(0, Math.min(y*MINI_CELL_Y - 3, MINI_H - 9));
             miniCtx.fillStyle = 'rgba(120,220,255,' + _pulse.toFixed(2) + ')';
-            miniCtx.fillRect(x*MINI_CELL_X - 2, y*MINI_CELL_Y - 2, 6, 6);
+            miniCtx.fillRect(bx, by, 9, 9);
+            miniCtx.save();
             miniCtx.fillStyle = '#063';
-            miniCtx.font = 'bold 8px Georgia';
-            miniCtx.fillText('S', x*MINI_CELL_X - 2, y*MINI_CELL_Y + 5);
+            miniCtx.font = 'bold 9px Georgia';
+            miniCtx.textAlign = 'center';
+            miniCtx.textBaseline = 'middle';
+            miniCtx.fillText('S', bx + 4.5, by + 5);
+            miniCtx.restore();
           } else if (t === 7) {
             // v2.3.4 Jane: only TOPMOST tile-7 shows EXIT marker on mini-map
             const _top = (typeof window._topmostExit !== 'undefined') ? window._topmostExit : null;
             const _isTop = _top && _top.tx === x && _top.ty === y;
             if (_isTop) {
+              // #147 Jane: EXIT sits at col 34 (right edge) — clamp the box +
+              // centre the 'E' so it is never cut off the mini-map.
+              const bx = Math.max(0, Math.min(x*MINI_CELL_X - 3, MINI_W - 9));
+              const by = Math.max(0, Math.min(y*MINI_CELL_Y - 3, MINI_H - 9));
               miniCtx.fillStyle = 'rgba(120,255,140,' + _pulse.toFixed(2) + ')';
-              miniCtx.fillRect(x*MINI_CELL_X - 2, y*MINI_CELL_Y - 2, 6, 6);
+              miniCtx.fillRect(bx, by, 9, 9);
+              miniCtx.save();
               miniCtx.fillStyle = '#042';
-              miniCtx.font = 'bold 8px Georgia';
-              miniCtx.fillText('E', x*MINI_CELL_X - 2, y*MINI_CELL_Y + 5);
+              miniCtx.font = 'bold 9px Georgia';
+              miniCtx.textAlign = 'center';
+              miniCtx.textBaseline = 'middle';
+              miniCtx.fillText('E', bx + 4.5, by + 5);
+              miniCtx.restore();
             } else {
               // Non-top climb step: small muted dot
               miniCtx.fillStyle = 'rgba(180,220,140,0.5)';
