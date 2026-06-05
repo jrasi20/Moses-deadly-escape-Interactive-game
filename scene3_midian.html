@@ -1455,6 +1455,12 @@
   .ch-col-item {
     position:absolute; z-index:3; width:clamp(34px,11vw,50px); height:clamp(34px,11vw,50px);
     display:flex; align-items:center; justify-content:center; pointer-events:none;
+    /* #1 Jane 2026-06-04: CENTRE each item on its lane line. Without this base
+       transform a resting item was positioned by its TOP edge, so the bottom-lane
+       items hung past the reel and were clipped by overflow:hidden ("only half
+       seen"). Moses is centred by his always-on colBob transform; the collect /
+       bonk keyframes already start at translateY(-50%), so this matches them too. */
+    transform:translateY(-50%);
   }
   .ch-col-item img { width:100%; height:100%; object-fit:contain; }
   .ch-col-item.good img { filter:drop-shadow(0 0 5px rgba(120,230,120,0.95)) drop-shadow(0 2px 2px rgba(0,0,0,0.25)); }
@@ -3088,7 +3094,7 @@
     </div>
     <div class="hud-group">
       <span class="hud-chip"><img src="assets/images/star%207.png" onerror="this.style.display='none'" alt=""><span id="hudStars">0</span></span>
-      <span class="hud-chip"><img src="assets/images/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span>/<span id="hudTreasureTotal">0</span></span>
+      <span class="hud-chip" id="hudTreasureChip"><img src="assets/images/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span><span id="hudTreasureDenom" style="display:none;">/<span id="hudTreasureTotal">0</span></span></span>
       <!-- v2.1 Scene 2: altitude chip (shown only on scene 2, updated by updateHudAltitude) -->
       <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/5</span>
       <!-- Scene 3: crystal river-tiles. Collect all 3 (one per checkpoint) to build the crossing. -->
@@ -6797,7 +6803,7 @@ function _drawFlockWolf(cx, cy, dir){
   const _okW = (i => i && i.complete && i.naturalWidth > 0);
   const wImg = (dir > 0) ? (IMG.wolfRight || IMG.wolfLeft) : (IMG.wolfLeft || IMG.wolfRight);
   if (_okW(wImg)) {
-    const sz = TILE * 1.4;
+    const sz = TILE * 1.85;   // #10 Jane: wolf reads "big and prominent" during the raid
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath(); ctx.ellipse(sx, sy + sz*0.34, sz*0.30, sz*0.09, 0, 0, Math.PI*2); ctx.fill();
@@ -7148,7 +7154,15 @@ function _wolfShooTap(){
   if (!_wolfShoo.open) return;
   _wolfShoo.fill = Math.min(100, _wolfShoo.fill + _WOLF_SHOO_TAP);
   _wolfShooRenderBar();
-  try { play('pop'); } catch(e){}
+  // #17 Jane 2026-06-04: play the airy "mirage woosh" as the shoo sound when the
+  // child taps SHOO. Throttle so rapid mashing doesn't machine-gun-restart the clip.
+  try {
+    const _nowT = performance.now();
+    if (!_wolfShoo._lastWoosh || _nowT - _wolfShoo._lastWoosh > 170){
+      _wolfShoo._lastWoosh = _nowT;
+      play('mirageWoosh') || play('pop');
+    }
+  } catch(e){}
   try { spawnGlitterBurstAtPlayer(4); } catch(e){}
   if (_wolfShoo.fill >= 100) _wolfShooSuccess();
 }
@@ -7308,12 +7322,16 @@ function updateScene3Herd(dt){
     if (s.state==='graze'){
       // #117: sheep will not follow until the crossing is built AND every raiding
       // wolf has been shooed off — Jane's flow is shoo-wolves THEN lead-the-flock.
+      // #21 Jane 2026-06-04: once both are true the WHOLE flock falls in behind
+      // Moses automatically — he no longer has to walk up to each sheep. Keeps the
+      // river-crossing crisp and thrilling instead of a tedious round-up.
       if (built && scene3Herd.wolvesCleared){
-        const d=Math.hypot(player.px-s.px, player.py-s.py);
-        if (d < TILE*2.3){
-          s.state='follow'; s.slot=scene3Herd.slotNext++;
-          try{ if(audio.sheepBleat){audio.sheepBleat.currentTime=0;audio.sheepBleat.volume=0.55;audio.sheepBleat.play().catch(()=>{});} }catch(e){}
-          try{ const r=canvas.getBoundingClientRect(); spawnGlitterBurst(r.left+(s.px-camera.px)+TILE/2, r.top+(s.py-camera.py)+TILE/2, 8); }catch(e){}
+        s.state='follow'; s.slot=scene3Herd.slotNext++;
+        try{ const r=canvas.getBoundingClientRect(); spawnGlitterBurst(r.left+(s.px-camera.px)+TILE/2, r.top+(s.py-camera.py)+TILE/2, 8); }catch(e){}
+        if (!scene3Herd._autoFollowAnnounced){
+          scene3Herd._autoFollowAnnounced = true;
+          try{ if(audio.sheepBleat){audio.sheepBleat.currentTime=0;audio.sheepBleat.volume=0.6;audio.sheepBleat.play().catch(()=>{});} }catch(e){}
+          try{ toast('The flock falls in behind Moses — lead them across the stream!'); }catch(e){}
         }
       }
       // Grazing flock stays on the WEST bank: never wander onto a stream /
@@ -7370,7 +7388,10 @@ function updateScene3Herd(dt){
       // still close the gap and settle into a tidy conga line behind him.
       const odx=tx-s.px, ody=ty-s.py;
       const dist=Math.hypot(odx,ody);
-      const step=Math.min(dist, TILE*0.011*dt);
+      // #15 Jane 2026-06-04: the flock was moving "like lightning". Slow the follow
+      // pace to a calm amble that is still a hair faster than Moses' own step
+      // (Moses ~6.7 tiles/s) so the conga line stays tidy without ever snapping.
+      const step=Math.min(dist, TILE*0.0075*dt);
       if (dist>0.01){ s.px += odx/dist*step; s.py += ody/dist*step; }
       if (Math.abs(odx)>0.4) s.dir = odx<0?-1:1;
       s.tx=Math.round(s.px/TILE); s.ty=Math.round(s.py/TILE);
@@ -7523,19 +7544,14 @@ function drawScene3Herd(){
   for (const s of scene3Herd.sheep){
     const bob=Math.sin(now/620 + s.id*1.3)*1.4;
     _drawOneSheep(s.px, s.py, s.dir, s.kind, s.alt, bob + (s.hop||0));
-    // #117: while wolves are raiding, grazing sheep show a pulsing RED danger ring
-    // ("shoo the wolf!"); only once the wolves are cleared does the gold "lead me"
-    // beacon appear over them (the cue to walk up and lead the flock across).
-    if (scene3Herd.wolvesIncoming && !scene3Herd.wolvesCleared && s.state==='graze'){
-      const cx=s.px-camera.px+TILE/2, cy=s.py-camera.py+TILE/2;
-      const dp=0.45+0.4*Math.sin(now/110 + s.id);
-      ctx.save();
-      ctx.strokeStyle='rgba(255,60,40,'+dp.toFixed(2)+')'; ctx.lineWidth=3;
-      ctx.beginPath(); ctx.arc(cx, cy, TILE*0.62, 0, Math.PI*2); ctx.stroke();
-      ctx.fillStyle='#ff5a4a'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center';
-      ctx.fillText('!', cx, s.py-camera.py-2); ctx.textAlign='start';
-      ctx.restore();
-    } else if (built && scene3Herd.wolvesCleared && s.state==='graze'){
+    // #10 Jane 2026-06-04: the RED "danger" ring used to sit on the grazing SHEEP.
+    // The rude shepherds are drawn in a LATER render pass, so a shepherd standing by
+    // the flock got the red ring painted around HIM ("why is this red circle on the
+    // shepherd?") and his sprite buried the wolf ("why do i not see the wolf"). The
+    // ring + the wolf now ride a TOP pass (drawScene3HerdWolvesTop, drawn above the
+    // shepherds). Here we keep only the GOLD "lead me across" beacon shown once the
+    // wolves are cleared — that cue belongs on the sheep.
+    if (built && scene3Herd.wolvesCleared && s.state==='graze'){
       const cx=s.px-camera.px+TILE/2, top=s.py-camera.py;
       const pulse=0.5+0.5*Math.sin(now/360 + s.id);
       ctx.save();
@@ -7546,36 +7562,10 @@ function drawScene3Herd(){
       ctx.beginPath(); ctx.moveTo(cx-5,ay); ctx.lineTo(cx+5,ay); ctx.lineTo(cx,ay+6); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
-    // #138: during the PEN raid, a penned/following sheep being menaced by a pen
-    // wolf gets the same pulsing red danger ring (cue to run at it or tap to SHOO).
-    if (_herdPenRaidActive() && (s.state==='arrived' || s.state==='follow')){
-      const menaced = scene3Herd.penWolves.some(w => w.state!=='flee' && w.state!=='gone' && Math.hypot(w.px-s.px, w.py-s.py) < TILE*1.7);
-      if (menaced){
-        const cx=s.px-camera.px+TILE/2, cy=s.py-camera.py+TILE/2;
-        const dp=0.45+0.4*Math.sin(now/110 + s.id);
-        ctx.save();
-        ctx.strokeStyle='rgba(255,60,40,'+dp.toFixed(2)+')'; ctx.lineWidth=3;
-        ctx.beginPath(); ctx.arc(cx, cy, TILE*0.62, 0, Math.PI*2); ctx.stroke();
-        ctx.fillStyle='#ff5a4a'; ctx.font='bold 16px sans-serif'; ctx.textAlign='center';
-        ctx.fillText('!', cx, s.py-camera.py-2); ctx.textAlign='start';
-        ctx.restore();
-      }
-    }
   }
-  // #117: draw the raiding wolves above the sheep (uses the existing flock-wolf art).
-  if (scene3Herd.wolves && scene3Herd.wolves.length){
-    for (const w of scene3Herd.wolves){
-      if (w.state==='gone') continue;
-      try { _drawFlockWolf(w.px + TILE*0.5, w.py + TILE*0.6, w.dir); } catch(e){}
-    }
-  }
-  // #138: draw the pen-raid wolves the same way.
-  if (scene3Herd.penWolves && scene3Herd.penWolves.length){
-    for (const w of scene3Herd.penWolves){
-      if (w.state==='gone') continue;
-      try { _drawFlockWolf(w.px + TILE*0.5, w.py + TILE*0.6, w.dir); } catch(e){}
-    }
-  }
+  // #10: the raiding wolves + their red danger rings are now drawn in a separate TOP
+  // pass (drawScene3HerdWolvesTop, called after the shepherds) so a shepherd can
+  // never bury the wolf and the threat reads big and prominent.
   if (built && !scene3Herd.done && scene3Herd.total>0){
     if (scene3Herd.wolvesIncoming && !scene3Herd.wolvesCleared){
       const rem=scene3Herd.wolves.filter(w=>w.state!=='flee'&&w.state!=='gone').length;
@@ -7608,6 +7598,42 @@ function drawScene3Herd(){
       ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fill();
       ctx.font='bold '+Math.round(TILE*0.9)+'px Georgia'; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('👑', cx, cy - TILE*1.1 - pulse*4);
+    }
+  }
+}
+
+// #10 Jane 2026-06-04: TOP pass for the raiding wolves. Called AFTER the rude
+// shepherds (and before Moses) so a shepherd standing by the flock can never bury
+// the wolf. The pulsing RED danger ring now rides the WOLF (the thing to shoo) —
+// not the grazing sheep — so it no longer looks like "a red circle on the shepherd".
+function drawScene3HerdWolvesTop(){
+  if (game.scene!==2 || !scene3Herd.spawned || typeof camera==='undefined') return;
+  const now=performance.now();
+  const _wolfRing=(w)=>{
+    if (w.state==='gone' || w.state==='flee') return;   // only the live threat gets a ring
+    const cx=w.px+TILE*0.5-camera.px, cy=w.py+TILE*0.6-camera.py;
+    if (cx<-TILE*2 || cx>CANVAS_W+TILE*2 || cy<-TILE*2 || cy>CANVAS_H+TILE*2) return;
+    const dp=0.45+0.4*Math.sin(now/110 + (w.id||0));
+    ctx.save();
+    ctx.strokeStyle='rgba(255,60,40,'+dp.toFixed(2)+')'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.arc(cx, cy, TILE*0.82, 0, Math.PI*2); ctx.stroke();
+    ctx.fillStyle='#ff5a4a'; ctx.font='bold 22px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('!', cx, cy - TILE*1.0); ctx.textAlign='start';
+    ctx.restore();
+  };
+  // ring UNDER the wolf so the wolf sits inside the circle; first-wave then pen-raid.
+  if (scene3Herd.wolves && scene3Herd.wolves.length){
+    for (const w of scene3Herd.wolves){
+      if (w.state==='gone') continue;
+      _wolfRing(w);
+      try { _drawFlockWolf(w.px + TILE*0.5, w.py + TILE*0.6, w.dir); } catch(e){}
+    }
+  }
+  if (scene3Herd.penWolves && scene3Herd.penWolves.length){
+    for (const w of scene3Herd.penWolves){
+      if (w.state==='gone') continue;
+      _wolfRing(w);
+      try { _drawFlockWolf(w.px + TILE*0.5, w.py + TILE*0.6, w.dir); } catch(e){}
     }
   }
 }
@@ -7646,7 +7672,6 @@ function updateScene3Ram(dt) {
       _scene3Ram.vx = -_RAM_SPEED;
     }
     _scene3Ram.active = true;
-    try { toast('A ram is charging across the pasture — step aside!'); } catch(e){}
     try { play('dangerAlert'); } catch(e){}
   }
   if (!_scene3Ram.active) return;
@@ -9458,6 +9483,20 @@ function _generateRandomChallengePositions(){
     for (const p of out) {
       if (Math.abs(tx - p.tx) + Math.abs(ty - p.ty) < 3) return true;
     }
+    // #13 Jane 2026-06-04: "the waterskin is over the checkpoint." The market
+    // checkpoint jitter band (cols 3-7) overlaps fixed on-map interactables — the
+    // waterskin (kind:'jug') sits at (3,11), squarely inside the band — and tooNear
+    // never checked them, so a checkpoint marker could land UNDER a pickup. Keep a
+    // >=2 Chebyshev gap from every interactable pickup (vendor NPCs excluded; they
+    // are placed deliberately as market hints).
+    try {
+      if (typeof interactables !== 'undefined' && Array.isArray(interactables)) {
+        for (const it of interactables) {
+          if (it.kind === 'servant') continue;
+          if (Math.max(Math.abs(tx - it.tx), Math.abs(ty - it.ty)) < 2) return true;
+        }
+      }
+    } catch(e){}
     // Min Chebyshev 2 from caves; min 1 from oases.
     try {
       if (typeof caves !== 'undefined' && Array.isArray(caves)) {
@@ -10018,11 +10057,6 @@ function attemptMove(dir) {
   try {
     if (game.scene === 2 && typeof isScene3SteppingStone === 'function') {
       if (isScene3SteppingStone(player.tx, player.ty)) {
-        // Show Bible tip the first time Moses steps onto any stone
-        if (!_scene3StoneTipShown) {
-          _scene3StoneTipShown = true;
-          try { toast('"Your word is a lamp to my feet!" — Watch the stones carefully!'); } catch(e){}
-        }
         // Water splash sound
         try {
           if (audio && audio.waterSkin) { audio.waterSkin.currentTime = 0; audio.waterSkin.volume = 0.55; audio.waterSkin.play().catch(()=>{}); }
@@ -10067,7 +10101,7 @@ function attemptMove(dir) {
   // Auto-trigger fires on the exact tile OR an adjacent tile (Chebyshev 1) so
   // a kid skimming past the chest still pops it without standing dead-centre.
   try {
-    const _autoKinds = { bread:1, jug:1, dates:1, truthchest:1 };
+    const _autoKinds = { bread:1, jug:1, dates:1, truthchest:1, crown:1, scroll:1 };
     for (const obj of interactables) {
       if (obj.used || !_autoKinds[obj.kind]) continue;
       if (Math.max(Math.abs(obj.tx - nx), Math.abs(obj.ty - ny)) <= 1) { triggerInteractable(obj); break; }
@@ -10506,7 +10540,15 @@ function playIntroPan(onDone){
   const startY = _panY;
   const targetY = _panY;
   camera.px = startX; camera.py = startY;
-  const t0 = performance.now();
+  // #12 Jane 2026-06-04: "on restart the game takes a while to load and the initial
+  // camera pan is already over by the time the game screen shows." The pan clock
+  // used to start the instant playIntroPan() was called — but on a cover->Begin
+  // (and the brief restart freeze) the gold "Entering Midian…" loader overlay still
+  // covers the canvas while the heavy setup runs, so several seconds of the ~5s
+  // sweep elapsed UNSEEN behind it. Defer t0 until the loader overlay is gone (or a
+  // 4s safety cap) so the pan visibly BEGINS on the first frame the player can see.
+  let t0 = null;
+  const _panArmedAt = performance.now();
   const PAN_OUT = 1400, HOLD = 2400, PAN_BACK = 1200;
   // Midian-themed banner (vs. Scene 2's "well at Midian" — kid is already
   // IN Midian here, so prompt is the daughters / Jethro's tent).
@@ -10518,6 +10560,19 @@ function playIntroPan(onDone){
   // and tear-down blocks below safely no-op.
   _introPanLabel = null;
   const tick = () => {
+    // #12: hold at the START framing until the scene loader overlay has cleared
+    // (so no part of the sweep is spent behind the loading screen), then start the
+    // clock. On the restart path there is no overlay, so the pan begins at once.
+    if (t0 === null) {
+      const _loaderUp = !!document.getElementById('sceneLoaderOverlay');
+      if (_loaderUp && performance.now() - _panArmedAt < 4000) {
+        camera.px = startX; camera.py = startY;
+        window._introPanShowArrow = false;
+        requestAnimationFrame(tick);
+        return;
+      }
+      t0 = performance.now();
+    }
     const t = performance.now() - t0;
     if (t < PAN_OUT) {
       const k = t / PAN_OUT;
@@ -11470,9 +11525,19 @@ function updateHudCrystals(){
   if (chip) chip.classList.toggle('hud-crystal-done', n >= 3);
 }
 function updateHudTreasure(){
-  $('hudTreasure').textContent = game.treasureCount;
-  const tot = $('hudTreasureTotal');
-  if (tot) tot.textContent = game.treasuresTotal || 0;
+  // #16 Jane 2026-06-04: the HUD treasure chip is now the kid's WALLET — it shows
+  // the spendable treasure-bag BANK (game.treasureBags), the SAME number the Rescue
+  // game opens with, so the HUD and the rescue purse can never disagree again
+  // (Jane: "i had fewer than 5 treasure bags ... but my purse had default 80").
+  // The old "x/10" was a separate per-scene PICKUP progress that mismatched the
+  // spendable total and confused her; its denominator span is hidden here (the win
+  // screen still reports pickups via game.treasureCount). When a checkpoint is
+  // cleared, _flyTreasureBagsToHud animates bags INTO this chip and owns the number
+  // mid-flight, so we bail out then to avoid snapping it to the final total early.
+  const denom = document.getElementById('hudTreasureDenom'); if (denom) denom.style.display = 'none';
+  const tot = $('hudTreasureTotal'); if (tot) tot.textContent = game.treasuresTotal || 0;   // legacy span kept in sync (hidden)
+  if (window._treasureHudAnimating) return;          // a flight count-up owns the number right now
+  const numEl = $('hudTreasure'); if (numEl) numEl.textContent = Math.round(game.treasureBags || 0);
 }
 // v2.2.6 Jane feedback: HUD now tracks ALL mandatory Desert Gates (not just
 // climbs) so kids see a single "Gates 3/9" progress indicator and know they
@@ -11636,9 +11701,6 @@ function interact(){
       triggerInteractable(obj);
       return;
     }
-    if (cd <= 4) {
-      toast('Moses senses a ' + niceName + ' nearby — step closer and press Interact!');
-    }
   }
   // v3.6.1: patrolling servant (servantNPC) is a moving sprite, not part of
   // the static interactables array. Allow Moses to chat with her from any
@@ -11701,9 +11763,20 @@ function interact(){
   // #139 Jane 2026-06-03: the old empty-Interact fallbacks were stale desert /
   // stealth lines ("hiding", "look for travelers") that made no sense in the
   // peaceful Midian market. Give the child the actual Scene-3 goal instead.
+  // #20 Jane 2026-06-04: the hint must follow the story phase — once the 3
+  // crystals are earned and the crossing is built, STOP telling the child to
+  // "solve the market checkpoints" (they already did) and point them at the
+  // flock / tent instead.
+  let _crossingBuilt = false;
+  try { _crossingBuilt = (typeof _herdCrossingBuilt === 'function') ? _herdCrossingBuilt() : (_scene3CrystalCount() >= 3); } catch(e){}
   const nearExit = (player.tx >= 35);
-  if (nearExit) toast('Jethro’s tent is just ahead — finish the market puzzles and lead the flock across first!');
-  else toast('Solve the market checkpoints to earn blue crystals, then cross the stream to help Jethro’s daughters and their flock!');
+  if (nearExit) {
+    toast('Jethro’s tent is just ahead — lead the whole flock across to the pen first!');
+  } else if (!_crossingBuilt) {
+    toast('Solve the market checkpoints to earn blue crystals, then cross the stream to help Jethro’s daughters and their flock!');
+  } else {
+    toast('The crossing is open — guide the flock over the stepping-stones to the sheep pen!');
+  }
 }
 
 function triggerInteractable(obj){
@@ -12446,6 +12519,8 @@ function _pulleyStartSteal() {
 }
 function _pulleyShoo() {
   if (_pulley.over || !_pulley.steal || _pulley.mosesRun) return;
+  // #17 Jane 2026-06-04: airy "mirage woosh" as the shoo cue on the well game too.
+  try { play('mirageWoosh'); } catch(e){}
   // Moses dashes to the threatened pot
   _pulley.mosesRun = { targetX: Math.max(20, _pulley.steal.pot.x - 36), t: 0, phase: 'out', pot: _pulley.steal.pot };
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = 'Go, Moses — save the pot!';
@@ -13845,8 +13920,14 @@ function _rescueReset() {
   // bags i have." The purse is still topped up by downing shepherds, and the
   // end-of-round BANK reward is computed from PERFORMANCE off startBags (see
   // _rescueWin/_rescueLose), so this seed change does not touch the economy math.
-  // A floor of cfg.coins keeps the round winnable for a kid who skipped pickups.
-  _rescue.coins = Math.max(_rescue.startBags, cfg.coins);   // per-round PURSE — opens at the kid's collected bags, topped up by downing shepherds
+  // #16 Jane 2026-06-04: REMOVED the cfg.coins floor. Jane: "i had fewer than 5
+  // treasure bags when i went in to the rescue game. but my purse had default 80
+  // bags ... don't award a default 80 bags by default at the start of the rescue
+  // game." The purse now opens at the kid's ACTUAL accumulated treasure bags — no
+  // hidden floor. Bags are earned by pickups PLUS a generous bonus granted when the
+  // 3rd question of each market checkpoint is solved (see _grantCheckpointBags),
+  // so a kid who plays the scenes arrives with plenty to spend.
+  _rescue.coins = _rescue.startBags;   // per-round PURSE — opens at the kid's ACTUAL collected bags, topped up by downing shepherds
   _rescue.earned = 0; _rescue.trickleT = 0; _rescue.combo = 0; _rescue.comboT = 0;
   _rescue.laneWarn = [0, 0, 0, 0, 0, 0, 0]; _rescue._lastWarnSfx = 0;
   _rescue.camZoom = 1;   // cinematic camera punch-in (spikes on a boss/wave entry, eases back to 1)
@@ -14697,7 +14778,7 @@ function _spawnCrSparkles(n){
 
 // Show the big reward overlay. n = crystals earned so far (1..3). perfect = no
 // strikes. onContinue fires when the kid taps Continue (world resumes there).
-function _showCrystalReward(n, perfect, onContinue){
+function _showCrystalReward(n, perfect, onContinue, bagsEarned){
   try {
     const ov = $('crystalReward'); if (!ov){ if (typeof onContinue==='function') onContinue(); return; }
     const total = 3;
@@ -14713,6 +14794,17 @@ function _showCrystalReward(n, perfect, onContinue){
         const left = total - n;
         subEl.innerHTML = (perfect ? 'Perfect! ' : '') + left + ' more crystal' + (left===1?'':'s') + ' to build the river crossing.';
       }
+    }
+    // #16 Jane 2026-06-04: show the treasure bags this checkpoint just awarded right
+    // inside the celebration — they then fly into the HUD wallet on Continue.
+    if (subEl && bagsEarned > 0){
+      subEl.innerHTML += '<div style="margin-top:12px;display:inline-flex;align-items:center;gap:9px;'
+        + 'background:linear-gradient(145deg,#6a3f12,#9a6321);border:2px solid #ffd976;border-radius:30px;'
+        + 'padding:7px 18px;font-weight:900;color:#ffe9a8;font-size:clamp(15px,4vw,19px);'
+        + 'box-shadow:0 4px 16px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.25);">'
+        + '<img src="assets/images/treasure%20bag%20blue.png" alt="" style="width:28px;height:28px;'
+        + 'filter:drop-shadow(0 2px 3px rgba(0,0,0,0.45));" onerror="this.style.display=&quot;none&quot;">'
+        + '+' + Math.round(bagsEarned) + ' treasure bags!</div>';
     }
     // pips
     const pips = ov.querySelectorAll('.cr-pip');
@@ -14763,6 +14855,95 @@ function _hideCrystalReward(){
     else attach();
   } catch(e){}
 })();
+
+// #16 Jane 2026-06-04: "show graphics and animation of treasure bags earned and
+// show animation of it get added to the total number of treasure bags on HUD."
+// When a checkpoint is cleared, a flock of treasure-bag icons bursts from the
+// centre of the screen (where the celebration just played) and ARCS up into the
+// HUD wallet chip; as each bag lands the chip pulses and the number counts up
+// from the pre-reward total to the new bank. `amount` is the bags just banked
+// (game.treasureBags has ALREADY been incremented by the caller). Purely cosmetic
+// — never touches the rescue economy. Safe to no-op if the chip is off-screen.
+function _flyTreasureBagsToHud(amount){
+  try {
+    amount = Math.max(0, Math.round(amount || 0));
+    const chip  = document.getElementById('hudTreasureChip');
+    const numEl = document.getElementById('hudTreasure');
+    if (!chip || !numEl || amount <= 0) { try { updateHudTreasure(); } catch(e){} return; }
+    const rect = chip.getBoundingClientRect();
+    if (!rect || rect.width < 2) { try { updateHudTreasure(); } catch(e){} return; }  // HUD hidden (cinematic) — just refresh
+    const tx = rect.left + rect.width * 0.30;   // land on the bag icon at the chip's left
+    const ty = rect.top  + rect.height * 0.5;
+    const endVal   = Math.round(game.treasureBags || 0);
+    const startVal = Math.max(0, endVal - amount);
+    const ox = window.innerWidth  * 0.5;        // origin: centre of where the celebration sat
+    const oy = window.innerHeight * 0.42;
+
+    window._treasureHudAnimating = true;        // stop updateHudTreasure snapping the number
+    numEl.textContent = startVal;
+
+    const layer = document.createElement('div');
+    layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99999;overflow:hidden;';
+    document.body.appendChild(layer);
+
+    // floating "+N treasure bags!" label that rises and fades
+    const lab = document.createElement('div');
+    lab.textContent = '+' + amount + ' treasure bags!';
+    lab.style.cssText = 'position:fixed;left:' + ox + 'px;top:' + oy + 'px;'
+      + 'transform:translate(-50%,-50%) scale(0.6);opacity:0;white-space:nowrap;'
+      + 'font:900 26px system-ui,-apple-system,sans-serif;color:#ffe07a;'
+      + 'text-shadow:0 2px 6px rgba(80,40,0,0.65),0 0 16px rgba(255,200,60,0.85);'
+      + 'transition:transform .42s cubic-bezier(.2,1.5,.4,1),opacity .42s;';
+    layer.appendChild(lab);
+    requestAnimationFrame(() => { lab.style.opacity = '1'; lab.style.transform = 'translate(-50%,-50%) scale(1.12)'; });
+    setTimeout(() => { lab.style.opacity = '0'; lab.style.transform = 'translate(-50%,-150%) scale(0.9)'; }, 850);
+
+    const n = Math.min(9, Math.max(5, amount));   // 5–9 flying bag icons
+    let landed = 0;
+    for (let i = 0; i < n; i++) {
+      const bag = document.createElement('img');
+      bag.src = 'assets/images/treasure%20bag%20blue.png';
+      bag.onerror = function(){ this.style.display = 'none'; };
+      const jx = ox + (Math.random() * 130 - 65);
+      const jy = oy + (Math.random() * 64 - 24);
+      bag.style.cssText = 'position:fixed;left:' + jx + 'px;top:' + jy + 'px;width:36px;height:36px;'
+        + 'transform:translate(-50%,-50%) scale(0.2) rotate(' + (Math.random()*40-20).toFixed(0) + 'deg);opacity:0;'
+        + 'transition:left .72s cubic-bezier(.5,-0.18,.32,1),top .72s cubic-bezier(.5,0,.2,1),'
+        + 'transform .72s ease,opacity .25s;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.4));';
+      layer.appendChild(bag);
+      const launchDelay = 110 + i * 70;
+      setTimeout(() => {
+        // pop in, then sail to the HUD chip
+        bag.style.opacity = '1';
+        bag.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
+        bag.style.left = tx + 'px';
+        bag.style.top  = ty + 'px';
+        try { play('coin'); } catch(e){}
+        setTimeout(() => {
+          bag.style.transform = 'translate(-50%,-50%) scale(0.22) rotate(0deg)';
+          bag.style.opacity = '0';
+          chip.style.transition = 'transform .18s ease';
+          chip.style.transform = 'scale(1.22)';
+          setTimeout(() => { chip.style.transform = 'scale(1)'; }, 160);
+          landed++;
+          numEl.textContent = Math.round(startVal + (endVal - startVal) * (landed / n));   // count-up
+          if (landed >= n) {
+            numEl.textContent = endVal;
+            try { play('chime') || play('success'); } catch(e){}
+          }
+        }, 720);
+      }, launchDelay);
+    }
+    setTimeout(() => {
+      window._treasureHudAnimating = false;
+      try { layer.remove(); } catch(e){}
+      try { updateHudTreasure(); } catch(e){}   // settle to the true bank
+    }, 110 + n * 70 + 1150);
+  } catch(e){
+    window._treasureHudAnimating = false;
+    try { updateHudTreasure(); } catch(_){}
+  }
+}
 
 // Big sliding in-world banner. html = inner markup; ms = auto-hide (0 = sticky).
 let _crossingBannerTimer = null;
@@ -14820,7 +15001,7 @@ function _gameCrystalClimax(wrap, onDone){
       + '<div class="gcx-sparkles">' + sparkleHTML + '</div>'
       + '<img class="gcx-crystal" src="assets/images/crystal%20stone.png" alt="crystal stepping-stone">'
       + '<div class="gcx-label">A magic crystal forms!</div>'
-      + '<div class="gcx-sub">A shining stepping-stone to cross the river!</div>';
+      + '<div class="gcx-sub">A stepping-stone to cross the river!</div>';
     wrap.appendChild(ov);
     // gather the playing tiles toward the centre as the crystal forms
     const tiles = wrap.querySelectorAll('.ch-m3-tile, .ch-mg-cell.filled, .ch-sort-chip, .ch-sort-bin, .ch-col-item, .ch-col-moses');
@@ -14866,7 +15047,7 @@ function _buildScene3Game3rd(kind){
         correct: 0,
         target: target,
         colors: colors,
-        clue: 'Tap a tile, then a tile right next to it to swap. Make a row of 3 the same to crush them. Line up 4 for a Pharaoh blaster! Truth Seeker glows a winning swap.',
+        clue: 'Tap a tile, then a tile right next to it to swap. Make a row of 3 the same to crush them. Line up 4 for a Pharaoh blaster! Stuck? A winning swap will glow to show you a move.',
       };
     }
     if (kind === 'sort') {
@@ -15717,16 +15898,17 @@ function openChallenge(gate) {
   // music — otherwise the puzzle bed would double up over the overworld bed (the
   // "wrong music / two musics" Jane reported). _closeChallengeModalAudio restores it.
   try { if (audio.bgm) { audio._prevBgmVolume = audio.bgm.volume; audio.bgm.pause(); } } catch(e){}
-  try { if (audio.narration) { audio.narration.pause(); audio.narration.currentTime = 0; } } catch(e){}
-  // #126 Jane 2026-06-03: play the DEDICATED challenge-modal bed (challenge modal.mp3),
-  // NOT the rescue mini-game's puzzle background.mp3 — that shared track was the
-  // "wrong music" Jane heard on checkpoints. The rescue game keeps puzzleBg for itself.
+  // #9 Jane 2026-06-04: the dedicated challenge-modal.mp3 bed sounded "like an
+  // alert". Match Scenes 1 & 2, which play the calm `narration bg music.mp3`
+  // (audio.narration) as the quiet checkpoint bed. Stop the old alert-like track
+  // and start the narration bed at the same gentle level Scene 2 uses (0.25).
+  try { if (audio.challengeMusic) { audio.challengeMusic.pause(); audio.challengeMusic.currentTime = 0; } } catch(e){}
   try {
-    if (audio.challengeMusic) {
-      audio.challengeMusic.volume = 0.18;
-      audio.challengeMusic.loop = true;
-      audio.challengeMusic.currentTime = 0;
-      audio.challengeMusic.play().catch(()=>{});
+    if (audio.narration) {
+      audio.narration.volume = 0.25;
+      audio.narration.loop = true;
+      audio.narration.currentTime = 0;
+      audio.narration.play().catch(()=>{});
     }
   } catch(e){}
   const idx = gate.bundleIndex;
@@ -16799,21 +16981,6 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
     gate.strikes = 0; // reset strikes on success
     game.stars += 3;
     updateHudStars();
-    // v2.2.5 OASIS BONUS: any question flagged with oasisRefill restores
-    // +1 heart (capped at maxHearts) — this gives the "reach the oasis"
-    // storyboard narrative its gameplay payoff until the v2.3 map retrofit
-    // drops a dedicated col-34 oasis tile.
-    if (q && q.oasisRefill && game.scene === 2) {
-      try {
-        const maxH = game.maxHearts || 5;
-        if (game.hearts < maxH) {
-          game.hearts = Math.min(maxH, game.hearts + 1);
-          updateHudHearts();
-          try { play('chime') || play('success'); } catch(e){}
-          try { toast('Oasis! Heart refilled. +1 \u2665'); } catch(e){}
-        }
-      } catch(e){}
-    }
     if (_isBespokeGame) {
       // Wipe the spent mini-game board immediately so the empty cream panel
       // never flickers between the climax and the crystal-reward overlay.
@@ -16857,7 +17024,16 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         // money bags, so Moses banks wealth for the Rescue's weapons and gathers
         // the 3 crystals he needs to bridge the river at col 12. The crystal
         // count is DERIVED from solved checkpoints so it survives save/resume.
-        const _crystalBags = ({ easy: 40, medium: 35, hard: 30 })[game.difficulty] || 35;
+        // #16 Jane 2026-06-04: this per-checkpoint grant is now the PRIMARY way the
+        // kid banks treasure for the Rescue game (the old default-80 purse floor is
+        // gone). Jane refined "generous": "not a lot but enough to get started — as
+        // they down each shepherd in the rescue game, players are earning more
+        // treasure bags anyway." So this is a MODEST seed, not a windfall: 3
+        // checkpoints (~90/75/60) + world pickups (+5 each, ~50) give a workable
+        // starting purse, and the Rescue round keeps paying out as shepherds go
+        // down. Each clear FLIES these bags into the HUD wallet with a count-up —
+        // see _flyTreasureBagsToHud, fired from _resumeAfterClear.
+        const _crystalBags = ({ easy: 30, medium: 25, hard: 20 })[game.difficulty] || 25;
         const _crystals = _scene3CrystalCount();
         game.treasureBags = (game.treasureBags || 0) + _crystalBags;
         try { if (typeof updateHudCrystals === 'function') updateHudCrystals(); } catch(e){}
@@ -16931,6 +17107,10 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         const _resumeAfterClear = () => {
           game.state = 'playing';
           currentGate = null;
+          // #16 Jane 2026-06-04: the celebration is dismissed and the HUD is visible
+          // again — fly the just-earned checkpoint bags up into the wallet chip with
+          // a count-up so the kid SEES the reward land. (Bank already credited above.)
+          try { if (_crystalBags > 0) _flyTreasureBagsToHud(_crystalBags); } catch(e){}
           // v2.2.6 Jane feedback: Scene 2/3 no longer auto-completes when all
           // gates clear — Moses must still WALK into the exit. Scene 3 epic:
           // announce the exit-open fanfare when the LAST stop is cleared;
@@ -16964,7 +17144,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         if (gate.zone === 'market') {
           // Loud, unmistakable crystal-earned celebration. World stays frozen
           // (game.state still 'dialog') until the kid taps Continue.
-          _showCrystalReward(_crystals, perfect, _resumeAfterClear);
+          _showCrystalReward(_crystals, perfect, _resumeAfterClear, _crystalBags);
         } else {
           // Legacy / non-crystal gate: lightweight toast + immediate resume.
           if (perfect) toast('Checkpoint cleared! Perfect — +5 stars, +' + _crystalBags + ' treasure!');
@@ -17294,7 +17474,9 @@ function onTreasure(tx, ty){
   play('coin');
   // v3.4: glitter sparkle burst at Moses's screen position on pickup
   spawnGlitterBurstAtPlayer(16);
-  toast('+2 stars! Treasure collected (' + game.treasureCount + '/' + game.treasuresTotal + ')');
+  // #16 Jane 2026-06-04: toast now speaks the WALLET language the HUD chip uses
+  // (each pouch banks +5 bags); the "x of y found" keeps a pickup-completion hint.
+  toast('+5 treasure bags · +2 stars!  (' + game.treasureCount + ' of ' + game.treasuresTotal + ' found)');
 }
 
 /* ---------- v3.4 GLITTER SPARKLES ----------
@@ -18879,12 +19061,20 @@ function updateRudeShepherds(dt) {
         for (const _c of _cands) {
           const _nx = _c[0], _ny = _c[1];
           if (_nx < 1 || _nx >= MAP_W - 1 || _ny < 1 || _ny >= MAP_H - 1) continue;
+          // #6 Jane 2026-06-04: never step onto Moses' OWN tile — two characters
+          // must not stack on top of each other. The shepherd stops one tile short
+          // (Moses' move is already body-blocked from his side), so he still guards
+          // the route without overlapping Moses.
+          if (_nx === player.tx && _ny === player.ty) continue;
           let _blocked = false;
           // Stream (incl. stones) is impassable for shepherds — keeps them stranded
           // on the west bank so the crossing is Moses' escape.
           try { if (typeof isScene3StreamBlocker === 'function' && isScene3StreamBlocker(_nx, _ny, false)) _blocked = true; } catch(e){}
           if (_blocked) continue;
+          // #5 Jane 2026-06-04: face the way he ACTUALLY steps so the orange
+          // shepherd shows his back (up) / front (down) sprites — not only L/R.
           if (_nx !== s.tx) s.dir = _nx > s.tx ? 'right' : 'left';
+          else if (_ny !== s.ty) s.dir = _ny > s.ty ? 'down' : 'up';
           s.tx = _nx; s.ty = _ny;
           break;
         }
@@ -18910,18 +19100,15 @@ function updateRudeShepherds(dt) {
       s.nextTauntAt = now + 6000;
     }
     if (s.taunting && now > s.tauntShowUntil) s.taunting = false;
-    // Contact: NAG + BLOCK only. Shepherds never cost a heart and never end the game (Jane).
+    // #22 Jane 2026-06-04: RELAX the contact rule. The old code yanked Moses back
+    // to his previous tile whenever a shepherd stood adjacent — far too strict (he
+    // couldn't even stand next to one). The shepherd's BODY already blocks his own
+    // tile (Moses can't step onto him — see the player-move collision) and #6 stops
+    // the shepherd stepping onto Moses, so no jarring bounce-back is needed. Just a
+    // soft cue on contact. Never costs a heart and never ends the game (#104).
     if (cheby <= 1 && !moses_hidden && now >= (game.invulnerableUntil || 0)) {
-      game.invulnerableUntil = now + 1200;
-      try { play('dangerAlert'); } catch(e){}
-      const bx = (typeof player.prevTx === 'number') ? player.prevTx : player.tx;
-      const by = (typeof player.prevTy === 'number') ? player.prevTy : player.ty;
-      if (typeof isWalkable === 'function' && isWalkable(bx, by)) {
-        player.tx = bx; player.ty = by;
-        player.px = bx * TILE; player.py = by * TILE;
-        try { updateCamera(); } catch(e){}
-      }
-      try { toast('A shepherd shoves Moses back! Solve the Bible Checkpoint beside him to drive him off.'); } catch(e){}
+      game.invulnerableUntil = now + 1600;
+      try { play('pop'); } catch(e){}
     }
     // Proximity vignette pulse
     if (cheby <= 3 && !moses_hidden && now - (_scoutCloseWarnAt || 0) > 3500) {
@@ -21112,6 +21299,9 @@ function _renderInner(){
   for (const g of guards) drawGuard(g);
   // v2.1 Scene 2: pursuit scouts (rendered BEFORE Moses so he sprites in front)
   try { drawPursuitScouts(ctx); } catch(e){}
+  // #10 Jane 2026-06-04: raiding wolves + their red danger ring on TOP of the
+  // shepherds (but below Moses) so a shepherd by the flock can never bury the wolf.
+  try { drawScene3HerdWolvesTop(); } catch(e){}
   // v2.1 Scene 2: rolling boulders (drawn under Moses)
   try { drawRollingBoulders(ctx); } catch(e){}
   // Scene 2 caves (drawn under Moses so he can step into them)

@@ -3946,6 +3946,14 @@ let VIEW_COLS = 14;           // visible columns on screen
 let VIEW_ROWS = 10;           // visible rows on screen
 let CANVAS_W = 14 * TILE;
 let CANVAS_H = 10 * TILE;
+// 2026-06-01 RETINA FIX: resizeCanvas() sets a DPR-scaled backing store and a
+// ctx.setTransform(dpr,...) base transform. render() resets the transform every
+// frame to clear any leaked ctx.save() (2026-05-26 defensive reset) — but it
+// MUST re-apply this same DPR scale, otherwise on retina (dpr>1) the whole
+// world paints at 1x into the top-left quadrant of the 2x backing (the "tiny
+// game crammed in the corner / dark void on the rest" bug). Stored here so
+// render() can restore the exact value resizeCanvas computed.
+let _renderDPR = 1;
 
 const canvas = $('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -4022,6 +4030,7 @@ function resizeCanvas() {
     ? Math.max(1, window.outerWidth / window.innerWidth)
     : 1;
   const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), 4);
+  _renderDPR = dpr; // remember for render()'s per-frame transform reset
   canvas.width  = Math.round(CANVAS_W * dpr);
   canvas.height = Math.round(CANVAS_H * dpr);
   canvas.style.width  = CANVAS_W + 'px';
@@ -11909,7 +11918,7 @@ function _enterWorldMap2(){
 }
 function _showWorldMap2(){
   const overlay = document.getElementById('worldMapOverlay');
-  if (!overlay) { try { location.href = 'scene3_midian.html'; } catch(e){} return; }
+  if (!overlay) { try { location.href = 'scene3_midian.html?from=scene2'; } catch(e){} return; }
   overlay.style.opacity = '';
   const moses = document.getElementById('wmMoses');
   if (moses) moses.classList.remove('arrived');
@@ -11947,8 +11956,8 @@ function _showWorldMap2(){
       } catch(e){}
       try { const overlay = document.getElementById('worldMapOverlay'); if (overlay) overlay.style.opacity = '0'; } catch(e){}
       setTimeout(() => {
-        try { location.href = 'scene3_midian.html'; }
-        catch(e) { try { window.location.assign('scene3_midian.html'); } catch(err){} }
+        try { location.href = 'scene3_midian.html?from=scene2'; }
+        catch(e) { try { window.location.assign('scene3_midian.html?from=scene2'); } catch(err){} }
       }, 280);
     });
   };
@@ -14693,7 +14702,10 @@ function drawSandstorm(ctx){
 function render(){
   // 2026-05-26: defensive transform reset so a leaked ctx.save() can never
   // compound the world-zoom transform below.
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // 2026-06-01 RETINA FIX: reset to the DPR base (NOT identity) — see note at
+  // the _renderDPR declaration. Identity dropped the dpr scale, crushing the
+  // whole world into the top-left corner on phones (dpr 2-3).
+  ctx.setTransform(_renderDPR, 0, 0, _renderDPR, 0, 0);
   // 2026-05-21 PM63k (Jane: "scene 2 loads first without sprites. is it
   // because i am directly opening scene 2"). HARD SAFETY NET: never paint
   // the gameplay map until EVERY sprite has downloaded + decoded. This
@@ -14997,7 +15009,12 @@ function drawInteractPrompt(){
   // Uses `_clampedBx` inside drawing calls below; also clamp Y to avoid a
   // negative Y when the pickup is in the top row of the viewport.
   const rawBx = nearest.tx * TILE - camera.px + TILE/2;
-  const rawBy = nearest.ty * TILE - camera.py - 4;
+  let rawBy = nearest.ty * TILE - camera.py - 4;
+  // #131 Jane 2026-06-04: servant/vendor NPCs draw at SRV_SCALE=1.5, so the
+  // sprite extends ~0.5 tile above the tile origin and a tile-top bubble
+  // covered the face. Lift it clear of the head, mirroring Scene 3. The
+  // Math.max clamp below still keeps it on-canvas near the top edge.
+  if (nearest.kind === 'servant' || nearest.kind === 'vendor') rawBy -= TILE * 0.95;
   const bobble = Math.sin(performance.now() / 280) * 2;
   // label
   // v2.3.5 Jane: every pickable object now labels as TAKE (bread, water, crown)
@@ -15010,10 +15027,12 @@ function drawInteractPrompt(){
   // crown, scroll. Now bubble reads "TAKE: Travel Bread" so the child knows
   // what they are about to pick up before they tap Interact. NPC short
   // names are derived from the object data (no new assets needed).
+  // #131 Jane 2026-06-04: NPC fallback verb now matches the "Interact" action
+  // button (was the legacy 'TALK').
   const verb = (nearest.kind === 'truthchest') ? 'OPEN'
              : (nearest.kind === 'dog') ? 'PET'
              : (_pickKinds.indexOf(nearest.kind) >= 0) ? 'TAKE'
-             : 'TALK';
+             : 'INTERACT';
   // shorten the full title to <= 18 chars so the bubble fits on phones
   const _shortName = (() => {
     const n = nearest.name || nearest.kind || '';
