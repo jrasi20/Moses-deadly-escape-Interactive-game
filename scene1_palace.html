@@ -5263,6 +5263,14 @@ let VIEW_COLS = 10;           // visible columns on screen
 let VIEW_ROWS = 8;            // visible rows on screen
 let CANVAS_W = VIEW_COLS * TILE;
 let CANVAS_H = VIEW_ROWS * TILE;
+// 2026-06-01 RETINA FIX: resizeCanvas() sets a DPR-scaled backing store and a
+// scale(dpr) base transform. _renderInner() resets the transform every frame to
+// clear any leaked ctx.save() (2026-05-26 defensive reset) — but it MUST
+// re-apply this same DPR scale, otherwise on retina (dpr>1) the whole world
+// paints at 1x into the top-left quadrant of the 2x backing (the "tiny game
+// crammed in the corner / dark void on the rest" bug). Stored here so
+// _renderInner can restore the exact value resizeCanvas computed.
+let _renderDPR = 1;
 
 const canvas = $('gameCanvas');
 // 2026-05-15 PM25 (audit #4) — push a string to the off-screen aria-
@@ -5337,6 +5345,7 @@ function resizeCanvas() {
     if (zoom > 1.05) dpr *= zoom;
     dpr = Math.min(3, dpr);
   } catch(e){}
+  _renderDPR = dpr; // remember for _renderInner's per-frame transform reset
   canvas.width = Math.round(CANVAS_W * dpr);
   canvas.height = Math.round(CANVAS_H * dpr);
   canvas.style.width = CANVAS_W + 'px';
@@ -18462,7 +18471,10 @@ function render(){
 function _renderInner(){
   // 2026-05-26: defensive transform reset so a leaked ctx.save() from any
   // prior frame can never compound the world-zoom transform below.
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // 2026-06-01 RETINA FIX: reset to the DPR base (NOT identity) — see note at
+  // the _renderDPR declaration. Identity dropped the dpr scale, crushing the
+  // whole world into the top-left corner on phones (dpr 2-3).
+  ctx.setTransform(_renderDPR, 0, 0, _renderDPR, 0, 0);
   ctx.fillStyle = '#2a1004';
   ctx.fillRect(0,0,CANVAS_W, CANVAS_H);
 
@@ -18730,14 +18742,19 @@ function drawInteractPrompt(){
   }
   if (!nearest) return;
   const bx = nearest.tx * TILE - camera.px + TILE/2;
-  const by = nearest.ty * TILE - camera.py - 4;
+  let by = nearest.ty * TILE - camera.py - 4;
+  // #131 Jane 2026-06-04: servant NPCs draw at SRV_SCALE=1.5 (sprite extends
+  // ~0.5 tile above the tile origin), so a tile-top bubble covered the face.
+  // Lift the bubble clear of the head, mirroring Scene 3.
+  if (nearest.kind === 'servant') by -= TILE * 0.95;
   const bobble = Math.sin(performance.now() / 280) * 2;
-  // v3.x audit (Bug 141): clearer kind→verb mapping. Generic 'TALK'
-  // fallback only applies to NPCs (servant). Scroll = read.
+  // v3.x audit (Bug 141): clearer kind→verb mapping. #131 Jane 2026-06-04:
+  // the action button reads "Interact", so the NPC bubble now matches it
+  // (was the legacy 'TALK'). Scroll = read.
   const label = (nearest.kind === 'truthchest') ? 'OPEN'
               : (nearest.kind === 'scroll')     ? 'READ'
               : (nearest.kind === 'dog')        ? 'PET'
-              : (nearest.kind === 'servant')    ? 'TALK'
+              : (nearest.kind === 'servant')    ? 'INTERACT'
               : 'INTERACT';
   ctx.save();
   ctx.font = 'bold 10px Georgia';
