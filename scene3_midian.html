@@ -5432,22 +5432,23 @@ const MAP_STR = [
   "11111111111111111111111111111111111", //  0  north stone ridge
   "10000000000000000000000000000000001", //  1  #166: NE pasture palm removed (Jane: too many oasis around the well)
   "10000000000000000000000000000000001", //  2  #166: pasture palm removed (declutter oasis)
-  "10000000000000030000000000000050001", //  3  reeds just east of stream; treasure NE pasture (#85)
+  "10000000000000000000000000000050001", //  3  #166 reeds removed (clear oasis around well); treasure NE
+
   "10000000000000066660000000000000001", //  4  well pool begins; #166: palm removed (declutter)
   "10000000000000666666000000000000001", //  5  well pool wide
-  "10000000000000666666003000000000001", //  6  #172: marketplace jar pile removed (Jane: "brown creatures"); well pool; reeds E
+  "10000000000000666666000000000000001", //  6  well pool; #166 reeds removed (clear oasis around well)
   "10000000005000066660000000000000001", //  7  well pool narrowing; treasure W market (#85)
-  "10000000000000006666030050000000001", //  8  well pool tail; reeds east; treasure E pasture (#85)
+  "10000000000000006666000050000000001", //  8  well pool tail; #166 reeds removed; treasure E pasture
   "10000000000000000000000000050000001", //  9  treasure mid-pasture
   "10005000000000000000000000000000001", // 10  treasure in marketplace
   "10000000000000000000000000000000001", // 11  #166: palm near well removed (declutter oasis)
   "18000000000000000000000000000000007", // 12  START col 1 → JETHRO TENT EXIT col 34
-  "10000000000000000050000000000003007", // 13  treasure (well centre); cover; EXIT
+  "10000000000000000050000000000000007", // 13  treasure (well centre); #166 palm removed; EXIT
   "10050000000000000000030000000020001", // 14  (jar thinned — Jane #9); reeds; hearth near tent; treasure W (#85)
   "10000000000000000000000000000200001", // 15  hearth embers
-  "10000000000000300000000000000000001", // 16  (market jar thinned — Jane #9); well-zone reeds
+  "10000000000000000000000000000000001", // 16  #166 well-zone reeds removed (clear oasis around well)
   "10000000000000000000300050000000001", // 17  (market jar thinned — Jane #9); pasture cover; treasure E (#85)
-  "10000000000000000000000030000000001", // 18  palm mid-pasture
+  "10000000000000000000000000000000001", // 18  #166 palm removed (clear all oasis/palms)
   "10000000000000000050000000000000001", // 19  #172: marketplace jar pile removed (Jane: "brown creatures"); treasure
   "10000000000000000000000000000000001", // 20  (jar thinned — Jane #9)
   "10000000000000000000000000050000001", // 21  treasure in pasture
@@ -6774,7 +6775,10 @@ function updateScene3Flock(dt){
   for (const w of scene3Flock.wolves){
     if (w.state === 'flee'){
       w.py += 0.05 * dt; w.px += (w.vx || 0) * dt;
-      if (now >= w.fleeUntil){ w.state = 'stalk'; w.targetId = null; }
+      // #4 Jane 2026-06-06: a shooed wolf RUNS OFF the scene (it used to return to
+      // 'stalk' and sit frozen on screen). After the flee beat, send it leaving —
+      // the 'leave' handler walks it off and the draw loop culls it.
+      if (now >= w.fleeUntil){ w.state = 'leave'; w.targetId = null; w.vx = ((w.vx || 0) < 0 ? -1 : 1) * 0.06; }
       continue;
     }
     if (frozen) continue;
@@ -7120,6 +7124,16 @@ function _herdMaybeStartPenRaid(now){
   if (scene3Herd.penRaidArmed || scene3Herd.penRaidDone) return;
   if (!scene3Herd.wolvesCleared) return;          // only AFTER the first wave is driven off
   if (scene3Herd.done) return;                    // not once the whole flock is celebrated in
+  // #7 Jane 2026-06-06: don't slam the 2nd wolf attack the instant the flock is
+  // safe — let the kid breathe and do the well + rescue mini-games first. The pen
+  // raid only arms once BOTH east-bank mini-games are cleared.
+  try {
+    if (typeof challengeGates !== 'undefined' && challengeGates.length) {
+      const wellDone   = challengeGates.some(g => g && g.zone === 'well'   && g.solved);
+      const rescueDone = challengeGates.some(g => g && g.zone === 'rescue' && g.solved);
+      if (!(wellDone && rescueDone)) return;
+    }
+  } catch(e){}
   const arrived = scene3Herd.sheep.filter(s=>s.state==='arrived').length;
   if (arrived < 2) return;                         // wait until a couple sheep are penned
   if (!scene3Herd.penRaidNextAt){ scene3Herd.penRaidNextAt = now + 2600; return; }  // brief beat first
@@ -10051,12 +10065,14 @@ function attemptMove(dir) {
           window._riverHintAt = now;
           const have = _scene3CrystalCount();
           const left = 3 - have;
+          // #3 Jane 2026-06-06: play uh-oh.mp3 EVERY time Moses tries to cross the
+          // river before earning the 3 crystals (throttled), not just the first time.
+          try { play('uhoh') || play('error'); } catch(e){}
           // First time Moses reaches the river, give the full friendly briefing;
           // after that, short progress nudges so it never nags. Uses the big
           // can't-miss banner (Jane: make the crossing prompt more prominent).
           if (!window._riverIntroShown) {
             window._riverIntroShown = true;
-            try { play('error') || play('uhoh'); } catch(e){}
             _showCrossingBanner('🌊 <b>The river is too deep!</b> Earn <b>3 crystal tiles 💎</b> from the desert checkpoints to build a stepping-stone crossing.', 5200);
           } else {
             _showCrossingBanner('💎 <b>' + have + ' of 3 crystals</b> — ' + left + ' more to go! Clear ' + (left === 1 ? 'the last checkpoint' : left + ' more checkpoints') + ' to bridge the river.', 4200);
@@ -19415,6 +19431,9 @@ function updateRudeShepherds(dt) {
       s.tauntText = s.tauntLines[Math.floor(Math.random() * s.tauntLines.length)];
       s.tauntShowUntil = now + 3000;
       s.nextTauntAt = now + 6000;
+      // #5 Jane 2026-06-06: a short alert STING when a shepherd gets close — ONE-SHOT,
+      // throttled by the 6s taunt cooldown, so it never loops in parallel with the bgm.
+      try { play('dangerAlert') || play('alerted'); } catch(e){}
     }
     if (s.taunting && now > s.tauntShowUntil) s.taunting = false;
     // #22 Jane 2026-06-04: RELAX the contact rule. The old code yanked Moses back
@@ -22587,7 +22606,11 @@ function drawTile(t, dx, dy, tx, ty){
           ctx.restore();
         }
       }
-    } else if (IMG.sandTile && IMG.sandTile.complete && IMG.sandTile.naturalWidth) {
+    } else if (false /* #Jane 2026-06-06: Midian's floor is GREEN, never desert sand.
+      The old sand-tile fallback fired while "midian grass tile.png" was still
+      loading, flashing YELLOW DESERT for ~10s before the grass popped in. Skip it
+      entirely so the GREEN meadow base below shows immediately, then grass layers
+      on top the instant it lands — no desert flash. */) {
       // v3.5 LANE 2+ Jane 2026-04-24: zone-based floor variant. Mesa zone
       // (cols 29-37) gets desert%20sand%20red.png so the eastern third of
       // the map reads as red sandstone country approaching the cliff —
