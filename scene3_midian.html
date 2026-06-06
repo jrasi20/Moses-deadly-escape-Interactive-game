@@ -15572,7 +15572,9 @@ function renderMatch3(gate, q, container){
     // board clears in one satisfying cascade — and let it linger so kids savour
     // it. Then hand off to the crystal-forms climax.
     _sugarCrushAll(() => {
-      _gameCrystalClimax(wrap, () => { try{ handleChallengeAnswer(gate,0,wrap,{answerLabel:'TILES CLEARED!'}); }catch(e){} });
+      let _adv = false; const _a = () => { if (_adv) return; _adv = true; try { handleChallengeAnswer(gate,0,wrap,{answerLabel:'TILES CLEARED!'}); } catch(e){} };
+      try { _gameCrystalClimax(wrap, _a); } catch(e){ _a(); }
+      setTimeout(_a, 2800);   // #soft-lock guard: always advance even if the climax breaks
     });
   }
   function _sugarCrushAll(done){
@@ -15785,7 +15787,15 @@ function renderSort(gate, q, container){
       if (done >= items.length){
         busy = true;
         // Jane 2026-06-02: end with the shared "crystal forms" climax.
-        _gameCrystalClimax(wrap, () => { try{ handleChallengeAnswer(gate, 0, wrap, {answerLabel:'ALL SORTED!'}); }catch(e){} });
+        // Jane 2026-06-06 (CRITICAL): the kid got STUCK on "All sorted! 6/6" with
+        // no way forward — if _gameCrystalClimax ever throws or never fires its
+        // callback, the checkpoint never advances and the game soft-locks. Guard
+        // it: advance EXACTLY once, and a safety timer forces it through even if
+        // the climax animation breaks, so the mini-game can never trap the player.
+        let _advanced = false;
+        const _adv = () => { if (_advanced) return; _advanced = true; try { handleChallengeAnswer(gate, 0, wrap, {answerLabel:'ALL SORTED!'}); } catch(e){} };
+        try { _gameCrystalClimax(wrap, _adv); } catch(e){ _adv(); }
+        setTimeout(_adv, 2800);
       }
     } else {
       try{ play('pop'); }catch(e){}
@@ -15954,7 +15964,9 @@ function renderCollector(gate, q, container){
   function win(){
     if (done) return; done = true; cleanup();
     try{ laneEls.forEach(el=>el.classList.remove('target')); }catch(e){}
-    _gameCrystalClimax(wrap, () => { try{ handleChallengeAnswer(gate,0,wrap,{answerLabel:'TREASURES GATHERED!'}); }catch(e){} });
+    { let _adv = false; const _a = () => { if (_adv) return; _adv = true; try { handleChallengeAnswer(gate,0,wrap,{answerLabel:'TREASURES GATHERED!'}); } catch(e){} };
+      try { _gameCrystalClimax(wrap, _a); } catch(e){ _a(); }
+      setTimeout(_a, 2800); }   // #soft-lock guard: always advance even if the climax breaks
   }
 
   // input: tap a lane, swipe up/down, or arrow keys
@@ -17318,6 +17330,9 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         const _resumeAfterClear = () => {
           game.state = 'playing';
           currentGate = null;
+          // #1 Jane 2026-06-06: resume bgm ONLY now (crystal modal Continue tapped),
+          // routed through setMusic so it WAITS for the victory fanfare to finish.
+          try { setMusic('bgm'); } catch(e){}
           // #16 Jane 2026-06-04: the celebration is dismissed and the HUD is visible
           // again — fly the just-earned checkpoint bags up into the wallet chip with
           // a count-up so the kid SEES the reward land. (Bank already credited above.)
@@ -17451,10 +17466,17 @@ function _closeChallengeModalAudio(){
   try {
     if (audio.challengeMusic) { audio.challengeMusic.pause(); audio.challengeMusic.currentTime = 0; }
   } catch(e){}
+  // #1 Jane 2026-06-06: do NOT resume bgm here while the CRYSTAL-REWARD modal is
+  // still open (or the victory fanfare is still sounding). The crystal modal's
+  // Continue handler (_resumeAfterClear) resumes the music — routed through
+  // setMusic('bgm'), which DEFERS the loop until the success-trumpet/level-up
+  // fanfare finishes. This kills the "win sound + bg music clashing" Jane keeps
+  // hearing when the '… more crystals' modal closes.
   try {
-    if (audio.bgm) {
-      if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume;
-      audio.bgm.play().catch(()=>{});
+    const crOpen = (function(){ const el = document.getElementById('crystalReward'); return el && (el.classList.contains('show') || el.getAttribute('aria-hidden') === 'false'); })();
+    if (!crOpen) {
+      if (audio.bgm && audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume;
+      setMusic('bgm');
     }
   } catch(e){}
 }
