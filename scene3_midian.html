@@ -1684,9 +1684,16 @@
   }
   @keyframes gcxLabelPop { 0%{ opacity:0; transform:scale(0.4) translateY(8px); } 60%{ transform:scale(1.12); } 100%{ opacity:1; transform:scale(1) translateY(0); } }
   .gcx-sub {
-    margin-top:3px; position:relative; z-index:3; font-family:Fredoka,Georgia,sans-serif;
-    font-weight:700; color:#fff6df; font-size:clamp(11px,3.4vw,14px); text-align:center; padding:0 10px;
-    text-shadow:0 1px 3px rgba(120,60,0,0.75);
+    /* #170 Jane 2026-06-06: "after candy crush, 'a stepping stone to cross the
+       river' text is white on a light background and not seen." The sub-line had
+       only cream fill + a soft shadow, so it washed out over the bright gold
+       crystal-forms flash. Give it the SAME crisp white + heavy dark-brown
+       outline the .gcx-label uses so it reads on any background. */
+    margin-top:4px; position:relative; z-index:3; font-family:Fredoka,Georgia,sans-serif;
+    font-weight:800; color:#ffffff; font-size:clamp(12px,3.8vw,15px); text-align:center; padding:0 10px;
+    text-shadow:
+      -1.5px -1.5px 0 #6b3300, 1.5px -1.5px 0 #6b3300, -1.5px 1.5px 0 #6b3300, 1.5px 1.5px 0 #6b3300,
+      0 2px 0 #4d2400, 0 0 12px rgba(255,200,80,0.9);
     animation:gcxLabel 0.5s ease 0.95s both;
   }
   @keyframes gcxLabel { from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
@@ -3103,7 +3110,7 @@
       <span class="hud-chip" id="hudTimer">3:00</span>
     </div>
     <div class="hud-group">
-      <button class="pause-btn" id="peekMapBtn" aria-label="Peek Map" title="Peek the map (2 uses)" style="background:linear-gradient(145deg,#2a4a8a,#3a5ea8);border-color:#ffd976;color:#ffd976;margin-right:6px;">MAP <span id="peekCount" style="font-size:10px;">(2)</span></button>
+      <button class="pause-btn" id="peekMapBtn" aria-label="Open map" title="Tap anywhere on the overlay to close the map." style="background:linear-gradient(145deg,#2a4a8a,#3a5ea8);border-color:#ffd976;color:#ffd976;margin-right:6px;width:auto;min-width:44px;padding:0 12px;border-radius:22px;font-size:13px;letter-spacing:0.5px;">MAP</button>
       <button class="pause-btn" id="hudSoundBtn" aria-label="Sound on (tap to mute)" aria-pressed="false" title="Sound on/off" style="margin-right:6px;">&#128266;</button>
       <button class="pause-btn" id="pauseBtn" aria-label="Pause">| |</button>
     </div>
@@ -3292,7 +3299,7 @@
 <div class="scene-banner" id="sceneBanner">
   <div class="scene-banner-box">
     <h1>SCENE 3 COMPLETE</h1>
-    <p>Moses has reached the Midian well!</p>
+    <p>Moses has reached Jethro's tent in Midian!</p>
     <p style="color:#ffd700;font-weight:700;">A Truth Card has been added to your collection!</p>
   </div>
 </div>
@@ -4104,6 +4111,13 @@
 <audio id="audGate" preload="auto" src="assets/audio/gate%20unlock.mp3"></audio>
 <audio id="audWin" preload="auto" src="assets/audio/win%20sound.mp3"></audio>
 <audio id="audClick" preload="auto" src="assets/audio/magic%20button%20click%202.mp3"></audio>
+<!-- #167 Jane 2026-06-06: narration/cinematic panels should turn with the same page-turn SFX Scene 1 uses. -->
+<audio id="audPageTurn" preload="auto" src="assets/audio/page%20turn.mp3"></audio>
+<!-- batch-3 Jane 2026-06-06: win confetti sparkle, victory heat-up bed, wolf-attack danger bed, lively post-scene-3 narration bed -->
+<audio id="audConfetti"     preload="auto" src="assets/audio/win%20confetti%20sparkle.mp3"></audio>
+<audio id="audBgmExit"      preload="auto" src="assets/audio/bgm-exit.mp3"></audio>
+<audio id="audBgmCorridor"  loop preload="auto" src="assets/audio/bgm-corridor.mp3"></audio>
+<audio id="audEgyptianCover" loop preload="auto" src="assets/audio/egyptian%20cover%20music.mp3"></audio>
 <audio id="audClickSound" preload="auto" src="assets/audio/click%20sound.mp3"></audio>
 <!-- v3.4: character-input click (letter taps, match/unscramble/sequence) -->
 <audio id="audTap" preload="auto" src="assets/audio/click.mp3"></audio>
@@ -4337,6 +4351,11 @@ const audio = {
   gate:      $('audGate'),
   win:       $('audWin'),
   click:     $('audClick'),
+  pageTurn:  $('audPageTurn'),      // #167: cinematic/narration panel turns (matches Scene 1)
+  confetti:    $('audConfetti'),    // #16: win-modal confetti sparkle (matches Scene 1)
+  bgmExit:     $('audBgmExit'),     // #14: victory heat-up bed
+  bgmCorridor: $('audBgmCorridor'), // #15: wolf-attack danger bed
+  egyptianCover: $('audEgyptianCover'), // #19: lively post-Scene-3 narration bed
   clickSound: $('audClickSound'),   // Jane: click sound.mp3 for menu button selection
   tap:       $('audTap'),       // v3.4: character-input clicks
   alerted:   $('audAlerted'),   // v3.4: fast tension when a guard is alerted
@@ -4480,6 +4499,10 @@ if (audio.reachedExit)   audio.reachedExit.volume   = 0.85;
 if (audio.allComplete)   audio.allComplete.volume   = 0.85;
 if (audio.levelUp)       audio.levelUp.volume       = 0.85;
 if (audio.successTrumpet) audio.successTrumpet.volume = 0.85;
+if (audio.egyptianCover) audio.egyptianCover.volume = 0.5;   // #19 lively narration bed (under VO)
+if (audio.bgmCorridor)   audio.bgmCorridor.volume   = 0.55;  // #15 wolf-attack danger bed
+if (audio.bgmExit)       audio.bgmExit.volume       = 0.7;   // #14 victory heat-up sting
+if (audio.confetti)      audio.confetti.volume      = 0.8;   // #16 win confetti sparkle
 if (audio.levelUp1)      audio.levelUp1.volume      = 0.8;
 if (audio.correct)       audio.correct.volume       = 0.75;
 if (audio.collectCrown)  audio.collectCrown.volume  = 0.75;
@@ -4598,7 +4621,7 @@ function unlockAudio() {
 }
 // v2.3.1 (Jane): single source-of-truth music switcher. Pauses every looping
 // track except the one requested, so we never hear two musics at once.
-const _LOOP_TRACKS = ['bgm','narration','alerted'];
+const _LOOP_TRACKS = ['bgm','narration','alerted','bgmCorridor','egyptianCover'];
 // ---- Master SOUND mute (canonical A1) ----------------------------------------
 // Persisted in the cross-scene key bek.bundle1.soundOn. We mute by toggling the
 // HTMLMediaElement `.muted` flag on EVERY track, so even beds started by a direct
@@ -4629,7 +4652,11 @@ function _killAllGameMusic(){
 }
 try { window._killAllGameMusic = _killAllGameMusic; } catch(e){}
 try { _applyMuteToAllAudio(); } catch(e){}   // honor the saved mute state from load
+let _bgmDeferTimer = null;
+let _musicWant = null;
 function setMusic(which /* 'bgm' | 'narration' | 'alerted' | null */){
+  _musicWant = which;
+  if (_bgmDeferTimer) { clearTimeout(_bgmDeferTimer); _bgmDeferTimer = null; }
   _LOOP_TRACKS.forEach(k => {
     const a = audio[k]; if (!a) return;
     if (k !== which) {
@@ -4638,6 +4665,27 @@ function setMusic(which /* 'bgm' | 'narration' | 'alerted' | null */){
   });
   if (!which) return;
   const a = audio[which]; if (!a) return;
+  // #1 Jane 2026-06-06: "wait for the victory sound to finish, THEN resume the bg
+  // music — right now they play together." When a checkpoint's 3rd question is
+  // solved we layer successTrumpet + levelUp; the world-resume then re-fires
+  // setMusic('bgm'), colliding with the fanfare. Centralise the fix: if a fanfare
+  // is still sounding, DEFER the bgm loop until it ends (covers every resume path).
+  if (which === 'bgm') {
+    const fanfare = [audio.successTrumpet, audio.levelUp].find(
+      f => f && !f.paused && (f.currentTime || 0) > 0 && (f.duration ? f.currentTime < f.duration : true)
+    );
+    if (fanfare) {
+      const startBgm = () => {
+        if (_musicWant !== 'bgm') return;            // a later setMusic() superseded us
+        if (_bgmDeferTimer) { clearTimeout(_bgmDeferTimer); _bgmDeferTimer = null; }
+        try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){}
+      };
+      try { fanfare.addEventListener('ended', startBgm, { once: true }); } catch(e){}
+      const remainMs = Math.max(400, ((fanfare.duration || 2.4) - (fanfare.currentTime || 0)) * 1000 + 180);
+      _bgmDeferTimer = setTimeout(startBgm, remainMs);
+      return;
+    }
+  }
   try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){}
 }
 // v3.6: sounds that only make sense during active play. When the game is
@@ -5382,17 +5430,17 @@ const MAP_STR = [
   // 0         1         2         3
   // 01234567890123456789012345678901234
   "11111111111111111111111111111111111", //  0  north stone ridge
-  "10000000000000000000000000000300001", //  1  (jars thinned — Jane #9: keep 1-2 piles); east palm
-  "10000000000000000000000030000000001", //  2  (jars thinned — Jane #9); pasture palm
+  "10000000000000000000000000000000001", //  1  #166: NE pasture palm removed (Jane: too many oasis around the well)
+  "10000000000000000000000000000000001", //  2  #166: pasture palm removed (declutter oasis)
   "10000000000000030000000000000050001", //  3  reeds just east of stream; treasure NE pasture (#85)
-  "10000000000000066660000000300000001", //  4  (jar thinned — Jane #9); well pool begins; palm
+  "10000000000000066660000000000000001", //  4  well pool begins; #166: palm removed (declutter)
   "10000000000000666666000000000000001", //  5  well pool wide
-  "10000030000000666666003000000000001", //  6  jar pile; well pool wide; reeds E
+  "10000000000000666666003000000000001", //  6  #172: marketplace jar pile removed (Jane: "brown creatures"); well pool; reeds E
   "10000000005000066660000000000000001", //  7  well pool narrowing; treasure W market (#85)
   "10000000000000006666030050000000001", //  8  well pool tail; reeds east; treasure E pasture (#85)
   "10000000000000000000000000050000001", //  9  treasure mid-pasture
   "10005000000000000000000000000000001", // 10  treasure in marketplace
-  "10000000000000000000000030000000001", // 11  palm near shepherd-2 lane
+  "10000000000000000000000000000000001", // 11  #166: palm near well removed (declutter oasis)
   "18000000000000000000000000000000007", // 12  START col 1 → JETHRO TENT EXIT col 34
   "10000000000000000050000000000003007", // 13  treasure (well centre); cover; EXIT
   "10050000000000000000030000000020001", // 14  (jar thinned — Jane #9); reeds; hearth near tent; treasure W (#85)
@@ -5400,7 +5448,7 @@ const MAP_STR = [
   "10000000000000300000000000000000001", // 16  (market jar thinned — Jane #9); well-zone reeds
   "10000000000000000000300050000000001", // 17  (market jar thinned — Jane #9); pasture cover; treasure E (#85)
   "10000000000000000000000030000000001", // 18  palm mid-pasture
-  "10000000003000000050000000000000001", // 19  marketplace cover; treasure in well
+  "10000000000000000050000000000000001", // 19  #172: marketplace jar pile removed (Jane: "brown creatures"); treasure
   "10000000000000000000000000000000001", // 20  (jar thinned — Jane #9)
   "10000000000000000000000000050000001", // 21  treasure in pasture
   "10000000000000000000000000000000001", // 22  open
@@ -5445,6 +5493,37 @@ function _getTentBodyTiles(){
   _tentBodyTiles = set;
   return set;
 }
+// #163 Jane 2026-06-06: "Moses is able to go over the market stalls. he needs
+// to go around. not just the market stalls — ANY object, he has to go around."
+// The PALACE_DECOR items (market stalls, boulders, fruit trees, the bedouin
+// tent, cookfire, rock cairns) were drawn as visual-only overlays that never
+// blocked movement. Build a SOLID-tile set from them (cached once — the décor
+// list is constant) so isWalkable refuses those tiles and Moses must route
+// around every object. EXCLUDED on purpose: 'dates' (a walk-over pickup),
+// 'flockSignpost' (a flat sign right at the crossing chokepoint — blocking it
+// would pinch the ford), and 'banner' (legacy). Footprint notes: a market
+// stall sprite is 2.3 tiles wide centred on its anchor, so its ground base
+// covers the anchor tile AND the tile to its right — both are blocked.
+let _decorSolidCache = null;
+function _getDecorSolidTiles(){
+  if (_decorSolidCache) return _decorSolidCache;
+  const s = new Set();
+  try {
+    for (const d of PALACE_DECOR){
+      switch (d.kind){
+        case 'marketStall':
+          s.add(d.ty*100 + d.tx); s.add(d.ty*100 + (d.tx+1)); break;
+        case 'tent': case 'cookfire': case 'rockpile':
+        case 'boulder': case 'appleTree': case 'orangeTree':
+        case 'throne': case 'table': case 'statue':
+          s.add(d.ty*100 + d.tx); break;
+        default: break;   // dates / flockSignpost / banner stay walkable
+      }
+    }
+  } catch(e){}
+  _decorSolidCache = s;
+  return s;
+}
 function isWalkable(tx, ty) {
   const t = tileAt(tx, ty);
   // Scene 3: the stream blocks Moses unless he's on a stepping stone.
@@ -5463,6 +5542,8 @@ function isWalkable(tx, ty) {
   if (game.scene === 2) {
     // Jethro's tent body is SOLID (Jane #148) — never blocks the EXIT door (7).
     if (t !== 7 && _getTentBodyTiles().has(ty * 100 + tx)) return false;
+    // #163: décor objects are SOLID — Moses goes around them.
+    if (_getDecorSolidTiles().has(ty * 100 + tx)) return false;
     return t === 0 || t === 2 || t === 5 || t === 6 || t === 7 || t === 8 || t === 9;
   }
   return t === 0 || t === 5 || t === 6 || t === 7 || t === 8 || t === 9;
@@ -5704,20 +5785,13 @@ const interactables = [
     name:'Bundle of Dates',
     body:'Fresh dates tied in a cloth - left by a caravan. A small sweet gift for the journey. +2 stars',
     used:false, reward:'stars2' },
-  // #113 Jane 2026-06-03: the three bazaar DATE piles are now real auto-pickup
-  // collectibles (were decor-only in PALACE_DECOR, so they never collected on
-  // pass-by). 'dates' is in _autoKinds, so a kid skimming past picks them up with
-  // NO Interact press - same behaviour as bread. Same west-bank market tiles as
-  // before (6,4)/(6,9)/(7,18); reward +2 stars each.
-  { tx: 6,  ty: 4,  kind:'dates', icon:'[D]',
-    name:'Sweet Midian Dates',
-    body:'A little pile of sweet dates from the market stall. Moses gathers a handful for the road ahead. +2 stars',
-    used:false, reward:'stars2' },
+  // #158 Jane 2026-06-05: there is now ONE bag of dates, not three. Jane only
+  // ever saw a single date pile on screen, yet the "Sweet Midian Dates" modal
+  // fired three times as Moses passed the three west-bank tiles (6,4)/(6,9)/(7,18).
+  // Collapsed to a single auto-pickup collectible so the bag the kid sees matches
+  // the one modal they get. 'dates' is in _autoKinds (collects on pass-by, no
+  // Interact press); reward +2 stars.
   { tx: 6,  ty: 9,  kind:'dates', icon:'[D]',
-    name:'Sweet Midian Dates',
-    body:'A little pile of sweet dates from the market stall. Moses gathers a handful for the road ahead. +2 stars',
-    used:false, reward:'stars2' },
-  { tx: 7,  ty: 18, kind:'dates', icon:'[D]',
     name:'Sweet Midian Dates',
     body:'A little pile of sweet dates from the market stall. Moses gathers a handful for the road ahead. +2 stars',
     used:false, reward:'stars2' },
@@ -6499,7 +6573,8 @@ function updateScene3Wolf(dt){
           audio.fox.play().catch(()=>{});
         }
       } catch(e){}
-      try { toast('A distant wolf howls in the dusk...'); } catch(e){}
+      // #11 Jane 2026-06-06: removed the "A distant wolf howls in the dusk..."
+      // overhead toast — the howl SOUND alone sets the mood; the text was noise.
     }
   }
   if (scene3Wolf.active) {
@@ -6648,6 +6723,10 @@ function _flockNearestGrazing(wx, wy){
   return best;
 }
 function _flockFreeSheep(s){
+  // #(Jane 2026-06-06) "3 saved 3 lost" nonsense: a sheep could be freed by BOTH
+  // the run-at-the-wolf path AND the tap-SHOO modal, double-counting freed (and
+  // pushing freed+lost past the flock total). Resolve each sheep ONCE.
+  if (!s || s.state === 'freed' || s.state === 'lost') return;
   s.state = 'freed'; s.freedAt = performance.now(); s.wolf = null;
   scene3Flock.freed++;
   try { updateHudFlock(); } catch(e){}
@@ -6699,6 +6778,15 @@ function updateScene3Flock(dt){
       continue;
     }
     if (frozen) continue;
+    // #155 (Jane 2026-06-05): a wolf that has been driven off with no grazing
+    // sheep left to hunt WALKS AWAY off the pasture instead of standing frozen.
+    // A motionless wolf sprite used to linger on the map after a shoo ("even
+    // after the wolf is shooed off, i can still see the static image of wolf").
+    // The draw loop culls it once it is off-screen / once the encounter is done.
+    if (w.state === 'leave'){
+      w.py += 0.11 * dt; w.px += (w.vx || 0) * dt; w.dir = (w.vx < 0 ? -1 : 1);
+      continue;
+    }
     const dM = Math.hypot(player.px - w.px, player.py - w.py);
     if (dM < shooR){
       if (w.state === 'pinning' && w.targetId != null){
@@ -6725,7 +6813,13 @@ function updateScene3Flock(dt){
     }
     // stalk
     const s = _flockNearestGrazing(w.px, w.py);
-    if (!s) continue;
+    if (!s){
+      // #155: no grazing sheep remain to hunt — slink off rather than freeze in
+      // view, so no static wolf sprite is left behind on the map.
+      w.state = 'leave'; w.targetId = null;
+      w.vx = (w.px < player.px ? -1 : 1) * 0.04;
+      continue;
+    }
     const ang = Math.atan2(s.py - w.py, s.px - w.px);
     const sp = scene3Flock.cfg.wolfSpeed * dt * TILE;
     w.px += Math.cos(ang) * sp; w.py += Math.sin(ang) * sp;
@@ -6862,6 +6956,11 @@ function drawScene3RescueFlock(){
     }
   }
   for (const w of scene3Flock.wolves){
+    // #155 (Jane 2026-06-05): never leave a STATIC wolf sprite on the map. Once
+    // the whole flock is resolved (done) the wolves have been driven off — stop
+    // drawing them. A long-fled or slinking-away ('leave') wolf is dropped too.
+    if (scene3Flock.done) continue;
+    if (w.state === 'leave' && (w.px - camera.px < -130 || w.py - camera.py > CANVAS_H + 90)) continue;
     if (w.state === 'flee' && w.fleeUntil && performance.now() > w.fleeUntil + 4000) continue;
     _drawFlockWolf(w.px + TILE * 0.5, w.py + TILE * 0.6, w.dir);
   }
@@ -7219,19 +7318,19 @@ function _closeWolfShooModal(){
 let _wolfRaidAudioOn = false, _wolfRaidPrevBgmVol = null;
 function _startWolfRaidAudio(){
   _wolfRaidAudioOn = true;
-  // duck the overworld bed (idempotent: only act while it's actually playing)
+  // #15 Jane 2026-06-06: FREEZE the calm overworld bgm and play bgm-corridor.mp3
+  // as the SINGLE "danger lurking" bed during the wolf attack — one track, no
+  // collision (replaces the layered epic+alert beds that fought with the bgm).
   try { if (audio.bgm && !audio.bgm.paused){ if (_wolfRaidPrevBgmVol == null) _wolfRaidPrevBgmVol = audio.bgm.volume; audio.bgm.pause(); } } catch(e){}
-  // (re)start either loop if it isn't currently sounding (covers first start, pause/resume, autoplay rejects)
-  try { if (audio.wolfEpic  && audio.wolfEpic.paused){  audio.wolfEpic.loop=true;  audio.wolfEpic.volume=0.50; audio.wolfEpic.play().catch(()=>{}); } } catch(e){}
-  try { if (audio.wolfAlert && audio.wolfAlert.paused){ audio.wolfAlert.loop=true; audio.wolfAlert.volume=0.30; audio.wolfAlert.play().catch(()=>{}); } } catch(e){}
+  try { if (audio.wolfEpic  && !audio.wolfEpic.paused){  audio.wolfEpic.pause();  audio.wolfEpic.currentTime  = 0; } } catch(e){}
+  try { if (audio.wolfAlert && !audio.wolfAlert.paused){ audio.wolfAlert.pause(); audio.wolfAlert.currentTime = 0; } } catch(e){}
+  try { if (audio.bgmCorridor && audio.bgmCorridor.paused){ audio.bgmCorridor.loop=true; audio.bgmCorridor.volume=0.55; audio.bgmCorridor.play().catch(()=>{}); } } catch(e){}
 }
 function _stopWolfRaidAudio(){
-  const epicOn  = audio.wolfEpic  && !audio.wolfEpic.paused;
-  const alertOn = audio.wolfAlert && !audio.wolfAlert.paused;
-  if (!_wolfRaidAudioOn && !epicOn && !alertOn) return;   // nothing to do — cheap no-op on idle frames
+  const corridorOn = audio.bgmCorridor && !audio.bgmCorridor.paused;
+  if (!_wolfRaidAudioOn && !corridorOn) return;   // nothing to do — cheap no-op on idle frames
   _wolfRaidAudioOn = false;
-  try { if (audio.wolfEpic){  audio.wolfEpic.pause();  audio.wolfEpic.currentTime  = 0; } } catch(e){}
-  try { if (audio.wolfAlert){ audio.wolfAlert.pause(); audio.wolfAlert.currentTime = 0; } } catch(e){}
+  try { if (audio.bgmCorridor){ audio.bgmCorridor.pause(); audio.bgmCorridor.currentTime = 0; } } catch(e){}
   // restore the calm overworld bed (honors master-mute via the .muted flag on the element)
   try { if (audio.bgm){ if (_wolfRaidPrevBgmVol != null) audio.bgm.volume = _wolfRaidPrevBgmVol; audio.bgm.play().catch(()=>{}); } } catch(e){}
   _wolfRaidPrevBgmVol = null;
@@ -7317,7 +7416,9 @@ function updateScene3Herd(dt){
   // the pen if he's parked there); when he moves the line stretches back out.
   scene3Herd.idleMs = grew ? 0 : (scene3Herd.idleMs + dt);
   const trail=scene3Herd.trail;
-  const GAP = scene3Herd.idleMs > 350 ? 2 : 7;
+  // #165: tighter conga spacing (was 7) so the line stays compact and the whole
+  // flock reaches the pen quickly behind Moses; still collapses to 2 when he idles.
+  const GAP = scene3Herd.idleMs > 350 ? 2 : 4;
   for (const s of scene3Herd.sheep){
     if (s.state==='graze'){
       // #117: sheep will not follow until the crossing is built AND every raiding
@@ -7391,7 +7492,15 @@ function updateScene3Herd(dt){
       // #15 Jane 2026-06-04: the flock was moving "like lightning". Slow the follow
       // pace to a calm amble that is still a hair faster than Moses' own step
       // (Moses ~6.7 tiles/s) so the conga line stays tidy without ever snapping.
-      const step=Math.min(dist, TILE*0.0075*dt);
+      // #165 Jane 2026-06-06: "after Moses crosses the river it takes a WHILE for
+      // the sheep to cross and reach the pen." A flat slow pace meant a straggler
+      // anchored many tiles back crept in forever. Keep the calm base pace for
+      // sheep already tucked behind Moses, but let any sheep that has fallen more
+      // than ~1.4 tiles behind its lead point HURRY to close the gap — so the whole
+      // flock reaches the pen promptly without ever teleporting.
+      const baseStep = TILE*0.0090*dt;
+      const catchUp  = dist > TILE*1.4 ? TILE*0.0160*dt : 0;
+      const step=Math.min(dist, baseStep + catchUp);
       if (dist>0.01){ s.px += odx/dist*step; s.py += ody/dist*step; }
       if (Math.abs(odx)>0.4) s.dir = odx<0?-1:1;
       s.tx=Math.round(s.px/TILE); s.ty=Math.round(s.py/TILE);
@@ -7418,42 +7527,14 @@ function updateScene3Herd(dt){
       s.hop=0;
     }
   }
-  // ── URGENCY: rude-shepherd flock raid ────────────────────────────────────
-  // While Moses is actively leading the flock, the west-post rude shepherd rushes
-  // to scatter it. A sheep still on the WEST bank that he reaches is scared back
-  // to grazing (must be re-led) — so HURRY (⚡ Speed Burst), FREEZE him (❄️ Foe
-  // Freeze), or get the sheep onto the stones (shepherds can't cross the river).
-  // Pure setback, no hearts lost — keeps the gentle scene kid-friendly.
-  if (built && !scene3Herd.done){
-    let raider = null;
-    try {
-      if (typeof pursuitScouts !== 'undefined' && pursuitScouts.length){
-        raider = pursuitScouts.find(p => !p.shovedOff && !p.caught && p.postTx <= SCENE3_STREAM_COL_MIN);
-      }
-    } catch(e){}
-    const anyFollow = scene3Herd.sheep.some(s => s.state === 'follow');
-    if (raider && anyFollow){
-      raider.chaseMode = true;            // existing AI now drives him toward Moses (capped west of the river)
-      if (!scene3Herd.raidToastShown){
-        scene3Herd.raidToastShown = true;
-        try { toast('⚠️ A rude shepherd is rushing to scatter your flock — get them across, quick!'); } catch(e){}
-        try { if (audio.alerted){ audio.alerted.currentTime=0; audio.alerted.volume=0.4; audio.alerted.play().catch(()=>{}); } } catch(e){}
-      }
-      const frozen = (window._guardFreezeUntil && now < window._guardFreezeUntil);
-      if (!frozen){
-        const rpx = raider.tx*TILE, rpy = raider.ty*TILE;
-        for (const s of scene3Herd.sheep){
-          if (s.state !== 'follow') continue;
-          if (s.tx >= SCENE3_STREAM_COL_MIN) continue;        // on the stones / east bank = safe
-          if (Math.hypot(rpx - s.px, rpy - s.py) < TILE*1.4){
-            s.state = 'graze'; s.hop = 0; s.wanderAt = 0;      // scattered — re-herd it
-            try{ if(audio.sheepBleat){audio.sheepBleat.currentTime=0;audio.sheepBleat.volume=0.6;audio.sheepBleat.play().catch(()=>{});} }catch(e){}
-            try{ toast('🐑 A shepherd scattered a sheep! Lead it across again.'); }catch(e){}
-          }
-        }
-      }
-    }
-  }
+  // ── URGENCY: rude-shepherd flock raid (DISABLED) ─────────────────────────
+  // #5 Jane 2026-06-06: "after crossing it's chaotic — the sheep are not able to
+  // cross." The west-post shepherd used to rush in and scatter following sheep
+  // back to grazing ("a shepherd scattered a sheep! lead it across again"),
+  // faster than the kid could lead them over — so the flock-across counter got
+  // stuck at 0/5 and the crossing felt impossible. The WOLF raid already supplies
+  // the thrill here, so this extra shepherd-scatter nuisance is removed; the
+  // flock now crosses smoothly behind Moses. (No-op kept for clarity.)
 }
 function _drawOneSheep(px,py,dir,kind,alt,extraY){
   const dx=px-camera.px, dy=py-camera.py;
@@ -7479,13 +7560,11 @@ function _drawOneSheep(px,py,dir,kind,alt,extraY){
     const oy=Math.round(dy+TILE-drawH-extraY);
     if (mirror){ ctx.save(); ctx.translate(ox+drawW,oy); ctx.scale(-1,1); ctx.drawImage(img,0,0,drawW,drawH); ctx.restore(); }
     else ctx.drawImage(img,ox,oy,drawW,drawH);
-  } else {
-    const cx=dx+TILE/2, cy=dy+TILE*0.55-extraY, bodyR=TILE*scale*0.30;
-    ctx.fillStyle='#fafafa'; ctx.beginPath();
-    ctx.arc(cx-bodyR*0.35,cy,bodyR*0.70,0,Math.PI*2); ctx.arc(cx,cy-bodyR*0.20,bodyR*0.80,0,Math.PI*2);
-    ctx.arc(cx+bodyR*0.35,cy,bodyR*0.70,0,Math.PI*2); ctx.arc(cx,cy+bodyR*0.25,bodyR*0.65,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#4a3a2a'; ctx.beginPath(); ctx.ellipse(cx+bodyR*0.95*(dir<0?-1:1),cy,bodyR*0.32,bodyR*0.26,0,0,Math.PI*2); ctx.fill();
   }
+  // #172 Jane 2026-06-06: NO procedural fallback. The old hand-drawn blob (white
+  // body + brown head) was the "brown hand-drawn sheep" Jane saw crossing when
+  // sheep.png had not cached yet. Render ONLY the real PNG sprite — if it isn't
+  // loaded we draw nothing, so an ugly drawn sheep can never appear again.
 }
 function _drawHerdPen(now){
   const p=SCENE3_HERD_PEN;
@@ -7493,8 +7572,29 @@ function _drawHerdPen(now){
   const w=(p.x1-p.x0+1)*TILE, h=(p.y1-p.y0+1)*TILE;
   if (x>CANVAS_W||x+w<0||y>CANVAS_H||y+h<0) return;
   ctx.save();
-  // soft grass tint marks the pen footprint
-  ctx.fillStyle='rgba(120,180,90,0.10)'; ctx.fillRect(x,y,w,h);
+  // #161 Jane 2026-06-05: "after crossing the river i don't see the sheep pen."
+  // ROOT CAUSE: the footprint was a near-invisible 10%-alpha GREEN wash that
+  // vanished against the well-zone grass, and if the wall PNG failed to load
+  // (stale cache) only a faint dashed rope showed. FIX: make the pen
+  // unmistakable on EVERY device — a warm trodden-earth floor + a BOLD rope
+  // enclosure with a clear WEST gate gap and corner/gate posts, drawn ALWAYS,
+  // then the curved stone back-wall PNG layered on top when it is available.
+  // #169 Jane 2026-06-06: "the sheep pen grass is a different colour." The bold
+  // earth wash read as a discoloured grass patch. Use only a SUBTLE worn-ground
+  // straw tint so the pen blends with the pasture — the rope fence + posts + stone
+  // wall below carry the "this is a pen" readability, not a jarring floor colour.
+  ctx.fillStyle='rgba(180,168,120,0.14)'; ctx.fillRect(x,y,w,h);
+  // bold rope enclosure (west gate gap so the flock can be led in) — ALWAYS drawn
+  ctx.strokeStyle='rgba(110,72,38,0.92)'; ctx.lineWidth=Math.max(3,TILE*0.10);
+  ctx.setLineDash([TILE*0.5, TILE*0.22]);
+  ctx.beginPath();
+  ctx.moveTo(x,y); ctx.lineTo(x+w,y); ctx.lineTo(x+w,y+h); ctx.lineTo(x,y+h);
+  ctx.lineTo(x,y+h*0.62); ctx.moveTo(x,y+h*0.38); ctx.lineTo(x,y);   // west gate gap
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#6b4a2a';
+  const post=(px,py)=>ctx.fillRect(px-3,py-12,6,18);
+  post(x,y); post(x+w,y); post(x,y+h); post(x+w,y+h);   // corner posts
+  post(x,y+h*0.38); post(x,y+h*0.62);                   // gate posts
   const okI=(im)=>im&&im.complete&&im.naturalWidth;
   if (okI(IMG.sheepPenWall)){
     // Curved stone enclosure; gate opening faces WEST (toward the river and
@@ -7510,17 +7610,6 @@ function _drawHerdPen(now){
     const penX = x;
     const penY = Math.round(y + h - penDrawH); // base anchored to pen floor
     ctx.drawImage(IMG.sheepPenWall, penX, penY, penW, penDrawH);
-  } else {
-    // vector fallback — dashed rope fence with a west gate gap + corner posts
-    ctx.strokeStyle='rgba(120,80,40,0.85)'; ctx.lineWidth=Math.max(2,TILE*0.07);
-    ctx.setLineDash([TILE*0.5, TILE*0.22]);
-    ctx.beginPath();
-    ctx.moveTo(x,y); ctx.lineTo(x+w,y); ctx.lineTo(x+w,y+h); ctx.lineTo(x,y+h);
-    ctx.lineTo(x,y+h*0.62); ctx.moveTo(x,y+h*0.38); ctx.lineTo(x,y);
-    ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle='#6b4a2a';
-    const post=(px,py)=>ctx.fillRect(px-3,py-10,6,16);
-    post(x,y); post(x+w,y); post(x,y+h); post(x+w,y+h);
   }
   ctx.restore();
 }
@@ -7836,7 +7925,9 @@ function updateScene3Caravan(dt) {
     _scene3Caravan.row = rows[Math.floor(Math.random() * rows.length)];
     _scene3Caravan.px = -160; // start off west edge of map
     _scene3Caravan.active = true;
-    try { toast('A merchant’s caravan passes through the market — step aside!'); } catch(e){}
+    // #158 Jane 2026-06-05: removed the "A merchant's caravan passes" overhead
+    // toast — Jane asked to clear overhead-message spam. The caravan still walks
+    // through visually; it just no longer announces itself.
   }
   if (!_scene3Caravan.active) return;
   _scene3Caravan.px += _scene3Caravan.vx * dt;
@@ -8299,6 +8390,7 @@ const CHALLENGE_BANK = {
       verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
     { id:'s3e2', type:'trivia', q:'Why did Jethro\'s daughters come to the well?',
       options:['To wash clothes','To draw water for their flock','To meet travelers','To bathe'], correct:1,
+      clue:'They were shepherdesses. Sheep get thirsty — the sisters came to fill the troughs at the well so their father\'s flock could drink. (Exodus 2:16)',
       verse:'"They came to draw water and fill the troughs to water their father\'s flock." (Exodus 2:16 NIV)' },
     { id:'s3e3', type:'tf', q:'True or False: Moses chased away the rude shepherds and watered the flock for the daughters.',
       options:['True','False'], correct:0,
@@ -8374,39 +8466,51 @@ const CHALLENGE_BANK = {
     // the well, Jethro, Zipporah, Gershom, Horeb.
     { id:'e1', type:'trivia', q:'When Moses grew up, what country did he flee to?',
       options:['Canaan','Midian','Assyria','Babylon'], correct:1,
+      clue:'A quiet desert land east of Egypt — Moses fled there to be safe from Pharaoh. (Exodus 2:15)',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     { id:'e2', type:'trivia', q:'Where did Moses sit down after crossing the desert?',
       options:['Under a tree','By a well','On a rock','In a tent'], correct:1,
+      clue:'Tired and thirsty, Moses rested beside the village water source in Midian — a well. (Exodus 2:15)',
       verse:'"...and sat down by a well." (Exodus 2:15 NIV)' },
     { id:'e3', type:'trivia', q:'Who came to the well to draw water for their flocks?',
       options:['Seven shepherds','Seven daughters of the priest of Midian','Seven brothers','Seven merchants'], correct:1,
+      clue:'Seven sisters came to fill the troughs for their father\'s flock. (Exodus 2:16)',
       verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
     { id:'e4', type:'fill', q:'Moses rescued the girls at the well and watered their _______.',
       options:['Camels','Flock','Fields','Children'], correct:1,
+      clue:'A group of sheep — Moses drew water and gave it to the daughters\' animals. (Exodus 2:17)',
       verse:'"He drew water for them and watered their flock." (Exodus 2:17 NIV)' },
     { id:'e5', type:'tf', q:'True or False: Moses drove away the shepherds who bothered the priest\'s daughters.',
       options:['True','False'], correct:0,
+      clue:'True — Moses stood up for the daughters and chased the rude shepherds off. (Exodus 2:17)',
       verse:'"Moses got up and came to their rescue." (Exodus 2:17 NIV)' },
     { id:'e6', type:'trivia', q:'Who was the priest of Midian that gave Moses a home?',
       options:['Laban','Jethro','Melchizedek','Balaam'], correct:1,
+      clue:'The priest of Midian, father of seven daughters, who took Moses into his family. (Exodus 2:21)',
       verse:'"Moses agreed to stay with the man [Jethro]..." (Exodus 2:21 NIV)' },
     { id:'e7', type:'trivia', q:'Who did Moses marry in Midian?',
       options:['Miriam','Zipporah','Rachel','Rebekah'], correct:1,
+      clue:'One of Jethro\'s seven daughters — she became Moses\' wife. (Exodus 2:21)',
       verse:'"[He] gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
     { id:'e8', type:'tf', q:'True or False: Moses named his first son Gershom because he was a foreigner in a foreign land.',
       options:['True','False'], correct:0,
+      clue:'True — "Gershom" means "a foreigner here," for Moses was far from home. (Exodus 2:22)',
       verse:'"Zipporah gave birth to a son, and Moses named him Gershom, saying, I have become a foreigner in a foreign land." (Exodus 2:22 NIV)' },
     { id:'e9', type:'trivia', q:'What work did Moses do for Jethro in Midian?',
       options:['Baked bread','Tended sheep','Built wells','Traded gold'], correct:1,
+      clue:'Moses became a shepherd, caring for Jethro\'s flock in the desert. (Exodus 3:1)',
       verse:'"Moses agreed to stay with the man, who gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
     { id:'e10', type:'trivia', q:'What did Jethro ask when his daughters came home early?',
       options:['"Did you find water?"','"Why have you returned so early today?"','"Where is the Egyptian?"','"Did the flock drink?"'], correct:1,
+      clue:'A surprised father wondered why his daughters were home sooner than usual. (Exodus 2:18)',
       verse:'"Why have you returned so early today?" (Exodus 2:18 NIV). Jethro noticed God\'s kindness in the early return.' },
     { id:'e11', type:'fill', q:'Jethro said to his daughters: "Why did you _______ him? Invite him to share bread with us!"',
       options:['Argue with','Leave','Challenge','Forget'], correct:1,
+      clue:'Jethro was upset they walked away from the kind stranger instead of inviting him in. (Exodus 2:20)',
       verse:'"Why did you leave him? Invite him to have something to eat." (Exodus 2:20 NIV). Jethro\'s hospitality echoes God\'s welcome.' },
     { id:'e12', type:'tf', q:'True or False: Jethro welcomed Moses into his home and gave him bread to eat.',
       options:['True','False'], correct:0,
+      clue:'True — Jethro showed hospitality, inviting Moses to stay and share a meal. (Exodus 2:20-21)',
       verse:'"Moses agreed to stay with the man..." (Exodus 2:21 NIV). A stranger at a well became a member of the family.' },
     { id:'e13', type:'trivia', q:'Who was the ruler Egypt\'s new king did NOT know or remember?',
       options:['Abraham','Joseph','Isaac','Jacob'], correct:1,
@@ -8414,6 +8518,7 @@ const CHALLENGE_BANK = {
       verse:'"Then a new king, to whom Joseph meant nothing, came to power in Egypt." (Exodus 1:8 NIV)' },
     { id:'e14', type:'fill', q:'"By faith he left _______, not fearing the king\'s anger."',
       options:['Egypt','Midian','Canaan','Judah'], correct:0,
+      clue:'The land of Pharaoh — Moses turned his back on it, unafraid of the king\'s anger. (Hebrews 11:27)',
       verse:'"By faith he left Egypt, not fearing the king\'s anger." (Hebrews 11:27 NIV)' },
     { id:'e15', type:'tf', q:'True or False: When Moses fled from Egypt, he went to live in Midian.',
       options:['True','False'], correct:0,
@@ -8421,18 +8526,23 @@ const CHALLENGE_BANK = {
       verse:'"Moses fled from Pharaoh and went to live in Midian, where he sat down by a well." (Exodus 2:15 NIV)' },
     { id:'e16', type:'trivia', q:'What name means "a stranger here" in Hebrew?',
       options:['Zipporah','Gershom','Reuel','Jethro'], correct:1,
+      clue:'Moses gave his baby son this name because he felt like a foreigner far from home. (Exodus 2:22)',
       verse:'"Zipporah gave birth to a son, and Moses named him Gershom, saying, I have become a foreigner in a foreign land." (Exodus 2:22 NIV)' },
     { id:'e17', type:'trivia', q:'What kind of man was Jethro, the father of Zipporah?',
       options:['A king','A soldier','A priest of Midian','A merchant'], correct:2,
+      clue:'Jethro served God and led worship in Midian — and he had seven daughters. (Exodus 2:16)',
       verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
     { id:'e18', type:'tf', q:'True or False: Moses stayed in Midian and became a shepherd for Jethro\'s flock.',
       options:['True','False'], correct:0,
+      clue:'True — Moses tended Jethro\'s sheep in Midian for many years. (Exodus 3:1)',
       verse:'"Moses was tending the flock of Jethro his father-in-law, the priest of Midian." (Exodus 3:1 NIV)' },
     { id:'e19', type:'trivia', q:'How old was Moses when he first went out to visit his own people?',
       options:['20','30','40','60'], correct:2,
+      clue:'Stephen tells us Moses had reached forty years when he visited his people. (Acts 7:23)',
       verse:'"When Moses was forty years old, he decided to visit his own people, the Israelites." (Acts 7:23 NIV)' },
     { id:'e20', type:'fill', q:'God heard the Israelites\' groaning and remembered His _______ with Abraham, Isaac, and Jacob.',
       options:['Promise','Covenant','Song','Altar'], correct:1,
+      clue:'God\'s solemn promise to Abraham, Isaac, and Jacob — He never forgot it. (Exodus 2:24)',
       verse:'"God heard their groaning and he remembered his covenant with Abraham, with Isaac and with Jacob." (Exodus 2:24 NIV)' },
     // --- Unscramble ---
     { id:'eU1', type:'unscramble',
@@ -8618,42 +8728,55 @@ const CHALLENGE_BANK = {
     // ===== #136 VARIETY PACK (Jane 2026-06-04) — expand pool to cut cross-run repeats =====
     { id:'nve1', type:'trivia', q:'What did the daughters fill with water for their flock?',
       options:['Troughs','Baskets','Drinking cups','Clay bowls'], correct:0,
+      clue:'Long open stone containers beside the well that the sheep drink from. (Exodus 2:16)',
       verse:'"They came to draw water and fill the troughs..." (Exodus 2:16 NIV)' },
     { id:'nve2', type:'trivia', q:'What did Moses give the thirsty flock at the well?',
       options:['Hay','Water','Bread','Salt'], correct:1,
+      clue:'Moses drew it up from the deep well so the sheep could drink. (Exodus 2:17)',
       verse:'"He drew water for them and watered their flock." (Exodus 2:17 NIV)' },
     { id:'nve3', type:'trivia', q:'What kind of animals did the daughters bring to the well?',
       options:['A flock of sheep','Camels','Horses','Oxen'], correct:0,
+      clue:'Woolly animals the seven sisters were caring for. (Exodus 2:16)',
       verse:'"...to water their father\'s flock." (Exodus 2:16 NIV)' },
     { id:'nve4', type:'trivia', q:'Who told their father about the kind stranger at the well?',
       options:['The shepherds','The seven daughters','Some travelers','The soldiers'], correct:1,
+      clue:'The girls Moses had helped ran home and told Reuel (Jethro). (Exodus 2:18)',
       verse:'"When the girls returned to Reuel their father..." (Exodus 2:18 NIV)' },
     { id:'nve5', type:'trivia', q:'What did Jethro want to share with the stranger who helped his daughters?',
       options:['A bag of gold','A meal of bread','A camel','A sword'], correct:1,
+      clue:'Kind hospitality — "Invite him to have something to eat." (Exodus 2:20)',
       verse:'"Invite him to have something to eat." (Exodus 2:20 NIV)' },
     { id:'nve6', type:'trivia', q:'Whose daughter did Moses marry in Midian?',
       options:['The king\'s','The priest Jethro\'s','A shepherd\'s','A merchant\'s'], correct:1,
+      clue:'Moses married Zipporah, a daughter of the priest of Midian. (Exodus 2:21)',
       verse:'"[Jethro] gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
     { id:'nve7', type:'trivia', q:'Where did tired Moses rest when he first reached Midian?',
       options:['By a well','In a cave','Under a boat','On a hilltop'], correct:0,
+      clue:'Worn out from the desert, Moses sat down beside the village water source. (Exodus 2:15)',
       verse:'"...and sat down by a well." (Exodus 2:15 NIV)' },
     { id:'nve8', type:'tf', q:'True or False: Moses helped water the daughters\' flock at the well.',
       options:['True','False'], correct:0,
+      clue:'True — Moses drew the water and watered their sheep himself. (Exodus 2:17)',
       verse:'"He drew water for them and watered their flock." (Exodus 2:17 NIV)' },
     { id:'nve9', type:'tf', q:'True or False: The priest of Midian had seven sons.',
       options:['True','False'], correct:1,
+      clue:'False — he had seven daughters, not sons. (Exodus 2:16)',
       verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV). They were daughters, not sons.' },
     { id:'nve10', type:'tf', q:'True or False: Moses ran to the land of Midian to be safe.',
       options:['True','False'], correct:0,
+      clue:'True — Moses fled from Pharaoh to the safety of Midian. (Exodus 2:15)',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     { id:'nve11', type:'tf', q:'True or False: Jethro told his daughters to send the stranger away.',
       options:['True','False'], correct:1,
+      clue:'False — Jethro told them to invite Moses in to share a meal. (Exodus 2:20)',
       verse:'"Why did you leave him? Invite him to have something to eat." (Exodus 2:20 NIV)' },
     { id:'nve12', type:'tf', q:'True or False: Moses married Zipporah in Midian.',
       options:['True','False'], correct:0,
+      clue:'True — Jethro gave his daughter Zipporah to Moses as his wife. (Exodus 2:21)',
       verse:'"[Jethro] gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
     { id:'nve13', type:'tf', q:'True or False: Moses sat down by a well when he reached Midian.',
       options:['True','False'], correct:0,
+      clue:'True — the very first thing Moses did in Midian was sit down by a well. (Exodus 2:15)',
       verse:'"...and sat down by a well." (Exodus 2:15 NIV)' },
     { id:'nve14', type:'fill', q:'Jethro was the _______ of Midian.',
       options:['king','priest','soldier','merchant'], correct:1,
@@ -8661,6 +8784,7 @@ const CHALLENGE_BANK = {
       verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
     { id:'nve15', type:'fill', q:'Moses drew _______ from the well for the flock.',
       options:['water','milk','oil','honey'], correct:0,
+      clue:'A well is dug to reach this — Moses pulled it up to give the sheep a drink. (Exodus 2:17)',
       verse:'"He drew water for them and watered their flock." (Exodus 2:17 NIV)' },
     { id:'nve16', type:'unscramble', q:'Unscramble the desert land where Moses found a new home:',
       answer:'MIDIAN',
@@ -8716,60 +8840,79 @@ const CHALLENGE_BANK = {
       verse:'"Moses was educated in all the wisdom of the Egyptians and was powerful in speech and action." (Acts 7:22 NIV)' },
     { id:'m2', type:'trivia', q:'What did Moses see that stirred his heart to act?',
       options:['A dream','A Hebrew worker being hurt','A vision','A messenger'], correct:1,
+      clue:'Moses saw one of his own people, a Hebrew, being beaten by an Egyptian. (Exodus 2:11)',
       verse:'"He saw an Egyptian beating a Hebrew..." (Exodus 2:11 NIV)' },
     { id:'m3', type:'trivia', q:'When Moses left Egypt, where did God lead him?',
       options:['Jericho','Jerusalem','Midian','Bethlehem'], correct:2,
+      clue:'A desert land east of Egypt, where Moses would meet his future family. (Exodus 2:15)',
       verse:'"Moses fled from Pharaoh and went to live in Midian..." (Exodus 2:15 NIV)' },
     { id:'m4', type:'fill', q:'"By faith he left Egypt... he persevered because he saw him who is _______."',
       options:['Merciful','Invisible','Strong','Kind'], correct:1,
+      clue:'Moses kept going because he trusted the God he could not see with his eyes. (Hebrews 11:27)',
       verse:'Hebrews 11:27 NIV' },
     { id:'m5', type:'trivia', q:'What did Moses do for the shepherd daughters at the well in Midian?',
       options:['Gave them food','Watered their flock','Led them home','Sang a song'], correct:1,
+      clue:'After rescuing them, Moses drew water and gave it to their sheep. (Exodus 2:17)',
       verse:'"Moses got up and came to their rescue and watered their flock." (Exodus 2:17 NIV)' },
     { id:'m6', type:'trivia', q:'Who did Moses marry in Midian?',
       options:['Miriam','Zipporah','Rebekah','Rachel'], correct:1,
+      clue:'Jethro gave Moses one of his seven daughters as a wife. (Exodus 2:21)',
       verse:'"Moses agreed to stay... and he gave his daughter Zipporah to Moses." (Exodus 2:21 NIV)' },
     { id:'m7', type:'tf', q:'True or False: By faith, Moses refused to be known as the son of Pharaoh\'s daughter.',
       options:['True','False'], correct:0,
+      clue:'True — grown Moses chose God\'s people over his royal Egyptian title. (Hebrews 11:24)',
       verse:'"By faith Moses, when he had grown up, refused to be known as the son of Pharaoh\'s daughter." (Hebrews 11:24 NIV)' },
     { id:'m8', type:'fill', q:'Moses chose to be mistreated along with the people of _______.',
       options:['Egypt','Midian','God','Pharaoh'], correct:2,
+      clue:'Moses chose to suffer with God\'s people rather than enjoy Egypt\'s riches. (Hebrews 11:25)',
       verse:'"He chose to be mistreated along with the people of God..." (Hebrews 11:25 NIV)' },
     { id:'m9', type:'trivia', q:'What was the name of Moses\' first son, born in Midian?',
       options:['Aaron','Joshua','Gershom','Caleb'], correct:2,
+      clue:'His name means "a stranger here," for Moses was far from home. (Exodus 2:22)',
       verse:'"Zipporah gave birth to a son, and Moses named him Gershom..." (Exodus 2:22 NIV)' },
     { id:'m10', type:'trivia', q:'Who heard the groaning of the Israelites in Egypt?',
       options:['Pharaoh','Moses','God','The guards'], correct:2,
+      clue:'He heard their cry and remembered His covenant with Abraham, Isaac, and Jacob. (Exodus 2:24)',
       verse:'"God heard their groaning and he remembered his covenant..." (Exodus 2:24 NIV)' },
     { id:'m11', type:'trivia', q:'How many daughters of the priest of Midian came to the well?',
       options:['Three','Five','Seven','Ten'], correct:2,
+      clue:'The priest of Midian had this complete number of daughters at the well. (Exodus 2:16)',
       verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
     { id:'m12', type:'fill', q:'The priest of Midian, Moses\' father-in-law, was called _______ (also named Jethro).',
       options:['Reuel','Aaron','Laban','Jesse'], correct:0,
+      clue:'Jethro\'s other name in the Bible — the same priest of Midian. (Exodus 2:18)',
       verse:'"When the girls returned to Reuel their father..." (Exodus 2:18 NIV)' },
     { id:'m13', type:'tf', q:'True or False: Moses said he was a foreigner in a foreign land.',
       options:['True','False'], correct:0,
+      clue:'True — Moses said this when naming his son Gershom in Midian. (Exodus 2:22)',
       verse:'"I have become a foreigner in a foreign land." (Exodus 2:22 NIV)' },
     { id:'m14', type:'trivia', q:'When shepherds drove the priest\'s daughters away, what did Moses do?',
       options:['Ran away','Rescued the daughters','Hid','Called for guards'], correct:1,
+      clue:'Moses got up, came to their rescue, and watered their flock. (Exodus 2:17)',
       verse:'"Moses got up and came to their rescue and watered their flock." (Exodus 2:17 NIV)' },
     { id:'m15', type:'fill', q:'"By faith he left Egypt, not _______ the king\'s anger."',
       options:['Facing','Fearing','Ignoring','Worrying about'], correct:1,
+      clue:'Moses was not afraid of Pharaoh\'s anger — he trusted God instead. (Hebrews 11:27)',
       verse:'"By faith he left Egypt, not fearing the king\'s anger." (Hebrews 11:27 NIV)' },
     { id:'m16', type:'trivia', q:'During Moses\' time in Midian, what happened to the old Pharaoh?',
       options:['He died','He repented','He left Egypt','Nothing'], correct:0,
+      clue:'During Moses\' long stay in Midian, the king of Egypt passed away. (Exodus 2:23)',
       verse:'"During that long period, the king of Egypt died..." (Exodus 2:23 NIV)' },
     { id:'m17', type:'trivia', q:'Why did Moses flee from Egypt to Midian?',
       options:['He was bored','Pharaoh tried to kill him','He lost a race','He wanted a vacation'], correct:1,
+      clue:'When Pharaoh learned what Moses had done, he sought to take his life. (Exodus 2:15)',
       verse:'"When Pharaoh heard of this, he tried to kill Moses, but Moses fled..." (Exodus 2:15 NIV)' },
     { id:'m18', type:'trivia', q:'Why did Moses name his son Gershom?',
       options:['It means strong','He was a stranger in a foreign land','To honor God','To remember Egypt'], correct:1,
+      clue:'The name marks how Moses felt — a foreigner living far from his people. (Exodus 2:22)',
       verse:'"He named him Gershom, saying, I have become a foreigner in a foreign land." (Exodus 2:22 NIV)' },
     { id:'m19', type:'fill', q:'God looked on the Israelites and was _______ about them.',
       options:['Angry','Silent','Concerned','Confused'], correct:2,
+      clue:'God looked on His suffering people and cared deeply for them. (Exodus 2:25)',
       verse:'"So God looked on the Israelites and was concerned about them." (Exodus 2:25 NIV)' },
     { id:'m20', type:'trivia', q:'Who did Moses look to and choose over the treasures of Egypt?',
       options:['His mother','Christ (the promised One)','Pharaoh','Jethro'], correct:1,
+      clue:'Moses valued the promised Deliverer more than all of Egypt\'s riches. (Hebrews 11:26)',
       verse:'"He regarded disgrace for the sake of Christ as of greater value..." (Hebrews 11:26 NIV)' },
     // --- Unscramble ---
     { id:'mU1', type:'unscramble',
@@ -8955,9 +9098,11 @@ const CHALLENGE_BANK = {
     // ===== #136 VARIETY PACK (Jane 2026-06-04) — expand pool to cut cross-run repeats =====
     { id:'nvm1', type:'trivia', q:'Why did the daughters think Moses was an Egyptian?',
       options:['His language','His clothing and looks','His chariot','His crown'], correct:1,
+      clue:'They judged by his appearance — his clothes and looks seemed Egyptian. (Exodus 2:19)',
       verse:'"An Egyptian rescued us from the shepherds." (Exodus 2:19 NIV). They judged by his appearance.' },
     { id:'nvm2', type:'trivia', q:'What did Moses do with Jethro\'s flock for many years?',
       options:['Sold them','Tended them','Counted them','Painted them'], correct:1,
+      clue:'Moses became a shepherd, caring for the sheep day after day. (Exodus 3:1)',
       verse:'"Now Moses was tending the flock of Jethro his father-in-law..." (Exodus 3:1 NIV)' },
     { id:'nvm3', type:'trivia', q:'According to Acts, how old was Moses when he left Egypt?',
       options:['Twenty','Thirty','Forty','Sixty'], correct:2,
@@ -8965,39 +9110,51 @@ const CHALLENGE_BANK = {
       verse:'"When Moses was forty years old, he decided to visit his own people." (Acts 7:23 NIV)' },
     { id:'nvm4', type:'trivia', q:'What stirred Moses to act before he fled Egypt?',
       options:['He was bored','He saw a Hebrew being beaten','He wanted gold','Pharaoh ordered it'], correct:1,
+      clue:'Moses saw an Egyptian beating one of his own people, a Hebrew. (Exodus 2:11)',
       verse:'"He saw an Egyptian beating a Hebrew, one of his own people." (Exodus 2:11 NIV)' },
     { id:'nvm5', type:'trivia', q:'After helping the daughters, what did Moses agree to do?',
       options:['Return to Egypt','Stay with Jethro','Travel to Canaan','Become a king'], correct:1,
+      clue:'Moses agreed to live with Jethro, who later gave him Zipporah. (Exodus 2:21)',
       verse:'"Moses agreed to stay with the man..." (Exodus 2:21 NIV)' },
     { id:'nvm6', type:'trivia', q:'What does the name Gershom tell us about how Moses felt?',
       options:['Like a king','Like a stranger in a foreign land','Like a priest','Like a soldier'], correct:1,
+      clue:'The name means Moses felt like a foreigner, far from home. (Exodus 2:22)',
       verse:'"...for he said, I have become a foreigner in a foreign land." (Exodus 2:22 NIV)' },
     { id:'nvm7', type:'trivia', q:'Reuel, named in Exodus 2:18, is another name for whom?',
       options:['A rude shepherd','Jethro','Moses\' brother','A son of Moses'], correct:1,
+      clue:'Reuel and Jethro are two names for the same priest of Midian. (Exodus 2:18)',
       verse:'"When the girls returned to Reuel their father..." (Exodus 2:18 NIV). Reuel and Jethro are the same man.' },
     { id:'nvm8', type:'tf', q:'True or False: Acts says Moses was forty years old when he left Egypt.',
       options:['True','False'], correct:0,
+      clue:'True — Acts 7:23 gives the number: Moses was forty. (Acts 7:23)',
       verse:'"When Moses was forty years old, he decided to visit his own people." (Acts 7:23 NIV)' },
     { id:'nvm9', type:'tf', q:'True or False: Moses tended Jethro\'s flock in the wilderness.',
       options:['True','False'], correct:0,
+      clue:'True — Moses shepherded the flock in the desert of Midian. (Exodus 3:1)',
       verse:'"Now Moses was tending the flock of Jethro his father-in-law..." (Exodus 3:1 NIV)' },
     { id:'nvm10', type:'tf', q:'True or False: The daughters first told their father a Hebrew had rescued them.',
       options:['True','False'], correct:1,
+      clue:'False — they said an EGYPTIAN rescued them, judging by his looks. (Exodus 2:19)',
       verse:'"An Egyptian rescued us from the shepherds." (Exodus 2:19 NIV). They said an Egyptian.' },
     { id:'nvm11', type:'tf', q:'True or False: Moses stayed only one day in Midian before going back to Egypt.',
       options:['True','False'], correct:1,
+      clue:'False — Moses stayed with Jethro for many years. (Exodus 2:21)',
       verse:'"Moses agreed to stay with the man..." (Exodus 2:21 NIV). He stayed many years.' },
     { id:'nvm12', type:'tf', q:'True or False: Jethro is also called Reuel in the Bible.',
       options:['True','False'], correct:0,
+      clue:'True — the Bible uses both names for the same priest of Midian. (Exodus 2:18)',
       verse:'"When the girls returned to Reuel their father..." (Exodus 2:18 NIV)' },
     { id:'nvm13', type:'tf', q:'True or False: In Midian, Moses became a shepherd after being raised in Egypt.',
       options:['True','False'], correct:0,
+      clue:'True — the prince raised in Egypt became a humble shepherd in Midian. (Exodus 3:1)',
       verse:'"Now Moses was tending the flock of Jethro..." (Exodus 3:1 NIV)' },
     { id:'nvm14', type:'fill', q:'Moses agreed to _______ with Jethro, who gave him Zipporah.',
       options:['leave','stay','fight','trade'], correct:1,
+      clue:'Moses chose to remain with Jethro and join his family. (Exodus 2:21)',
       verse:'"Moses agreed to stay with the man..." (Exodus 2:21 NIV)' },
     { id:'nvm15', type:'fill', q:'The daughters said, "An _______ rescued us from the shepherds."',
       options:['Egyptian','angel','Israelite','elder'], correct:0,
+      clue:'The daughters guessed Moses was from Egypt by his appearance. (Exodus 2:19)',
       verse:'"An Egyptian rescued us from the shepherds." (Exodus 2:19 NIV)' },
     { id:'nvm16', type:'unscramble', q:'Unscramble the job Moses did in Midian:',
       answer:'SHEPHERD',
@@ -9049,9 +9206,11 @@ const CHALLENGE_BANK = {
     // --- Deeper details from Exodus 1-2 and the Moses faith passages ---
     { id:'h1', type:'fill', q:'Moses asked the fighting Hebrew: "Why are you hitting your _______?"',
       options:['Neighbor','Fellow Hebrew','Enemy','Brother'], correct:1,
+      clue:'Moses saw two of his own people fighting and stepped in — he called the man a fellow Hebrew. (Exodus 2:13)',
       verse:'Exodus 2:13 NIV' },
     { id:'h2', type:'trivia', q:'What did Moses do to the Egyptian he struck down, according to Exodus 2:12?',
       options:['Left him in the road','Hid him in the sand','Threw him in the river','Buried him in a cave'], correct:1,
+      clue:'After striking the Egyptian, Moses looked around, then hid the body in the sand. (Exodus 2:12)',
       verse:'"...he killed the Egyptian and hid him in the sand." (Exodus 2:12 NIV)' },
     { id:'h3', type:'trivia', q:'According to Acts 7:23, about how old was Moses when he decided to visit his own people, the Israelites?',
       options:['20','30','40','60'], correct:2,
@@ -9062,54 +9221,71 @@ const CHALLENGE_BANK = {
       clue:'Stephen\u2019s sermon in Acts 7 tells us Moses was forty when he first went to help his people.' },
     { id:'h4', type:'trivia', q:'What was the other name used for Jethro, Moses’ father-in-law, in Exodus 2:18?',
       options:['Reuel','Hobab','Aaron','Eleazar'], correct:0,
+      clue:'Jethro is also called Reuel — the name his daughters used for their father. (Exodus 2:18)',
       verse:'"When the girls returned to Reuel their father, he asked them, Why have you returned so early today?" (Exodus 2:18 NIV)' },
     { id:'h5', type:'tf', q:'True or False: After Moses helped the daughters, Jethro invited him to stay — and Moses agreed to live with him.',
       options:['True','False'], correct:0,
+      clue:'Jethro invited Moses to stay, and Moses agreed to live with him. (Exodus 2:21)',
       verse:'"Moses agreed to stay with the man, who gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
     { id:'h6', type:'fill', q:'Jethro’s role in Midian was that he was a _______ of Midian.',
       options:['King','Soldier','Priest','Farmer'], correct:2,
+      clue:'Jethro was the priest of Midian, father of seven daughters. (Exodus 2:16)',
       verse:'"Now a priest of Midian had seven daughters…" (Exodus 2:16 NIV)' },
     { id:'h7', type:'trivia', q:'What did the fighting Hebrew say when Moses tried to break up his fight?',
       options:['"Thank you"','"Who made you ruler and judge over us?"','"Why are you here?"','"Stop at once"'], correct:1,
+      clue:'The man pushed Moses away, asking who made him ruler and judge over them. (Exodus 2:14)',
       verse:'"Who made you ruler and judge over us? Are you thinking of killing me as you killed the Egyptian?" (Exodus 2:14 NIV)' },
     { id:'h8', type:'trivia', q:'Why did Moses flee Egypt the very next day after striking the Egyptian?',
       options:['His mother warned him','He was afraid — the deed was known','An angel told him','He was sick'], correct:1,
+      clue:'Moses fled because his killing of the Egyptian had become known and he was afraid. (Exodus 2:14)',
       verse:'"Moses was afraid and thought, What I did must have become known." (Exodus 2:14 NIV)' },
     { id:'h9', type:'tf', q:'True or False: Moses regarded disgrace for Christ as greater wealth than the treasures of Egypt.',
       options:['True','False'], correct:0,
+      clue:'Hebrews 11:26 says Moses valued disgrace for Christ above all of Egypt\'s treasures. (Hebrews 11:26)',
       verse:'"He regarded disgrace for the sake of Christ as of greater value than the treasures of Egypt..." (Hebrews 11:26 NIV)' },
     { id:'h10', type:'fill', q:'After fleeing to Midian, Moses sat down by a _______.',
       options:['Tree','Well','Fire','Palace'], correct:1,
+      clue:'Arriving in Midian, tired and thirsty, Moses sat down beside a well. (Exodus 2:15)',
       verse:'"When he arrived in Midian, he sat down by a well." (Exodus 2:15 NIV)' },
     { id:'h11', type:'trivia', q:'How did Jethro respond when his daughters told him a stranger had helped them at the well?',
       options:['He was angry','He sent them to bring him to a meal','He demanded payment','He ignored it'], correct:1,
+      clue:'Jethro asked where the stranger was and told his daughters to invite him to eat. (Exodus 2:20)',
       verse:'"Where is he?... Why did you leave him? Invite him to have something to eat." (Exodus 2:20 NIV)' },
     { id:'h12', type:'fill', q:'Moses named his firstborn son Gershom, saying "I have become a _______ in a foreign land."',
       options:['Shepherd','Foreigner','Prophet','Servant'], correct:1,
+      clue:'Gershom means "a foreigner here" — Moses felt like a stranger in Midian. (Exodus 2:22)',
       verse:'"He named him Gershom, saying, I have become a foreigner in a foreign land." (Exodus 2:22 NIV)' },
     { id:'h13', type:'tf', q:'True or False: Moses gave his firstborn son the name Gershom because he said "I have become a foreigner in a foreign land."',
       options:['True','False'], correct:0,
+      clue:'Moses named his son Gershom because he had become a foreigner in a foreign land. (Exodus 2:22)',
       verse:'"Zipporah gave birth to a son, and Moses named him Gershom, saying, I have become a foreigner in a foreign land." (Exodus 2:22 NIV)' },
     { id:'h14', type:'trivia', q:'What did Moses do to the Egyptian who was beating the Hebrew?',
       options:['Talked to him','Struck him down','Called a guard','Ran away'], correct:1,
+      clue:'Moses struck down the Egyptian who was beating the Hebrew slave. (Exodus 2:12)',
       verse:'"Glancing this way and that... he struck down the Egyptian and hid him in the sand." (Exodus 2:12 NIV)' },
     { id:'h15', type:'trivia', q:'When Pharaoh heard what Moses had done, what did he try to do?',
       options:['Forgive him','Kill him','Adopt him','Reward him'], correct:1,
+      clue:'When Pharaoh heard, he tried to kill Moses — so Moses fled to Midian. (Exodus 2:15)',
       verse:'"When Pharaoh heard of this, he tried to kill Moses, but Moses fled..." (Exodus 2:15 NIV)' },
     { id:'h16', type:'fill', q:'Moses chose to suffer with God\'s people rather than enjoy the fleeting _______ of sin.',
       options:['Pain','Pleasures','Glory','Riches'], correct:1,
+      clue:'Moses chose to suffer with God\'s people rather than enjoy sin\'s fleeting pleasures. (Hebrews 11:25)',
       verse:'"...rather than to enjoy the fleeting pleasures of sin." (Hebrews 11:25 NIV)' },
     { id:'h17', type:'tf', q:'True or False: During Moses\' long years in Midian, the king of Egypt died.',
       options:['True','False'], correct:0,
+      clue:'During Moses\' long years in Midian, the king of Egypt died. (Exodus 2:23)',
       verse:'"During that long period, the king of Egypt died. The Israelites groaned in their slavery and cried out..." (Exodus 2:23 NIV)' },
     { id:'h18', type:'trivia', q:'What did God do for the Israelites when He heard their groaning in Egypt?',
       options:['Sent rain','Remembered His covenant with Abraham, Isaac, and Jacob','Sent food','Opened the sea'], correct:1,
+      clue:'God heard their groaning and remembered His covenant with Abraham, Isaac, and Jacob. (Exodus 2:24)',
       verse:'"God heard their groaning and he remembered his covenant with Abraham, with Isaac and with Jacob." (Exodus 2:24 NIV)' },
     { id:'h19', type:'fill', q:'Moses looked ahead to his _______ and did not fear the king\'s anger.',
       options:['Reward','Children','Brothers','Safety'], correct:0,
+      clue:'Moses looked ahead to his reward and did not fear the king\'s anger. (Hebrews 11:26)',
       verse:'"He was looking ahead to his reward." (Hebrews 11:26 NIV)' },
     { id:'h20', type:'trivia', q:'In Exodus 2:25, what did God do when He looked on the suffering Israelites?',
       options:['He was silent','He was concerned about them','He sent angels','He left them'], correct:1,
+      clue:'God looked on the suffering Israelites and was concerned about them. (Exodus 2:25)',
       verse:'"So God looked on the Israelites and was concerned about them." (Exodus 2:25 NIV)' },
     // --- Unscramble ---
     { id:'hU1', type:'unscramble',
@@ -9136,9 +9312,11 @@ const CHALLENGE_BANK = {
     // --- Typological connections ---
     { id:'hTyp1', type:'trivia', q:'In John 4, Jesus also met someone at a well. What did he offer that Moses could not?',
       options:['Fresh water','Living water','Bread and fish','A new home'], correct:1,
+      clue:'At a well, Jesus offered living water — eternal life — that no ordinary well can give. (John 4:14)',
       verse:'"Whoever drinks the water I give them will never thirst." (John 4:14 NIV)' },
     { id:'hTyp2', type:'fill', q:'When Jethro said "Invite him to eat," it echoes Jesus\' words in Matthew 25: "I was a _______ and you invited me in."',
       options:['Stranger','Prisoner','Beggar','Prophet'], correct:0,
+      clue:'Jethro welcomed a stranger, echoing Jesus\' words: "I was a stranger and you invited me in." (Matthew 25:35)',
       verse:'"I was a stranger and you invited me in." (Matthew 25:35 NIV)' },
     // --- Sequence ---
     { id:'hS1', type:'sequence',
@@ -9852,6 +10030,16 @@ function attemptMove(dir) {
   let nx = player.tx, ny = player.ty;
   if (dir === 'up') ny--; else if (dir === 'down') ny++;
   else if (dir === 'left') nx--; else if (dir === 'right') nx++;
+  // #6 Jane 2026-06-06: Moses must never stand ON a rude shepherd (the screenshot
+  // showed him stacked on the green shepherd). Block the step onto any active
+  // shepherd's tile — they only nag/block, so this is a soft bounce, no heart lost.
+  try {
+    if (game.scene === 2 && typeof pursuitScouts !== 'undefined') {
+      for (const sh of pursuitScouts) {
+        if (!sh.shovedOff && !sh.caught && sh.tx === nx && sh.ty === ny) { play('pop'); return; }
+      }
+    }
+  } catch(e){}
   if (!isWalkable(nx, ny)) {
     play('pop');
     // River-crossing hint: if Moses is bumping the stream without his bridge,
@@ -10718,7 +10906,7 @@ function showCinPanel() {
     // Hide the storyboard caption — metadata, not kid-facing copy.
     $('cinCaption').textContent = '';
     $('cinCaption').style.display = 'none';
-    $('cinProgress').textContent = (game.cinStep+1) + ' of ' + CIN_PANELS.length;
+    { const _pp = $('cinProgress'); if (_pp) { _pp.textContent = ''; _pp.style.display = 'none'; } }   // #13: no panel-info counter
     $('cinNextBtn').textContent = (game.cinStep === CIN_PANELS.length-1) ? 'Begin Scene 3' : 'Next';
     _playPanelNarration(p);
     requestAnimationFrame(() => {
@@ -10728,7 +10916,7 @@ function showCinPanel() {
   }, 250);
 }
 $('cinNextBtn').addEventListener('click', () => {
-  play('click');
+  play('pageTurn') || play('click');   // #167: page-turn SFX like Scene 1
   game.cinStep++;
   if (game.cinStep >= CIN_PANELS.length) {
     $('openingCinematic').classList.remove('active');
@@ -10761,31 +10949,31 @@ $('cinSkipBtn').addEventListener('click', () => {
 const CLOSING_PANELS = [
   {
     text: "The seven sisters ran home early. Their water jars were full. Their faces shone with joy.",
-    cap:  "REFUGE IN MIDIAN \u00b7 Exodus 2:18\u201322 \u00b7 PANEL 1 of 5",
+    cap:  "REFUGE IN MIDIAN \u00b7 Exodus 2:18\u201322",
     audio: "closing-1-daughters-home.mp3",
     image: 'assets/images/closing-1-daughters-home.png',
   },
   {
     text: "Jethro stood at his tent. \u201cHow did you get back so soon?\u201d he asked. \u201cAn Egyptian rescued us!\u201d the daughters answered.",
-    cap:  "PANEL 2 of 5",
+    cap:  "",
     audio: "closing-2-jethro-question.mp3",
     image: 'assets/images/closing-2-jethro-question.png',
   },
   {
     text: "\u201cWhere is he?\u201d Jethro said. \u201cBring him here. Let him eat with us.\u201d And Moses walked through the tent door.",
-    cap:  "PANEL 3 of 5",
+    cap:  "",
     audio: "closing-3-welcome.mp3",
     image: 'assets/images/closing-3-welcome.png',
   },
   {
     text: "Moses stayed. He worked with the flocks. And one day, Jethro gave him his daughter Zipporah to be his wife. (Exodus 2:21)",
-    cap:  "PANEL 4 of 5",
+    cap:  "",
     audio: "closing-4-zipporah.mp3",
     image: 'assets/images/closing-4-zipporah.png',
   },
   {
     text: "Moses became a shepherd in Midian. He named his son Gershom \u2014 \u201cI have been a stranger in a strange land.\u201d But far away, on the mountain\u2026 God was already preparing what came next.",
-    cap:  "PANEL 5 of 5",
+    cap:  "",
     audio: "closing-5-shepherd-mountain.mp3",
     image: 'assets/images/closing-5-shepherd-mountain.png',
   },
@@ -10797,7 +10985,7 @@ function playClosingCinematic(onDone) {
   game.closeStep = 0;
   showClosePanel();
   $('closingCinematic').classList.add('active');
-  try { setMusic('narration'); } catch(e){}
+  try { setMusic('egyptianCover'); } catch(e){}   // #19: lively post-Scene-3 narration bed
 }
 function _playClosingPanelAudio(p) {
   try {
@@ -10814,7 +11002,7 @@ function showClosePanel() {
   const p = CLOSING_PANELS[game.closeStep];
   const tEl = $('closeText');     if (tEl) tEl.textContent = p.text;
   const cEl = $('closeCaption');  if (cEl) cEl.textContent = p.cap;
-  const pEl = $('closeProgress'); if (pEl) pEl.textContent = (game.closeStep+1) + ' of ' + CLOSING_PANELS.length;
+  const pEl = $('closeProgress'); if (pEl) { pEl.textContent = ''; pEl.style.display = 'none'; }   // #13: no panel-info counter
   const nEl = $('closeNextBtn');  if (nEl) nEl.textContent = (game.closeStep === CLOSING_PANELS.length-1) ? 'Finish Scene' : 'Next';
   // 2026-06-01 — swap illustration per panel with a quick cross-fade so the
   // kid sees Jethro's tent → Zipporah → shepherd-mountain art beats instead
@@ -10846,7 +11034,7 @@ function _finishClosingCinematic() {
 (function wireClosingCinematic() {
   const next = $('closeNextBtn');
   if (next) next.addEventListener('click', () => {
-    play('click');
+    play('pageTurn') || play('click');   // #167: page-turn SFX like Scene 1
     game.closeStep = (game.closeStep || 0) + 1;
     if (game.closeStep >= CLOSING_PANELS.length) {
       _finishClosingCinematic();
@@ -10869,20 +11057,20 @@ function _finishClosingCinematic() {
 // NARRATION_SCRIPTS_AND_PROMPTS_bundle1 §9, swapped by showEpiloguePanel().
 const EPILOGUE_PANELS = [
   {
-    text: "And many years went by. Moses tended the flock. His beard grew long. His sons grew tall. Egypt felt very far away.",
-    cap:  "EPILOGUE · Exodus 2:23–25 · PANEL 1 of 3",
+    text: "And many years went by. Moses tended the flock. His beard grew long. His son grew tall. Egypt felt very far away.",
+    cap:  "EPILOGUE · Exodus 2:23–25",
     audio: "epilogue-1-years-pass.mp3",
     image: 'assets/images/epilogue-1-years-pass.png',
   },
   {
     text: "Back in Egypt, the Hebrews still groaned under Pharaoh's whip. They cried out to God. And God heard them. He remembered his promise to Abraham, Isaac, and Jacob.",
-    cap:  "PANEL 2 of 3",
+    cap:  "",
     audio: "epilogue-2-god-hears.mp3",
     image: 'assets/images/epilogue-2-god-hears.png',
   },
   {
     text: "One day, Moses led the flock far across the desert — all the way to the mountain of God. And there, something he could not explain… began to burn. But that… is the next story.",
-    cap:  "PANEL 3 of 3 · Coming in Bundle 2: The Calling",
+    cap:  "Coming in Bundle 2: The Calling",
     audio: "epilogue-3-mountain-calls.mp3",
     image: 'assets/images/epilogue-3-mountain-calls.png',
   },
@@ -10903,7 +11091,7 @@ function showEpiloguePanel() {
   const p = EPILOGUE_PANELS[game.epilStep || 0];
   const tEl = $('epilText');     if (tEl) tEl.textContent = p.text;
   const cEl = $('epilCaption');  if (cEl) cEl.textContent = p.cap;
-  const pEl = $('epilProgress'); if (pEl) pEl.textContent = ((game.epilStep||0)+1) + ' of ' + EPILOGUE_PANELS.length;
+  const pEl = $('epilProgress'); if (pEl) { pEl.textContent = ''; pEl.style.display = 'none'; }   // #13: no panel-info counter
   const nEl = $('epilNextBtn');  if (nEl) nEl.textContent = ((game.epilStep||0) === EPILOGUE_PANELS.length-1) ? 'Get Certificate' : 'Next';
   // 2026-06-01 — swap epilogue illustration per panel with a short cross-fade.
   try {
@@ -10934,12 +11122,12 @@ function openEpilogueCinematic(onDone) {
   game.epilStep = 0;
   showEpiloguePanel();
   $('epilogueCinematic').classList.add('active');
-  try { setMusic('narration'); } catch(e){}
+  try { setMusic('egyptianCover'); } catch(e){}   // #19: lively post-Scene-3 narration bed
 }
 (function wireEpilogueCinematic() {
   const next = $('epilNextBtn');
   if (next) next.addEventListener('click', () => {
-    play('click');
+    play('pageTurn') || play('click');   // #167: page-turn SFX like Scene 1
     game.epilStep = (game.epilStep || 0) + 1;
     if (game.epilStep >= EPILOGUE_PANELS.length) { _finishEpilogue(); }
     else { showEpiloguePanel(); }
@@ -11461,8 +11649,13 @@ function _checkScene3Tips(){
   if (game.state !== 'playing') return;
   if (typeof player === 'undefined') return;
   const px = player.tx, py = player.ty;
-  // RIVER: approaching the west bank of the 3-wide river
-  if (!_firstEventSeen.river && px >= 8 && px <= 10 && py >= 6 && py <= 18){
+  // RIVER: approaching the west bank of the 3-wide river.
+  // #159 Jane 2026-06-05: once the 3 checkpoints are cleared and the crossing is
+  // built, STOP showing the "River of Midian" tip — the river is no longer a
+  // blocker, and the popup only adds to post-crossing congestion.
+  let _crossBuilt = false;
+  try { _crossBuilt = (typeof _scene3CrystalCount === 'function') && _scene3CrystalCount() >= 3; } catch(e){}
+  if (!_crossBuilt && !_firstEventSeen.river && px >= 8 && px <= 10 && py >= 6 && py <= 18){
     showTipPopup('river', { icon:'🌊', title:'The River of Midian',
       body:'A wide river blocks the way east! Clear the three Bible Checkpoints to earn three crystal stones — they build a stepping-stone crossing. Then lead the stranded flock across into the pen.' });
     return;
@@ -11472,7 +11665,7 @@ function _checkScene3Tips(){
     for (const s of scene3Herd.sheep){
       if (s.state === 'graze' && Math.max(Math.abs(Math.round(s.px/TILE)-px), Math.abs(Math.round(s.py/TILE)-py)) <= 2){
         showTipPopup('flock', { icon:'🐑', title:'A Lost Flock',
-          body:'These sheep are stranded! The moment you build the crossing, hungry wolves rush in and target Jethro’s flock — a red ring marks a sheep in danger. Run straight at a wolf to scare it off, or TAP a ringed sheep to open the SHOO! bar and drive its wolf away. Clear every wolf, then walk close and the flock will follow you across to the pen.' });
+          body:'These sheep are stranded on the wrong side of the river! Build the crossing, then walk close and the flock will follow you across into the pen. If a wolf ever troubles a sheep, run straight at it or TAP the ringed sheep to shoo it away.' });
         return;
       }
     }
@@ -14414,7 +14607,16 @@ function _rescueFrame(now) {
   // ALWAYS lay down a green field base first, THEN the field image on top. If the image is
   // missing/slow/broken the playfield still looks like a field (never bare canvas stripes).
   { const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#9ad06a'); g.addColorStop(1, '#6aa84a'); c.fillStyle = g; c.fillRect(-4, -4, W + 8, H + 8); }
-  _pDraw(c, ['rescueBg2', 'rescueBg', 'scene3Bg', 'midian'], -4, -4, W + 8, H + 8);
+  // #152 (Jane 2026-06-05, FURIOUS regression): the rescue field was "showing the
+  // well game's background." Root cause — when rescueBg2/rescueBg fail to load
+  // (e.g. a stale service-worker cache), this fell back to scene3Bg/midian, which
+  // is the very DESERT image the WELL game paints as ITS backdrop. So a failed
+  // pasture load made the rescue arena look identical to the well game. FIX:
+  // never fall back to the desert here — only the two pasture images. If BOTH are
+  // unavailable, _pDraw draws nothing and the GREEN field gradient painted above
+  // shows through, so the rescue field always reads as a green pasture (never the
+  // well's desert). Touches only the background fallback list, not game internals.
+  _pDraw(c, ['rescueBg2', 'rescueBg'], -4, -4, W + 8, H + 8);
   c.fillStyle = 'rgba(40,24,10,0.16)'; c.fillRect(0, 30, _rescue.GRABX, H - 60);
   const mag = _rescue.mag || 1, gap = _rescue.laneGap || 60, halfLane = gap / 2, yOff = gap * (_rescue._shortLand ? 0.36 : 0.46);
   for (let i = 0; i < _rescue.LANES; i++) {
@@ -15233,20 +15435,29 @@ function renderMatch3(gate, q, container){
     }}
     return { hit, spawns };
   }
-  // Grow a clear-set: any blaster swept up detonates (cross → its row+column;
-  // colour → every tile of its kind), and that can chain into further blasters.
+  // #162 Jane 2026-06-05: "the pharaoh crystal when moved with a neighbouring tile
+  // clears EVERYTHING. re-design that like how candy crush works." ROOT CAUSE: this
+  // used a recursive frontier, so a cross blaster's blast swept up OTHER blasters in
+  // its row/column and re-detonated them, chaining across the whole 6x6 board until
+  // nothing was left. FIX: detonate ONLY the blasters in the initial seed (the tile(s)
+  // the player actually fired — a matched-in blaster, or the one/two swapped). Blasters
+  // merely caught in a blast are cleared as ordinary tiles, never re-fired. Result is
+  // bounded + predictable, exactly like Candy Crush: cross = its row+column (a plus
+  // shape, ~11 tiles), colour bomb = every tile of one kind. No runaway board wipes.
   function expandClears(seed){
-    const cleared=new Set(), frontier=[];
-    seed.forEach(k=>{ if(!cleared.has(k)){ cleared.add(k); frontier.push(k); } });
-    while (frontier.length){
-      const p=frontier.pop().split(',').map(Number), r=p[0], c=p[1], sp=special[r][c];
-      if (sp==='cross'){
-        for (let cc=0;cc<COLS;cc++){ const kk=r+','+cc; if(!cleared.has(kk)){ cleared.add(kk); frontier.push(kk);} }
-        for (let rr=0;rr<ROWS;rr++){ const kk=rr+','+c; if(!cleared.has(kk)){ cleared.add(kk); frontier.push(kk);} }
-      } else if (sp==='color'){
-        const col=board[r][c];
+    const cleared=new Set();
+    seed.forEach(k=>cleared.add(k));
+    // Snapshot the seed cells first so clearing one blaster can't alter another's read.
+    const seedCells=[];
+    seed.forEach(k=>{ const p=k.split(',').map(Number); seedCells.push({ r:p[0], c:p[1], sp:special[p[0]][p[1]], col:board[p[0]][p[1]] }); });
+    for (const sc of seedCells){
+      if (sc.sp==='cross'){
+        for (let cc=0;cc<COLS;cc++) cleared.add(sc.r+','+cc);
+        for (let rr=0;rr<ROWS;rr++) cleared.add(rr+','+sc.c);
+      } else if (sc.sp==='color'){
+        const col=sc.col;
         for (let rr=0;rr<ROWS;rr++) for(let cc=0;cc<COLS;cc++){
-          if (board[rr][cc]===col){ const kk=rr+','+cc; if(!cleared.has(kk)){ cleared.add(kk); frontier.push(kk);} }
+          if (board[rr][cc]===col) cleared.add(rr+','+cc);
         }
       }
     }
@@ -17713,6 +17924,34 @@ function _personalizeWinModal(){
     block.style.display = 'block';
   } catch(e){}
 }
+// #16 Jane 2026-06-06: celebratory confetti shower over the win modal (DOM, so it
+// renders above the canvas), matching Scene 1's lively victory. Self-cleaning.
+function _spawnWinConfetti(){
+  try {
+    const host = document.getElementById('winModal'); if (!host) return;
+    if (getComputedStyle(host).position === 'static') host.style.position = 'fixed';
+    const colors = ['#ffd23a','#ff7ac0','#7ad0ff','#8aff7a','#ffa14a','#c08bff','#ffffff'];
+    for (let i = 0; i < 64; i++){
+      const c = document.createElement('div');
+      const sz = 7 + ((i * 37) % 9);
+      const left = (i * 53) % 100;
+      c.style.cssText = 'position:absolute;top:-24px;left:' + left + '%;width:' + sz + 'px;height:' + (sz*0.5)
+        + 'px;background:' + colors[i % colors.length] + ';border-radius:2px;z-index:9999;pointer-events:none;';
+      host.appendChild(c);
+      const dx = (((i * 71) % 240) - 120);
+      const rot = (((i * 97) % 1440) - 720);
+      const dur = 1700 + ((i * 53) % 1300);
+      const delay = (i * 29) % 420;
+      try {
+        c.animate([
+          { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+          { transform: 'translate(' + dx + 'px,' + (window.innerHeight + 80) + 'px) rotate(' + rot + 'deg)', opacity: 0.85 }
+        ], { duration: dur, delay: delay, easing: 'cubic-bezier(0.3,0.6,0.4,1)', fill: 'forwards' });
+      } catch(e){}
+      setTimeout(() => { try { if (c.parentNode) c.parentNode.removeChild(c); } catch(e){} }, dur + delay + 250);
+    }
+  } catch(e){}
+}
 function showWin(){
   // compute star rating
   const pct = (game.hearts / 3) * 0.4 + (game.treasureCount / game.treasuresTotal) * 0.4 + (game.timeLeft / game.timeLimit) * 0.2;
@@ -17720,11 +17959,14 @@ function showWin(){
 
   // SINGLE tier title based on star rating (mutually exclusive)
   const tierTitle = starRating === 3 ? 'DESERT CONQUEROR' : starRating === 2 ? 'BRAVE TRAVELER' : 'FAITHFUL JOURNEY';
+  // #164 Jane 2026-06-06: the goal of Scene 3 is JETHRO'S TENT (his new home),
+  // not the well — the 2-star line wrongly said "reached the well". All three
+  // tiers now name the tent so the victory matches the actual finish.
   const tierHeadline = starRating === 3
-    ? 'Moses found refuge in Midian! God’s plan is unstoppable!'
+    ? 'Moses reached Jethro\'s tent and found a new home in Midian!'
     : starRating === 2
-    ? 'Moses reached the well — so close to 3 stars!'
-    : 'Moses found shelter in Midian. Keep growing in faith!';
+    ? 'Moses reached Jethro\'s tent — so close to 3 stars!'
+    : 'Moses reached Jethro\'s tent and found shelter. Keep growing in faith!';
 
   // Sub-achievements: bonus badges (not titles) shown as secondary chips
   const badges = [];
@@ -17741,6 +17983,13 @@ function showWin(){
   const gatesPerfect = challengeGates.filter(g => g.solved && g.bundleCorrect === g.questions.length && (g.strikes || 0) === 0).length;
   if (gatesCleared === challengeGates.length && challengeGates.length > 0) badges.push('All Checkpoints Cleared');
   if (gatesPerfect === challengeGates.length && challengeGates.length > 0) badges.push('Truth Master');
+
+  // #171 Jane 2026-06-06: persist the cert fields so certificate.html can print a
+  // personalized certificate (kid's name is already in bek.kidName from Scene 1).
+  try {
+    localStorage.setItem('bek.certRank', tierTitle);
+    localStorage.setItem('bek.certScore', starRating + ' of 3 stars  ·  ' + (game.stars || 0) + ' points');
+  } catch(e){}
 
   // v3.4: Child-friendly truth statements (kid-first language, not raw scripture).
   // If the player opened the mid-scene chest, we re-use THAT truth on the
@@ -17800,14 +18049,23 @@ function showWin(){
   // Scene 3 closing flow: scene-complete banner (2s) -> 5-panel Refuge in
   // Midian cinematic -> win/rank/certificate modal.
   try { audio.bgm.pause(); } catch(e){}
+  // #14 Jane 2026-06-06: play bgm-exit.mp3 as Moses achieves victory — a heat-up
+  // sting under the scene-complete banner before the closing narration.
   play('chime');
+  try { play('bgmExit'); } catch(e){}
   const banner = $('sceneBanner');
   const _openWinFinal = () => {
+    try { setMusic(null); } catch(e){}   // stop the narration bed so the win fanfare is clean
+    try { if (audio.bgmExit) { audio.bgmExit.pause(); audio.bgmExit.currentTime = 0; } } catch(e){}
     play('win');
     try { play('levelUp'); } catch(e){}  // victory-modal fanfare
+    // #16 Jane 2026-06-06: celebratory win-modal SFX like Scene 1 — confetti sparkle.
+    try { play('confetti'); } catch(e){}
     $('winModal').classList.add('active');
     try { _personalizeWinModal(); } catch(e){}   // #83 hero shoutout + verse
     try { _renderJourneyPanel(); } catch(e){}
+    // #16 confetti shower over the win modal (DOM, so it shows above the canvas)
+    try { _spawnWinConfetti(); } catch(e){}
   };
   const _runClosingThenWin = () => {
     try {
@@ -17829,9 +18087,12 @@ function showWin(){
   }
 }
 function _doDownloadCertificate() {
-  // Open the printable certificate page in a new tab
-  try { window.open('GAME_ACCESS_CARD.html', '_blank'); } catch(e){}
-  toast('Your certificate is ready! Print it or save as PDF.');
+  // #171/#20 Jane 2026-06-06: open the REAL personalized certificate (was wrongly
+  // opening GAME_ACCESS_CARD.html — "some other document"). certificate.html reads
+  // the kid's name + rank + score from localStorage (written in showWin) and
+  // renders them onto Jane's certificate-template art, print/Save-as-PDF ready.
+  try { window.open('certificate.html', '_blank'); } catch(e){}
+  toast('Your certificate is ready! Print it or save it as a PDF.');
 }
 $('winNextBtn').addEventListener('click', () => {
   play('click');
@@ -18967,8 +19228,38 @@ function seedPursuitScouts(){
 }
 let _scoutCloseWarnAt = 0;   // v2.2 hoofbeat/scout-alert cooldown (ms)
 let _scene3LastShepherdToastShown = false;
+// #160 Jane 2026-06-05: "scout is directly on top of the vendor. run checks
+// everywhere so 2 subjects are never in the same tile." The rude shepherds are
+// the only freely-roaming PEOPLE in Scene 3, and the jar-DECOY lure drops their
+// leash so they can wander up to 8 tiles — straight onto a standing NPC. Guard
+// EVERY shepherd step against any tile holding a standing person (the market
+// vendor + the date / water sellers), so a shepherd always stops one tile short
+// instead of stacking on top of an NPC.
+function _tileHasStandingNPC(tx, ty) {
+  try {
+    for (const it of interactables) {
+      if (it.kind === 'servant' && it.tx === tx && it.ty === ty) return true;
+    }
+  } catch (e) {}
+  return false;
+}
 function updateRudeShepherds(dt) {
   const now = performance.now();
+  // #10 Jane 2026-06-06: once Moses has cleared BOTH east-bank mini-games (he
+  // drove the shepherds off at the well + rescued the daughters), the rude
+  // shepherds STOP bothering him — they slink away. Gate on the well + rescue
+  // checkpoints being solved (survives save/resume).
+  try {
+    if (typeof challengeGates !== 'undefined' && challengeGates.length) {
+      const wellDone   = challengeGates.some(g => g && g.zone === 'well'   && g.solved);
+      const rescueDone = challengeGates.some(g => g && g.zone === 'rescue' && g.solved);
+      if (wellDone && rescueDone) {
+        for (const s of pursuitScouts) {
+          if (!s.shovedOff && !s.caught) { s.shovedOff = true; s.taunting = false; s.chaseMode = false; }
+        }
+      }
+    }
+  } catch(e){}
   // ❄️ Foe Freeze power: the rude shepherds are the main Scene-3 threat, so they
   // must freeze too (previously only wolves/legacy guards honored this).
   if (window._guardFreezeUntil && now < window._guardFreezeUntil) return;
@@ -19003,6 +19294,7 @@ function updateRudeShepherds(dt) {
               if (_c[0] < 1 || _c[0] > MAP_W - 2) continue;
               if (!isWalkable(_c[0], _c[1])) continue;
               try { if (typeof isScene3StreamBlocker === 'function' && isScene3StreamBlocker(_c[0], _c[1], false)) continue; } catch(e){}
+              if (_tileHasStandingNPC(_c[0], _c[1])) continue;   // #160: don't lure through an NPC tile
               const _d = Math.abs(_c[0]-_dT.x) + Math.abs(_c[1]-_dT.y);
               if (_d < _bestD) { _bestD = _d; _best = _c; }
             }
@@ -19066,6 +19358,8 @@ function updateRudeShepherds(dt) {
           // (Moses' move is already body-blocked from his side), so he still guards
           // the route without overlapping Moses.
           if (_nx === player.tx && _ny === player.ty) continue;
+          // #160: never stack on a standing NPC (vendor / sellers).
+          if (_tileHasStandingNPC(_nx, _ny)) continue;
           let _blocked = false;
           // Stream (incl. stones) is impassable for shepherds — keeps them stranded
           // on the west bank so the crossing is Moses' escape.
@@ -19085,6 +19379,7 @@ function updateRudeShepherds(dt) {
         try {
           if (typeof isScene3StreamBlocker === 'function' && isScene3StreamBlocker(nextX, s.ty, false)) nextX = s.tx;
         } catch(e){}
+        if (_tileHasStandingNPC(nextX, s.ty)) nextX = s.tx;   // #160: don't stack on an NPC
         if (nextX !== s.tx && nextX >= 1 && nextX < MAP_W - 1) {
           s.dir = nextX > s.tx ? 'right' : 'left';
           s.tx = nextX;
@@ -19417,16 +19712,9 @@ function drawPursuitScouts(ctx){
     }
     // 2026-05-26: ice-encase the shepherd while Foe Freeze is active
     _drawFoeIce(ctx, sx + TILE/2, sy + TILE/2, TILE*0.85);
-    // Proximity warning — red halo if scout is close
-    const dx = Math.abs(s.tx - player.tx);
-    const dy = Math.abs(s.ty - player.ty);
-    if (Math.max(dx, dy) <= 3) {
-      ctx.strokeStyle = 'rgba(255,60,60,0.75)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(px, sy + TILE*0.5, TILE*0.55, 0, Math.PI*2);
-      ctx.stroke();
-    }
+    // #7 Jane 2026-06-06: removed the red proximity "halo" around shepherds. The
+    // rude shepherds never cost a heart (they only nag/block — #104), so a RED
+    // danger ring read as a lethal threat and confused the scene. No ring now.
     // Phase C Step 6 — taunt speech bubble above shepherd's head
     if (s.taunting && s.tauntText && !s.shovedOff) {
       const bCx = sx + TILE / 2;
@@ -20559,18 +20847,19 @@ function drawSandPuffs(){
    so gameplay is deterministic; sheep wobble gently on their own phase so
    the scene feels alive. Sunbeams are diagonal golden gradients cast from
    upper-left. Both are best-effort and fail silently if anything is wrong. */
+// #159 Jane 2026-06-05: "too many things going on — clear the congestion after
+// crossing the river." This DECORATIVE flock used to scatter 7 grazing sheep
+// straight across the crossing→pen→well corridor (cols 14-26). After crossing,
+// the kid saw these 7 décor sheep PLUS the 5 real herd sheep arriving — twelve
+// sheep at once, with no way to tell which ones to herd. Cut to a small distant
+// cluster (3) tucked beside Jethro's tent in the far SE pasture, well clear of
+// the crossing (col 13), the pen (cols 15-19) and the well — so the only sheep
+// in the action corridor are the real flock Moses leads in.
 const SCENE3_FLOCK = [
-  // Tile positions around the south grass + flock area. Sized for the 35x25
-  // Midian map. Each member has a fixed facing direction so the flock looks
-  // like it's grazing in different directions, not lined up. Mix of sheep
-  // (full grown) and lambs (cuter, smaller) plus a lambAlt variant.
-  { tx: 14, ty: 17, kind: 'sheep', dir: 'right' },
-  { tx: 17, ty: 16, kind: 'sheep', dir: 'left'  },
-  { tx: 20, ty: 18, kind: 'sheep', dir: 'down'  },
-  { tx: 23, ty: 17, kind: 'lamb',  dir: 'right', alt: false },
-  { tx: 26, ty: 19, kind: 'sheep', dir: 'left'  },
-  { tx: 18, ty: 20, kind: 'lamb',  dir: 'down',  alt: true  },
-  { tx: 15, ty: 21, kind: 'sheep', dir: 'right' },
+  // Jethro's home flock grazing near his tent (far SE pasture, out of the way).
+  { tx: 30, ty: 18, kind: 'sheep', dir: 'right' },
+  { tx: 31, ty: 20, kind: 'lamb',  dir: 'down',  alt: true },
+  { tx: 29, ty: 21, kind: 'sheep', dir: 'left'  },
 ];
 function drawScene3Flock(){
   if (typeof camera === 'undefined' || typeof TILE === 'undefined') return;
@@ -20627,46 +20916,10 @@ function drawScene3Flock(){
       } else {
         ctx.drawImage(img, ox, oy, drawW, drawH);
       }
-    } else {
-      // vector sheep: fluffy white blob + small black head + 4 leg dots
-      const cx = sx + TILE/2, cy = sy + TILE*0.55 + bob;
-      const bodyR = TILE * scale * 0.30;
-      // wool body (cloud-shaped)
-      ctx.fillStyle = '#fafafa';
-      ctx.beginPath();
-      ctx.arc(cx - bodyR*0.35, cy,              bodyR*0.70, 0, Math.PI*2);
-      ctx.arc(cx,               cy - bodyR*0.20, bodyR*0.80, 0, Math.PI*2);
-      ctx.arc(cx + bodyR*0.35, cy,              bodyR*0.70, 0, Math.PI*2);
-      ctx.arc(cx,               cy + bodyR*0.25, bodyR*0.65, 0, Math.PI*2);
-      ctx.fill();
-      // wool outline
-      ctx.strokeStyle = 'rgba(180,180,180,0.55)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      // head (small dark)
-      ctx.fillStyle = '#4a3a2a';
-      ctx.beginPath();
-      ctx.ellipse(cx + bodyR*0.95, cy - bodyR*0.05, bodyR*0.32, bodyR*0.26, 0, 0, Math.PI*2);
-      ctx.fill();
-      // tiny ear
-      ctx.beginPath();
-      ctx.ellipse(cx + bodyR*1.05, cy - bodyR*0.25, bodyR*0.10, bodyR*0.15, 0, 0, Math.PI*2);
-      ctx.fill();
-      // 4 legs (short)
-      ctx.strokeStyle = '#3a2a1a';
-      ctx.lineWidth = Math.max(1, TILE*0.04);
-      ctx.beginPath();
-      ctx.moveTo(cx - bodyR*0.55, cy + bodyR*0.35); ctx.lineTo(cx - bodyR*0.55, cy + bodyR*0.68);
-      ctx.moveTo(cx - bodyR*0.20, cy + bodyR*0.40); ctx.lineTo(cx - bodyR*0.20, cy + bodyR*0.72);
-      ctx.moveTo(cx + bodyR*0.20, cy + bodyR*0.40); ctx.lineTo(cx + bodyR*0.20, cy + bodyR*0.72);
-      ctx.moveTo(cx + bodyR*0.55, cy + bodyR*0.35); ctx.lineTo(cx + bodyR*0.55, cy + bodyR*0.68);
-      ctx.stroke();
-      // eye dot
-      ctx.fillStyle = '#000';
-      ctx.beginPath();
-      ctx.arc(cx + bodyR*1.02, cy - bodyR*0.05, 0.9, 0, Math.PI*2);
-      ctx.fill();
     }
+    // #172 Jane 2026-06-06: removed the procedural "vector sheep" fallback (white
+    // blob + brown head) — that was the hand-drawn brown sheep. Decorative flock
+    // renders ONLY the real PNG; if it isn't loaded, nothing is drawn.
   }
   ctx.restore();
 }
@@ -23591,13 +23844,23 @@ function drawMarketStall(dx, dy, variant){
 }
 function drawFlockSignpost(dx, dy){
   const _ok = (i => i && i.complete && i.naturalWidth > 0);
-  const w = TILE * 1.0, h = TILE * 1.0;
-  const ox = dx + TILE/2 - w/2, oy = dy + TILE - h*0.95;
+  // #168 Jane 2026-06-06: "the sheep board is tiny and barely seen and it is
+  // blurry." Enlarged the pen signboard ~1.0 -> 1.7 tiles and render it crisply
+  // (high smoothing + true PNG aspect ratio) so it clearly labels the pen gate
+  // Moses reaches after crossing the river.
+  const img = _ok(IMG.flockSignpost) ? IMG.flockSignpost : null;
+  const targetH = TILE * 1.7;
+  let w, h;
+  if (img){
+    const ar = (img.naturalWidth || 1) / (img.naturalHeight || 1);
+    h = targetH; w = Math.round(h * ar);
+  } else { w = TILE * 1.7; h = TILE * 1.7; }
+  const ox = Math.round(dx + TILE/2 - w/2), oy = Math.round(dy + TILE - h*0.92);
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.22)';
-  ctx.beginPath(); ctx.ellipse(dx + TILE/2, dy + TILE*0.92, TILE*0.28, TILE*0.08, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(dx + TILE/2, dy + TILE*0.92, TILE*0.40, TILE*0.11, 0, 0, Math.PI*2); ctx.fill();
   ctx.restore();
-  if (_ok(IMG.flockSignpost)) { ctx.drawImage(IMG.flockSignpost, ox, oy, w, h); return; }
+  if (img) { ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(img, ox, oy, w, h); ctx.restore(); return; }
   // fallback: simple wooden post + board
   ctx.save();
   ctx.fillStyle = '#7a4a1c'; ctx.fillRect(dx + TILE*0.46, dy + TILE*0.4, TILE*0.08, TILE*0.5);

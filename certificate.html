@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="copyright" content="copyright 2025 Bible Explorer Kids. All rights reserved.">
+<title>Certificate &mdash; Moses' Deadly Escape</title>
+<style>
+  /* Personalized, printable certificate built ON TOP of Jane's
+     "certificate template.png" art (the colourful Bible-tile border, the red
+     CERTIFICATE OF COMPLETION title, the "Moses' Deadly Escape" subtitle, the
+     NAME / RANK / SCORE lines and the Exodus 2:22 footer verse). We overlay the
+     kid's name + rank + score + date onto the blank lines, and add a gold seal.
+     The toolbar is hidden when printing so a clean landscape page comes out. */
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; }
+  body{
+    font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;
+    background:radial-gradient(ellipse at 50% 0%, #5a3410, #2a1606 70%);
+    min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:16px; padding:16px;
+  }
+  .cert-wrap{
+    position:relative; width:min(96vw, 1180px); aspect-ratio:1344 / 768;
+    container-type:size;                 /* enable cqw units for responsive text */
+    background:#f7f1df url('assets/images/certificate%20template.png') center/100% 100% no-repeat;
+    border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,0.55);
+    image-rendering:auto;
+  }
+  /* dynamic values overlaid on the printed blank lines */
+  .f{ position:absolute; left:33%; width:60%; white-space:nowrap; overflow:hidden;
+      text-overflow:ellipsis; transform:translateY(-86%); color:#4a2f12; font-weight:700;
+      line-height:1; }
+  #cName  { top:57.0%; font-size:6.0cqw; font-weight:800; color:#7a3a06;
+            letter-spacing:0.3px; }
+  #cRank  { top:64.4%; font-size:4.2cqw; }
+  #cScore { top:71.8%; font-size:4.2cqw; }
+  /* gold seal + date, lower-right of the cream area */
+  #cSeal{
+    position:absolute; right:7.5%; top:60%; width:15cqw; height:15cqw; border-radius:50%;
+    background:radial-gradient(circle at 38% 34%, #ffe79a, #f2b441 55%, #c8861f 100%);
+    box-shadow:0 3px 8px rgba(0,0,0,0.28), inset 0 2px 4px rgba(255,255,255,0.6);
+    border:0.5cqw solid #fff3cf; display:flex; align-items:center; justify-content:center;
+    text-align:center; color:#6b3300; font-weight:800; font-size:2.5cqw; line-height:1.05;
+    transform:rotate(-8deg);
+  }
+  #cDate{ position:absolute; left:33%; top:80%; font-size:2.5cqw; color:#7a5a30; font-weight:700; }
+  /* toolbar (screen only) */
+  .bar{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+  .bar button{ font-family:inherit; font-weight:800; font-size:clamp(14px,4vw,17px);
+    border:none; border-radius:14px; padding:13px 26px; cursor:pointer;
+    box-shadow:0 6px 16px rgba(0,0,0,0.35); }
+  .print{ background:linear-gradient(#ffe07a,#ffc23d); color:#7a3a06; }
+  .back { background:linear-gradient(#d8b878,#c19a52); color:#3a2410; }
+  .hint{ color:#ffe7b8; font-size:13px; opacity:0.85; text-align:center; max-width:90vw; }
+  @media print{
+    body{ background:#fff; padding:0; display:block; }
+    .bar, .hint{ display:none !important; }
+    .cert-wrap{ width:100%; max-width:none; aspect-ratio:1344/768; box-shadow:none; border-radius:0; }
+    @page{ size:landscape; margin:0; }
+  }
+</style>
+</head>
+<body>
+  <div class="cert-wrap" id="cert" role="img" aria-label="Certificate of Completion for Moses' Deadly Escape">
+    <div class="f" id="cName">Brave Explorer</div>
+    <div class="f" id="cRank">Faithful Journey</div>
+    <div class="f" id="cScore">Completed</div>
+    <div id="cSeal">BIBLE<br>EXPLORER<br>KIDS</div>
+    <div id="cDate"></div>
+  </div>
+  <div class="bar">
+    <button class="print" onclick="window.print()">&#128424;&nbsp; Print / Save as PDF</button>
+    <button class="back" id="backBtn">&larr;&nbsp; Back to Game</button>
+  </div>
+  <div class="hint">Tip: choose <b>Landscape</b> and &ldquo;Save as PDF&rdquo; to keep a copy, or print it to hang on the wall.</div>
+<script>
+  function g(k, d){ try { return (localStorage.getItem(k) || '').trim() || d; } catch(e){ return d; } }
+  document.getElementById('cName').textContent  = g('bek.kidName', 'Brave Explorer');
+  document.getElementById('cRank').textContent  = g('bek.certRank', 'Faithful Journey');
+  document.getElementById('cScore').textContent = g('bek.certScore', 'Completed');
+  try {
+    var d = new Date();
+    document.getElementById('cDate').textContent =
+      d.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+  } catch(e){}
+  document.getElementById('backBtn').addEventListener('click', function(){
+    try { window.close(); } catch(e){}
+    if (history.length > 1) history.back();
+  });
+</script>
+</body>
+</html>
