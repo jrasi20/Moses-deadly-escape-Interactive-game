@@ -6914,20 +6914,16 @@ function _drawFlockWolf(cx, cy, dir){
     _drawFoeIce(ctx, sx, sy - sz*0.1, sz*0.5);
     return;
   }
+  // #10 Jane 2026-06-06: render ONLY the real grey-wolf PNG. The old procedural
+  // dark-shimmer blob (rgba(22,12,32)) was the "brown hand-drawn wolf" Jane kept
+  // circling when wolf*.png hadn't loaded yet. The PNGs are now small + precached,
+  // so on the rare frame before they land we draw NOTHING (a soft contact shadow
+  // only) instead of the blob — the real wolf pops in a beat later.
   ctx.save();
-  const shimmer = 0.6 + 0.10 * Math.sin(performance.now() / 300);
-  if (dir > 0){ ctx.translate(sx, sy); ctx.scale(-1, 1); ctx.translate(-sx, -sy); }
-  ctx.fillStyle = `rgba(22,12,32,${shimmer})`;
-  ctx.beginPath(); ctx.ellipse(sx, sy, 20, 8, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(sx + 20, sy - 4, 8, 6, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(sx + 17, sy - 9); ctx.lineTo(sx + 20, sy - 15); ctx.lineTo(sx + 23, sy - 9); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(sx - 20, sy - 2); ctx.bezierCurveTo(sx - 28, sy - 6, sx - 30, sy - 2, sx - 26, sy + 4); ctx.lineTo(sx - 20, sy + 2); ctx.closePath(); ctx.fill();
-  ctx.fillRect(sx - 12, sy + 6, 2, 8); ctx.fillRect(sx - 4, sy + 7, 2, 8); ctx.fillRect(sx + 6, sy + 7, 2, 8); ctx.fillRect(sx + 13, sy + 6, 2, 8);
-  ctx.fillStyle = `rgba(255,200,80,${shimmer})`;
-  ctx.beginPath(); ctx.arc(sx + 24, sy - 5, 1.4, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.20)';
+  ctx.beginPath(); ctx.ellipse(sx, sy + 10, 22, 7, 0, 0, Math.PI*2); ctx.fill();
   ctx.restore();
-  // 2026-05-26: ice-encase the flock-wolf (fallback silhouette) while frozen
-  _drawFoeIce(ctx, sx, sy, 28);
+  _drawFoeIce(ctx, sx, sy, 28);   // self-gates on _guardFreezeUntil
 }
 function drawScene3RescueFlock(){
   if (game.scene !== 2 || !scene3Flock.spawned || typeof camera === 'undefined') return;
@@ -7346,7 +7342,9 @@ function _stopWolfRaidAudio(){
   _wolfRaidAudioOn = false;
   try { if (audio.bgmCorridor){ audio.bgmCorridor.pause(); audio.bgmCorridor.currentTime = 0; } } catch(e){}
   // restore the calm overworld bed (honors master-mute via the .muted flag on the element)
-  try { if (audio.bgm){ if (_wolfRaidPrevBgmVol != null) audio.bgm.volume = _wolfRaidPrevBgmVol; audio.bgm.play().catch(()=>{}); } } catch(e){}
+  // #2 Jane 2026-06-06: route via setMusic so a raid ending during the checkpoint
+  // victory fanfare DEFERS the bgm instead of clashing with it.
+  try { if (audio.bgm){ if (_wolfRaidPrevBgmVol != null) audio.bgm.volume = _wolfRaidPrevBgmVol; setMusic('bgm'); } } catch(e){}
   _wolfRaidPrevBgmVol = null;
 }
 function _syncWolfRaidAudio(){
@@ -8401,6 +8399,7 @@ const CHALLENGE_BANK = {
     // so they're easy to audit.
     { id:'s3e1', type:'trivia', q:'How many daughters did the priest of Midian have?',
       options:['Three','Five','Seven','Twelve'], correct:2,
+      clue:'Count them on your hands — Jethro, the priest of Midian, had seven daughters who came to water the flock. (Exodus 2:16)',
       verse:'"Now a priest of Midian had seven daughters..." (Exodus 2:16 NIV)' },
     { id:'s3e2', type:'trivia', q:'Why did Jethro\'s daughters come to the well?',
       options:['To wash clothes','To draw water for their flock','To meet travelers','To bathe'], correct:1,
@@ -8408,12 +8407,15 @@ const CHALLENGE_BANK = {
       verse:'"They came to draw water and fill the troughs to water their father\'s flock." (Exodus 2:16 NIV)' },
     { id:'s3e3', type:'tf', q:'True or False: Moses chased away the rude shepherds and watered the flock for the daughters.',
       options:['True','False'], correct:0,
+      clue:'Moses stood up for the sisters: he drove the rude shepherds away AND drew water for their flock. (Exodus 2:17)',
       verse:'"Moses got up and came to their rescue and watered their flock." (Exodus 2:17 NIV)' },
     { id:'s3e4', type:'trivia', q:'What name is the priest of Midian also called in the Bible?',
       options:['Reuel','Balaam','Melchizedek','Lot'], correct:0,
+      clue:'Jethro has a second name in the Bible. It starts with R — Reuel. (Exodus 2:18)',
       verse:'"When the girls returned to Reuel their father..." (Exodus 2:18 NIV). Reuel and Jethro are the same man.' },
     { id:'s3e5', type:'fill', q:'Moses named his firstborn son Gershom, saying, "I have become a _______ in a foreign land."',
       options:['Stranger','Priest','Prince','Shepherd'], correct:0,
+      clue:'Midian was not Moses\' home — he felt far away. The name Gershom sounds like "a stranger there" in Hebrew. (Exodus 2:22)',
       verse:'"...for he said, I have become a foreigner in a foreign land." (Exodus 2:22 NIV). The name Gershom sounds like "a stranger there" in Hebrew.' },
     { id:'s3e6', type:'trivia', q:'Who became Moses\' wife in Midian?',
       options:['Miriam','Zipporah','Rebekah','Leah'], correct:1,
@@ -8421,9 +8423,11 @@ const CHALLENGE_BANK = {
       verse:'"[Jethro] gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
     { id:'s3e7', type:'tf', q:'True or False: Jethro invited Moses into his tent to eat bread with the family.',
       options:['True','False'], correct:0,
+      clue:'Jethro told his daughters to bring Moses home to share a meal — bread was the warm sign of welcome. (Exodus 2:20)',
       verse:'"Ask him to have something to eat." (Exodus 2:20 NIV). Sharing bread was the ancient sign of welcome.' },
     { id:'s3e8', type:'trivia', q:'What work did Moses do for Jethro for many years in Midian?',
       options:['Built wells','Tended sheep','Wrote scrolls','Made bricks'], correct:1,
+      clue:'The prince of Egypt became a shepherd. For forty years Moses tended Jethro\'s flock of sheep. (Exodus 3:1)',
       verse:'"Moses was tending the flock of Jethro his father-in-law..." (Exodus 3:1 NIV)' },
     { id:'s3e9', type:'fill', q:'Moses drew water and filled the _______ for the flock of sheep.',
       options:['Skins','Troughs','Bowls','Cups'], correct:1,
@@ -8431,12 +8435,15 @@ const CHALLENGE_BANK = {
       verse:'"They came to draw water and fill the troughs..." (Exodus 2:16 NIV)' },
     { id:'s3e10', type:'tf', q:'True or False: The daughters of Midian came home earlier than usual on the day Moses helped them.',
       options:['True','False'], correct:0,
+      clue:'Because Moses watered the flock so fast, the sisters finished early — and their father asked why they were home so soon. (Exodus 2:18)',
       verse:'"Why have you returned so early today?" (Exodus 2:18 NIV). Jethro noticed they were home earlier than usual.' },
     { id:'s3e11', type:'trivia', q:'What did the daughters call Moses when they told their father about him?',
       options:['A Hebrew stranger','An Egyptian man','A soldier','A prince'], correct:1,
+      clue:'They did not know his name yet. Because of his clothes, the sisters told their father an Egyptian had rescued them. (Exodus 2:19)',
       verse:'"An Egyptian rescued us from the shepherds." (Exodus 2:19 NIV). They thought he was Egyptian because of his clothes.' },
     { id:'s3e12', type:'tf', q:'True or False: Moses fled from Egypt because Pharaoh wanted to kill him.',
       options:['True','False'], correct:0,
+      clue:'When Pharaoh found out Moses had defended a Hebrew, he tried to kill him — so Moses ran away to Midian. (Exodus 2:15)',
       verse:'"When Pharaoh heard of this, he tried to kill Moses, but Moses fled..." (Exodus 2:15 NIV)' },
     { id:'s3e13', type:'unscramble',
       q:'Unscramble the name of Moses\' father-in-law in Midian:',
@@ -12967,7 +12974,7 @@ function _closePulleyGame() {
   modal.style.display = 'none'; modal.classList.remove('active');
   // stop the well-game music bed and bring the scene BGM back
   try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
-  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
+  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; setMusic('bgm'); } } catch(e){} /* #2 route via setMusic so bgm waits out the victory fanfare */
   const gate = _pulley.gate; _pulley.gate = null;
   if (!gate) return;
   gate.solved = true; game.state = 'playing';
@@ -13057,7 +13064,7 @@ function _pulleyQuit() {
   const ov = document.getElementById('pulleyPausedOverlay'); if (ov) ov.style.display = 'none';
   const modal = document.getElementById('wellPulleyModal'); modal.style.display = 'none'; modal.classList.remove('active');
   try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
-  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
+  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; setMusic('bgm'); } } catch(e){} /* #2 route via setMusic so bgm waits out the victory fanfare */
   _pulley.gate = null; try { game.state = 'playing'; } catch(e){}
 }
 // ---- drawing helpers ----
@@ -14459,7 +14466,7 @@ function _rescueLoseQuit() {
   try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
   _rescue.gate = null;
   if (restart) { try { game.state = 'playing'; } catch(e){} try { restartScene(); } catch(e){} return; }
-  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
+  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; setMusic('bgm'); } } catch(e){} /* #2 route via setMusic so bgm waits out the victory fanfare */
   try { game.state = 'playing'; } catch(e){}
 }
 function _rescueRetry() {
@@ -14478,7 +14485,7 @@ function _rescueQuit() {
   const modal = document.getElementById('rescueModal'); modal.style.display = 'none'; modal.classList.remove('active');
   try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
   try { if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; } } catch(e){}
-  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
+  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; setMusic('bgm'); } } catch(e){} /* #2 route via setMusic so bgm waits out the victory fanfare */
   _rescue.gate = null; try { game.state = 'playing'; } catch(e){}
 }
 function _rescueWinContinue() { const ov = document.getElementById('rescueWinOverlay'); if (ov) ov.style.display = 'none'; try { if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; } } catch(e){} _closeRescue(); }
@@ -14486,7 +14493,7 @@ function _closeRescue() {
   cancelAnimationFrame(_rescue.rafId); _rescue.started = false;
   const modal = document.getElementById('rescueModal'); modal.style.display = 'none'; modal.classList.remove('active');
   try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
-  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; audio.bgm.play().catch(()=>{}); } } catch(e){}
+  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; setMusic('bgm'); } } catch(e){} /* #2 route via setMusic so bgm waits out the victory fanfare */
   const gate = _rescue.gate; _rescue.gate = null;
   if (!gate) return;
   gate.solved = true; game.state = 'playing';
@@ -19433,7 +19440,8 @@ function updateRudeShepherds(dt) {
       s.nextTauntAt = now + 6000;
       // #5 Jane 2026-06-06: a short alert STING when a shepherd gets close — ONE-SHOT,
       // throttled by the 6s taunt cooldown, so it never loops in parallel with the bgm.
-      try { play('dangerAlert') || play('alerted'); } catch(e){}
+      // #3 Jane 2026-06-06: play alert.mp3 (bossAlert), NOT danger alert.mp3 (dangerAlert).
+      try { play('bossAlert') || play('alerted'); } catch(e){}
     }
     if (s.taunting && now > s.tauntShowUntil) s.taunting = false;
     // #22 Jane 2026-06-04: RELAX the contact rule. The old code yanked Moses back
