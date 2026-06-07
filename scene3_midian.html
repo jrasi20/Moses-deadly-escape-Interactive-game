@@ -4527,7 +4527,7 @@ if (audio.reachedExit)   audio.reachedExit.volume   = 0.85;
 if (audio.allComplete)   audio.allComplete.volume   = 0.85;
 if (audio.levelUp)       audio.levelUp.volume       = 0.85;
 if (audio.successTrumpet) audio.successTrumpet.volume = 0.85;
-if (audio.egyptianCover) audio.egyptianCover.volume = 0.5;   // #19 lively narration bed (under VO)
+if (audio.egyptianCover) audio.egyptianCover.volume = 0.25;  // #Jane 2026-06-07: halved (was 0.5) — the closing narration wasn't audible over it
 if (audio.bgmCorridor)   audio.bgmCorridor.volume   = 0.55;  // #15 wolf-attack danger bed
 if (audio.bgmExit)       audio.bgmExit.volume       = 0.7;   // #14 victory heat-up sting
 if (audio.confetti)      audio.confetti.volume      = 0.8;   // #16 win confetti sparkle
@@ -4736,7 +4736,10 @@ const MODAL_AUDIO_DENY = new Set([
 // loop to near-silent and SUPPRESS sfx for the line's duration, then restore. Voice
 // lines (names starting 'vo') and essential UI clicks still pass through play().
 let _voiceDucking = false, _voiceDuckSaved = null, _voiceDuckTimer = null;
-const _VOICE_DUCK_TRACKS = ['bgm','bgmCorridor','wellMusic','puzzleBg','coverMusic','egyptianCover','narration'];
+const _VOICE_DUCK_TRACKS = ['bgm','bgmCorridor','wellMusic','puzzleBg','coverMusic','egyptianCover','narration',
+  // looping alerts/beds that must also dip under a voice line (Jane: "bg music stops
+  // but alert.mp3 keeps playing through" during a narration).
+  'wolfAlert','alerted','wolfEpic','challengeMusic','bgmExit'];
 function _beginVoiceDuck(voEl){
   try {
     if (!_voiceDucking){
@@ -7468,6 +7471,18 @@ function _syncWolfRaidAudio(){
   // #138: keep the epic/alert bed running during the PEN raid too, not just the first wave.
   const raidActive = !!((scene3Herd.wolvesIncoming && !scene3Herd.wolvesCleared) || _herdPenRaidActive());
   if (raidActive) _startWolfRaidAudio(); else _stopWolfRaidAudio();
+}
+// #Jane 2026-06-07: HARD-kill the wolf-raid bed (corridor + alert loop) WITHOUT
+// restoring the overworld bgm. _syncWolfRaidAudio only runs inside updateScene3Herd
+// (game.state==='playing'), so when a mini-game / win / modal opened mid-raid the
+// loop "kept going all over." Call this whenever we leave play (mini-games, win) so
+// the raid music can never bleed into another screen. The mini-game / return path
+// owns its own music, so we deliberately do NOT setMusic('bgm') here.
+function _killWolfRaidBed(){
+  _wolfRaidAudioOn = false;
+  try { if (audio.bgmCorridor){ audio.bgmCorridor.pause(); audio.bgmCorridor.currentTime = 0; } } catch(e){}
+  try { if (audio.wolfAlert && !audio.wolfAlert.paused){ audio.wolfAlert.pause(); audio.wolfAlert.currentTime = 0; } } catch(e){}
+  try { if (audio.wolfEpic  && !audio.wolfEpic.paused){  audio.wolfEpic.pause();  audio.wolfEpic.currentTime  = 0; } } catch(e){}
 }
 function initScene3Herd(){
   scene3Herd.sheep=[];
@@ -10541,7 +10556,14 @@ function attemptMove(dir) {
       onReachExit();
     } else {
       const _top = (typeof window._topmostExit !== 'undefined') ? window._topmostExit : null;
-      const _isRealExit = _top && _top.tx === nx && _top.ty === ny;
+      // #Jane 2026-06-07: "going into the tent isn't working — I have to maneuver
+      // around to actually be in." The win fired ONLY on the single topmost exit tile,
+      // but Jethro's tent DOOR spans two exit tiles (e.g. 34,12 + 34,13), so reaching
+      // the tent often lands Moses on the 'other' exit tile and nothing happens.
+      // Accept ANY east-edge EXIT tile. River stepping-stones (tile-7 mid-map) are
+      // excluded by the east-edge column gate, so they still pass through silently.
+      const _isRealExit = (_top && _top.tx === nx && _top.ty === ny)
+        || (typeof MAP_W === 'number' && nx >= MAP_W - 3);
       if (!_isRealExit) {
         // Silent pass-through for stepping stones.
       } else {
@@ -11765,7 +11787,7 @@ function restartScene() {
 // plays + ducks the music when the step shows \u2014 so the modal reads what the kid hears.
 const TUT_STEPS = [
   { icon:'\u{1F463}', title:'Move Moses', vo:'move', body:'Use the arrows to help Moses explore the meadow.' },
-  { icon:'\u{1F411}', title:'Your Quest', vo:'goal', body:'Save the daughters, water the flock, and reach Jethro\u2019s tent before sunset.' },
+  { icon:'\u{1F411}', title:'Your Quest', vo:'goal', body:'Welcome to Midian, Moses! Save the daughters, water the flock, and reach Jethro\u2019s tent before sunset.' },
   { icon:'\u{1F4DC}', title:'Checkpoints', vo:'checkpoint', body:'A Bible checkpoint! Answer the questions to earn a crystal \u2014 three crystals build the river crossing.' },
 ];
 function showTutorial(step){
@@ -11933,8 +11955,12 @@ function updateHudFlock(){
     // banner shows). The HUD used to keep reading the EARLIER pasture tally
     // (scene3Flock.freed), so it froze on e.g. "2/5" while the kid was actually
     // saving the crossing flock. Switch the chip to the herd count during crossing.
+    // #Jane 2026-06-07: do NOT drop the `done` flag here — when the last sheep penned
+    // (scene3Herd.done=true) the chip used to flip BACK to the pasture tally and show
+    // "2/5" even though all 5 had crossed. Keep showing the herd count once the
+    // crossing has begun, so it correctly reads 5/5 at the end.
     const herdCrossing = (typeof scene3Herd !== 'undefined') && scene3Herd.spawned && scene3Herd.total > 0
-      && (typeof _herdCrossingBuilt === 'function' ? _herdCrossingBuilt() : false) && !scene3Herd.done;
+      && (typeof _herdCrossingBuilt === 'function' ? _herdCrossingBuilt() : false);
     if (!flockActive && !herdCrossing) { chip.style.display = 'none'; return; }
     chip.style.display = '';
     const safeEl = document.getElementById('hudFlockSafe'), totEl = document.getElementById('hudFlockTotal');
@@ -12873,6 +12899,7 @@ function _pulleyPrimeWellMusicOnGesture() {
 }
 
 function openWellPulleyGame(gate) {
+  try { _killWolfRaidBed(); } catch(e){}   // stop any wolf-raid loop bleeding into the mini-game
   try { _s3vo('well'); } catch(e){}   // entering the Water-the-Flock mini-game
   _pulley.gate = gate; _pulley.lastFrame = 0;
   _pulleyReset();
@@ -14408,6 +14435,7 @@ function _rescueReset() {
   { const pb = document.getElementById('rescuePauseBtn'); if (pb) pb.style.display = 'none'; }   // pause hidden until the round starts
 }
 function openRescueGame(gate) {
+  try { _killWolfRaidBed(); } catch(e){}   // stop any wolf-raid loop bleeding into the mini-game
   try { _s3vo('rescue'); } catch(e){}   // entering the Rescue-the-Daughters mini-game
   _rescue.gate = gate; _rescue.last = 0;
   if (window._rescueTestMode) { try { game.stars = Math.max(game.stars || 0, 14); game.treasureCount = Math.max(game.treasureCount || 0, 5); game.treasureBags = Math.max(game.treasureBags || 0, 80); } catch(e){} }
@@ -18119,6 +18147,7 @@ function onOasisStep(tx, ty){
 /* ---------- EXIT ---------- */
 function onReachExit(){
   game.state = 'ended';
+  try { _killWolfRaidBed(); } catch(e){}   // never let the raid loop bleed into the win/closing
   try { audio.bgm.pause(); } catch(e){}
   play('gate');
   try { play('reachedExit'); } catch(e){}
@@ -19703,7 +19732,10 @@ function updateRudeShepherds(dt) {
       // #5 Jane 2026-06-06: a short alert STING when a shepherd gets close — ONE-SHOT,
       // throttled by the 6s taunt cooldown, so it never loops in parallel with the bgm.
       // #3 Jane 2026-06-06: play alert.mp3 (bossAlert), NOT danger alert.mp3 (dangerAlert).
-      try { play('bossAlert') || play('alerted'); } catch(e){}
+      // #Jane 2026-06-07: "don't play alert.mp3 along with the bg music — one at a
+      // time." Skip the shepherd sting while a wolf-raid bed or a narration line is
+      // already sounding, so two alerts never overlap.
+      try { if (!_wolfRaidAudioOn && !_voiceDucking) { play('bossAlert') || play('alerted'); } } catch(e){}
       try { _s3vo('shepherd'); } catch(e){}   // first rude-shepherd taunt — voice cue
     }
     if (s.taunting && now > s.tauntShowUntil) s.taunting = false;
@@ -21072,28 +21104,11 @@ function drawActiveFoxes(){
     ctx.ellipse(sx + size*0.4, sy + size*0.82, size*0.32, size*0.08, 0, 0, Math.PI*2);
     ctx.fill();
     ctx.restore();
+    // #Jane 2026-06-07: render ONLY the real fox PNG — never the procedural brown
+    // (#c07030) silhouette, which read as "hand-drawn brown wolves." (Foxes are also
+    // disabled in Midian via scheduleFox's early-return, so this is belt-and-braces.)
     if (img && img.complete && img.naturalWidth > 0){
       ctx.drawImage(img, sx, sy + bobY, size, size);
-    } else {
-      // fallback: small tawny silhouette with ear tufts + tail
-      ctx.save();
-      ctx.fillStyle = '#c07030';
-      ctx.beginPath(); ctx.ellipse(sx + size*0.5, sy + size*0.55, size*0.28, size*0.18, 0, 0, Math.PI*2); ctx.fill();
-      // head
-      ctx.beginPath(); ctx.arc(sx + size*(f.dir==='right'?0.78:0.22), sy + size*0.45, size*0.14, 0, Math.PI*2); ctx.fill();
-      // ears
-      ctx.beginPath();
-      const headX = sx + size*(f.dir==='right'?0.78:0.22);
-      ctx.moveTo(headX - size*0.08, sy + size*0.33);
-      ctx.lineTo(headX - size*0.04, sy + size*0.18);
-      ctx.lineTo(headX,              sy + size*0.32);
-      ctx.closePath(); ctx.fill();
-      // tail (bushy, opposite direction)
-      const tailX = sx + size*(f.dir==='right'?0.16:0.84);
-      ctx.beginPath(); ctx.ellipse(tailX, sy + size*0.55, size*0.14, size*0.07, 0, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#fff1d8';
-      ctx.beginPath(); ctx.arc(tailX, sy + size*0.55, size*0.05, 0, Math.PI*2); ctx.fill();
-      ctx.restore();
     }
   }
 }
