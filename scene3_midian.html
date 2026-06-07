@@ -7637,6 +7637,10 @@ function updateScene3Herd(dt){
           for (const c of cand){
             const ntx = s.tx + c[0], nty = s.ty + c[1];
             if (_herdWalkable(ntx,nty) && ntx>=1 && ntx<SCENE3_STREAM_COL_MIN &&
+                // #Jane 2026-06-07: keep the stranded flock DOWN BY THE RIVER (rows 9-17,
+                // their spawn band) instead of grazing UP into the marketplace, where
+                // the cream/tan sheep at small scale read as "random brown creatures."
+                nty>=9 && nty<=17 &&
                 !(typeof isScene3StreamTile==='function' && isScene3StreamTile(ntx,nty))) opts.push(c);
           }
           if (opts.length){
