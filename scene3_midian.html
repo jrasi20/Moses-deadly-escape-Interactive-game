@@ -3,7 +3,7 @@
 <head>
 <!--
   copyright 2026 Bible Explorer Kids - All rights reserved.
-  Moses' Escape to Midian - Interactive Bible Adventure
+  Moses' Deadly Escape - Interactive Bible Adventure
   Scene 3: The Well of Midian (Exodus 2:16-22 NIV)
   For personal use only. Distribution prohibited.
 -->
@@ -17,8 +17,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="copyright" content="copyright 2026 Bible Explorer Kids. All rights reserved.">
 <meta name="author" content="Bible Explorer Kids">
-<meta name="description" content="Moses' Escape to Midian - Scene 3: The Well of Midian - Interactive Bible Adventure for Kids">
-<title>Moses' Escape to Midian - Scene 3: The Well of Midian</title>
+<meta name="description" content="Moses' Deadly Escape - Scene 3: The Well of Midian - Interactive Bible Adventure for Kids">
+<title>Moses' Deadly Escape - Scene 3: The Well of Midian</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -2882,7 +2882,7 @@
   </div>
 
   <img src="assets/images/logo%201.png" alt="Bible Explorer Kids" class="logo" onerror="this.style.display='none'">
-  <h1 class="cover-title">Moses' Escape<br>to Midian</h1>
+  <h1 class="cover-title">Moses' Deadly<br>Escape</h1>
   <div class="cover-subtitle">Interactive Bible Adventure</div>
   <!-- 3-second hook tagline -->
   <div class="cover-tagline">Stand up for the sisters. Water the flock. Find your new family.</div>
@@ -4228,7 +4228,7 @@
 <script>
 /* ============================================================================
   copyright 2026 Bible Explorer Kids - All rights reserved.
-  Scene 3: The Well of Midian - Moses' Escape to Midian
+  Scene 3: The Well of Midian - Moses' Deadly Escape
   v1.0 - Zelda-lite top-down tile engine, Midian pastoral retheme of Scene 2 v3.0
   Scripture: Exodus 2:16-22 NIV (Moses helps Jethro's daughters at the well,
   marries Zipporah, names his firstborn Gershom)
@@ -5482,9 +5482,13 @@ function _getTentBodyTiles(){
     }
   }
   if (topX >= 0){
-    // upper body = the 3-wide (door col-1 .. col-3) x 2-tall (door row-1 .. row-2)
+    // #9 Jane 2026-06-06: the tent sprite is ~4 tiles TALL (peak..body, rows
+    // door-1..door-4), but the solid block was only 2 tall — so Moses walked
+    // straight THROUGH the tent's upper third (its shoulders/peak at rows
+    // door-3..door-4 were still walkable). Cover the full body height now.
+    // upper body = 3-wide (door col-1 .. col-3) x 4-tall (door row-1 .. row-4)
     // block above-and-left of the door. Door row + below stay open for approach.
-    for (let dr = 1; dr <= 2; dr++){
+    for (let dr = 1; dr <= 4; dr++){
       for (let dc = 1; dc <= 3; dc++){
         const bx = topX - dc, by = topY - dr;
         if (bx >= 0 && by >= 0) set.add(by * 100 + bx);
