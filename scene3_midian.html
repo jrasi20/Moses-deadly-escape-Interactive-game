@@ -7126,14 +7126,18 @@ function _herdMaybeStartPenRaid(now){
   if (scene3Herd.done) return;                    // not once the whole flock is celebrated in
   // #7 Jane 2026-06-06: don't slam the 2nd wolf attack the instant the flock is
   // safe — let the kid breathe and do the well + rescue mini-games first. The pen
-  // raid only arms once BOTH east-bank mini-games are cleared.
+  // raid only arms once BOTH east-bank mini-games are cleared. FAIL-CLOSED: if we
+  // can't confirm both are solved (e.g. challengeGates empty/not ready), we WAIT —
+  // the old code skipped the whole check when challengeGates was falsy and armed
+  // the raid back-to-back with the crossing (exactly what Jane reported).
+  let _wellDone = false, _rescueDone = false;
   try {
     if (typeof challengeGates !== 'undefined' && challengeGates.length) {
-      const wellDone   = challengeGates.some(g => g && g.zone === 'well'   && g.solved);
-      const rescueDone = challengeGates.some(g => g && g.zone === 'rescue' && g.solved);
-      if (!(wellDone && rescueDone)) return;
+      _wellDone   = challengeGates.some(g => g && g.zone === 'well'   && g.solved);
+      _rescueDone = challengeGates.some(g => g && g.zone === 'rescue' && g.solved);
     }
   } catch(e){}
+  if (!(_wellDone && _rescueDone)) return;
   const arrived = scene3Herd.sheep.filter(s=>s.state==='arrived').length;
   if (arrived < 2) return;                         // wait until a couple sheep are penned
   if (!scene3Herd.penRaidNextAt){ scene3Herd.penRaidNextAt = now + 2600; return; }  // brief beat first
@@ -7411,6 +7415,7 @@ function updateScene3Herd(dt){
     _herdSpawnWolves();
     if (!scene3Herd.builtToastShown){
       scene3Herd.builtToastShown=true;
+      try{ updateHudFlock(); }catch(e){}   // #8: switch the HUD sheep chip to the crossing count (X/5)
       try{ toast('🐺 Wolves are attacking the lost flock! Run straight at them to shoo them away!'); }catch(e){}
       try{ if(audio.fox){ audio.fox.currentTime=0; audio.fox.volume=0.55; audio.fox.play().catch(()=>{}); } }catch(e){}
       try{ _cameraPunch(1.12, 700, 7.5*TILE - camera.px, 12*TILE - camera.py); }catch(e){}
@@ -7523,6 +7528,7 @@ function updateScene3Herd(dt){
       s.hop = (typeof isScene3StreamTile==='function' && isScene3StreamTile(s.tx,s.ty)) ? Math.abs(Math.sin(now/110 + s.id))*3 : 0;
       if (s.tx>SCENE3_STREAM_COL_MAX && _herdInPen(s.tx,s.ty)){
         s.state='arrived'; s.arrivedAt=now; scene3Herd.across++;
+        try{ updateHudFlock(); }catch(e){}   // #8: keep the HUD sheep chip in sync with the crossing
         const spot=SCENE3_HERD_REST[(scene3Herd.across-1)%SCENE3_HERD_REST.length];
         s.penTx=spot.tx; s.penTy=spot.ty;
         try{ if(audio.sheepBleat){audio.sheepBleat.currentTime=0;audio.sheepBleat.volume=0.7;audio.sheepBleat.play().catch(()=>{});} }catch(e){}
@@ -10047,6 +10053,36 @@ function handleDirInput(dir) {
   lastMoveAt = now;
   attemptMove(dir);
 }
+// #GRIDLOCK Jane 2026-06-06: a kid must NEVER be boxed in with no legal move
+// (she hit a tile sealed by clustered market-stall décor + an NPC). These helpers
+// detect a full box and let Moses squeeze OUT past décor / an entity as a last
+// resort — but never through a real map wall, the river, or Jethro's tent.
+function _tileHasBlockingEntity(x, y){
+  try {
+    if (typeof pursuitScouts !== 'undefined' && Array.isArray(pursuitScouts))
+      for (const s of pursuitScouts) if (s && s.active!==false && !s.shovedOff && !s.caught && s.tx===x && s.ty===y) return true;
+    if (typeof servantNPC !== 'undefined' && servantNPC.active && servantNPC.tx===x && servantNPC.ty===y) return true;
+    if (typeof caravanTrader !== 'undefined' && caravanTrader.active && caravanTrader.tx===x && caravanTrader.ty===y) return true;
+    if (typeof friendlyCamel !== 'undefined' && friendlyCamel.active && friendlyCamel.tx===x && friendlyCamel.ty===y) return true;
+    if (typeof guards !== 'undefined' && Array.isArray(guards)) for (const g of guards) if (g.tx===x && g.ty===y) return true;
+    if (typeof rollingBoulders !== 'undefined' && Array.isArray(rollingBoulders)) for (const b of rollingBoulders) if (b && b.active!==false && b.tx===x && b.ty===y) return true;
+    if (typeof interactables !== 'undefined') for (const o of interactables) if (o && !o.used && !o.collected && o.tx===x && o.ty===y) return true;
+  } catch(e){}
+  return false;
+}
+function _isFreeStand(x, y){ return isWalkable(x, y) && !_tileHasBlockingEntity(x, y); }
+function _playerBoxed(){
+  return !_isFreeStand(player.tx-1, player.ty) && !_isFreeStand(player.tx+1, player.ty)
+      && !_isFreeStand(player.tx, player.ty-1) && !_isFreeStand(player.tx, player.ty+1);
+}
+function _escapeStepAllowed(x, y){
+  if (x<0 || y<0 || x>=MAP_W || y>=MAP_H) return false;
+  const bt = tileAt(x, y);
+  if (!(bt===0 || bt===2 || bt===5 || bt===6 || bt===7 || bt===8 || bt===9)) return false; // real wall
+  try { if (typeof isScene3StreamBlocker === 'function' && isScene3StreamBlocker(x, y, true)) return false; } catch(e){} // river
+  if (bt !== 7 && _getTentBodyTiles().has(y*100 + x)) return false; // never squeeze INTO the tent
+  return true;
+}
 function attemptMove(dir) {
   player.dir = dir;
   // v2.3.4: track previous tile so mirage knockback can safely un-step
@@ -10055,6 +10091,20 @@ function attemptMove(dir) {
   let nx = player.tx, ny = player.ty;
   if (dir === 'up') ny--; else if (dir === 'down') ny++;
   else if (dir === 'left') nx--; else if (dir === 'right') nx++;
+  // #GRIDLOCK escape valve: if Moses is fully boxed in (every neighbour blocked
+  // by décor/an NPC) and the requested tile isn't a real barrier, let him push
+  // OUT so a kid can never be permanently stuck. Bypasses the décor/NPC blocks
+  // below for this one escape step only.
+  if (game.scene === 2 && _playerBoxed() && _escapeStepAllowed(nx, ny)) {
+    player.tx = nx; player.ty = ny;
+    player.px = nx * TILE; player.py = ny * TILE;
+    if (!timeOfDay.started) timeOfDay.started = true;
+    player.lastMoveAt = performance.now();
+    try { emitSandPuff(player.px + TILE/2, player.py + TILE); } catch(e){}
+    updateCamera();
+    play('pop');
+    return;
+  }
   // #6 Jane 2026-06-06: Moses must never stand ON a rude shepherd (the screenshot
   // showed him stacked on the green shepherd). Block the step onto any active
   // shepherd's tile — they only nag/block, so this is a soft bounce, no heart lost.
@@ -10468,9 +10518,13 @@ canvas.addEventListener('pointerdown', e => {
       // pen raid: tap a penned/following sheep being menaced by a pen wolf.
       let eligible = false;
       if (firstRaid && s.state === 'graze') eligible = true;
-      else if (penRaid && (s.state === 'arrived' || s.state === 'follow')){
-        eligible = scene3Herd.penWolves.some(w => w.state!=='flee' && w.state!=='gone' && Math.hypot(w.px - s.px, w.py - s.py) < TILE*2.2);
-      }
+      // #6 Jane 2026-06-06: during the PEN raid, tapping ANY penned/following sheep
+      // must open the SHOO modal. The old TILE*2.2 proximity gate (a pen wolf had to
+      // be right next to that exact sheep) made the tap silently fail when the wolf
+      // was mid-charge or menacing another sheep — "shoo doesn't work for the 2nd
+      // attack." _herdPenRaidActive() already guarantees a live pen wolf, and the
+      // modal targets the nearest one, so any penned sheep is a valid shoo handle.
+      else if (penRaid && (s.state === 'arrived' || s.state === 'follow')) eligible = true;
       if (!eligible) continue;
       const d = Math.hypot((s.px + TILE/2) - worldX, (s.py + TILE/2) - worldY);
       if (d < TILE*1.1 && d < bestD){ bestD=d; hit=s; }
@@ -11722,14 +11776,24 @@ function updateHudStars(){ $('hudStars').textContent = game.stars; try { updateH
 function updateHudFlock(){
   try {
     const chip = document.getElementById('hudFlockChip'); if (!chip) return;
-    const active = (typeof scene3Flock !== 'undefined') && scene3Flock.spawned && scene3Flock.total > 0;
-    if (!active) { chip.style.display = 'none'; return; }
+    const flockActive = (typeof scene3Flock !== 'undefined') && scene3Flock.spawned && scene3Flock.total > 0;
+    // #8 Jane 2026-06-06: once the river crossing begins, the LIVE stake is the
+    // herd reaching the pen (scene3Herd.across/total — the same number the on-canvas
+    // banner shows). The HUD used to keep reading the EARLIER pasture tally
+    // (scene3Flock.freed), so it froze on e.g. "2/5" while the kid was actually
+    // saving the crossing flock. Switch the chip to the herd count during crossing.
+    const herdCrossing = (typeof scene3Herd !== 'undefined') && scene3Herd.spawned && scene3Herd.total > 0
+      && (typeof _herdCrossingBuilt === 'function' ? _herdCrossingBuilt() : false) && !scene3Herd.done;
+    if (!flockActive && !herdCrossing) { chip.style.display = 'none'; return; }
     chip.style.display = '';
     const safeEl = document.getElementById('hudFlockSafe'), totEl = document.getElementById('hudFlockTotal');
-    if (safeEl) safeEl.textContent = scene3Flock.freed;
-    if (totEl)  totEl.textContent  = scene3Flock.total;
-    if (scene3Flock.lost > (chip._lastLost || 0)) {   // brief red flash on a loss
-      chip._lastLost = scene3Flock.lost;
+    const safe = herdCrossing ? scene3Herd.across : scene3Flock.freed;
+    const tot  = herdCrossing ? scene3Herd.total  : scene3Flock.total;
+    const lost = herdCrossing ? (scene3Herd.lost || 0) : scene3Flock.lost;
+    if (safeEl) safeEl.textContent = safe;
+    if (totEl)  totEl.textContent  = tot;
+    if (lost > (chip._lastLost || 0)) {   // brief red flash on a loss
+      chip._lastLost = lost;
       chip.style.transition = 'none'; chip.style.background = 'linear-gradient(145deg,#7a2a2a,#b54a4a)';
       setTimeout(() => { chip.style.transition = 'background 0.8s'; chip.style.background = 'linear-gradient(145deg,#3a5a2a,#5b8a3a)'; }, 60);
     }
@@ -21451,43 +21515,39 @@ function _renderInner(){
     ctx.fillStyle = 'rgba(220,180,100,0.12)';
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
   }
-  // Scene 3 backdrop — Jane's scene3_background.png (rolling Midian hills).
-  // Painted upper-half only (sky/horizon zone) and viewport-fixed so the
-  // pastoral horizon stays put while the tile grid scrolls underneath. Soft
-  // alpha so the dynamic sky gradient + parallax ridges still read through.
-  // A faint green-gold wash on top keeps it cohesive with the grass tile
-  // palette. Drifts very slowly horizontally for a "world breathing" feel.
-  if (game.scene === 2 && IMG.sceneBg && IMG.sceneBg.complete && IMG.sceneBg.naturalWidth) {
+  // Scene 3 horizon — #11 Jane 2026-06-06: the old painted backdrop
+  // (scene3_background.png) is a DESERT OASIS — sunset dunes, palm trees and a
+  // stone well. Drawn as the horizon band it read as "the oasis is still there"
+  // on the GREEN Midian pasture (Jane reported it repeatedly). Replaced with a
+  // procedural GREEN rolling-hills + soft-sky horizon so the whole world reads as
+  // one green meadow — no desert, no palms, no well baked into the backdrop.
+  if (game.scene === 2) {
     ctx.save();
-    // Constrain to upper 65% so the sky/hills painting acts as horizon, not
-    // as the floor (we have grass tiles for that).
-    const bgBandH = Math.round(CANVAS_H * 0.65);
-    ctx.beginPath();
-    ctx.rect(0, 0, CANVAS_W, bgBandH);
-    ctx.clip();
-    ctx.globalAlpha = 0.62;
-    const driftX = -((performance.now() / 240) % CANVAS_W);
-    const natW = IMG.sceneBg.naturalWidth;
-    const natH = IMG.sceneBg.naturalHeight;
-    const ar = natW / natH;
-    const drawH = bgBandH;
-    const drawW = Math.round(drawH * ar);
-    let x = driftX;
-    while (x < CANVAS_W) {
-      ctx.drawImage(IMG.sceneBg, x, 0, drawW, drawH);
-      x += drawW;
-    }
-    // Soft fade at the bottom edge so the backdrop dissolves into the grass.
-    const bgFade = ctx.createLinearGradient(0, bgBandH * 0.7, 0, bgBandH);
-    bgFade.addColorStop(0, 'rgba(160,180,120,0)');
-    bgFade.addColorStop(1, 'rgba(160,180,120,0.55)');
-    ctx.globalAlpha = 1.0;
-    ctx.fillStyle = bgFade;
-    ctx.fillRect(0, 0, CANVAS_W, bgBandH);
-    // Pastoral green-gold wash for color cohesion with the tile palette.
-    ctx.globalAlpha = 0.10;
-    ctx.fillStyle = '#a8c068';
-    ctx.fillRect(0, 0, CANVAS_W, bgBandH);
+    const bandH = Math.round(CANVAS_H * 0.60);
+    ctx.beginPath(); ctx.rect(0, 0, CANVAS_W, bandH); ctx.clip();
+    // soft hazy-green sky-to-meadow wash (lets the time-of-day sky read through)
+    const sky = ctx.createLinearGradient(0, 0, 0, bandH);
+    sky.addColorStop(0.00, 'rgba(176,206,150,0.00)');
+    sky.addColorStop(0.65, 'rgba(150,188,120,0.22)');
+    sky.addColorStop(1.00, 'rgba(120,162,86,0.40)');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, CANVAS_W, bandH);
+    // two layers of distant rolling green hills, very slow parallax drift
+    const drift = (performance.now() / 16000);
+    const hills = (baseY, amp, period, phase, col) => {
+      ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, bandH);
+      for (let x = 0; x <= CANVAS_W; x += 10) {
+        const y = baseY - (Math.sin(x / period + phase + drift) * amp + amp);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(CANVAS_W, bandH); ctx.closePath(); ctx.fill();
+    };
+    hills(bandH * 0.86, 12, 210, 0.0, 'rgba(132,166,96,0.45)');   // far hills
+    hills(bandH * 1.04, 18, 320, 1.7, 'rgba(110,150,80,0.55)');   // near hills
+    // dissolve the hill bases into the grass floor below
+    const fade = ctx.createLinearGradient(0, bandH * 0.78, 0, bandH);
+    fade.addColorStop(0, 'rgba(120,158,86,0)');
+    fade.addColorStop(1, 'rgba(120,158,86,0.55)');
+    ctx.fillStyle = fade; ctx.fillRect(0, 0, CANVAS_W, bandH);
     ctx.restore();
   }
 
