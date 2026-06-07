@@ -4731,6 +4731,31 @@ const MODAL_AUDIO_DENY = new Set([
   // pause, cinematic, or mini-game (routed through play(), so this gates them too).
   'ambChimes','ambCamel','ambWaterA','ambWaterB','ambSheep'
 ]);
+// #Jane 2026-06-07: AUDIO DUCKING for narration. While a voice line plays, the bg
+// music + SFX were OVERPOWERING it ("i didn't hear any voiceover"). Duck every music
+// loop to near-silent and SUPPRESS sfx for the line's duration, then restore. Voice
+// lines (names starting 'vo') and essential UI clicks still pass through play().
+let _voiceDucking = false, _voiceDuckSaved = null, _voiceDuckTimer = null;
+const _VOICE_DUCK_TRACKS = ['bgm','bgmCorridor','wellMusic','puzzleBg','coverMusic','egyptianCover','narration'];
+function _beginVoiceDuck(voEl){
+  try {
+    if (!_voiceDucking){
+      _voiceDuckSaved = {};
+      for (const k of _VOICE_DUCK_TRACKS){ const a = audio[k]; if (a){ _voiceDuckSaved[k] = a.volume; try { a.volume = Math.min(a.volume, 0.05); } catch(e){} } }
+      _voiceDucking = true;
+    }
+    if (_voiceDuckTimer){ clearTimeout(_voiceDuckTimer); _voiceDuckTimer = null; }
+    const restore = () => {
+      if (!_voiceDucking) return;
+      _voiceDucking = false;
+      if (_voiceDuckSaved){ for (const k in _voiceDuckSaved){ const a = audio[k]; if (a){ try { a.volume = _voiceDuckSaved[k]; } catch(e){} } } _voiceDuckSaved = null; }
+      if (_voiceDuckTimer){ clearTimeout(_voiceDuckTimer); _voiceDuckTimer = null; }
+    };
+    if (voEl){ try { voEl.addEventListener('ended', restore, { once:true }); } catch(e){} }
+    const ms = (voEl && voEl.duration && isFinite(voEl.duration) && voEl.duration > 0) ? (voEl.duration*1000 + 500) : 11000;
+    _voiceDuckTimer = setTimeout(restore, ms);
+  } catch(e){}
+}
 function _anyBlockingModalOpen(){
   try {
     const ids = ['challengeModal','dialogModal','dangerModal','pauseModal',
@@ -4750,6 +4775,10 @@ function play(name) {
   // the chain played at once — e.g. 4 layered sounds on a loss).
   const a = audio[name]; if (!a) return false;
   if (typeof _soundOn !== 'undefined' && !_soundOn) return false;   // master mute (A1)
+  // #Jane 2026-06-07: while a narration line is playing, suppress SFX so the voice is
+  // clearly audible. Voice lines (vo*) + UI clicks/modal cues still pass.
+  if (_voiceDucking && name.lastIndexOf('vo', 0) !== 0
+      && name !== 'click' && name !== 'modalOpen' && name !== 'modalClose') return false;
   if (PLAY_ONLY_WHILE_PLAYING[name] && (typeof game === 'undefined' || game.state !== 'playing')) return false;
   if (MODAL_AUDIO_DENY.has(name) && _anyBlockingModalOpen()) return false;
   const now = performance.now();
@@ -4811,6 +4840,7 @@ function playVoiceLine(name){
       try { _curVoiceLine.pause(); _curVoiceLine.currentTime = 0; } catch(e){}
     }
     _curVoiceLine = a;
+    try { _beginVoiceDuck(a); } catch(e){}   // duck music + cut sfx so the line is audible
   } catch(e){}
   return play(name);
 }
@@ -10991,9 +11021,10 @@ function playIntroPan(onDone){
           _introPanLabel = null;
         }
       } catch(e){}
-      // #Jane 2026-06-06: scene is now interactive — speak the GOAL line + show the
-      // one-line objective banner (voice-first onboarding replaces the text walls).
-      try { _s3vo('goal', {delay:350}); } catch(e){}
+      // #Jane 2026-06-06: scene is now interactive — show the one-line objective banner.
+      // (The GOAL voiceover is spoken by the 3-step tutorial's "Your Quest" slide; for
+      // returning kids who skip the tutorial, fire it here as a fallback so it isn't lost.)
+      try { if (localStorage.getItem('bek.moses3.tutDone') === '1') _s3vo('goal', {delay:350}); } catch(e){}
       try { _s3goal(0, _s3currentObjective(), 5200); } catch(e){}
       try { onDone && onDone(); } catch(e){}
       return;
@@ -11730,10 +11761,12 @@ function restartScene() {
 // just-in-time by the in-world proximity tips (river / flock / shepherds), the
 // glowing checkpoint markers, the EXIT beacon, and the mini-game Show-Me hints.
 // Kids can't read paragraphs, so each slide is ONE short line.
+// #Jane 2026-06-07: each step's text now MATCHES its recorded voiceover (vo), which
+// plays + ducks the music when the step shows \u2014 so the modal reads what the kid hears.
 const TUT_STEPS = [
-  { icon:'\u{1F463}', title:'Move Moses',  body:'Tap the arrows (or swipe) to move Moses east.' },
-  { icon:'\u{1F411}', title:'Rescue the Sisters', body:'Cross the river to the well \u2014 save Jethro\u2019s daughters and water their flock!' },
-  { icon:'\u{1F4DC}', title:'Checkpoints', body:'Walk into a glowing \u2753 scroll and answer \u2014 3 crystals build the river bridge!' },
+  { icon:'\u{1F463}', title:'Move Moses', vo:'move', body:'Use the arrows to help Moses explore the meadow.' },
+  { icon:'\u{1F411}', title:'Your Quest', vo:'goal', body:'Save the daughters, water the flock, and reach Jethro\u2019s tent before sunset.' },
+  { icon:'\u{1F4DC}', title:'Checkpoints', vo:'checkpoint', body:'A Bible checkpoint! Answer the questions to earn a crystal \u2014 three crystals build the river crossing.' },
 ];
 function showTutorial(step){
   game.tutorialStep = step;
@@ -11741,6 +11774,7 @@ function showTutorial(step){
   $('tutIcon').textContent = t.icon;
   $('tutTitle').textContent = t.title;
   $('tutBody').textContent = t.body;
+  if (t.vo){ try { _s3vo(t.vo, {delay:200}); } catch(e){} }   // play the matching narration
   $('tutProgress').textContent = (step+1)+' of '+TUT_STEPS.length;
   $('tutNextBtn').textContent = (step === TUT_STEPS.length-1) ? 'Start!' : 'Next';
   $('tutorialModal').classList.add('active');
@@ -11788,6 +11822,10 @@ function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
   if (eventKey) _firstEventSeen[eventKey] = true;
+  // #Jane 2026-06-07: play the MATCHING voiceover so the modal text + the narration
+  // say the same thing (and the line ducks the music so it's audible). Fires in both
+  // the modal and the toast-fallback path.
+  if (opts.vo){ try { _s3vo(opts.vo, {delay:220}); } catch(e){} }
   if (!_tutModeOn()){ try { toast((opts.icon || '👋') + ' ' + opts.body); } catch(e){} return; }
   const overlay = document.getElementById('tipPopupOverlay');
   if (!overlay){ try { toast((opts.icon || '👋') + ' ' + opts.body); } catch(e){} return; }
@@ -11850,16 +11888,16 @@ function _checkScene3Tips(){
   let _crossBuilt = false;
   try { _crossBuilt = (typeof _scene3CrystalCount === 'function') && _scene3CrystalCount() >= 3; } catch(e){}
   if (!_crossBuilt && !_firstEventSeen.river && px >= 8 && px <= 10 && py >= 6 && py <= 18){
-    showTipPopup('river', { icon:'🌊', title:'The River of Midian',
-      body:'A wide river blocks the way east! Clear the three Bible Checkpoints to earn three crystal stones — they build a stepping-stone crossing. Then lead the stranded flock across into the pen.' });
+    showTipPopup('river', { icon:'🌊', title:'The River of Midian', vo:'river',
+      body:'The river is too deep to cross. Earn three crystals from the checkpoints to build a path of stepping-stones.' });
     return;
   }
   // FLOCK: near the stranded west-bank flock
   if (!_firstEventSeen.flock && typeof scene3Herd !== 'undefined' && scene3Herd.spawned){
     for (const s of scene3Herd.sheep){
       if (s.state === 'graze' && Math.max(Math.abs(Math.round(s.px/TILE)-px), Math.abs(Math.round(s.py/TILE)-py)) <= 2){
-        showTipPopup('flock', { icon:'🐑', title:'A Lost Flock',
-          body:'These sheep are stranded on the wrong side of the river! Build the crossing, then walk close and the flock will follow you across into the pen. If a wolf ever troubles a sheep, run straight at it or TAP the ringed sheep to shoo it away.' });
+        showTipPopup('flock', { icon:'🐑', title:'Watch the Flock', vo:'wolf',
+          body:'A wolf is after the flock! Run right at it to shoo it away and save the sheep.' });
         return;
       }
     }
@@ -11869,8 +11907,8 @@ function _checkScene3Tips(){
     for (const sh of pursuitScouts){
       if (sh.shovedOff || sh.caught) continue;
       if (Math.max(Math.abs(sh.tx-px), Math.abs(sh.ty-py)) <= 3){
-        showTipPopup('shepherd', { icon:'🧔', title:'Rude Shepherds',
-          body:'Three rude shepherds block the way to the well. They won’t hurt Moses — they just shove him back a step. Solve the Bible Checkpoint right beside each one to drive him off and earn a blue crystal! ❄️ Foe Freeze stops them; ⚡ Speed Burst helps you slip past.' });
+        showTipPopup('shepherd', { icon:'🧔', title:'Rude Shepherds', vo:'shepherd',
+          body:'Those rude shepherds block the path. Don’t worry — they can’t hurt Moses. Just go around them.' });
         return;
       }
     }
