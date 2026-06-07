@@ -5716,7 +5716,7 @@ const DIFFICULTY_CONFIG = {
   medium: { timeLimit: 180, guardCount: 3, guardSeeRadius: 4, guardPatrolMs: 620,
             censerActive: true,  censerSpeed: 1.5, servantActive: true,
             gateCount: 5 },
-  hard:   { timeLimit: 120, guardCount: 4, guardSeeRadius: 5, guardPatrolMs: 460,
+  hard:   { timeLimit: 180, guardCount: 4, guardSeeRadius: 5, guardPatrolMs: 460,
             censerActive: true,  censerSpeed: 1.95, servantActive: true,
             gateCount: 6 },
 };
@@ -6941,10 +6941,11 @@ function drawScene3RescueFlock(){
     if (s.dir < 0 && IMG.sheepLeft) img = IMG.sheepLeft;
     else if (s.dir > 0 && IMG.sheepRight) img = IMG.sheepRight;
     const yoff = (s.state === 'pinned') ? Math.sin(performance.now() / 80) * 1.5 : 0;
+    // #Jane 2026-06-06: only ever render the REAL sheep PNG. The old cream
+    // fillRect fallback was the "white hand-drawn sheep" Jane saw moving; the PNG
+    // is small + preloaded now, so on the rare pre-load frame draw nothing.
     if (img && img.complete && img.naturalWidth){
       ctx.drawImage(img, dx, dy + yoff, TILE, TILE);
-    } else {
-      ctx.fillStyle = '#f2ead8'; ctx.fillRect(dx + 5, dy + 6, TILE - 10, TILE - 12);
     }
     if (s.state === 'pinned'){
       // 2026-05-26 JUICE: pulsing red danger ring around the grabbed sheep so
@@ -8092,7 +8093,9 @@ function _maybeStartScene3WellCut(){
     C.camTo = { px: cl(fx - CANVAS_W/2, 0, MAP_W*TILE - CANVAS_W),
                 py: cl(fy - CANVAS_H/2, 0, MAP_H*TILE - CANVAS_H) };
   } catch(e){ C.camTo = null; }
-  try { toast('A commotion at the well!'); } catch(e){}
+  // #Jane 2026-06-06: removed the "A commotion at the well!" overhead toast — it
+  // layered on TOP of the cutscene speech bubbles + banner (clutter/overlap). The
+  // visual tableau + the shepherds' spoken lines already convey the commotion.
   try { play('chime2') || play('chime'); } catch(e){}
 }
 
@@ -10769,7 +10772,12 @@ function playIntroPan(onDone){
   // game.scene === 2 default for compat with existing Scene-2 mechanics
   // (sandstorm, scout AI, oasis), but the intro pan should fire either way.
   if (game.scene !== 2 && game.scene !== 3) { try { onDone && onDone(); } catch(e){} return; }
-  _introPanActive = true;
+  // Jane 2026-06-06: _safeAnchorX() (start/exit sprite anchoring) reads the GLOBAL
+  // window._introPanActive to skip edge-clamping DURING the intro pan (so the START
+  // image stays locked to its tile instead of drifting). Scene 3 only set the LOCAL,
+  // so the clamp never relaxed and the start art slid with the camera. Set both,
+  // matching Scene 2's fix.
+  _introPanActive = true; window._introPanActive = true;
   camera.locked = true;
   // Compute EXIT tile from MAP (topmost tile-7).
   let exitTx = MAP_W - 1, exitTy = 2;
@@ -10873,7 +10881,7 @@ function playIntroPan(onDone){
       window._introPanShowArrow = false;
     } else {
       camera.locked = false;
-      _introPanActive = false;
+      _introPanActive = false; window._introPanActive = false;
       window._introPanShowArrow = false;
       try {
         if (_introPanLabel) {
@@ -15662,10 +15670,16 @@ function renderMatch3(gate, q, container){
     // sweep a diagonal wave of crushes across EVERY remaining tile so the whole
     // board clears in one satisfying cascade — and let it linger so kids savour
     // it. Then hand off to the crystal-forms climax.
+    // Jane 2026-06-06 (CRITICAL SOFT-LOCK FIX): the advance + its safety timer used
+    // to live INSIDE the _sugarCrushAll() callback, so if that finale never fired
+    // its callback (throttled timers / a throw) the checkpoint never advanced and
+    // the kid was STUCK on the cleared board with only EXIT. Hoist a GUARANTEED
+    // top-level advance so the match-3 mini-game can NEVER trap the player.
+    let _adv = false;
+    const _a = () => { if (_adv) return; _adv = true; try { handleChallengeAnswer(gate,0,wrap,{answerLabel:'TILES CLEARED!'}); } catch(e){} };
+    setTimeout(_a, 4200);   // top-level hard safety — advances no matter what
     _sugarCrushAll(() => {
-      let _adv = false; const _a = () => { if (_adv) return; _adv = true; try { handleChallengeAnswer(gate,0,wrap,{answerLabel:'TILES CLEARED!'}); } catch(e){} };
       try { _gameCrystalClimax(wrap, _a); } catch(e){ _a(); }
-      setTimeout(_a, 2800);   // #soft-lock guard: always advance even if the climax breaks
     });
   }
   function _sugarCrushAll(done){
@@ -23844,7 +23858,11 @@ function drawCenser(){
    NOTE: variable kept as PALACE_DECOR for compatibility with seedTreasures
    which still looks for kind==='banner' to hide coins behind. */
 const PALACE_DECOR = [
-  { kind: 'tent',     tx: 2,  ty: 2  },
+  // #Jane 2026-06-06: removed the marketplace 'tent' décor — it had no PNG and
+  // fell back to a crude procedural brown trapezoid (drawDesertTent) that read as
+  // an ugly flat BROWN BOX clashing with the 3D art (the object Jane circled).
+  // (No marketplace-tent art exists; the only tent PNG is Jethro's at the exit.)
+  // { kind: 'tent',     tx: 2,  ty: 2  },
   // #80 Jane 2026-06: cookfire was on the RIVER (col 11 = water). Nothing
   // may overlap the stream (cols 11-13) — moved into the west-bank market.
   { kind: 'cookfire', tx: 8,  ty: 6  },
