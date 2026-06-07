@@ -4203,6 +4203,25 @@
 <audio id="audGameOver"         preload="auto" src="assets/audio/game%20over%202.mp3"></audio>
 <audio id="audVoJethro"         preload="auto" src="assets/audio/this%20water%20is%20for%20jethro.mp3"></audio>
 <audio id="audVoCongrats"       preload="auto" src="assets/audio/congratulations%20scene%203.mp3"></audio>
+<!-- Scene-3 voice-first ONBOARDING lines (Jane's recordings). Played just-in-time,
+     ONCE each, via _s3vo() (single-channel through playVoiceLine so they never
+     overlap each other or the music). They replace the old text tutorial modals. -->
+<audio id="audVoS3Goal"       preload="auto" src="assets/audio/vo-s3-goal.mp3"></audio>
+<audio id="audVoS3Move"       preload="auto" src="assets/audio/vo-s3-move.mp3"></audio>
+<audio id="audVoS3Sunset"     preload="auto" src="assets/audio/vo-s3-sunset.mp3"></audio>
+<audio id="audVoS3Checkpoint" preload="auto" src="assets/audio/vo-s3-checkpoint.mp3"></audio>
+<audio id="audVoS3Shepherd"   preload="auto" src="assets/audio/vo-s3-shepherd.mp3"></audio>
+<audio id="audVoS3Powerup"    preload="auto" src="assets/audio/vo-s3-powerup.mp3"></audio>
+<audio id="audVoS3Jar"        preload="auto" src="assets/audio/vo-s3-jar.mp3"></audio>
+<audio id="audVoS3Speed"      preload="auto" src="assets/audio/vo-s3-speed.mp3"></audio>
+<audio id="audVoS3Freeze"     preload="auto" src="assets/audio/vo-s3-freeze.mp3"></audio>
+<audio id="audVoS3Wolf"       preload="auto" src="assets/audio/vo-s3-wolf.mp3"></audio>
+<audio id="audVoS3River"      preload="auto" src="assets/audio/vo-s3-river.mp3"></audio>
+<audio id="audVoS3Crossing"   preload="auto" src="assets/audio/vo-s3-crossing.mp3"></audio>
+<audio id="audVoS3Rescue"     preload="auto" src="assets/audio/vo-s3-rescue.mp3"></audio>
+<audio id="audVoS3Well"       preload="auto" src="assets/audio/vo-s3-well.mp3"></audio>
+<audio id="audVoS3Tent"       preload="auto" src="assets/audio/vo-s3-tent.mp3"></audio>
+<audio id="audVoS3Win"        preload="auto" src="assets/audio/vo-s3-win.mp3"></audio>
 <!-- #70 Shepherd-confrontation dialogue (Exodus 2:16-17 — rude shepherds drive
      off Jethro's daughters; Moses stands up for them; the shepherds back down). -->
 <audio id="audVoAwayWell"       preload="auto" src="assets/audio/away%20from%20our%20well.mp3"></audio>
@@ -4403,6 +4422,15 @@ const audio = {
   coverMusic:    $('audCoverMusic'),     // cover-page music, reused as the gentle "well tried" modal bed
   voJethro:      $('audVoJethro'),       // Moses: "This water is for Jethro's flock!"
   voCongrats:    $('audVoCongrats'),      // Narrator: "Congratulations! You made it to Jethro's tent!" (on reaching the exit)
+  // Scene-3 voice-first onboarding lines (Jane's recordings) — keyed for _s3vo().
+  voS3Goal:       $('audVoS3Goal'),       voS3Move:       $('audVoS3Move'),
+  voS3Sunset:     $('audVoS3Sunset'),     voS3Checkpoint: $('audVoS3Checkpoint'),
+  voS3Shepherd:   $('audVoS3Shepherd'),   voS3Powerup:    $('audVoS3Powerup'),
+  voS3Jar:        $('audVoS3Jar'),        voS3Speed:      $('audVoS3Speed'),
+  voS3Freeze:     $('audVoS3Freeze'),     voS3Wolf:       $('audVoS3Wolf'),
+  voS3River:      $('audVoS3River'),      voS3Crossing:   $('audVoS3Crossing'),
+  voS3Rescue:     $('audVoS3Rescue'),     voS3Well:       $('audVoS3Well'),
+  voS3Tent:       $('audVoS3Tent'),       voS3Win:        $('audVoS3Win'),
   // #70 Shepherd-confrontation dialogue (Exodus 2:16-17). Overworld VO, separate
   // from the protected well/rescue mini-games' own _pulleySay lines.
   voAwayWell:    $('audVoAwayWell'),       // shepherd: "Away from our well!"
@@ -4785,6 +4813,54 @@ function playVoiceLine(name){
     _curVoiceLine = a;
   } catch(e){}
   return play(name);
+}
+
+// ===================== SCENE 3 — VOICE-FIRST ONBOARDING =====================
+// Jane's recorded lines play JUST-IN-TIME, ONCE each, so mechanics teach one at a
+// time (replacing the old text-modal walls). Single-channel via playVoiceLine, so a
+// line never overlaps another line or steps on the music.
+const _S3VO_KEY = {
+  goal:'voS3Goal', move:'voS3Move', sunset:'voS3Sunset', checkpoint:'voS3Checkpoint',
+  shepherd:'voS3Shepherd', powerup:'voS3Powerup', jar:'voS3Jar', speed:'voS3Speed',
+  freeze:'voS3Freeze', wolf:'voS3Wolf', river:'voS3River', crossing:'voS3Crossing',
+  rescue:'voS3Rescue', well:'voS3Well', tent:'voS3Tent', win:'voS3Win'
+};
+// power-up key -> narration key (truthSeeker / scribesWisdom have no recording yet)
+const _S3VO_POWER = { speedBurst:'speed', guardFreeze:'freeze', royalVision:'jar' };
+const _s3voPlayed = new Set();
+function _s3vo(key, opts){
+  opts = opts || {};
+  try { if (typeof game !== 'undefined' && game.scene !== 2) return; } catch(e){ return; }
+  if (!opts.repeat){ if (_s3voPlayed.has(key)) return; _s3voPlayed.add(key); }
+  const mapKey = _S3VO_KEY[key]; if (!mapKey || !audio[mapKey]) return;
+  const fire = () => { try { playVoiceLine(mapKey); } catch(e){} };
+  if (opts.delay) setTimeout(fire, opts.delay); else fire();
+}
+function _s3voReset(){ try { _s3voPlayed.clear(); } catch(e){} }
+
+// One-line GOAL banner — a single crisp objective shown when the phase changes, so
+// the kid always knows the next thing to do. Reuses the tested _showCrossingBanner.
+let _s3goalPhase = -1;
+function _s3goal(phase, html, ms){
+  if (phase === _s3goalPhase) return;
+  _s3goalPhase = phase;
+  try { _showCrossingBanner('🎯 ' + html, ms || 4600); } catch(e){}
+}
+// The current objective text (also used by the Hint button) — derived from live state.
+function _s3currentObjective(){
+  try {
+    if (typeof scene3Herd !== 'undefined' && scene3Herd.done) return 'Reach Jethro\'s tent in the far east before sunset.';
+    const wellG   = (challengeGates||[]).find(g=>g.zone==='well');
+    const rescueG = (challengeGates||[]).find(g=>g.zone==='rescue');
+    const built = (typeof _herdCrossingBuilt==='function') ? _herdCrossingBuilt() : (_scene3CrystalCount()>=3);
+    if (built && rescueG && wellG){
+      if (!rescueG.solved) return 'Cross the river, then RESCUE the daughters at the well.';
+      if (!wellG.solved)   return 'Now WATER the flock at the well.';
+      return 'Lead your flock home to Jethro\'s tent before sunset.';
+    }
+    const have = (typeof _scene3CrystalCount==='function') ? _scene3CrystalCount() : 0;
+    return 'Solve the market checkpoints for ' + Math.max(0,3-have) + ' more crystal' + ((3-have)===1?'':'s') + ' to bridge the river.';
+  } catch(e){ return 'Save the daughters, water the flock, and reach Jethro\'s tent before sunset.'; }
 }
 
 /* ---------- IMAGE ASSETS ---------- */
@@ -6834,6 +6910,8 @@ function updateScene3Flock(dt){
     w.dir = Math.cos(ang) < 0 ? -1 : 1;
     if (Math.hypot(s.px - w.px, s.py - w.py) < TILE * 0.5){
       s.state = 'pinned'; s.wolf = w; s.pinnedAt = now;
+      try { _s3vo('wolf'); } catch(e){}   // first wolf grabs a sheep — voice cue
+
       w.state = 'pinning'; w.targetId = s.id;
       try { if (audio.sheepBleat){ audio.sheepBleat.currentTime = 0; audio.sheepBleat.volume = 0.6; audio.sheepBleat.play().catch(()=>{}); } } catch(e){}
       // 2026-05-26 JUICE (Jane: "when sheeps are captured by wolves ... animation
@@ -7409,6 +7487,15 @@ function updateScene3Herd(dt){
   if (!scene3Herd.spawned){ if (typeof TILE!=='undefined' && player) initScene3Herd(); return; }
   const now=performance.now();
   const built=_herdCrossingBuilt();
+  // #Jane 2026-06-06: once BOTH east-bank mini-games are cleared, point the kid HOME
+  // (voice + goal banner, once) — the final objective is Jethro's tent before sunset.
+  try {
+    if (!_s3voPlayed.has('tent')){
+      const _wD=(challengeGates||[]).some(g=>g.zone==='well'&&g.solved);
+      const _rD=(challengeGates||[]).some(g=>g.zone==='rescue'&&g.solved);
+      if (_wD && _rD){ _s3vo('tent'); _s3goal(3, 'Lead your flock home to Jethro\'s tent before sunset!', 5000); }
+    }
+  } catch(e){}
   // #117: the instant the crossing is built (3 crystals), the WOLF RAID begins.
   // The kid must shoo the wolves before the sheep will follow (see _herdUpdateWolves
   // + the wolvesCleared gate on the 'graze'→'follow' transition below).
@@ -7417,6 +7504,8 @@ function updateScene3Herd(dt){
     if (!scene3Herd.builtToastShown){
       scene3Herd.builtToastShown=true;
       try{ updateHudFlock(); }catch(e){}   // #8: switch the HUD sheep chip to the crossing count (X/5)
+      try{ _s3vo('crossing'); }catch(e){}                            // crossing-built voice cue
+      try{ _s3goal(2, 'Shoo the wolves, then lead your flock across the river.', 5000); }catch(e){}
       try{ toast('🐺 Wolves are attacking the lost flock! Run straight at them to shoo them away!'); }catch(e){}
       try{ if(audio.fox){ audio.fox.currentTime=0; audio.fox.volume=0.55; audio.fox.play().catch(()=>{}); } }catch(e){}
       try{ _cameraPunch(1.12, 700, 7.5*TILE - camera.px, 12*TILE - camera.py); }catch(e){}
@@ -10137,6 +10226,7 @@ function attemptMove(dir) {
           // can't-miss banner (Jane: make the crossing prompt more prominent).
           if (!window._riverIntroShown) {
             window._riverIntroShown = true;
+            try { _s3vo('river'); } catch(e){}   // first time Moses reaches the river
             _showCrossingBanner('🌊 <b>The river is too deep!</b> Earn <b>3 crystal tiles 💎</b> from the desert checkpoints to build a stepping-stone crossing.', 5200);
           } else {
             _showCrossingBanner('💎 <b>' + have + ' of 3 crystals</b> — ' + left + ' more to go! Clear ' + (left === 1 ? 'the last checkpoint' : left + ' more checkpoints') + ' to bridge the river.', 4200);
@@ -10901,6 +10991,10 @@ function playIntroPan(onDone){
           _introPanLabel = null;
         }
       } catch(e){}
+      // #Jane 2026-06-06: scene is now interactive — speak the GOAL line + show the
+      // one-line objective banner (voice-first onboarding replaces the text walls).
+      try { _s3vo('goal', {delay:350}); } catch(e){}
+      try { _s3goal(0, _s3currentObjective(), 5200); } catch(e){}
       try { onDone && onDone(); } catch(e){}
       return;
     }
@@ -11580,6 +11674,7 @@ function restartScene() {
     window._puCooldownUntil = {}; window._puActiveUntil = {};
     window._speedBurstUntil = 0; window._guardFreezeUntil = 0; window._royalVisionUntil = 0; window._decoyUntil = 0; window._decoyTile = null;
     window._truthSeekerArmed = false; window._scribesWisdomArmed = false;
+    try { _s3voReset(); _s3goalPhase = -1; } catch(e){}   // onboarding lines + goal replay on restart
     if (typeof _refreshUnlockButtons === 'function') _refreshUnlockButtons();
   } catch(e){}
   game.truthCardCollected = false;
@@ -12271,6 +12366,35 @@ function isAnyGuardLooking() {
 $('hintBtn').addEventListener('click', () => {
   play('click');
   try { play('hint'); } catch(e){}  // v2.2.7 hint-chime reveal
+  // #Jane 2026-06-06: SMART hint for Scene 3 — show the CURRENT phase objective +
+  // a live direction to the next thing to do (market checkpoint → cross river →
+  // rescue → water → tent). Always guides; never a stale generic line.
+  if (game.scene === 2) {
+    const obj = (typeof _s3currentObjective === 'function') ? _s3currentObjective()
+              : 'Reach Jethro\'s tent before sunset.';
+    let target = null;
+    try {
+      const built = (typeof _herdCrossingBuilt==='function') ? _herdCrossingBuilt() : (_scene3CrystalCount()>=3);
+      const rescueG = challengeGates.find(g=>g.zone==='rescue');
+      const wellG   = challengeGates.find(g=>g.zone==='well');
+      if (!built){
+        let best=null,bd=1e9;
+        for(const g of challengeGates){ if(g.zone==='market'&&!g.solved){ const d=Math.abs(g.tx-player.tx)+Math.abs(g.ty-player.ty); if(d<bd){bd=d;best=g;} } }
+        target = best;
+      } else if (rescueG && !rescueG.solved) target = rescueG;
+      else if (wellG && !wellG.solved)       target = wellG;
+      else { const ex=findTileOfType(7); if(ex) target={tx:ex.x,ty:ex.y}; }
+    } catch(e){}
+    let dirTxt='';
+    if (target){
+      const dx=target.tx-player.tx, dy=target.ty-player.ty, adx=Math.abs(dx), ady=Math.abs(dy), parts=[];
+      if(adx>=1) parts.push(adx+(adx>1?' tiles ':' tile ')+(dx>0?'east':'west'));
+      if(ady>=1) parts.push(ady+(ady>1?' tiles ':' tile ')+(dy>0?'south':'north'));
+      if(parts.length) dirTxt = ' — head ' + parts.join(' & ');
+    }
+    try { toast('🎯 ' + obj + dirTxt); } catch(e){}
+    return;
+  }
   let ctxHint = null;
   // #140 Jane: the hint used to fall through to a single fixed line
   // ("checkpoint 3 tiles south") because the old guard/crouch stealth branches
@@ -12711,6 +12835,7 @@ function _pulleyPrimeWellMusicOnGesture() {
 }
 
 function openWellPulleyGame(gate) {
+  try { _s3vo('well'); } catch(e){}   // entering the Water-the-Flock mini-game
   _pulley.gate = gate; _pulley.lastFrame = 0;
   _pulleyReset();
   game.state = 'dialog';
@@ -14245,6 +14370,7 @@ function _rescueReset() {
   { const pb = document.getElementById('rescuePauseBtn'); if (pb) pb.style.display = 'none'; }   // pause hidden until the round starts
 }
 function openRescueGame(gate) {
+  try { _s3vo('rescue'); } catch(e){}   // entering the Rescue-the-Daughters mini-game
   _rescue.gate = gate; _rescue.last = 0;
   if (window._rescueTestMode) { try { game.stars = Math.max(game.stars || 0, 14); game.treasureCount = Math.max(game.treasureCount || 0, 5); game.treasureBags = Math.max(game.treasureBags || 0, 80); } catch(e){} }
   _rescueReset();
@@ -16146,6 +16272,8 @@ function renderCollector(gate, q, container){
 }
 
 function openChallenge(gate) {
+  // first Bible checkpoint (the market question-gates) — voice cue
+  try { if (gate && gate.zone === 'market') _s3vo('checkpoint'); } catch(e){}
   // Phase C Step 7: Well gate → pulley mini-game instead of trivia.
   // Rescue-first ordering: the Well (water the flock) is LOCKED until the Rescue
   // (drive off the shepherds) is cleared — matches Exodus 2:17 (Moses rescues the
@@ -17677,6 +17805,10 @@ function _activatePowerup(key){
     return;
   }
   const now = performance.now();
+  // power-up voice cue on first activation: the specific line (jar/speed/freeze) if
+  // recorded, else the generic "you found a power" line (truthSeeker/scribesWisdom
+  // have no recording yet). Fires once per power-up via _s3vo's played-set.
+  try { const _vk = _S3VO_POWER[key]; _s3vo(_vk || 'powerup'); } catch(e){}
   if (key === 'speedBurst') {
     window._speedBurstUntil = now + 5000;
     window._puActiveUntil[key] = now + 5000;
@@ -19534,6 +19666,7 @@ function updateRudeShepherds(dt) {
       // throttled by the 6s taunt cooldown, so it never loops in parallel with the bgm.
       // #3 Jane 2026-06-06: play alert.mp3 (bossAlert), NOT danger alert.mp3 (dangerAlert).
       try { play('bossAlert') || play('alerted'); } catch(e){}
+      try { _s3vo('shepherd'); } catch(e){}   // first rude-shepherd taunt — voice cue
     }
     if (s.taunting && now > s.tauntShowUntil) s.taunting = false;
     // #22 Jane 2026-06-04: RELAX the contact rule. The old code yanked Moses back
