@@ -4882,17 +4882,20 @@ function _s3goal(phase, html, ms){
 // The current objective text (also used by the Hint button) — derived from live state.
 function _s3currentObjective(){
   try {
-    if (typeof scene3Herd !== 'undefined' && scene3Herd.done) return 'Reach Jethro\'s tent in the far east before sunset.';
+    // #Jane 2026-06-07: do NOT jump to "reach the tent" just because the flock crossed
+    // (scene3Herd.done) — the tent stays SEALED until the 2 mini-games are done, so the
+    // objective must point at whichever mini-game is still open, and say WHY.
     const wellG   = (challengeGates||[]).find(g=>g.zone==='well');
     const rescueG = (challengeGates||[]).find(g=>g.zone==='rescue');
     const built = (typeof _herdCrossingBuilt==='function') ? _herdCrossingBuilt() : (_scene3CrystalCount()>=3);
-    if (built && rescueG && wellG){
-      if (!rescueG.solved) return 'Cross the river, then RESCUE the daughters at the well.';
-      if (!wellG.solved)   return 'Now WATER the flock at the well.';
-      return 'Lead your flock home to Jethro\'s tent before sunset.';
+    if (!built){
+      const have = (typeof _scene3CrystalCount==='function') ? _scene3CrystalCount() : 0;
+      const need = Math.max(0, 3 - have);
+      return 'Solve the desert checkpoints for ' + need + ' more crystal' + (need===1?'':'s') + ' — they build the stepping-stones to cross the river.';
     }
-    const have = (typeof _scene3CrystalCount==='function') ? _scene3CrystalCount() : 0;
-    return 'Solve the market checkpoints for ' + Math.max(0,3-have) + ' more crystal' + ((3-have)===1?'':'s') + ' to bridge the river.';
+    if (rescueG && !rescueG.solved) return 'RESCUE Jethro\'s daughters at the well — the rude shepherds are driving them away. (Step onto the “Save the Daughters” billboard.)';
+    if (wellG && !wellG.solved)     return 'WATER the flock at the well — the sheep are thirsty. (Step onto the “Water the Flock” billboard.)';
+    return 'All done! Lead your flock home to Jethro\'s tent in the FAR EAST before sunset — the door is open now.';
   } catch(e){ return 'Save the daughters, water the flock, and reach Jethro\'s tent before sunset.'; }
 }
 // DEBUG (?dbg=1 ONLY): label every drawn animal/NPC sprite with its IMG key so a
@@ -5942,10 +5945,11 @@ const interactables = [
     body:'Moses finds the golden circlet from his old palace life, half-buried in the sand. By faith he refuses to be known as the son of Pharaoh\u2019s daughter. He leaves it behind - God\u2019s people matter more than Egypt\u2019s gold! +50 stars for choosing faith.',
     used:false, reward:'stars50' },
   // === MID-SCENE TRUTH CHEST (on the exit approach, opens with the reveal animation) ===
-  // Was at (36,21) — off the 35-wide map, so it could never be reached. Moved onto
-  // the row-12 path to Jethro's tent so every player collects the truth to carry
-  // into Midian (matches Scene 1's truth-card moment for "one world" parity).
-  { tx: 32, ty: 12,  kind:'truthchest', icon:'[TC]',
+  // Was at (36,21) — off the 35-wide map. Then (32,12) — but that sits UNDER Jethro's
+  // tent (cols 31-34) so it was hidden (Jane: "the chest is under Jethro, I can't see
+  // it"). Moved WEST onto the open east-bank approach at (28,12) — clearly visible on
+  // the path between the well and the tent. (Scene-1 truth-card parity.)
+  { tx: 28, ty: 12,  kind:'truthchest', icon:'[TC]',
     name:'A Mysterious Cedar Box',
     body:'Moses finds a small cedar box half-buried near a rock. Inside - a scroll wrapped in cloth with a truth to carry into Midian.',
     used:false, reward:'truthcard' },
@@ -7391,6 +7395,7 @@ function _openWolfShooModal(sheep, wolf){
   if (!overlay) return;
   // #138: open during EITHER the first wave OR the pen raid (both are live wolf threats).
   if (!((scene3Herd.wolvesIncoming && !scene3Herd.wolvesCleared) || _herdPenRaidActive())) return;
+  if (_wolfShoo.open && !overlay.classList.contains('active')){ try { _closeWolfShooModal(); } catch(e){} }  // clear a stale flag
   if (_wolfShoo.open) return;
   const sx = sheep ? sheep.px : player.px, sy = sheep ? sheep.py : player.py;
   _wolfShoo.open = true; _wolfShoo.sheep = sheep || null;
@@ -7508,6 +7513,28 @@ function _killWolfRaidBed(){
   try { if (audio.bgmCorridor){ audio.bgmCorridor.pause(); audio.bgmCorridor.currentTime = 0; } } catch(e){}
   try { if (audio.wolfAlert && !audio.wolfAlert.paused){ audio.wolfAlert.pause(); audio.wolfAlert.currentTime = 0; } } catch(e){}
   try { if (audio.wolfEpic  && !audio.wolfEpic.paused){  audio.wolfEpic.pause();  audio.wolfEpic.currentTime  = 0; } } catch(e){}
+}
+// #Jane 2026-06-07: shepherd-approach ALERT sting. Jane: it was TOO LOUD, played the
+// whole long alert.mp3 track even after Moses walked away, and sounded ON TOP of the
+// bgm. Now: quieter, BGM ducked while it sounds, auto-cut after ~1.6s, and stopped
+// immediately when Moses leaves the shepherd's radius (_stopShepherdAlert).
+let _shepAlertTimer = 0, _shepAlertPrevBgmVol = null;
+function _shepherdAlertSting(){
+  try {
+    if (typeof _soundOn !== 'undefined' && !_soundOn) return;
+    if (_wolfRaidAudioOn || _voiceDucking) return;   // one alert at a time
+    const a = audio.bossAlert; if (!a) return;
+    a.volume = 0.30;                                  // quieter (was full)
+    a.currentTime = 0; a.play().catch(()=>{});
+    try { if (audio.bgm && _shepAlertPrevBgmVol == null){ _shepAlertPrevBgmVol = audio.bgm.volume; audio.bgm.volume = Math.min(audio.bgm.volume, 0.07); } } catch(e){}
+    if (_shepAlertTimer) clearTimeout(_shepAlertTimer);
+    _shepAlertTimer = setTimeout(_stopShepherdAlert, 1600);   // never play the whole track
+  } catch(e){}
+}
+function _stopShepherdAlert(){
+  try { if (_shepAlertTimer){ clearTimeout(_shepAlertTimer); _shepAlertTimer = 0; } } catch(e){}
+  try { if (audio.bossAlert && !audio.bossAlert.paused){ audio.bossAlert.pause(); audio.bossAlert.currentTime = 0; } } catch(e){}
+  try { if (audio.bgm && _shepAlertPrevBgmVol != null){ audio.bgm.volume = _shepAlertPrevBgmVol; _shepAlertPrevBgmVol = null; } } catch(e){}
 }
 function initScene3Herd(){
   scene3Herd.sheep=[];
@@ -7966,7 +7993,7 @@ function updateScene3Ram(dt) {
       game.hearts--;
       game.perfectRun = false;
       try { updateHudHearts(); } catch(e){}
-      try { play('dangerAlert'); } catch(e){}
+      try { _loseHeartFx(); } catch(e){}   // #Jane: clear heart-loss sting + flash (ram)
       if (game.hearts <= 0) {
         try { openDanger('The ram knocked Moses over! Stay out of the charging lane.', IMG_SRC.sandstorm2 || IMG_SRC.sandstorm, 'ram'); } catch(e){}
       } else {
@@ -10089,15 +10116,24 @@ function seedChallenges(difficulty) {
     if (!q3) q3 = cycle(visualQueues);
     if (q3) bundle.push(q3);
     // If we ran out of any family, pad from the full pool.
+    // #Jane 2026-06-07: EXCLUDE question IDs already used in earlier gates + this
+    // bundle so the kid never sees the same question twice in one play (parity with
+    // Scene 1/2 — this de-dup was missing in Scene 3, hence the repeats).
     while (bundle.length < CHALLENGES_PER_GATE) {
+      const usedIds = new Set(bundles.flat().map(q => q && q.id).concat(bundle.map(q => q && q.id)));
       const all = [].concat(
         byType.trivia, byType.tf, byType.fill,
         byType.unscramble, byType.match, byType.sequence,
         byType.memory, byType.maze, byType.spot, byType.pair, byType.count, byType.slider,
         byType.spotdiff, byType.pictionary,
         pool // last-resort fallback
-      ).filter(Boolean);
-      bundle.push(all[Math.floor(Math.random()*all.length)]);
+      ).filter(q => q && !usedIds.has(q.id));
+      if (all.length) {
+        bundle.push(all[Math.floor(Math.random()*all.length)]);
+      } else {
+        const fb = pool.filter(q => q && !usedIds.has(q.id));
+        bundle.push((fb.length ? fb : pool)[Math.floor(Math.random()*(fb.length||pool.length))]);
+      }
     }
     bundles.push(bundle);
   }
@@ -10620,8 +10656,21 @@ function attemptMove(dir) {
             onReachExit();
           }
         } else {
-          const remaining = Math.max(0, totalGates - solvedGates);
-          try { toast('The exit is sealed! Clear all ' + totalGates + ' Checkpoints first. (' + remaining + ' still remaining.)'); } catch(e){}
+          // #Jane 2026-06-07: say EXACTLY what's left (market checkpoints vs the 2
+          // mini-games) instead of a vague "clear all checkpoints," and show it as a
+          // can't-miss banner — Jane was sent here by the hint, found the tent sealed,
+          // and got no clear reason ("even though I'm in the tent it won't recognise it").
+          const _uns = (challengeGates||[]).filter(g => g && !g.solved);
+          const _mkt = _uns.filter(g => g.zone === 'market').length;
+          const _rescueLeft = _uns.some(g => g.zone === 'rescue');
+          const _wellLeft   = _uns.some(g => g.zone === 'well');
+          const _parts = [];
+          if (_mkt) _parts.push('clear ' + _mkt + ' desert checkpoint' + (_mkt===1?'':'s'));
+          if (_rescueLeft) _parts.push('<b>rescue the daughters</b>');
+          if (_wellLeft)   _parts.push('<b>water the flock</b>');
+          try { _showCrossingBanner('🚪 <b>Jethro\'s tent is still closed.</b> First ' + _parts.join(', then ') + ' — then step onto the tent.', 5200); } catch(e){
+            try { toast('Jethro\'s tent is still closed — finish the mini-games first.'); } catch(_e){}
+          }
           try { play('error'); } catch(e){}
         }
       }
@@ -10691,7 +10740,16 @@ canvas.addEventListener('pointerdown', e => {
     const firstRaid = (scene3Herd.wolvesIncoming && !scene3Herd.wolvesCleared);
     const penRaid = _herdPenRaidActive();
     if (!(firstRaid || penRaid)) return;
-    if (_wolfShoo.open) return;
+    // #Jane 2026-06-07: SELF-HEAL the shoo-open flag. It got stuck true after the
+    // first raid (set in _openWolfShooModal, only cleared by _closeWolfShooModal), so
+    // tapping a sheep in the 2nd (pen) raid hit this early-return and the SHOO BAR
+    // never appeared. If the flag is true but the overlay isn't actually showing,
+    // it's stale — clear it and proceed; only bail if the modal is genuinely open.
+    if (_wolfShoo.open){
+      const _ov = document.getElementById('wolfShooOverlay');
+      if (!_ov || !_ov.classList.contains('active')){ try { _closeWolfShooModal(); } catch(e){} }
+      else return;
+    }
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const worldX = (e.clientX - rect.left) * (CANVAS_W / rect.width)  + camera.px;
@@ -11944,9 +12002,14 @@ function _checkScene3Tips(){
     return;
   }
   // FLOCK: near the stranded west-bank flock
-  if (!_firstEventSeen.flock && typeof scene3Herd !== 'undefined' && scene3Herd.spawned){
+  // #Jane 2026-06-07: only show the WOLF/shoo tip when a wolf is ACTUALLY attacking
+  // (the raid starts AFTER the 3 crystals build the crossing) — not the moment Moses
+  // walks near a peacefully grazing sheep. Gate on a live first-wave raid + a real wolf.
+  if (!_firstEventSeen.flock && typeof scene3Herd !== 'undefined' && scene3Herd.spawned
+      && scene3Herd.wolvesIncoming && !scene3Herd.wolvesCleared
+      && (scene3Herd.wolves||[]).some(w => w.state !== 'flee' && w.state !== 'gone')){
     for (const s of scene3Herd.sheep){
-      if (s.state === 'graze' && Math.max(Math.abs(Math.round(s.px/TILE)-px), Math.abs(Math.round(s.py/TILE)-py)) <= 2){
+      if ((s.state === 'graze' || s.state === 'pinned') && Math.max(Math.abs(Math.round(s.px/TILE)-px), Math.abs(Math.round(s.py/TILE)-py)) <= 3){
         showTipPopup('flock', { icon:'🐑', title:'Watch the Flock', vo:'wolf',
           body:'A wolf is after the flock! Run right at it to shoo it away and save the sheep.' });
         return;
@@ -11971,6 +12034,20 @@ function updateHudHearts(){
   let s='';
   for (let i=0;i<3;i++) s += (i<game.hearts) ? '&#9829;' : '&#9825;';
   $('hudHearts').innerHTML = s;
+}
+// #Jane 2026-06-07: a CLEAR, unmistakable "you LOST a heart" cue — a distinct uh-oh
+// sting + a red pulse/shake on the heart HUD — so a charging-ram or campfire hit is
+// obviously a heart loss (Jane: "the sfx needs to be clearer to show I lost a heart").
+function _loseHeartFx(){
+  try { play('uhoh') || play('error'); } catch(e){}
+  try {
+    const h = document.getElementById('hudHearts');
+    if (h){
+      h.style.transition = 'none'; h.style.transform = 'scale(1.3)';
+      h.style.filter = 'drop-shadow(0 0 7px #ff2a2a) brightness(1.4)';
+      setTimeout(() => { try { h.style.transition = 'transform 0.45s, filter 0.45s'; h.style.transform = 'scale(1)'; h.style.filter = 'none'; } catch(e){} }, 60);
+    }
+  } catch(e){}
 }
 function updateHudStars(){ $('hudStars').textContent = game.stars; try { updateHudCrystals(); } catch(e){} }
 // 2026-05-26 (Jane): 🐑 flock-safe HUD counter — the rescue STAKE. Shows sheep
@@ -18094,7 +18171,7 @@ function onHazardHit(tx, ty){
   game.invulnerableUntil = now + 1200;
   game.hearts--; game.perfectRun = false;
   updateHudHearts();
-  play('dangerAlert');
+  _loseHeartFx();   // #Jane: clear heart-loss sting + heart-HUD flash (campfire)
   if (game.hearts <= 0) {
     // v2.2.6 BUGFIX: sandstorm imagery belongs here, not palace torch.
     openDanger('A sudden sandstorm drove Moses back - try again!', IMG_SRC.sandstorm2 || IMG_SRC.sandstormA || IMG_SRC.sandstorm, 'sandstorm');
@@ -19764,10 +19841,12 @@ function updateRudeShepherds(dt) {
       // #Jane 2026-06-07: "don't play alert.mp3 along with the bg music — one at a
       // time." Skip the shepherd sting while a wolf-raid bed or a narration line is
       // already sounding, so two alerts never overlap.
-      try { if (!_wolfRaidAudioOn && !_voiceDucking) { play('bossAlert') || play('alerted'); } } catch(e){}
+      try { _shepherdAlertSting(); } catch(e){}   // quiet, bgm-ducked, auto-cut sting
       try { _s3vo('shepherd'); } catch(e){}   // first rude-shepherd taunt — voice cue
     }
-    if (s.taunting && now > s.tauntShowUntil) s.taunting = false;
+    if (s.taunting && now > s.tauntShowUntil){ s.taunting = false; try { _stopShepherdAlert(); } catch(e){} }
+    // #Jane 2026-06-07: Moses walked out of this shepherd's radius -> cut the alert now.
+    if (cheby > 3) { try { _stopShepherdAlert(); } catch(e){} }
     // #22 Jane 2026-06-04: RELAX the contact rule. The old code yanked Moses back
     // to his previous tile whenever a shepherd stood adjacent — far too strict (he
     // couldn't even stand next to one). The shepherd's BODY already blocks his own
