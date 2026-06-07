@@ -4895,6 +4895,31 @@ function _s3currentObjective(){
     return 'Solve the market checkpoints for ' + Math.max(0,3-have) + ' more crystal' + ((3-have)===1?'':'s') + ' to bridge the river.';
   } catch(e){ return 'Save the daughters, water the flock, and reach Jethro\'s tent before sunset.'; }
 }
+// DEBUG (?dbg=1 ONLY): label every drawn animal/NPC sprite with its IMG key so a
+// mystery sprite can be identified from a screenshot. Zero footprint without the param.
+(function _dbgSpriteLabels(){
+  try {
+    if (!/[?&]dbg=1/.test(location.search || '')) return;
+    setTimeout(function(){
+      try {
+        for (const k in IMG){ try { if (IMG[k] && typeof IMG[k] === 'object') IMG[k].__key = k; } catch(e){} }
+        const P = CanvasRenderingContext2D.prototype, orig = P.drawImage;
+        P.drawImage = function(img){
+          const r = orig.apply(this, arguments);
+          try {
+            const k = img && img.__key, x = arguments[1], y = arguments[2];
+            if (k && typeof x === 'number' && /sheep|lamb|goat|wolf|fox|ram|shep|vendor|daughter|jethro|moses/i.test(k)){
+              this.save(); this.font = 'bold 9px monospace';
+              this.strokeStyle = 'rgba(0,0,0,0.85)'; this.lineWidth = 2.5; this.strokeText(k, x, y - 2);
+              this.fillStyle = '#ff2bff'; this.fillText(k, x, y - 2); this.restore();
+            }
+          } catch(e){}
+          return r;
+        };
+      } catch(e){}
+    }, 2500);
+  } catch(e){}
+})();
 
 /* ---------- IMAGE ASSETS ---------- */
 const IMG_SRC = {
