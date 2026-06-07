@@ -10262,28 +10262,38 @@ function attemptMove(dir) {
     let _openOk = false;
     try { openChallenge(gate); _openOk = true; }
     catch(err){ try { toast('Checkpoint error: ' + (err && err.message || err)); } catch(e){} }
-    // AGGRESSIVE multi-retry: assert modal visible at 30/100/250 ms.
-    const _forceShow = () => {
-      const cm = document.getElementById('challengeModal');
-      if (cm && !cm.classList.contains('active')) {
-        cm.classList.add('active');
-        /* v3.28 console-log strip — diagnostic removed */
-      }
-    };
-    setTimeout(_forceShow, 30);
-    setTimeout(_forceShow, 100);
-    setTimeout(_forceShow, 250);
-    // BAILOUT: if after 500ms the modal STILL isn't visible, unstick the
-    // game state so Moses can move (so kids aren't trapped).
-    setTimeout(() => {
-      const cm = document.getElementById('challengeModal');
-      if (game.state === 'dialog' && cm && !cm.classList.contains('active')) {
-        /* v3.28 console-log strip */
-        try { toast('Checkpoint skipped - keep exploring!'); } catch(e){}
-        game.state = 'playing';
-        gate.solved = true;
-      }
-    }, 500);
+    // #Jane 2026-06-06 (CRITICAL): the WELL + RESCUE billboards launch their OWN
+    // standalone mini-games (wellPulleyModal / rescueModal) via openChallenge — they
+    // DO NOT use the question challengeModal. The aggressive force-show + bailout
+    // below assume the challengeModal, so for a well/rescue gate they would (1)
+    // FORCE the wrong question-checkpoint mini-game (maze/memory/sort/etc.) ON TOP
+    // of the standalone game — exactly Jane's "the other mini-game loads" bug — and
+    // (2) the 500 ms bailout would even mark the gate solved + skip it. Run this
+    // challengeModal safety net ONLY for the question-checkpoint (market) gates.
+    if (gate.zone !== 'well' && gate.zone !== 'rescue') {
+      // AGGRESSIVE multi-retry: assert modal visible at 30/100/250 ms.
+      const _forceShow = () => {
+        const cm = document.getElementById('challengeModal');
+        if (cm && !cm.classList.contains('active')) {
+          cm.classList.add('active');
+          /* v3.28 console-log strip — diagnostic removed */
+        }
+      };
+      setTimeout(_forceShow, 30);
+      setTimeout(_forceShow, 100);
+      setTimeout(_forceShow, 250);
+      // BAILOUT: if after 500ms the modal STILL isn't visible, unstick the
+      // game state so Moses can move (so kids aren't trapped).
+      setTimeout(() => {
+        const cm = document.getElementById('challengeModal');
+        if (game.state === 'dialog' && cm && !cm.classList.contains('active')) {
+          /* v3.28 console-log strip */
+          try { toast('Checkpoint skipped - keep exploring!'); } catch(e){}
+          game.state = 'playing';
+          gate.solved = true;
+        }
+      }, 500);
+    }
     return;
   }
   // v2.2.2 PROXIMITY TRIGGER (Scene 2) — Jane feedback: radius 2 was too wide
