@@ -397,7 +397,9 @@
   }
   .cin-panel .cin-art .cin-scene-img {
     width:100%; height:100%; object-fit:contain; display:block;
-    filter: brightness(0.95);
+    /* #Jane 2026-06-07: the ending narration panels looked "very dull" — lift the
+       brightness + a touch of saturation/contrast so the art reads vivid, not muddy. */
+    filter: brightness(1.14) saturate(1.18) contrast(1.06);
     transition: opacity 0.55s ease-in-out, filter 0.55s ease-in-out;
   }
   .cin-panel .cin-art .cin-scene-img.cin-fade {
@@ -3352,7 +3354,10 @@
     </div>
     <div class="win-badge-strip" id="winBadges"></div>
     <p class="win-motivate" id="winMotivate">Jethro welcomes Moses into his tent. Moses marries Zipporah, and God names their firstborn Gershom - "a stranger here." (Exodus 2:22)</p>
-    <button class="btn" id="winNextBtn">Print Certificate</button>
+    <!-- #Jane 2026-06-07: split the two actions — the Certificate button just opens the
+         printable certificate; "Watch the Ending" plays the closing+epilogue narration. -->
+    <button class="btn" id="winEndingBtn">🎬 Watch the Ending</button>
+    <button class="btn" id="winNextBtn">📜 Print Certificate</button>
     <button class="btn ghost" id="winReplayBtn">Replay Scene 3</button>
     <button class="btn ghost" id="winMenuBtn">Main Menu</button>
     <!-- #83: Etsy watermark on the win screen so shared screenshots carry the brand. -->
@@ -12409,7 +12414,14 @@ function triggerInteractable(obj){
     // Mid-scene truth card pickup -> trigger the treasure-chest reveal IN THE WORLD,
     // then continue gameplay. Truth card remembered for finish modal.
     game.truthCardCollected = true;
-    try { toast('1 Truth Card picked up!'); } catch(e){}
+    // #Jane 2026-06-07: "the chest gives a Truth Card yet the scroll count says 0."
+    // Make the Truth Card feed the cross-scene SCROLL total (the same counter Scene 1's
+    // truth/clue pickups feed — drives the 🪶 Scribe's Wisdom unlock at 5), so the stat
+    // actually moves and is consistent across all scenes.
+    try { _addLifetimeScrolls(1); } catch(e){}
+    try { if (typeof game.scrolls === 'number') game.scrolls++; else game.scrolls = 1; } catch(e){}
+    try { _refreshUnlockButtons(); } catch(e){}
+    try { toast('📜 Truth Card collected! +1 scroll'); } catch(e){}
     playMidSceneTruthChestReveal();
     // return early so the generic dialog doesn't pop
     return;
@@ -12562,7 +12574,11 @@ $('hintBtn').addEventListener('click', () => {
       if(ady>=1) parts.push(ady+(ady>1?' tiles ':' tile ')+(dy>0?'south':'north'));
       if(parts.length) dirTxt = ' — head ' + parts.join(' & ');
     }
-    try { toast('🎯 ' + obj + dirTxt); } catch(e){}
+    // #Jane 2026-06-07: show the clue as a GOLDEN glittery banner with clear info,
+    // not a plain toast.
+    try { _showCrossingBanner('💡 <b>Clue:</b> ' + obj + dirTxt, 5200); } catch(e){ try { toast('💡 ' + obj + dirTxt); } catch(_e){} }
+    try { spawnGlitterBurstAtPlayer(16); } catch(e){}
+    try { play('chime') || play('hint'); } catch(e){}
     return;
   }
   let ctxHint = null;
@@ -13167,6 +13183,7 @@ function _pulleyResolveSteal(saved) {
 }
 function _pulleyWin() {
   if (_pulley.over) return;
+  _pulley.slowmo = 0;   // #Jane 2026-06-07: clear the match-point slow-mo so a replay isn't stuck at 50% speed
   _pulley.over = true; _pulley.win = true; _pulley.celebrate = 0; _pulley.steal = null; _pulley.proj = null;
   _pulley._cel2 = false;
   // 2026-05-26 (Jane: "linger on the celebration ... add camera zoom ins" + "the
@@ -13256,6 +13273,7 @@ function _pulleyWinContinue() {
 }
 function _pulleyLose() {
   if (_pulley.over) return;
+  _pulley.slowmo = 0;   // #Jane 2026-06-07: clear the match-point slow-mo on loss too
   _pulley.over = true; _pulley.win = false; _pulley.steal = null; _pulley.proj = null; _pulley.mosesRun = null;
   cancelAnimationFrame(_pulley.rafId);
   const shoo = document.getElementById('pulleyShooBtn'); if (shoo) shoo.style.display = 'none';
@@ -13325,7 +13343,10 @@ function _pulleyBeginCountdown() {
   // like rescue game"). BREAK the intro bed → 3-2-1 countdown → GO restarts the
   // bed + opening narration (handled in _pulleyFrame's countdown tick).
   try { if (audio.wellMusic) audio.wellMusic.pause(); } catch(e){}
-  _pulley.countdown = 3.0; _pulley.go = 0;
+  // #Jane 2026-06-07: make the VISUAL 3-2-1 last EXACTLY as long as the countdown
+  // audio (was a fixed 3.0s while the audio is shorter, so "the music ended, then the
+  // 3-2-1 showed"). Match the audio duration so they run + finish together.
+  _pulley.countdown = (audio.raceCountdown && isFinite(audio.raceCountdown.duration) && audio.raceCountdown.duration > 0.5) ? audio.raceCountdown.duration : 3.0; _pulley.go = 0;
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = 'Get ready…';
   // double-rAF so the 3-2-1 beeps are audible right after the overlay swaps out.
   try { requestAnimationFrame(() => requestAnimationFrame(() => { try { play('raceCountdown'); } catch(e){} })); } catch(e){}
@@ -13343,7 +13364,10 @@ function _pulleyRetry() {
   // 2026-05-26: replay runs through the same 3-2-1 countdown (music breaks, then
   // resumes on GO with the opening banter) for parity with the first play.
   try { if (audio.wellMusic) audio.wellMusic.pause(); } catch(e){}
-  _pulley.countdown = 3.0; _pulley.go = 0;
+  // #Jane 2026-06-07: make the VISUAL 3-2-1 last EXACTLY as long as the countdown
+  // audio (was a fixed 3.0s while the audio is shorter, so "the music ended, then the
+  // 3-2-1 showed"). Match the audio duration so they run + finish together.
+  _pulley.countdown = (audio.raceCountdown && isFinite(audio.raceCountdown.duration) && audio.raceCountdown.duration > 0.5) ? audio.raceCountdown.duration : 3.0; _pulley.go = 0;
   document.getElementById('pulleyFeedback').textContent = 'Get ready…';
   try { requestAnimationFrame(() => requestAnimationFrame(() => { try { play('raceCountdown'); } catch(e){} })); } catch(e){}
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
@@ -14572,7 +14596,9 @@ function _rescueBegin() {
     const _lo = document.getElementById('rescueLoadout'); if (_lo) _lo.style.display = 'none';
     const _intro2 = document.getElementById('rescueIntro'); if (_intro2) _intro2.style.display = 'none';
     const _lb = document.getElementById('rescueLoadBar'); if (_lb) _lb.style.display = 'none';
-    _rescue.started = true; _rescue.last = 0; _rescue.countdown = 3.0; _rescue.goFlash = 0;
+    _rescue.started = true; _rescue.last = 0; _rescue.goFlash = 0;
+    // #Jane 2026-06-07: visual 3-2-1 lasts exactly as long as the countdown audio.
+    _rescue.countdown = (audio.raceCountdown && isFinite(audio.raceCountdown.duration) && audio.raceCountdown.duration > 0.5) ? audio.raceCountdown.duration : 3.0;
     const fb0 = document.getElementById('rescueFeedback'); if (fb0) fb0.textContent = 'Get ready — pick your lane!';
     // cut the menu music bed now — it restarts from the beginning when the round goes (after 3-2-1)
     try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
@@ -18522,7 +18548,7 @@ function showWin(){
     banner.classList.add('active');
     setTimeout(() => {
       banner.classList.remove('active');
-      _runClosingThenWin();
+      _openWinFinal();   /* #Jane 2026-06-07: straight to the win modal — the closing+epilogue narration is now the optional "Watch the Ending" button, and is no longer forced before the certificate. */
     }, 2000);
   } else {
     _runClosingThenWin();
@@ -18536,10 +18562,23 @@ function _doDownloadCertificate() {
   try { window.open('certificate.html', '_blank'); } catch(e){}
   toast('Your certificate is ready! Print it or save it as a PDF.');
 }
+// #Jane 2026-06-07: Certificate button -> straight to the printable certificate
+// (no narration). "Watch the Ending" -> the full closing+epilogue narration, then
+// back to the win modal. (Was: Print Certificate forced the epilogue narration first.)
 $('winNextBtn').addEventListener('click', () => {
   play('click');
+  try { _doDownloadCertificate(); } catch(e){}
+});
+const _winEndingBtn = $('winEndingBtn');
+if (_winEndingBtn) _winEndingBtn.addEventListener('click', () => {
+  play('click');
   $('winModal').classList.remove('active');
-  openEpilogueCinematic(_doDownloadCertificate);
+  const _backToWin = () => { try { $('winModal').classList.add('active'); } catch(e){} };
+  try {
+    playClosingCinematic(() => {
+      try { openEpilogueCinematic(_backToWin); } catch(e){ _backToWin(); }
+    });
+  } catch(e){ try { openEpilogueCinematic(_backToWin); } catch(_e){ _backToWin(); } }
 });
 const _midChestBtn = $('midChestContinueBtn');
 if (_midChestBtn) _midChestBtn.addEventListener('click', () => {
@@ -22900,17 +22939,25 @@ function drawCoverScene3(ctx, dx, dy, tx, ty) {
     ctx.fillStyle = 'rgba(50,140,120,0.18)';
     ctx.beginPath(); ctx.ellipse(cx, baseY, TILE * 0.4, 3, 0, 0, Math.PI * 2); ctx.fill();
   } else {
-    // ── PASTURE (cols 23+): palm / olive / terebinth alternating ──
-    const hash = (tx * 7 + ty * 13) % 3;
+    // ── PASTURE (cols 23+): cover trees ──
+    // #Jane 2026-06-07: FEWER palms ("the palm shade around the well" read as oasis).
+    // Favor the pastoral olive + terebinth; only ~1 in 6 cover tiles is a palm now.
+    const _h = (tx * 7 + ty * 13);
+    const okT = (im) => im && im.complete && im.naturalWidth;
     let pasturePNG = null;
-    if (hash === 0 && IMG.midianPalm  && IMG.midianPalm.complete  && IMG.midianPalm.naturalWidth)  pasturePNG = IMG.midianPalm;
-    else if (hash === 1 && IMG.oliveTree   && IMG.oliveTree.complete   && IMG.oliveTree.naturalWidth)   pasturePNG = IMG.oliveTree;
-    else if (hash === 2 && IMG.terebinth   && IMG.terebinth.complete   && IMG.terebinth.naturalWidth)   pasturePNG = IMG.terebinth;
+    if (_h % 6 === 0 && okT(IMG.midianPalm))      pasturePNG = IMG.midianPalm;   // rare palm
+    else if (_h % 2 === 0 && okT(IMG.oliveTree))  pasturePNG = IMG.oliveTree;     // olive (most common)
+    else if (okT(IMG.terebinth))                  pasturePNG = IMG.terebinth;     // terebinth
+    else if (okT(IMG.oliveTree))                  pasturePNG = IMG.oliveTree;
     if (pasturePNG) {
       const nW = pasturePNG.naturalWidth, nH = pasturePNG.naturalHeight;
       const fit = TILE / Math.max(nW, nH);
       const w = Math.round(nW * fit * scale), h = Math.round(nH * fit * scale);
+      // crisp downscale + bottom-anchored, fully drawn (not clipped)
+      ctx.save();
+      ctx.imageSmoothingEnabled = true; try { ctx.imageSmoothingQuality = 'high'; } catch(e){}
       ctx.drawImage(pasturePNG, Math.round(cx - w / 2), Math.round(dy + TILE - h + 2), w, h);
+      ctx.restore();
       return;
     }
     // vector fallback: midian palm cluster
@@ -24171,7 +24218,10 @@ const PALACE_DECOR = [
   // may overlap the stream (cols 11-13) — moved into the west-bank market.
   { kind: 'cookfire', tx: 8,  ty: 6  },
   { kind: 'rockpile', tx: 7,  ty: 10 },
-  { kind: 'rockpile', tx: 27, ty: 10 },
+  // #Jane 2026-06-07: "remove obstacles after the river crossing." The east-bank
+  // rockpile + boulders are SOLID décor (since #163) that clutter the path from the
+  // crossing to the mini-games + tent. Removed so the east bank is a clear run.
+  // { kind: 'rockpile', tx: 27, ty: 10 },
   // West-bank marketplace flavour (the Market/Caravan checkpoint zone). Painted
   // stall sprites when present; non-blocking decor on open floor tiles.
   // Jane #5 (2026-06-02): more stalls, spread ACROSS the marketplace and pulled
@@ -24206,9 +24256,10 @@ const PALACE_DECOR = [
   // Kept off the river (cols 11-13), off the herd pen (SCENE3_HERD_PEN cols
   // 15-19), and off the row-12 crossing corridor — pure background dressing in
   // the open grazing land. Décor is visual-only; it never blocks Moses.
-  { kind: 'boulder', tx: 22, ty: 5  },
-  { kind: 'boulder', tx: 29, ty: 17, variant: 1 },
-  { kind: 'boulder', tx: 24, ty: 21 },
+  // #Jane 2026-06-07: east-bank boulders removed — obstacles cleared after the crossing.
+  // { kind: 'boulder', tx: 22, ty: 5  },
+  // { kind: 'boulder', tx: 29, ty: 17, variant: 1 },
+  // { kind: 'boulder', tx: 24, ty: 21 },
   // #91 Jane 2026-06-02: beautify the map with a scattered fruit orchard — apple
   // + orange trees on open grass, kept OFF the river (cols 11-13), OFF the herd
   // pen (cols 15-19), OFF the well-village plaza (cols 14-23 / rows 2-11), OFF
@@ -24288,12 +24339,14 @@ function drawFlockSignpost(dx, dy){
   // (high smoothing + true PNG aspect ratio) so it clearly labels the pen gate
   // Moses reaches after crossing the river.
   const img = _ok(IMG.flockSignpost) ? IMG.flockSignpost : null;
-  const targetH = TILE * 1.7;
+  // #Jane 2026-06-07: STILL too small/blurry at 1.7 — bumped to 2.3 tiles so the pen
+  // sign clearly reads after the crossing (crisp high-smoothing render below).
+  const targetH = TILE * 2.3;
   let w, h;
   if (img){
     const ar = (img.naturalWidth || 1) / (img.naturalHeight || 1);
     h = targetH; w = Math.round(h * ar);
-  } else { w = TILE * 1.7; h = TILE * 1.7; }
+  } else { w = TILE * 2.3; h = TILE * 2.3; }
   const ox = Math.round(dx + TILE/2 - w/2), oy = Math.round(dy + TILE - h*0.92);
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.22)';
