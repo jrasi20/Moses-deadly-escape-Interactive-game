@@ -5916,7 +5916,9 @@ const interactables = [
     name:'Weathered Tablet',
     body:'A clay tablet left by travelers: "God had a plan for His people from the beginning." +3 stars',
     used:false, reward:'stars3' },
-  { tx: 15, ty: 13, kind:'bread', icon:'[B]',
+  // #Jane 2026-06-07: was at (15,13) on the crossing exit ("don't put... even the
+  // bread"). Moved to the WEST marketplace (4,16) so it's collected before the river.
+  { tx: 4, ty: 16, kind:'bread', icon:'[B]',
     name:'Travel Bread',
     body:'A small loaf wrapped in cloth, left at a campsite. Moses tucks it into his robe for the journey ahead. +2 stars',
     used:false, reward:'stars2' },
@@ -7523,15 +7525,20 @@ function _killWolfRaidBed(){
 // whole long alert.mp3 track even after Moses walked away, and sounded ON TOP of the
 // bgm. Now: quieter, BGM ducked while it sounds, auto-cut after ~1.6s, and stopped
 // immediately when Moses leaves the shepherd's radius (_stopShepherdAlert).
-let _shepAlertTimer = 0, _shepAlertPrevBgmVol = null;
+// #Jane 2026-06-07: the shepherd sting must NOT touch the bg music — she only wants
+// the bgm reduced for DIALOGUE/NARRATION, and the old bgm-duck here nested with the
+// voice-duck and left the music stuck quiet. Now: play alert.mp3 ONE-SHOT, quietly,
+// OVER the normal bgm; auto-cut after 1.6s; and _stopShepherdAlert cuts it the moment
+// Moses walks away. No bgm change at all.
+let _shepAlertTimer = 0;
 function _shepherdAlertSting(){
   try {
     if (typeof _soundOn !== 'undefined' && !_soundOn) return;
     if (_wolfRaidAudioOn || _voiceDucking) return;   // one alert at a time
     const a = audio.bossAlert; if (!a) return;
-    a.volume = 0.30;                                  // quieter (was full)
+    a.loop = false;                                   // never loop the alert track
+    a.volume = 0.28;
     a.currentTime = 0; a.play().catch(()=>{});
-    try { if (audio.bgm && _shepAlertPrevBgmVol == null){ _shepAlertPrevBgmVol = audio.bgm.volume; audio.bgm.volume = Math.min(audio.bgm.volume, 0.07); } } catch(e){}
     if (_shepAlertTimer) clearTimeout(_shepAlertTimer);
     _shepAlertTimer = setTimeout(_stopShepherdAlert, 1600);   // never play the whole track
   } catch(e){}
@@ -7539,7 +7546,6 @@ function _shepherdAlertSting(){
 function _stopShepherdAlert(){
   try { if (_shepAlertTimer){ clearTimeout(_shepAlertTimer); _shepAlertTimer = 0; } } catch(e){}
   try { if (audio.bossAlert && !audio.bossAlert.paused){ audio.bossAlert.pause(); audio.bossAlert.currentTime = 0; } } catch(e){}
-  try { if (audio.bgm && _shepAlertPrevBgmVol != null){ audio.bgm.volume = _shepAlertPrevBgmVol; _shepAlertPrevBgmVol = null; } } catch(e){}
 }
 function initScene3Herd(){
   scene3Herd.sheep=[];
@@ -7586,6 +7592,7 @@ function _herdComplete(){
 }
 function updateScene3Herd(dt){
   if (game.scene!==2 || game.state!=='playing') return;
+  try { _checkTentEntranceExit(); } catch(e){}   // #Jane: standing at the tent entrance completes the scene
   if (!scene3Herd.spawned){ if (typeof TILE!=='undefined' && player) initScene3Herd(); return; }
   const now=performance.now();
   const built=_herdCrossingBuilt();
@@ -7776,8 +7783,14 @@ function _drawOneSheep(px,py,dir,kind,alt,extraY){
     const drawW=Math.round(drawH*ar);
     const ox=Math.round(dx+TILE/2-drawW/2);
     const oy=Math.round(dy+TILE-drawH-extraY);
-    if (mirror){ ctx.save(); ctx.translate(ox+drawW,oy); ctx.scale(-1,1); ctx.drawImage(img,0,0,drawW,drawH); ctx.restore(); }
+    // #Jane 2026-06-07: the white sheep PNGs render warm cream/tan under the golden
+    // scene light and read as "brown hand-drawn animals" at small scale. Lift them to
+    // read WHITE — brighten + pull the warm/yellow cast out (desaturate).
+    ctx.save();
+    try { ctx.filter = 'brightness(1.22) saturate(0.55)'; } catch(e){}
+    if (mirror){ ctx.translate(ox+drawW,oy); ctx.scale(-1,1); ctx.drawImage(img,0,0,drawW,drawH); }
     else ctx.drawImage(img,ox,oy,drawW,drawH);
+    ctx.restore();
   }
   // #172 Jane 2026-06-06: NO procedural fallback. The old hand-drawn blob (white
   // body + brown head) was the "brown hand-drawn sheep" Jane saw crossing when
@@ -8103,7 +8116,7 @@ function _checkScene3JarDrop() {
   _scene3JarDrop.nextAt = now + 65000 + Math.random() * 25000;
   const lines = [
     { toast: 'Crash! One of Jethro\'s daughters drops a clay jar…', dialog: '"Oh no — my jar!\n\nWhen the rude shepherds charged in, everything scattered. We barely managed to get water for the sheep.\n\n"Thank God you helped us!" (Exodus 2:16-17)' },
-    { toast: 'A clay jar shatters at the well — water everywhere!', dialog: '"Those shepherds again…\n\nEvery time we come to water the flock they try to drive us away.\n\n"But you stepped in — our father Jethro will want to hear about this." (Exodus 2:19-20)' },
+    { toast: '', dialog: '"Those shepherds again…\n\nEvery time we come to water the flock they try to drive us away.\n\n"But you stepped in — our father Jethro will want to hear about this." (Exodus 2:19-20)' },
   ];
   const line = lines[_scene3JarDrop.count - 1];
   // #128 Jane 2026-06-03: this daughter beat used to AUTO-OPEN a full "Jethro's
@@ -10457,7 +10470,7 @@ function attemptMove(dir) {
     // multiple retries AND a state-recovery bailout so Moses never gets
     // stuck in 'dialog' state with no modal visible.
     /* v3.28 console-log strip — diagnostic removed for ship */
-    try { toast('Checkpoint activated!'); } catch(e){}
+    /* #Jane 2026-06-07: removed the "Checkpoint activated!" overhead toast (noise). */
     // reset any competing modal that might steal focus
     try {
       const others = ['winModal','dangerModal','dialogModal','pauseModal','tutorialModal','sceneBanner','truthChestModal','mapPeekOverlay'];
@@ -10573,7 +10586,7 @@ function attemptMove(dir) {
         game._chaseEscaped = true;
         game.streamChaseActive = false;
         for (const s of pursuitScouts) { s.chaseMode = false; }
-        try { toast('You crossed the stream! The shepherds are stuck on the far side.'); } catch(e){}
+        /* #Jane 2026-06-07: removed the "you crossed the stream, shepherds are stuck" toast. */
         try { spawnGlitterBurstAtPlayer(20); } catch(e){}
       }
     }
@@ -10774,11 +10787,26 @@ canvas.addEventListener('pointerdown', e => {
       else if (penRaid && (s.state === 'arrived' || s.state === 'follow')) eligible = true;
       if (!eligible) continue;
       const d = Math.hypot((s.px + TILE/2) - worldX, (s.py + TILE/2) - worldY);
-      if (d < TILE*1.1 && d < bestD){ bestD=d; hit=s; }
+      const hitR = penRaid ? TILE*1.7 : TILE*1.2;   // pen sheep rest spread out — wider tap target
+      if (d < hitR && d < bestD){ bestD=d; hit=s; }
     }
-    if (hit){
+    // #Jane 2026-06-07 (shoo STILL broken on the 2nd raid): the red danger RING is drawn
+    // on the WOLF, so Jane taps the wolf — but the loop above only hit-tests SHEEP. Also
+    // hit-test the ringed pen WOLF directly so tapping it opens the shoo bar.
+    let hitWolf = null;
+    if (!hit && penRaid && scene3Herd.penWolves){
+      let bw = 1e9;
+      for (const w of scene3Herd.penWolves){
+        if (w.state === 'flee' || w.state === 'gone') continue;
+        const d = Math.hypot((w.px + TILE*0.5) - worldX, (w.py + TILE*0.6) - worldY);
+        if (d < TILE*1.8 && d < bw){ bw = d; hitWolf = w; }
+      }
+    }
+    if (hit || hitWolf){
       e.preventDefault();
-      _openWolfShooModal(hit, _herdNearestWolfTo(hit.px, hit.py));
+      const _sheep = hit || null;
+      const _wolf  = hitWolf || (hit ? _herdNearestWolfTo(hit.px, hit.py) : null);
+      _openWolfShooModal(_sheep, _wolf);
     }
   } catch(err){}
 }, { passive: false });
@@ -13851,7 +13879,7 @@ function _pulleyFrame(now) {
     if (!_pulley.matchPoint) {
       const mt = _pulleyMine().length, rt = _pulleyRival().length;
       if (mt > 1 && _pulleyDone(true) >= mt - 1 && _pulleyDone(false) >= rt - 1) {
-        _pulley.matchPoint = true; _pulley.slowmo = 1.4; _pulley.shake = 8; _pulley.zoom = 1.09;
+        _pulley.matchPoint = true; _pulley.slowmo = 0.55; _pulley.shake = 8; _pulley.zoom = 1.09;   // #Jane: shorter slow-mo (was 1.4) — the well game felt too slow
         _pulley.stealEvery = Math.max(1.8, _pulley.stealEvery * 0.45);  // lunges come thick and fast
         _pulley.nextSteal = Math.min(_pulley.nextSteal, 1.2);
         if (fb) fb.textContent = '★ MATCH POINT — fill your last pot!';
@@ -14378,9 +14406,11 @@ function _rescueCfg() {
   // opens slow with few shepherds and speeds up. spawnEvery/foeSpeed below are the
   // mid-round baseline; the ramp eases them at the start and pushes them at the end.
   // coins = the per-round PURSE (spending budget for THIS round only — NOT the player's bank)
-  if (d === 'hard')   return { total: 34, spawnEvery: 1.15, foeSpeed: 52, bigChance: 0.26, fastChance: 0.34, coins: 100, bossHp: 44 };
-  if (d === 'medium') return { total: 28, spawnEvery: 1.35, foeSpeed: 46, bigChance: 0.22, fastChance: 0.30, coins: 130, bossHp: 34 };
-  return { total: 22, spawnEvery: 1.6,  foeSpeed: 40, bigChance: 0.18, fastChance: 0.26, coins: 160, bossHp: 24 }; // easy
+  // #Jane 2026-06-07: "the rescue game is too slow." Faster foes + quicker spawns so
+  // the action keeps moving (was foeSpeed 40-52 / spawnEvery 1.15-1.6).
+  if (d === 'hard')   return { total: 34, spawnEvery: 0.90, foeSpeed: 72, bigChance: 0.26, fastChance: 0.34, coins: 100, bossHp: 44 };
+  if (d === 'medium') return { total: 28, spawnEvery: 1.05, foeSpeed: 64, bigChance: 0.22, fastChance: 0.30, coins: 130, bossHp: 34 };
+  return { total: 22, spawnEvery: 1.25, foeSpeed: 56, bigChance: 0.18, fastChance: 0.26, coins: 160, bossHp: 24 }; // easy
 }
 // assault ramp: 0 at round start → 1 by the time the boss is near. Eases the spawn
 // interval / foe speed early and intensifies them late so kids ease in.
@@ -16480,8 +16510,15 @@ function openChallenge(gate) {
     const _rescueGate = (typeof challengeGates !== 'undefined' && challengeGates)
       ? challengeGates.find(g => g && g.zone === 'rescue') : null;
     if (_rescueGate && !_rescueGate.solved) {
-      try { toast('First drive off the rude shepherds and rescue the daughters!'); } catch(e){}
-      try { play('error') || play('dangerAlert'); } catch(e){}
+      // #Jane 2026-06-07: "I'm on the Water-the-Flock tile and keep hearing an error
+      // sound standing there." Throttle the lock feedback + use a GENTLE cue, not the
+      // harsh error buzz, so it doesn't nag while she's parked on the tile.
+      const _nowL = performance.now();
+      if (!window._wellLockWarnAt || _nowL - window._wellLockWarnAt > 5000){
+        window._wellLockWarnAt = _nowL;
+        try { toast('First rescue the daughters — then you can water the flock.'); } catch(e){}
+        try { play('pop'); } catch(e){}
+      }
       return;
     }
     openWellPulleyGame(gate); return;
@@ -18267,16 +18304,53 @@ function onOasisStep(tx, ty){
     play('coin');
     try { play('gameBonus'); } catch(e){}  // v2.2.7 bonus heart sting
     spawnGlitterBurstAtPlayer(14);
-    toast('An oasis! +1 heart restored.');
+    // #Jane 2026-06-07: removed the "An oasis! +1 heart restored" overhead message —
+    // it claimed a heart restore that wasn't obvious (and read as misleading). The
+    // heart is still restored silently (the HUD heart fills in); no claim, no confusion.
   } else {
     play('chime');
     spawnGlitterBurstAtPlayer(10);
-    toast('A refreshing oasis - hearts are already full!');
+    // #Jane 2026-06-07: removed the "oasis — hearts already full" overhead message.
     game.stars += 1; updateHudStars();
   }
 }
 
 /* ---------- EXIT ---------- */
+// #Jane 2026-06-07 (RECURRING): "when Moses stands at the ENTRANCE of the tent it
+// should count as reaching the exit." Moses was getting buried/grid-locked trying to
+// land on one exact buried exit tile. This runs every frame and completes the scene
+// the moment Moses is in the tent-DOOR ZONE (the exit tiles + the west approach) with
+// all gates solved — so reaching the tent is enough, no precise tile-hunting.
+let _tentSealedWarnAt = 0;
+function _checkTentEntranceExit(){
+  try {
+    if (game.scene !== 2 || game.state !== 'playing') return;
+    let exTx = -1, exTy = -1;
+    if (typeof window._topmostExit !== 'undefined' && window._topmostExit){ exTx = window._topmostExit.tx; exTy = window._topmostExit.ty; }
+    else { const e = (typeof findTileOfType === 'function') ? findTileOfType(7) : null; if (e){ exTx = (e.tx!=null?e.tx:e.x); exTy = (e.ty!=null?e.ty:e.y); } }
+    if (exTx < 0) return;
+    // door zone: the door column + the one tile west of it (the approach), rows door±1.
+    const inZone = (player.tx >= exTx - 1) && (player.tx <= exTx) && Math.abs(player.ty - exTy) <= 1;
+    if (!inZone) return;
+    const gates = (typeof challengeGates !== 'undefined' && challengeGates) ? challengeGates : [];
+    const total = gates.length, solved = gates.filter(g => g && g.solved).length;
+    if (total > 0 && solved >= total){
+      onReachExit();
+    } else {
+      const now = performance.now();
+      if (now - _tentSealedWarnAt > 4500){
+        _tentSealedWarnAt = now;
+        const uns = gates.filter(g => g && !g.solved);
+        const mkt = uns.filter(g => g.zone === 'market').length, parts = [];
+        if (mkt) parts.push('clear ' + mkt + ' desert checkpoint' + (mkt===1?'':'s'));
+        if (uns.some(g => g.zone === 'rescue')) parts.push('<b>rescue the daughters</b>');
+        if (uns.some(g => g.zone === 'well'))   parts.push('<b>water the flock</b>');
+        try { _showCrossingBanner('🚪 <b>Jethro\'s tent is still closed.</b> First ' + parts.join(', then ') + '.', 4200); } catch(e){}
+        try { play('error'); } catch(e){}
+      }
+    }
+  } catch(e){}
+}
 function onReachExit(){
   game.state = 'ended';
   try { _killWolfRaidBed(); } catch(e){}   // never let the raid loop bleed into the win/closing
@@ -24246,7 +24320,10 @@ const PALACE_DECOR = [
   // (5,11) with no pen near it. Moved to (14,13) — right at the herd pen's
   // WEST gate (SCENE3_HERD_PEN = cols 15-19), the tile Moses reaches after
   // crossing the river, so the board actually labels the pen.
-  { kind: 'flockSignpost', tx: 14, ty: 13 },
+  // #Jane 2026-06-07: "don't put this board on the way." Was at (14,13) — right at the
+  // crossing exit, blocking the path. Moved SOUTH-EAST of the pen (20,18), clear of the
+  // row-12/13 crossing corridor, where it still labels the pen but isn't underfoot.
+  { kind: 'flockSignpost', tx: 20, ty: 18 },
   // #113 Jane 2026-06-03: the three DATE piles that used to live here as decor are
   // now real auto-pickup collectibles (moved into the `interactables` array, kind
   // 'dates', reward +2 stars). They render via drawInteractable's new 'dates' case
