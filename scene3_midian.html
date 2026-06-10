@@ -7302,7 +7302,14 @@ function _herdMaybeStartPenRaid(now){
   }
   scene3Herd.penRaidArmed = true;
   scene3Herd._penRaidDeadline = now + 16000;      // hard safety: self-despawn so it never soft-locks
-  try{ toast('🐺 Wolves slipped toward the pen! Shoo them off the flock!'); }catch(e){}
+  // #Jane 2026-06-09: the 2nd wolf attack now gets the SAME modal + narration prompt
+  // as the first wave (parity) — not just a toast. Distinct 'penraid' event key so it
+  // shows once; the wolf narration is replayed (repeat) so the kid is told what to do.
+  try {
+    showTipPopup('penraid', { icon:'🐺', title:'Wolves at the Pen!',
+      body:'More wolves are charging the pen! Run right at a wolf — or tap a sheep in danger — to shoo them off and save the flock.' });
+  } catch(e){ try{ toast('🐺 Wolves slipped toward the pen! Shoo them off the flock!'); }catch(_){} }
+  try{ _s3vo('wolf', { repeat:true, delay:260 }); }catch(e){}
   try{ if(audio.fox){ audio.fox.currentTime=0; audio.fox.volume=0.5; audio.fox.play().catch(()=>{}); } }catch(e){}
   try{ _cameraPunch(1.10, 600, ((p.x0+p.x1+1)/2)*TILE - camera.px, ((p.y0+p.y1+1)/2)*TILE - camera.py); }catch(e){}
 }
@@ -8282,6 +8289,19 @@ const _S3WC_BEATS = [
   { who:'moses', si:0, text:'Leave them alone!',           vo:'voLeaveThem', dur:1950 },
   { who:'shep',  si:0, text:'Who do you think you are?!',  vo:'voWhoAreYou', dur:2150 }
 ];
+// #Jane 2026-06-09: the shepherd/Moses lines were "half cut" — each beat's fixed
+// `dur` was SHORTER than its recorded VO clip, so the next beat's playVoiceLine()
+// stopped the current clip mid-word. Hold each beat at least as long as its real
+// clip length (+350ms tail) so the whole line is heard before advancing.
+function _s3wcBeatDur(i){
+  const b = _S3WC_BEATS[i]; if (!b) return 0;
+  let eff = b.dur;
+  try {
+    const a = audio[b.vo];
+    if (a && isFinite(a.duration) && a.duration > 0) eff = Math.max(eff, a.duration * 1000 + 350);
+  } catch(e){}
+  return eff;
+}
 
 // Start the cutscene (called once, from attemptMove, when Moses first enters
 // the plaza). Guards on `done` so it can never replay within a page load.
@@ -8336,8 +8356,9 @@ function _updateScene3WellCut(now){
   if (el < _S3WC_FOCUS_MS) { C.curBeat = -1; return; }
   let t = el - _S3WC_FOCUS_MS, acc = 0, bi = -1;
   for (let i = 0; i < _S3WC_BEATS.length; i++) {
-    if (t >= acc && t < acc + _S3WC_BEATS[i].dur) { bi = i; break; }
-    acc += _S3WC_BEATS[i].dur;
+    const eff = _s3wcBeatDur(i);   // #Jane: real clip length so lines aren't half-cut
+    if (t >= acc && t < acc + eff) { bi = i; break; }
+    acc += eff;
   }
   if (bi === -1 && t >= acc) bi = _S3WC_BEATS.length; // past final beat → outro
   C.curBeat = bi;
@@ -17794,8 +17815,10 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
           } catch(e){}
         }
         // Close the question modal now; the crystal reward / banner play on top
-        // of the (still-frozen) world.
-        _closeChallengeModalAudio();
+        // of the (still-frozen) world. #1 Jane 2026-06-09: defer the bgm resume on
+        // the crystal path so the music does NOT start under the crystal modal —
+        // _resumeAfterClear restarts it when the kid taps Continue.
+        _closeChallengeModalAudio(gate.zone === 'market');
         $('challengeModal').classList.remove('active');
         // v3.28: persist progress immediately (gate.solved is set) so a closed
         // tab / refreshed page resumes here — even while the kid is still on the
@@ -17934,7 +17957,7 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
 // the challenge puzzle bed we RESTORE the overworld bed (at the volume openChallenge
 // saved) so free play isn't left silent. (When the close path is a full reload —
 // chExitBtn — the scene-start re-fires setMusic('bgm') instead, so this is harmless.)
-function _closeChallengeModalAudio(){
+function _closeChallengeModalAudio(deferBgm){
   try {
     if (audio.narration) { audio.narration.pause(); audio.narration.currentTime = 0; }
   } catch(e){}
@@ -17951,7 +17974,11 @@ function _closeChallengeModalAudio(){
   // fanfare finishes. This kills the "win sound + bg music clashing" Jane keeps
   // hearing when the '… more crystals' modal closes.
   try {
-    const crOpen = (function(){ const el = document.getElementById('crystalReward'); return el && (el.classList.contains('show') || el.getAttribute('aria-hidden') === 'false'); })();
+    // #1 Jane 2026-06-09: deferBgm is set TRUE by the market/crystal close path —
+    // the crystal modal hasn't been shown YET at call time, so the crOpen sniff
+    // below would miss it and resume bgm UNDER the still-to-appear crystal modal.
+    // When deferBgm, leave the music to _resumeAfterClear (fires on Continue tap).
+    const crOpen = deferBgm || (function(){ const el = document.getElementById('crystalReward'); return el && (el.classList.contains('show') || el.getAttribute('aria-hidden') === 'false'); })();
     if (!crOpen) {
       if (audio.bgm && audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume;
       setMusic('bgm');
@@ -19973,7 +20000,7 @@ function updateRudeShepherds(dt) {
     // Proximity vignette pulse
     if (cheby <= 3 && !moses_hidden && now - (_scoutCloseWarnAt || 0) > 3500) {
       _scoutCloseWarnAt = now;
-      try { play('dangerAlert'); } catch(e){}
+      try { _shepherdAlertSting(); } catch(e){}   // #Jane: alert.mp3, NOT danger alert.mp3
       const pv = document.getElementById('pulseVignette');
       if (pv) { pv.classList.add('alerted'); setTimeout(() => pv.classList.remove('alerted'), 1400); }
     }
@@ -20102,10 +20129,10 @@ function updatePursuitScouts(dt){
     }
   }
   // v2.2.2 Jane: "remove the uh oh.mp3. I don't want it. use danger alert.mp3"
-  // Proximity alert now fires 'dangerAlert' instead of 'uhoh'.
+  // v80 Jane: shepherds coming near must use alert.mp3 (the sting), NOT danger alert.mp3.
   if (closestDist <= 3 && now - _scoutCloseWarnAt > 3500) {
     _scoutCloseWarnAt = now;
-    try { play('dangerAlert'); } catch(e){}
+    try { _shepherdAlertSting(); } catch(e){}   // #Jane: alert.mp3, NOT danger alert.mp3
     const pv = document.getElementById('pulseVignette');
     if (pv) {
       pv.classList.add('alerted');
@@ -25804,10 +25831,17 @@ function _updateCampfireProximityAudio(){
 function _stateWatchdog(){
   if (game.state === 'dialog') {
     const anyModalActive = !!(
+      // #Jane 2026-06-08 (CRITICAL): the rescue/well MINI-GAME modals were MISSING from
+      // this list, so the watchdog reset game.state 'dialog'->'playing' mid-mini-game —
+      // which resumed the heavy main maze loop (competing with the rescue rAF -> the game
+      // ran SUPER SLOW from the billboard but fine from ?rescuetest=1) AND could break the
+      // launch. Recognise them so the watchdog leaves the mini-game alone.
+      (document.getElementById('rescueModal') && document.getElementById('rescueModal').classList.contains('active')) ||
+      (document.getElementById('wellPulleyModal') && document.getElementById('wellPulleyModal').classList.contains('active')) ||
       (document.getElementById('challengeModal') && document.getElementById('challengeModal').classList.contains('active')) ||
       (document.getElementById('dialogModal') && document.getElementById('dialogModal').classList.contains('active')) ||
       (document.getElementById('dangerModal') && document.getElementById('dangerModal').classList.contains('active')) ||
-      (document.getElementById('winModal') && document.getElement('winModal') && document.getElementById('winModal').classList.contains('active')) ||
+      (document.getElementById('winModal') && document.getElementById('winModal').classList.contains('active')) ||
       (document.getElementById('pauseModal') && document.getElementById('pauseModal').classList.contains('active')) ||
       (document.getElementById('tutorialModal') && document.getElementById('tutorialModal').classList.contains('active')) ||
       (document.getElementById('truthChestModal') && document.getElementById('truthChestModal').classList.contains('active')) ||
@@ -25871,7 +25905,17 @@ function loop(now){
   // world is frozen) and observe the rescue gate for the retreat-line pay-off.
   try { _updateScene3WellCut(now); } catch(e){}
   try { _stateWatchdog(); } catch(e){}
-  render();
+  // #Jane 2026-06-08: while a full-screen MINI-GAME is running, do NOT render the maze —
+  // it was painting the whole world every frame ON TOP of the rescue/well game's own rAF
+  // loop, so two heavy loops fought for the frame budget and the mini-game ran SUPER SLOW
+  // (correct speed via ?rescuetest=1 where the maze isn't loaded). Skip the maze render
+  // so the mini-game gets the full frame.
+  let _miniGameUp = false;
+  try {
+    const rm = document.getElementById('rescueModal'), wm = document.getElementById('wellPulleyModal');
+    _miniGameUp = !!((rm && rm.classList.contains('active')) || (wm && wm.classList.contains('active')));
+  } catch(e){}
+  if (!_miniGameUp) render();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
