@@ -4866,12 +4866,31 @@ const _S3VO_KEY = {
 // power-up key -> narration key (truthSeeker / scribesWisdom have no recording yet)
 const _S3VO_POWER = { speedBurst:'speed', guardFreeze:'freeze', royalVision:'jar' };
 const _s3voPlayed = new Set();
+// #Jane 2026-06-09: a blocking modal is up (crystal reward / Bible checkpoint /
+// mini-game / win / danger). Onboarding narration must WAIT for it to close so the
+// spoken line always matches what's on screen — e.g. the "those rude shepherds…go
+// around them" line was playing UNDER the crystal stepping-stone modal.
+function _s3voBlockingModalOpen(){
+  const ids = ['crystalReward','challengeModal','rescueModal','wellPulleyModal','winModal','dangerModal','tipPopupOverlay'];
+  for (let i=0;i<ids.length;i++){
+    const el = document.getElementById(ids[i]);
+    if (el && (el.classList.contains('active') || el.getAttribute('aria-hidden') === 'false')) return true;
+  }
+  return false;
+}
 function _s3vo(key, opts){
   opts = opts || {};
   try { if (typeof game !== 'undefined' && game.scene !== 2) return; } catch(e){ return; }
-  if (!opts.repeat){ if (_s3voPlayed.has(key)) return; _s3voPlayed.add(key); }
+  if (!opts.repeat && _s3voPlayed.has(key)) return;
   const mapKey = _S3VO_KEY[key]; if (!mapKey || !audio[mapKey]) return;
-  const fire = () => { try { playVoiceLine(mapKey); } catch(e){} };
+  let _waits = 0;
+  const fire = () => {
+    // hold the line until any blocking modal closes (cap the wait so a stuck modal
+    // can never strand a line forever — ~24s of 400ms retries)
+    if (_s3voBlockingModalOpen() && _waits++ < 60){ setTimeout(fire, 400); return; }
+    if (!opts.repeat){ if (_s3voPlayed.has(key)) return; _s3voPlayed.add(key); }
+    try { playVoiceLine(mapKey); } catch(e){}
+  };
   if (opts.delay) setTimeout(fire, opts.delay); else fire();
 }
 function _s3voReset(){ try { _s3voPlayed.clear(); } catch(e){} }
@@ -7238,9 +7257,16 @@ function _herdUpdateWolves(dt, now){
   const stillThreat = scene3Herd.wolves.some(w => w.state!=='flee' && w.state!=='gone');
   if (!stillThreat && scene3Herd.wolves.length){
     scene3Herd.wolvesCleared = true;
+    // #Jane 2026-06-09: STOP the wolf-attack bed the instant the last wolf is shooed
+    // (don't wait on the per-frame sync) so the danger music can't linger.
+    try { _stopWolfRaidAudio(); } catch(e){}
     try { play('success')||play('levelUp')||play('chime'); } catch(e){}
     try { spawnGlitterBurstAtPlayer(16); } catch(e){}
-    try { toast('🎉 The wolves are driven off! Now walk by the flock and lead them across to the pen.'); } catch(e){}
+    // #Jane 2026-06-09: kids didn't realise the danger was OVER (they'd cross alone and
+    // the sheep wouldn't follow). A big, can't-miss ALL-CLEAR banner tells them the
+    // threat is gone AND what to do next: walk close to gather the flock, then cross.
+    try { _showCrossingBanner('✅ <b>All clear — the wolves are gone!</b> Walk up close to your sheep to gather them, then lead the flock <b>across the river</b> to the pen.', 6000); } catch(e){}
+    try { toast('🐑 Walk right next to each sheep so it follows you across.'); } catch(e){}
   }
 }
 // #138 Jane 2026-06-04: PEN RAID — a SECOND wolf wave once the rescued flock is
@@ -7364,6 +7390,8 @@ function _herdUpdatePenWolves(dt, now){
   const stillThreat = scene3Herd.penWolves.some(w => w.state!=='flee' && w.state!=='gone');
   if (!stillThreat){
     scene3Herd.penRaidDone = true;
+    // #Jane 2026-06-09: stop the wolf-attack bed immediately when the 2nd raid ends.
+    try { _stopWolfRaidAudio(); } catch(e){}
     try { play('success')||play('levelUp')||play('chime'); } catch(e){}
     try { spawnGlitterBurstAtPlayer(14); } catch(e){}
     try { toast('🎉 The pen is safe — the flock can rest easy!'); } catch(e){}
@@ -7491,6 +7519,10 @@ function _closeWolfShooModal(){
 // setMusic('bgm'), which would otherwise leave these non-_LOOP_TRACKS loops dead.
 let _wolfRaidAudioOn = false, _wolfRaidPrevBgmVol = null;
 function _startWolfRaidAudio(){
+  // #Jane 2026-06-09: never let the wolf-attack bed start UNDER a crystal-reward (or
+  // other blocking) modal — it must wait until the modal is closed. The per-frame
+  // _syncWolfRaidAudio will start it on the next frame once the modal is gone.
+  try { if (typeof _s3voBlockingModalOpen === 'function' && _s3voBlockingModalOpen()) return; } catch(e){}
   _wolfRaidAudioOn = true;
   // #15 Jane 2026-06-06: FREEZE the calm overworld bgm and play bgm-corridor.mp3
   // as the SINGLE "danger lurking" bed during the wolf attack — one track, no
@@ -8369,18 +8401,68 @@ function _updateScene3WellCut(now){
     // so two shepherd lines can never sound on top of each other.
     try { playVoiceLine(_S3WC_BEATS[bi].vo); } catch(e){}
   }
-  // outro → hand back into play
+  // outro → hand back into play, then flow STRAIGHT into the rescue mini-game so the
+  // kid never has to hunt for + step onto the billboard (#Jane 2026-06-09 "still not
+  // able to launch the mini games while stepping on the billboard").
   if (bi >= _S3WC_BEATS.length) {
     if (!C.outroAt) {
       C.outroAt = now;
       try { _showCrossingBanner('🛡️ <b>Quick — drive off the rude shepherds and rescue the daughters!</b>', 3800); } catch(e){}
     }
     if (now - C.outroAt > 750) {
-      C.active = false;
-      try { updateCamera(); } catch(e){}   // recenter on Moses immediately
+      _endScene3WellCut(true);
     }
   }
 }
+// Shared cutscene-END: stop the freeze, recenter the camera, and (optionally) open
+// the rescue mini-game DIRECTLY so the well-confrontation flows into the rescue
+// without the kid having to find the billboard. Called by the natural outro AND the
+// skip tap. Idempotent.
+function _endScene3WellCut(autoLaunchRescue){
+  const C = window._scene3WellCut;
+  if (!C || !C.active) return;
+  C.active = false; C.done = true;
+  try { updateCamera(); } catch(e){}   // recenter on Moses immediately
+  if (autoLaunchRescue){
+    try {
+      const rg = (typeof challengeGates !== 'undefined' && challengeGates)
+        ? challengeGates.find(g => g && g.zone === 'rescue') : null;
+      if (rg && !rg.solved && typeof openChallenge === 'function'){
+        // a short beat so the unfreeze + camera recenter paint before the modal opens
+        setTimeout(function(){ try {
+          const rm = document.getElementById('rescueModal');
+          if (rm && rm.classList.contains('active')) return;     // already up — don't double-open
+          if (game.state === 'dialog' || game.state === 'tutorial') return;
+          openChallenge(rg);
+        } catch(e){} }, 380);
+      }
+    } catch(e){}
+  }
+}
+// SKIP — let the kid tap/press to skip the (long, fully-voiced) confrontation and
+// drop straight into the action. #Jane 2026-06-09: Moses is frozen for the entire
+// dialogue (~30s with the recorded lines), so a skip means kids are never stuck. A
+// short grace window keeps the same tap that started the scene from skipping it.
+function _skipScene3WellCut(){
+  const C = window._scene3WellCut;
+  if (!C || !C.active) return false;
+  try { if (performance.now() - (C.t0 || 0) < 900) return false; } catch(e){}
+  try { if (typeof _curVoiceLine !== 'undefined' && _curVoiceLine){ _curVoiceLine.pause(); _curVoiceLine.currentTime = 0; } } catch(e){}
+  _endScene3WellCut(true);
+  return true;
+}
+(function _wireScene3WellCutSkip(){
+  try {
+    const skip = (e) => { try {
+      if (window._scene3WellCut && window._scene3WellCut.active){
+        if (_skipScene3WellCut()){ try{ e.preventDefault(); }catch(_){} try{ e.stopPropagation(); }catch(_){} }
+      }
+    } catch(_){} };
+    // capture phase so the skip wins over the shoo-tap / movement handlers
+    document.addEventListener('pointerdown', skip, true);
+    document.addEventListener('keydown', skip, true);
+  } catch(e){}
+})();
 
 // Draw one cutscene actor (image-or-vector fallback), bottom-anchored on its
 // tile, with a soft ground shadow. opt: {dxpx, flip, scale, anger}.
@@ -8541,6 +8623,23 @@ function _drawScene3WellCut(){
       accent = '#a3320b'; nm = 'Shepherd';
     }
     _s3wcBubble(ax, ay, speaking.text, accent, nm);
+  }
+  // (6) SKIP affordance — appears after a short grace so the same tap that started
+  // the scene can't dismiss it instantly. #Jane 2026-06-09.
+  if (now - (C.t0 || 0) > 900){
+    ctx.save();
+    ctx.font = '700 13px "Fredoka","Baloo 2","Trebuchet MS",sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const label = 'Tap to skip ▸';
+    const tw = ctx.measureText(label).width + 28;
+    const bh = 28, bx = CANVAS_W/2 - tw/2, by = CANVAS_H - 46;
+    ctx.globalAlpha = 0.55 + Math.abs(Math.sin(now/520))*0.30;
+    _s3wcRound(bx, by, tw, bh, 14); ctx.fillStyle = 'rgba(18,10,3,0.74)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,214,90,0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ffe39c';
+    ctx.fillText(label, CANVAS_W/2, by + bh/2 + 1);
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -19575,9 +19674,14 @@ function startTimers(){
   _timerStartedAtMs = Date.now();
   _timerStartTimeLeft = game.timeLeft;
   timerInterval = setInterval(() => {
-    if (game.state !== 'playing') {
-      // Pause-aware: while not playing, slide _timerStartedAtMs forward
-      // so timeLeft stays frozen until the kid resumes.
+    // #Jane 2026-06-09: FREEZE the sunset clock while the well-confrontation cutscene
+    // plays — Moses can't move during the shepherd/Moses dialogue, so the timer must
+    // not tick against the kid. The cutscene keeps game.state='playing' (it freezes
+    // the world via _cutHold, not the state), so check it explicitly.
+    const _cutHold = !!(window._scene3WellCut && window._scene3WellCut.active);
+    if (game.state !== 'playing' || _cutHold) {
+      // Pause-aware: while not playing (or frozen for the cutscene), slide
+      // _timerStartedAtMs forward so timeLeft stays frozen until the kid resumes.
       _timerStartedAtMs = Date.now() - (_timerStartTimeLeft - game.timeLeft) * 1000;
       return;
     }
