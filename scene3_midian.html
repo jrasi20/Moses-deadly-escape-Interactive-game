@@ -13,12 +13,28 @@
      the fallback for first loads / when no SW is active. Bump bek-build on deploy. -->
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="bek-build" content="2026-05-21-cachebust-v5">
+<meta name="bek-build" content="2026-06-14-v82">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- 2026-06-14 SEQUENTIAL GATE (one epic game): Scene 3 can only be entered after
+     Scene 2 is complete. Runs synchronously in <head> before any paint.
+     `bek.bundle1.progress` = highest completed scene (0..3). Arriving from Scene 2
+     (?from=scene2) marks Scene 2 complete. Out-of-order access bounces to the
+     furthest playable scene. Dev/test URLs are exempt. -->
+<script>
+(function(){
+  try {
+    if (/(?:welltest|rescuetest|testjigsaw|dev)=/.test(location.search)) return;
+    var from = new URLSearchParams(location.search).get('from');
+    var p = parseInt(localStorage.getItem('bek.bundle1.progress') || '0', 10) || 0;
+    if (from === 'scene2') { if (p < 2) { try { localStorage.setItem('bek.bundle1.progress','2'); } catch(e){} } return; }
+    if (p < 2) { location.replace(p >= 1 ? 'scene2_desert.html' : 'scene1_palace.html'); }
+  } catch(e){}
+})();
+</script>
 <meta name="copyright" content="copyright 2026 Bible Explorer Kids. All rights reserved.">
 <meta name="author" content="Bible Explorer Kids">
-<meta name="description" content="Moses' Deadly Escape - Scene 3: The Well of Midian - Interactive Bible Adventure for Kids">
-<title>Moses' Deadly Escape - Scene 3: The Well of Midian</title>
+<meta name="description" content="Moses's Deadly Escape - Interactive Bible Adventure for Kids">
+<title>Moses's Deadly Escape</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -2850,6 +2866,65 @@
   @keyframes wolfShooBob { 0%,100%{transform:translateY(0) rotate(-4deg);} 50%{transform:translateY(-5px) rotate(4deg);} }
   @media (orientation:landscape) and (max-height:500px){ .wolf-shoo-card{ padding:10px 16px; max-width:min(380px,72vw); } .wolf-shoo-icon{font-size:26px;} .wolf-shoo-title{font-size:15px;} .wolf-shoo-body{font-size:12.5px;margin-bottom:8px;} .wolf-shoo-btn{font-size:17px;min-height:48px;padding:10px 24px;} }
   @keyframes tipPopIn { 0% { transform:translateY(40px) scale(0.85); opacity:0; } 100% { transform:translateY(0) scale(1); opacity:1; } }
+  /* 2026-06-14 (Jane): first-event HALO + 👇 pointing hand — ported from scene 1 so
+     scene 3 has the same "look HERE" indicator scenes 1 & 2 use. */
+  .tip-pointer-ring { position: fixed; z-index: 57; border: 4px solid #ffd976; border-radius: 18px; pointer-events: none; box-shadow: 0 0 18px rgba(255,217,118,0.85), inset 0 0 12px rgba(255,217,118,0.45); animation: tipRingPulse 1.1s ease-in-out infinite; }
+  @keyframes tipRingPulse { 0%,100% { transform: scale(1.0); opacity: 1.0; } 50% { transform: scale(1.18); opacity: 0.55; } }
+  .tip-pointer-hand { position: fixed; z-index: 58; font-size: 36px; pointer-events: none; animation: tipHandBounce 0.9s ease-in-out infinite; text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
+  @keyframes tipHandBounce { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -8px); } }
+  /* ==== END-OF-JOURNEY TRACKER (one epic game, 2026-06-14) ====
+     Ported from scene1's world-map component so all four trackers match.
+     Scene 3 is terminal, so this is ALWAYS the all-complete state: every leg
+     done, Moses walks the last step into Jethro's tent. Shown after the
+     "SCENE 3 COMPLETE" banner, before the win modal / certificate. */
+  .world-map-overlay {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at top, #c77d3a 0%, #7a3a13 55%, #1a0a00 100%);
+    z-index: 60; display: none; align-items: center; justify-content: center;
+    padding: 18px; animation: wm-fade 0.5s ease-out;
+  }
+  .world-map-overlay.active { display: flex; }
+  @keyframes wm-fade { from { opacity: 0; } to { opacity: 1; } }
+  .world-map-box {
+    background: linear-gradient(180deg, #f5e4b7 0%, #e9cf8a 48%, #d6b369 100%);
+    border: 4px solid #8a5a22; border-radius: 18px; padding: 26px 24px;
+    width: min(980px, 96%); max-height: 94svh; overflow-y: auto;
+    box-shadow: 0 0 36px rgba(80,40,10,0.6), inset 0 0 0 2px #c59754, inset 0 0 24px rgba(120,70,20,0.25);
+    color: #3a1a00; text-align: center;
+  }
+  .world-map-title { font-family: Georgia, serif; font-size: clamp(22px, 5.2vw, 30px); color: #5a2a05; text-shadow: 0 1px 0 rgba(255,255,255,0.5); margin-bottom: 6px; letter-spacing: 0.5px; }
+  .world-map-sub { font-size: 14px; color: #6a3a18; margin-bottom: 16px; font-style: italic; }
+  .world-map-canvas {
+    background:
+      radial-gradient(ellipse at 12% 65%, rgba(180,40,20,0.25) 0%, transparent 30%),
+      radial-gradient(ellipse at 50% 65%, rgba(220,170,80,0.30) 0%, transparent 35%),
+      radial-gradient(ellipse at 85% 55%, rgba(40,120,170,0.25) 0%, transparent 30%),
+      linear-gradient(180deg, #e8c878 0%, #d4a868 60%, #b88a4a 100%);
+    border: 3px solid rgba(138,90,34,0.7); border-radius: 14px; padding: 18px 14px 16px;
+    margin-bottom: 16px; box-shadow: inset 0 0 36px rgba(120,70,20,0.35), 0 4px 14px rgba(80,40,10,0.45);
+    position: relative; overflow: hidden;
+  }
+  .world-map-canvas::before { content: '✦'; position: absolute; top: 10px; right: 14px; font-size: 22px; color: rgba(255,217,118,0.55); text-shadow: 0 0 8px rgba(255,217,118,0.4); pointer-events: none; }
+  .world-map-svg { width: 100%; height: auto; max-height: 520px; display: block; position: relative; z-index: 1; }
+  .wm-pin-home circle { animation: wm-pin-pulse 1.4s ease-in-out infinite; }
+  @keyframes wm-pin-pulse { 0%, 100% { transform: scale(1.0); } 50% { transform: scale(1.18); } }
+  .wm-moses { transform: translate(540px, 220px); transition: transform 2.4s cubic-bezier(0.4, 0.0, 0.2, 1.0); }
+  .wm-moses.arrived { transform: translate(690px, 220px); }
+  .wm-moses-glow { animation: wm-moses-pulse 1.2s ease-in-out infinite; }
+  @keyframes wm-moses-pulse { 0%, 100% { opacity: 0.5; r: 38; } 50% { opacity: 0.9; r: 46; } }
+  .world-map-caption { font-size: 15px; color: #3a1a00; font-weight: 700; margin-bottom: 18px; min-height: 22px; }
+  .world-map-btn { background: linear-gradient(180deg, #ffd976 0%, #e0a544 100%); color: #3a1505; border: 3px solid #8a5a22; border-radius: 30px; padding: 14px 28px; font-family: Georgia, serif; font-size: clamp(15px, 3.6vw, 18px); font-weight: 800; letter-spacing: 0.5px; cursor: pointer; box-shadow: 0 6px 20px rgba(80,40,10,0.5), inset 0 -3px 0 rgba(0,0,0,0.18); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .world-map-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(80,40,10,0.6), inset 0 -3px 0 rgba(0,0,0,0.18); }
+  .world-map-btn:active { transform: translateY(0); }
+  @media (orientation: landscape) and (max-height: 600px) {
+    .world-map-box { padding: 14px 16px; max-height: 96svh; }
+    .world-map-title { font-size: 20px; margin-bottom: 4px; }
+    .world-map-sub { font-size: 12px; margin-bottom: 10px; }
+    .world-map-canvas { padding: 10px 8px 6px; margin-bottom: 10px; }
+    .world-map-svg { max-height: 40svh; }
+    .world-map-caption { font-size: 13px; margin-bottom: 10px; }
+    .world-map-btn { padding: 10px 22px; font-size: 14px; }
+  }
 </style>
 </head>
 <body>
@@ -3290,8 +3365,8 @@
 <!-- ================ LESSON MODAL ================ -->
 <div class="modal-overlay lesson-modal" id="lessonModal">
   <div class="modal-content">
-    <h2>*** God had a plan for Moses. ***</h2>
-    <p>And God has a plan for you, too.</p>
+    <h2>You did it! Moses is safe in Midian!</h2>
+    <p>You guided Moses past every danger to his new home. Just as God had a plan for Moses, God has a wonderful plan for YOU, too. Well done, explorer!</p>
     <button class="btn" id="lessonContinueBtn">Continue</button>
   </div>
 </div>
@@ -3318,6 +3393,63 @@
   </div>
 </div>
 
+<!-- END-OF-JOURNEY TRACKER (one epic game): all legs complete, Moses arrives at
+     Jethro's tent. Shown after the SCENE 3 COMPLETE banner, before the win modal. -->
+<div class="world-map-overlay" id="endJourneyOverlay" role="dialog" aria-modal="true" aria-labelledby="endJourneyTitle">
+  <div class="world-map-box">
+    <h2 class="world-map-title" id="endJourneyTitle">Moses Has Finished His Journey!</h2>
+    <p class="world-map-sub">From Pharaoh's palace, across the desert, all the way to Midian.</p>
+    <div class="world-map-canvas" aria-hidden="true">
+      <svg class="world-map-svg" viewBox="0 0 760 380" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <text x="100" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(140,40,20,0.65)" letter-spacing="3">EGYPT</text>
+        <text x="320" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(180,100,30,0.7)" letter-spacing="3">DESERT</text>
+        <text x="610" y="60" text-anchor="middle" font-size="17" font-weight="800" fill="rgba(30,80,140,0.65)" letter-spacing="3">MIDIAN</text>
+        <path d="M 130 250 Q 220 130, 320 250 Q 430 370, 540 220 Q 620 130, 690 220"
+              fill="none" stroke="#5a2d05" stroke-width="5" stroke-dasharray="14 10" opacity="0.75" stroke-linecap="round"/>
+        <!-- Palace (DONE) -->
+        <g class="wm-pin wm-pin-done" transform="translate(130, 250)">
+          <circle r="56" fill="#fffbe6" stroke="#1a4830" stroke-width="6"/>
+          <image href="assets/images/color%20palace.png" x="-46" y="-46" width="92" height="92" preserveAspectRatio="xMidYMid slice" clip-path="circle(46px at 46px 46px)" onerror="this.style.display='none'"/>
+          <circle cx="38" cy="-38" r="18" fill="#3a8a5e" stroke="#1a4830" stroke-width="2.5"/>
+          <text x="38" y="-32" text-anchor="middle" font-size="22" fill="#fff" font-weight="900">✓</text>
+          <text x="0" y="-78" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="800">Palace</text>
+        </g>
+        <!-- Desert (DONE) -->
+        <g class="wm-pin wm-pin-done" transform="translate(320, 250)">
+          <circle r="58" fill="#fffbe6" stroke="#1a4830" stroke-width="6"/>
+          <image href="assets/images/palm%20shadow.png" x="-48" y="-48" width="96" height="96" preserveAspectRatio="xMidYMid slice" clip-path="circle(48px at 48px 48px)" onerror="this.style.display='none'"/>
+          <circle cx="40" cy="-40" r="18" fill="#3a8a5e" stroke="#1a4830" stroke-width="2.5"/>
+          <text x="40" y="-34" text-anchor="middle" font-size="22" fill="#fff" font-weight="900">✓</text>
+          <text x="0" y="-80" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="800">Desert</text>
+        </g>
+        <!-- Midian (DONE) -->
+        <g class="wm-pin wm-pin-done" transform="translate(540, 220)">
+          <circle r="52" fill="#fffbe6" stroke="#1a4830" stroke-width="6"/>
+          <image href="assets/images/new%20midian.png" x="-42" y="-42" width="84" height="84" preserveAspectRatio="xMidYMid slice" clip-path="circle(42px at 42px 42px)" onerror="this.setAttribute('href','assets/images/midian%201.png'); this.onerror=null;"/>
+          <circle cx="34" cy="-34" r="16" fill="#3a8a5e" stroke="#1a4830" stroke-width="2.5"/>
+          <text x="34" y="-28" text-anchor="middle" font-size="18" fill="#fff" font-weight="900">✓</text>
+          <text x="0" y="-72" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="800">Midian</text>
+        </g>
+        <!-- Jethro's tent (HOME — final destination, gold star) -->
+        <g class="wm-pin wm-pin-home" transform="translate(690, 220)">
+          <circle r="52" fill="#fffbe6" stroke="#b8860b" stroke-width="6"/>
+          <image href="assets/images/jethro%20tent.png" x="-42" y="-42" width="84" height="84" preserveAspectRatio="xMidYMid slice" clip-path="circle(42px at 42px 42px)" onerror="this.style.display='none'"/>
+          <circle cx="36" cy="-36" r="17" fill="#e8a83a" stroke="#7a4509" stroke-width="2.5"/>
+          <text x="36" y="-29" text-anchor="middle" font-size="20" fill="#3a1505" font-weight="900">★</text>
+          <text x="0" y="-72" text-anchor="middle" font-size="20" fill="#3a1505" font-weight="800">Jethro's Tent</text>
+        </g>
+        <!-- Moses figurine — walks the last step into Jethro's tent -->
+        <g id="ejMoses" class="wm-moses">
+          <circle class="wm-moses-glow" r="46" fill="rgba(255,217,118,0.65)"/>
+          <circle r="38" fill="#5a2510" stroke="#ffd976" stroke-width="4"/>
+          <image href="assets/images/moses%20front%20facing.png" x="-32" y="-32" width="64" height="64" preserveAspectRatio="xMidYMid meet" onerror="this.style.display='none'"/>
+        </g>
+      </svg>
+    </div>
+    <div class="world-map-caption" id="endJourneyCaption">Safe at last. Moses has found his new home — well done!</div>
+    <button class="world-map-btn" id="endJourneyContinueBtn" type="button">See My Certificate →</button>
+  </div>
+</div>
 <div class="modal-overlay win-modal" id="winModal" role="dialog" aria-modal="true" aria-labelledby="winTitle">
   <div class="modal-content win-content-v2">
     <!-- #83 Jane 2026-06-03: port Scene 1's victory hero shot — celebrating
@@ -4102,32 +4234,32 @@
      Alerts route to 'danger alert.mp3'; gameplay hints route to 'friendly
      alert.mp3'. Challenge modal gets a quiet bed via audNarration. -->
 <audio id="audBgm" loop preload="auto" src="assets/audio/midian%20calm.mp3"></audio>
-<audio id="audFootstep" preload="auto" src="assets/audio/guard%20footsteps.mp3"></audio>
-<audio id="audSword" preload="auto" src="assets/audio/sword%20clink.mp3"></audio>
-<audio id="audDog" preload="auto" src="assets/audio/dog%20bark.mp3"></audio>
-<audio id="audPop" preload="auto" src="assets/audio/pop.mp3"></audio>
-<audio id="audChime" preload="auto" src="assets/audio/chime2.mp3"></audio>
-<audio id="audSuccess" preload="auto" src="assets/audio/success%204.mp3"></audio>
-<audio id="audError" preload="auto" src="assets/audio/error%203.mp3"></audio>
-<audio id="audUhOh" preload="auto" src="assets/audio/uh%20oh.mp3"></audio>
+<audio id="audFootstep" preload="none" src="assets/audio/guard%20footsteps.mp3"></audio>
+<audio id="audSword" preload="none" src="assets/audio/sword%20clink.mp3"></audio>
+<audio id="audDog" preload="none" src="assets/audio/dog%20bark.mp3"></audio>
+<audio id="audPop" preload="none" src="assets/audio/pop.mp3"></audio>
+<audio id="audChime" preload="none" src="assets/audio/chime2.mp3"></audio>
+<audio id="audSuccess" preload="none" src="assets/audio/success%204.mp3"></audio>
+<audio id="audError" preload="none" src="assets/audio/error%203.mp3"></audio>
+<audio id="audUhOh" preload="none" src="assets/audio/uh%20oh.mp3"></audio>
 <!-- v2.2.2 NEW: danger alert + friendly alert -->
-<audio id="audDangerAlert" preload="auto" src="assets/audio/danger%20alert.mp3"></audio>
-<audio id="audFriendlyAlert" preload="auto" src="assets/audio/friendly%20alert.mp3"></audio>
-<audio id="audGate" preload="auto" src="assets/audio/gate%20unlock.mp3"></audio>
-<audio id="audWin" preload="auto" src="assets/audio/win%20sound.mp3"></audio>
-<audio id="audClick" preload="auto" src="assets/audio/magic%20button%20click%202.mp3"></audio>
+<audio id="audDangerAlert" preload="none" src="assets/audio/danger%20alert.mp3"></audio>
+<audio id="audFriendlyAlert" preload="none" src="assets/audio/friendly%20alert.mp3"></audio>
+<audio id="audGate" preload="none" src="assets/audio/gate%20unlock.mp3"></audio>
+<audio id="audWin" preload="none" src="assets/audio/win%20sound.mp3"></audio>
+<audio id="audClick" preload="none" src="assets/audio/magic%20button%20click%202.mp3"></audio>
 <!-- #167 Jane 2026-06-06: narration/cinematic panels should turn with the same page-turn SFX Scene 1 uses. -->
-<audio id="audPageTurn" preload="auto" src="assets/audio/page%20turn.mp3"></audio>
+<audio id="audPageTurn" preload="none" src="assets/audio/page%20turn.mp3"></audio>
 <!-- batch-3 Jane 2026-06-06: win confetti sparkle, victory heat-up bed, wolf-attack danger bed, lively post-scene-3 narration bed -->
-<audio id="audConfetti"     preload="auto" src="assets/audio/win%20confetti%20sparkle.mp3"></audio>
-<audio id="audBgmExit"      preload="auto" src="assets/audio/bgm-exit.mp3"></audio>
-<audio id="audBgmCorridor"  loop preload="auto" src="assets/audio/bgm-corridor.mp3"></audio>
-<audio id="audEgyptianCover" loop preload="auto" src="assets/audio/egyptian%20cover%20music.mp3"></audio>
-<audio id="audClickSound" preload="auto" src="assets/audio/click%20sound.mp3"></audio>
+<audio id="audConfetti"     preload="none" src="assets/audio/win%20confetti%20sparkle.mp3"></audio>
+<audio id="audBgmExit"      preload="none" src="assets/audio/bgm-exit.mp3"></audio>
+<audio id="audBgmCorridor"  loop preload="none" src="assets/audio/bgm-corridor.mp3"></audio>
+<audio id="audEgyptianCover" loop preload="none" src="assets/audio/egyptian%20cover%20music.mp3"></audio>
+<audio id="audClickSound" preload="none" src="assets/audio/click%20sound.mp3"></audio>
 <!-- v3.4: character-input click (letter taps, match/unscramble/sequence) -->
-<audio id="audTap" preload="auto" src="assets/audio/click.mp3"></audio>
+<audio id="audTap" preload="none" src="assets/audio/click.mp3"></audio>
 <!-- v3.4: fast tension music that kicks in when guards become 'alerted' -->
-<audio id="audAlerted" loop preload="auto" src="assets/audio/guards%20tension.mp3"></audio>
+<audio id="audAlerted" loop preload="none" src="assets/audio/guards%20tension.mp3"></audio>
 <!-- v3.6: narration-only cinematic music + new pickup/outcome sounds -->
 <audio id="audNarration" loop preload="auto" src="assets/audio/narration%20bg%20music.mp3"></audio>
 <!-- v3.28 (Scene 3 port — CANONICAL §15): voice-over for the cinematic
@@ -4136,118 +4268,118 @@
      spec, ~30s, 130 WPM, Rachel/Bella voice). Until then, .play() rejects
      silently on the missing file — panel text serves as captions. -->
 <audio id="audCinNarrate"     preload="auto" src="assets/audio/scene-3-narration.mp3"></audio>
-<audio id="audCloseNarrate"  preload="auto"></audio>
-<audio id="audEpilogueNarrate" preload="auto"></audio>
-<audio id="audCoin"      preload="auto" src="assets/audio/coin%20collect.mp3"></audio>
-<audio id="audCaptured"  preload="auto" src="assets/audio/captured%20by%20guard.mp3"></audio>
-<audio id="audTimeUp"    preload="auto" src="assets/audio/time%20up.mp3"></audio>
+<audio id="audCloseNarrate"  preload="none"></audio>
+<audio id="audEpilogueNarrate" preload="none"></audio>
+<audio id="audCoin"      preload="none" src="assets/audio/coin%20collect.mp3"></audio>
+<audio id="audCaptured"  preload="none" src="assets/audio/captured%20by%20guard.mp3"></audio>
+<audio id="audTimeUp"    preload="none" src="assets/audio/time%20up.mp3"></audio>
 <!-- v2.2.7 Jane asset wiring: full Scene 2 audio vocabulary. Every sound
      effect below is keyed to a concrete Scene 2 gameplay moment - see the
      play() call sites in the script for the triggers. -->
-<audio id="audWaterSkin"      preload="auto" src="assets/audio/water%20skin.mp3"></audio>
-<audio id="audOasisWater"     preload="auto" src="assets/audio/oasis%20water.mp3"></audio>
-<audio id="audCliffStep"      preload="auto" src="assets/audio/cliff%20step.mp3"></audio>
-<audio id="audMirageWoosh"    preload="auto" src="assets/audio/mirage%20woosh.mp3"></audio>
-<audio id="audFire"           preload="auto" src="assets/audio/fire.mp3"></audio>
-<audio id="audFox"            preload="auto" src="assets/audio/fox.mp3"></audio>
-<audio id="audSandWalk"       preload="auto" src="assets/audio/sand%20walk.mp3"></audio>
-<audio id="audSandstorm"      preload="auto" src="assets/audio/sandstorm.mp3"></audio>
-<audio id="audBoulderRumble"  preload="auto" src="assets/audio/boulder%20rumble.mp3"></audio>
-<audio id="audHelloThere"     preload="auto" src="assets/audio/hello%20there.mp3"></audio>
-<audio id="audHint"           preload="auto" src="assets/audio/hint.mp3"></audio>
-<audio id="audReachedExit"    preload="auto" src="assets/audio/reached%20exit.mp3"></audio>
-<audio id="audAllComplete"    preload="auto" src="assets/audio/all%20challenges%20complete.mp3"></audio>
-<audio id="audLevelUp"        preload="auto" src="assets/audio/level%20up%202.mp3"></audio>
+<audio id="audWaterSkin"      preload="none" src="assets/audio/water%20skin.mp3"></audio>
+<audio id="audOasisWater"     preload="none" src="assets/audio/oasis%20water.mp3"></audio>
+<audio id="audCliffStep"      preload="none" src="assets/audio/cliff%20step.mp3"></audio>
+<audio id="audMirageWoosh"    preload="none" src="assets/audio/mirage%20woosh.mp3"></audio>
+<audio id="audFire"           preload="none" src="assets/audio/fire.mp3"></audio>
+<audio id="audFox"            preload="none" src="assets/audio/fox.mp3"></audio>
+<audio id="audSandWalk"       preload="none" src="assets/audio/sand%20walk.mp3"></audio>
+<audio id="audSandstorm"      preload="none" src="assets/audio/sandstorm.mp3"></audio>
+<audio id="audBoulderRumble"  preload="none" src="assets/audio/boulder%20rumble.mp3"></audio>
+<audio id="audHelloThere"     preload="none" src="assets/audio/hello%20there.mp3"></audio>
+<audio id="audHint"           preload="none" src="assets/audio/hint.mp3"></audio>
+<audio id="audReachedExit"    preload="none" src="assets/audio/reached%20exit.mp3"></audio>
+<audio id="audAllComplete"    preload="none" src="assets/audio/all%20challenges%20complete.mp3"></audio>
+<audio id="audLevelUp"        preload="none" src="assets/audio/level%20up%202.mp3"></audio>
 <!-- #127 Jane 2026-06-03: triumphant fanfare layered over level-up when the 3rd/final checkpoint question is solved -->
-<audio id="audSuccessTrumpet" preload="auto" src="assets/audio/success%20trumpet.mp3"></audio>
+<audio id="audSuccessTrumpet" preload="none" src="assets/audio/success%20trumpet.mp3"></audio>
 <!-- #128 Jane 2026-06-03: warm chime played when Moses greets a person on a real Interact press (vendor / servant / Zipporah) -->
-<audio id="audLevelUp1"       preload="auto" src="assets/audio/level%20up.mp3"></audio>
-<audio id="audCorrect"        preload="auto" src="assets/audio/correct%20answer.mp3"></audio>
-<audio id="audCollectCrown"   preload="auto" src="assets/audio/collect%20crown.mp3"></audio>
-<audio id="audChestOpen"      preload="auto" src="assets/audio/treasure%20chest%20open.mp3"></audio>
-<audio id="audGameBonus"      preload="auto" src="assets/audio/game%20bonus.mp3"></audio>
-<audio id="audVulture"        preload="auto" src="assets/audio/vulture.mp3"></audio>
-<audio id="audCamelGrunt"     preload="auto" src="assets/audio/camel%20grunt.mp3"></audio>
-<audio id="audSuccess3"       preload="auto" src="assets/audio/success%203.mp3"></audio>
+<audio id="audLevelUp1"       preload="none" src="assets/audio/level%20up.mp3"></audio>
+<audio id="audCorrect"        preload="none" src="assets/audio/correct%20answer.mp3"></audio>
+<audio id="audCollectCrown"   preload="none" src="assets/audio/collect%20crown.mp3"></audio>
+<audio id="audChestOpen"      preload="none" src="assets/audio/treasure%20chest%20open.mp3"></audio>
+<audio id="audGameBonus"      preload="none" src="assets/audio/game%20bonus.mp3"></audio>
+<audio id="audVulture"        preload="none" src="assets/audio/vulture.mp3"></audio>
+<audio id="audCamelGrunt"     preload="none" src="assets/audio/camel%20grunt.mp3"></audio>
+<audio id="audSuccess3"       preload="none" src="assets/audio/success%203.mp3"></audio>
 <!-- Scene 3 well mini-game audio (Jane drop 2026-05-21): music bed, SFX + rude-shepherd voice lines -->
-<audio id="audWellMusic"   loop preload="auto" src="assets/audio/well%20game%20music.mp3"></audio>
+<audio id="audWellMusic"   loop preload="none" src="assets/audio/well%20game%20music.mp3"></audio>
 <!-- Rescue mini-game audio -->
-<audio id="audPuzzleBg"    loop preload="auto" src="assets/audio/puzzle%20background.mp3"></audio>
+<audio id="audPuzzleBg"    loop preload="none" src="assets/audio/puzzle%20background.mp3"></audio>
 <!-- #126 Jane 2026-06-03: dedicated CHALLENGE/checkpoint modal bed (was wrongly sharing the rescue game's puzzle background) -->
-<audio id="audChallengeMusic" loop preload="auto" src="assets/audio/challenge%20modal.mp3"></audio>
-<audio id="audWaveShep"         preload="auto" src="assets/audio/wave%20of%20shepherds.mp3"></audio>
-<audio id="audBossAlert"        preload="auto" src="assets/audio/alert.mp3"></audio>
-<audio id="audGirlScream"       preload="auto" src="assets/audio/girl%20scream.mp3"></audio>
-<audio id="audShepScream"       preload="auto" src="assets/audio/shepherd%20scream.mp3"></audio>
-<audio id="audNope"             preload="auto" src="assets/audio/nope.mp3"></audio>
-<audio id="audJarSmash"         preload="auto" src="assets/audio/jar%20smash.mp3"></audio>
-<audio id="audWeaponSling"      preload="auto" src="assets/audio/weapon%20sling.mp3"></audio>
-<audio id="audVolleyPebbles"    preload="auto" src="assets/audio/volley%20of%20pebbles.mp3"></audio>
-<audio id="audSwingStaff"       preload="auto" src="assets/audio/swinging%20staff.mp3"></audio>
-<audio id="audVillainLaugh"     preload="auto" src="assets/audio/villain%20laugh.mp3"></audio>
-<audio id="audEpicTransition"   preload="auto" src="assets/audio/epic%20transition.mp3"></audio>
-<audio id="audRaceCountdown"    preload="auto" src="assets/audio/race%20countdown.mp3"></audio>
-<audio id="audWhooshReady"      preload="auto" src="assets/audio/whoosh%20ready.mp3"></audio>
+<audio id="audChallengeMusic" loop preload="none" src="assets/audio/challenge%20modal.mp3"></audio>
+<audio id="audWaveShep"         preload="none" src="assets/audio/wave%20of%20shepherds.mp3"></audio>
+<audio id="audBossAlert"        preload="none" src="assets/audio/alert.mp3"></audio>
+<audio id="audGirlScream"       preload="none" src="assets/audio/girl%20scream.mp3"></audio>
+<audio id="audShepScream"       preload="none" src="assets/audio/shepherd%20scream.mp3"></audio>
+<audio id="audNope"             preload="none" src="assets/audio/nope.mp3"></audio>
+<audio id="audJarSmash"         preload="none" src="assets/audio/jar%20smash.mp3"></audio>
+<audio id="audWeaponSling"      preload="none" src="assets/audio/weapon%20sling.mp3"></audio>
+<audio id="audVolleyPebbles"    preload="none" src="assets/audio/volley%20of%20pebbles.mp3"></audio>
+<audio id="audSwingStaff"       preload="none" src="assets/audio/swinging%20staff.mp3"></audio>
+<audio id="audVillainLaugh"     preload="none" src="assets/audio/villain%20laugh.mp3"></audio>
+<audio id="audEpicTransition"   preload="none" src="assets/audio/epic%20transition.mp3"></audio>
+<audio id="audRaceCountdown"    preload="none" src="assets/audio/race%20countdown.mp3"></audio>
+<audio id="audWhooshReady"      preload="none" src="assets/audio/whoosh%20ready.mp3"></audio>
 <!-- #129 Jane 2026-06-03: consistent modal open/close UI cues. Own elements so their
      volumes stay independent of the gameplay 'pop'/'whooshReady' and the protected mini-games. -->
-<audio id="audModalOpen"        preload="auto" src="assets/audio/whoosh%20ready.mp3"></audio>
-<audio id="audModalClose"       preload="auto" src="assets/audio/pop.mp3"></audio>
+<audio id="audModalOpen"        preload="none" src="assets/audio/whoosh%20ready.mp3"></audio>
+<audio id="audModalClose"       preload="none" src="assets/audio/pop.mp3"></audio>
 <!-- #130 Jane 2026-06-04: WOLF-RAID sequence beds. When the crossing is built and the
      wolves charge the stranded flock, BOTH of these loop until every wolf is shooed off.
      Own elements (loop) so the shared one-shot epicTransition/bossAlert used by the
      protected rescue game keep their non-looping behaviour. -->
-<audio id="audWolfEpic"  loop preload="auto" src="assets/audio/epic%20transition.mp3"></audio>
-<audio id="audWolfAlert" loop preload="auto" src="assets/audio/alert.mp3"></audio>
-<audio id="audPotFill"          preload="auto" src="assets/audio/pot%20fill%20ding.mp3"></audio>
-<audio id="audSandThud"         preload="auto" src="assets/audio/sand%20thud.mp3"></audio>
-<audio id="audStealWhoosh"      preload="auto" src="assets/audio/steal%20whoosh.mp3"></audio>
-<audio id="audWellCheer"        preload="auto" src="assets/audio/well%20win%20cheer.mp3"></audio>
-<audio id="audWellTried"        preload="auto" src="assets/audio/well%20tried.mp3"></audio>
+<audio id="audWolfEpic"  loop preload="none" src="assets/audio/epic%20transition.mp3"></audio>
+<audio id="audWolfAlert" loop preload="none" src="assets/audio/alert.mp3"></audio>
+<audio id="audPotFill"          preload="none" src="assets/audio/pot%20fill%20ding.mp3"></audio>
+<audio id="audSandThud"         preload="none" src="assets/audio/sand%20thud.mp3"></audio>
+<audio id="audStealWhoosh"      preload="none" src="assets/audio/steal%20whoosh.mp3"></audio>
+<audio id="audWellCheer"        preload="none" src="assets/audio/well%20win%20cheer.mp3"></audio>
+<audio id="audWellTried"        preload="none" src="assets/audio/well%20tried.mp3"></audio>
 <audio id="audCoverMusic"       preload="auto" src="assets/audio/cover%20page%20music.mp3"></audio>
-<audio id="audSheepBleat"       preload="auto" src="assets/audio/sheep%20bleat.mp3"></audio>
-<audio id="audGameOver"         preload="auto" src="assets/audio/game%20over%202.mp3"></audio>
-<audio id="audVoJethro"         preload="auto" src="assets/audio/this%20water%20is%20for%20jethro.mp3"></audio>
-<audio id="audVoCongrats"       preload="auto" src="assets/audio/congratulations%20scene%203.mp3"></audio>
+<audio id="audSheepBleat"       preload="none" src="assets/audio/sheep%20bleat.mp3"></audio>
+<audio id="audGameOver"         preload="none" src="assets/audio/game%20over%202.mp3"></audio>
+<audio id="audVoJethro"         preload="none" src="assets/audio/this%20water%20is%20for%20jethro.mp3"></audio>
+<audio id="audVoCongrats"       preload="none" src="assets/audio/congratulations%20scene%203.mp3"></audio>
 <!-- Scene-3 voice-first ONBOARDING lines (Jane's recordings). Played just-in-time,
      ONCE each, via _s3vo() (single-channel through playVoiceLine so they never
      overlap each other or the music). They replace the old text tutorial modals. -->
-<audio id="audVoS3Goal"       preload="auto" src="assets/audio/vo-s3-goal.mp3"></audio>
-<audio id="audVoS3Move"       preload="auto" src="assets/audio/vo-s3-move.mp3"></audio>
-<audio id="audVoS3Sunset"     preload="auto" src="assets/audio/vo-s3-sunset.mp3"></audio>
-<audio id="audVoS3Checkpoint" preload="auto" src="assets/audio/vo-s3-checkpoint.mp3"></audio>
-<audio id="audVoS3Shepherd"   preload="auto" src="assets/audio/vo-s3-shepherd.mp3"></audio>
-<audio id="audVoS3Powerup"    preload="auto" src="assets/audio/vo-s3-powerup.mp3"></audio>
-<audio id="audVoS3Jar"        preload="auto" src="assets/audio/vo-s3-jar.mp3"></audio>
-<audio id="audVoS3Speed"      preload="auto" src="assets/audio/vo-s3-speed.mp3"></audio>
-<audio id="audVoS3Freeze"     preload="auto" src="assets/audio/vo-s3-freeze.mp3"></audio>
-<audio id="audVoS3Wolf"       preload="auto" src="assets/audio/vo-s3-wolf.mp3"></audio>
-<audio id="audVoS3River"      preload="auto" src="assets/audio/vo-s3-river.mp3"></audio>
-<audio id="audVoS3Crossing"   preload="auto" src="assets/audio/vo-s3-crossing.mp3"></audio>
-<audio id="audVoS3Rescue"     preload="auto" src="assets/audio/vo-s3-rescue.mp3"></audio>
-<audio id="audVoS3Well"       preload="auto" src="assets/audio/vo-s3-well.mp3"></audio>
-<audio id="audVoS3Tent"       preload="auto" src="assets/audio/vo-s3-tent.mp3"></audio>
-<audio id="audVoS3Win"        preload="auto" src="assets/audio/vo-s3-win.mp3"></audio>
+<audio id="audVoS3Goal"       preload="none" src="assets/audio/vo-s3-goal.mp3"></audio>
+<audio id="audVoS3Move"       preload="none" src="assets/audio/vo-s3-move.mp3"></audio>
+<audio id="audVoS3Sunset"     preload="none" src="assets/audio/vo-s3-sunset.mp3"></audio>
+<audio id="audVoS3Checkpoint" preload="none" src="assets/audio/vo-s3-checkpoint.mp3"></audio>
+<audio id="audVoS3Shepherd"   preload="none" src="assets/audio/vo-s3-shepherd.mp3"></audio>
+<audio id="audVoS3Powerup"    preload="none" src="assets/audio/vo-s3-powerup.mp3"></audio>
+<audio id="audVoS3Jar"        preload="none" src="assets/audio/vo-s3-jar.mp3"></audio>
+<audio id="audVoS3Speed"      preload="none" src="assets/audio/vo-s3-speed.mp3"></audio>
+<audio id="audVoS3Freeze"     preload="none" src="assets/audio/vo-s3-freeze.mp3"></audio>
+<audio id="audVoS3Wolf"       preload="none" src="assets/audio/vo-s3-wolf.mp3"></audio>
+<audio id="audVoS3River"      preload="none" src="assets/audio/vo-s3-river.mp3"></audio>
+<audio id="audVoS3Crossing"   preload="none" src="assets/audio/vo-s3-crossing.mp3"></audio>
+<audio id="audVoS3Rescue"     preload="none" src="assets/audio/vo-s3-rescue.mp3"></audio>
+<audio id="audVoS3Well"       preload="none" src="assets/audio/vo-s3-well.mp3"></audio>
+<audio id="audVoS3Tent"       preload="none" src="assets/audio/vo-s3-tent.mp3"></audio>
+<audio id="audVoS3Win"        preload="none" src="assets/audio/vo-s3-win.mp3"></audio>
 <!-- #70 Shepherd-confrontation dialogue (Exodus 2:16-17 — rude shepherds drive
      off Jethro's daughters; Moses stands up for them; the shepherds back down). -->
-<audio id="audVoAwayWell"       preload="auto" src="assets/audio/away%20from%20our%20well.mp3"></audio>
-<audio id="audVoMoveAside"      preload="auto" src="assets/audio/MOVE%20ASIDE.mp3"></audio>
-<audio id="audVoGoHome"         preload="auto" src="assets/audio/go%20home%20girls.mp3"></audio>
-<audio id="audVoLeaveThem"      preload="auto" src="assets/audio/leave%20them%20alone_moses.mp3"></audio>
-<audio id="audVoWhoAreYou"      preload="auto" src="assets/audio/who%20do%20you%20think%20you%20are.mp3"></audio>
-<audio id="audVoWeAreGoing"     preload="auto" src="assets/audio/alright%20we%20are%20going.mp3"></audio>
-<audio id="audVoSeeAbout"       preload="auto" src="assets/audio/we%20will%20see%20about%20that.mp3"></audio>
-<audio id="audVoMine"           preload="auto" src="assets/audio/that%20water%20is%20mine.mp3"></audio>
-<audio id="audVoHaha"           preload="auto" src="assets/audio/ha%20ha%20ha.mp3"></audio>
-<audio id="audVoLeaveItBe"      preload="auto" src="assets/audio/leave%20it%20be.mp3"></audio>
-<audio id="audOops"             preload="auto" src="assets/audio/oops.mp3"></audio>
+<audio id="audVoAwayWell"       preload="none" src="assets/audio/away%20from%20our%20well.mp3"></audio>
+<audio id="audVoMoveAside"      preload="none" src="assets/audio/MOVE%20ASIDE.mp3"></audio>
+<audio id="audVoGoHome"         preload="none" src="assets/audio/go%20home%20girls.mp3"></audio>
+<audio id="audVoLeaveThem"      preload="none" src="assets/audio/leave%20them%20alone_moses.mp3"></audio>
+<audio id="audVoWhoAreYou"      preload="none" src="assets/audio/who%20do%20you%20think%20you%20are.mp3"></audio>
+<audio id="audVoWeAreGoing"     preload="none" src="assets/audio/alright%20we%20are%20going.mp3"></audio>
+<audio id="audVoSeeAbout"       preload="none" src="assets/audio/we%20will%20see%20about%20that.mp3"></audio>
+<audio id="audVoMine"           preload="none" src="assets/audio/that%20water%20is%20mine.mp3"></audio>
+<audio id="audVoHaha"           preload="none" src="assets/audio/ha%20ha%20ha.mp3"></audio>
+<audio id="audVoLeaveItBe"      preload="none" src="assets/audio/leave%20it%20be.mp3"></audio>
+<audio id="audOops"             preload="none" src="assets/audio/oops.mp3"></audio>
 <!-- #108 Jane 2026-06-03: dedicated low-volume overworld AMBIENCE one-shots (zone-based).
      Separate elements reuse existing files so their quiet ambient volume never bleeds into
      the louder gameplay-event versions. NOT a music bed (keeps #97 intact). -->
-<audio id="audAmbChimes"        preload="auto" src="assets/audio/wind%20chimes.mp3"></audio>
-<audio id="audAmbCamel"         preload="auto" src="assets/audio/camel%20grunt.mp3"></audio>
-<audio id="audAmbWaterA"        preload="auto" src="assets/audio/water%20pour.mp3"></audio>
-<audio id="audAmbWaterB"        preload="auto" src="assets/audio/oasis%20water.mp3"></audio>
-<audio id="audAmbSheep"         preload="auto" src="assets/audio/sheep%20bleat.mp3"></audio>
+<audio id="audAmbChimes"        preload="none" src="assets/audio/wind%20chimes.mp3"></audio>
+<audio id="audAmbCamel"         preload="none" src="assets/audio/camel%20grunt.mp3"></audio>
+<audio id="audAmbWaterA"        preload="none" src="assets/audio/water%20pour.mp3"></audio>
+<audio id="audAmbWaterB"        preload="none" src="assets/audio/oasis%20water.mp3"></audio>
+<audio id="audAmbSheep"         preload="none" src="assets/audio/sheep%20bleat.mp3"></audio>
 
 <script>
 /* ============================================================================
@@ -5514,8 +5646,10 @@ for (const k in IMG_SRC) {
       };
       retry.onerror = _bump;
       retry.src = srcUrl + (srcUrl.indexOf('?') >= 0 ? '&' : '?') + '_swretry=' + Date.now();
-      setTimeout(_bump, 6000);
-    }, 15000);
+      setTimeout(_bump, 4000);
+    }, 4000);   // 2026-06-14 Jane: was 15000 — a single stalled sprite held the
+                // "Entering Midian" loader ~15s ("yellow tiles"). Now retries at 4s
+                // (then bumps after a further 4s) so a stuck asset can't block load.
   })(IMG_SRC[k]);
 }
 
@@ -5524,7 +5658,11 @@ for (const k in IMG_SRC) {
    Updates inline cover bar + full-screen overlay shown when Begin is
    tapped before assets are ready. */
 let _audioReady = 0;
-const _audioEls = Array.from(document.querySelectorAll('audio[id^="aud"]'));
+// 2026-06-14 phone-load fix: gate ONLY on the few critical scene-start tracks
+// (the ones left as preload="auto" — bgm, narration bed, opening VO, cover music).
+// Everything else is preload="none" and background-warmed by _warmLazyAudio() after
+// load, so a cold QR scan doesn't eagerly download 100+ MP3s up front.
+const _audioEls = Array.from(document.querySelectorAll('audio[id^="aud"][preload="auto"]'));
 const _audioTotal = _audioEls.length;
 _audioEls.forEach(a => {
   let counted = false;
@@ -5557,6 +5695,10 @@ function _updatePreloadUi(){
       if (_pendingBeginTap) {
         const fn = _pendingBeginTap; _pendingBeginTap = null; fn();
       }
+      // Critical audio + all images are ready — now background-warm the lazy
+      // (preload="none") audio so mid-game SFX/VO are cached before they're needed,
+      // without having blocked the cold load on them.
+      try { _warmLazyAudio(); } catch(e){}
     }
   } catch(e){}
 }
@@ -5572,6 +5714,29 @@ function _updatePreloadUi(){
   requestAnimationFrame(tick);
 })();
 let _pendingBeginTap = null;
+// 2026-06-14 phone-load fix: after the critical assets are ready, quietly warm the
+// lazy (preload="none") audio in small staggered batches so mid-game SFX/VO are
+// cached by the time they're needed — without flooding the network at cold start.
+let _lazyAudioWarmed = false;
+function _warmLazyAudio(){
+  if (_lazyAudioWarmed) return;
+  _lazyAudioWarmed = true;
+  try {
+    const lazy = Array.from(document.querySelectorAll('audio[preload="none"]'));
+    let i = 0;
+    const step = () => {
+      for (let n = 0; n < 4 && i < lazy.length; n++, i++) {
+        try { lazy[i].preload = 'auto'; lazy[i].load(); } catch(e){}
+      }
+      if (i < lazy.length) setTimeout(step, 600);
+    };
+    setTimeout(step, 1500);
+  } catch(e){}
+}
+// Guaranteed trigger: warm a few seconds after the page settles, regardless of the
+// preload-complete path taken (auto-launch vs cover). The _lazyAudioWarmed guard
+// makes this idempotent with the preload-complete hook above.
+try { window.addEventListener('load', () => { setTimeout(() => { try { _warmLazyAudio(); } catch(e){} }, 3000); }); } catch(e){}
 
 /* ---------- PALACE MAP (40 x 25)  ----------
    Hand-authored tilemap for Scene 1. Moses starts near the throne room (top-left)
@@ -11819,7 +11984,14 @@ function startScene1() {
   // main thread, then run setup and drop the bar once the scene has rendered.
   requestAnimationFrame(() => requestAnimationFrame(() => {
     try { _startScene1Core(); }
-    finally { requestAnimationFrame(() => _hideSceneLoader()); }
+    finally {
+      requestAnimationFrame(() => {
+        _hideSceneLoader();
+        // Start onboarding only AFTER the loader has fully faded (~660ms) so the
+        // goal voiceover never plays under the "Entering Midian…" loading bar.
+        setTimeout(() => { try { _startSceneOnboarding(); } catch(e){} }, 720);
+      });
+    }
   }));
 }
 function _startScene1Core() {
@@ -11853,7 +12025,7 @@ function _startScene1Core() {
   // the rude shepherds (pursuitScouts) + wolves only. Scene 3 is rescue, not stealth.
   applyDifficultyConfig(game.difficulty || 'easy');
   // reset pickup + servant one-time flags
-  interactables.forEach(o => { o.used = false; o.collected = false; });
+  interactables.forEach(o => { o.used = false; o.collected = false; o._bonusGiven = false; });
   // reset Scene 3 one-shot flags so they fire again on a fresh run
   try { _scene3StoneTipShown = false; } catch(e){}
   try { _scene3SS.active = false; _scene3SS.shown = false; } catch(e){}
@@ -11896,14 +12068,25 @@ function _startScene1Core() {
   // startTimers(), and the tutNextBtn handler resumes + starts timers
   // when the child taps "Start!" on the final slide.
   render();
+  // 2026-06-14 (Jane: "when the loading bar 'Loading Midian' appears, the audio
+  // tutorial narration is starting"). Pause + DEFER all onboarding (tutorial /
+  // intro-pan + its goal voiceover) until the "Entering Midian…" loader has fully
+  // faded — startScene1() calls _startSceneOnboarding() after the fade. This stops
+  // the narration from beginning under the loading bar.
+  game.state = 'paused';
+  game._timersDeferred = true;
+}
+// Onboarding (tutorial slides for first-timers, or intro camera pan + goal
+// voiceover for returning kids). Run by startScene1() AFTER the loader fades.
+function _startSceneOnboarding(){
   if (!localStorage.getItem('bek.moses3.tutDone')) {
     game.state = 'paused';
     game._timersDeferred = true;
     showTutorial(0);
   } else {
-    // v3.28 (Scene 3 port — CANONICAL §6): play the intro camera pan that
-    // sweeps to Jethro's tent so kids see the goal before they start
-    // playing. Pan is non-blocking; timers kick off after pan completes.
+    // v3.28 (Scene 3 port — CANONICAL §6): intro camera pan that sweeps to
+    // Jethro's tent so kids see the goal before they start. Pan is non-blocking;
+    // timers kick off after pan completes.
     try {
       game.state = 'paused';
       playIntroPan(() => {
@@ -11947,7 +12130,7 @@ function restartScene() {
   // v3.5: reshuffle the map for a fresh-feeling replay
   if (typeof shufflePalaceLayout === 'function') shufflePalaceLayout();
   // reset interactables (rebuild NPCs & pickups)
-  interactables.forEach(o => { o.used = false; o.collected = false; });
+  interactables.forEach(o => { o.used = false; o.collected = false; o._bonusGiven = false; });
   // v1.2 FIX (§3.8): also reset Scene 2 cinematic state (time-of-day,
   // trails, dust, caravan trader) so each replay starts at dawn.
   resetScene2Cinematic();
@@ -12080,6 +12263,49 @@ function _syncTutToggles(){
 const _firstEventSeen = { river:false, flock:false, shepherd:false, checkpoint:false, crown:false };
 function _resetFirstEventSeen(){ for (const k in _firstEventSeen) _firstEventSeen[k] = false; }
 let _tipPopupPrevState = null;
+// 2026-06-14 (Jane: scenes 1 & 2 show a glowing HALO + 👇 pointing hand on the FIRST
+// encounter of an object; scene 3 lacked it). Camera-tracking pointer ported from
+// scene 1 — a pulsing gold ring + bouncing 👇 hand glued to a world tile every frame.
+let _tipPopupActiveRing = null, _tipPopupActiveHand = null, _tipPointerRAF = 0, _tipPointerTile = null;
+function _clearTipPointer(){
+  if (_tipPopupActiveRing){ try { _tipPopupActiveRing.remove(); } catch(e){} _tipPopupActiveRing = null; }
+  if (_tipPopupActiveHand){ try { _tipPopupActiveHand.remove(); } catch(e){} _tipPopupActiveHand = null; }
+  if (_tipPointerRAF){ try { cancelAnimationFrame(_tipPointerRAF); } catch(e){} _tipPointerRAF = 0; }
+  _tipPointerTile = null;
+}
+function _tipPointAtTile(tx, ty){
+  _clearTipPointer();
+  const cnv = document.getElementById('gameCanvas');
+  if (!cnv || typeof camera === 'undefined' || typeof TILE === 'undefined') return;
+  _tipPointerTile = { tx, ty };
+  const ring = document.createElement('div'); ring.className = 'tip-pointer-ring';
+  document.body.appendChild(ring); _tipPopupActiveRing = ring;
+  const hand = document.createElement('div'); hand.className = 'tip-pointer-hand';
+  hand.textContent = '👇'; document.body.appendChild(hand); _tipPopupActiveHand = hand;
+  const _tick = () => {
+    if (!_tipPointerTile || !_tipPopupActiveRing){ _tipPointerRAF = 0; return; }
+    try {
+      const cnv2 = document.getElementById('gameCanvas');
+      if (!cnv2){ _tipPointerRAF = requestAnimationFrame(_tick); return; }
+      const r = cnv2.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0){ _tipPointerRAF = requestAnimationFrame(_tick); return; }
+      const cssTile = (r.width / CANVAS_W) * TILE;
+      const cx = r.left + ((_tipPointerTile.tx * TILE - camera.px) + TILE/2) * (r.width / CANVAS_W);
+      const cy = r.top  + ((_tipPointerTile.ty * TILE - camera.py) + TILE/2) * (r.height / CANVAS_H);
+      const size = cssTile * 2.0;
+      _tipPopupActiveRing.style.left = (cx - size/2) + 'px';
+      _tipPopupActiveRing.style.top  = (cy - size/2) + 'px';
+      _tipPopupActiveRing.style.width = size + 'px';
+      _tipPopupActiveRing.style.height = size + 'px';
+      if (_tipPopupActiveHand){
+        _tipPopupActiveHand.style.left = cx + 'px';
+        _tipPopupActiveHand.style.top  = (cy - size/2 - 44) + 'px';
+      }
+    } catch(e){}
+    _tipPointerRAF = requestAnimationFrame(_tick);
+  };
+  _tipPointerRAF = requestAnimationFrame(_tick);
+}
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
@@ -12096,6 +12322,8 @@ function showTipPopup(eventKey, opts){
   try { $('tipPopupBody').textContent  = opts.body; } catch(e){}
   overlay.classList.add('active');
   if (game.state !== 'tutorial'){ _tipPopupPrevState = game.state; game.state = 'tutorial'; }
+  // Glowing halo + pointing hand at the target tile (if the caller gave one).
+  try { if (opts.pointAtTile && typeof opts.pointAtTile.tx === 'number') _tipPointAtTile(opts.pointAtTile.tx, opts.pointAtTile.ty); else _clearTipPointer(); } catch(e){}
   try { if (audio.alerted){ audio.alerted.pause(); } } catch(e){}
   try { play('chime'); } catch(e){}
 }
@@ -12103,6 +12331,7 @@ function _hideTipPopup(){
   const overlay = document.getElementById('tipPopupOverlay');
   if (overlay) overlay.classList.remove('active');
   if (game.state === 'tutorial'){ game.state = (_tipPopupPrevState != null ? _tipPopupPrevState : 'playing'); _tipPopupPrevState = null; }
+  try { _clearTipPointer(); } catch(e){}
 }
 (function _wireTipPopup(){
   const btn = document.getElementById('tipPopupBtn');
@@ -12143,6 +12372,19 @@ function _checkScene3Tips(){
   if (game.state !== 'playing') return;
   if (typeof player === 'undefined') return;
   const px = player.tx, py = player.ty;
+  // CHECKPOINT: first time near an unsolved desert checkpoint (market gate) —
+  // halo + pointing hand on it, like scenes 1 & 2 do for their gates.
+  if (!_firstEventSeen.checkpoint && typeof challengeGates !== 'undefined'){
+    for (const g of challengeGates){
+      if (g.solved || g.zone !== 'market') continue;
+      if (Math.max(Math.abs(g.tx-px), Math.abs(g.ty-py)) <= 3){
+        showTipPopup('checkpoint', { icon:'📜', title:'A Desert Checkpoint', vo:'checkpoint',
+          pointAtTile: { tx: g.tx, ty: g.ty },
+          body:'Step onto the glowing checkpoint and answer the Bible questions. Each one you clear earns a crystal — collect 3 to build the path across the river!' });
+        return;
+      }
+    }
+  }
   // RIVER: approaching the west bank of the 3-wide river.
   // #159 Jane 2026-06-05: once the 3 checkpoints are cleared and the crossing is
   // built, STOP showing the "River of Midian" tip — the river is no longer a
@@ -12151,6 +12393,7 @@ function _checkScene3Tips(){
   try { _crossBuilt = (typeof _scene3CrystalCount === 'function') && _scene3CrystalCount() >= 3; } catch(e){}
   if (!_crossBuilt && !_firstEventSeen.river && px >= 8 && px <= 10 && py >= 6 && py <= 18){
     showTipPopup('river', { icon:'🌊', title:'The River of Midian', vo:'river',
+      pointAtTile: { tx: 12, ty: Math.max(6, Math.min(18, py)) },
       body:'The river is too deep to cross. Earn three crystals from the checkpoints to build a path of stepping-stones.' });
     return;
   }
@@ -12164,6 +12407,7 @@ function _checkScene3Tips(){
     for (const s of scene3Herd.sheep){
       if ((s.state === 'graze' || s.state === 'pinned') && Math.max(Math.abs(Math.round(s.px/TILE)-px), Math.abs(Math.round(s.py/TILE)-py)) <= 3){
         showTipPopup('flock', { icon:'🐑', title:'Watch the Flock', vo:'wolf',
+          pointAtTile: { tx: Math.round(s.px/TILE), ty: Math.round(s.py/TILE) },
           body:'A wolf is after the flock! Run right at it to shoo it away and save the sheep.' });
         return;
       }
@@ -12175,6 +12419,7 @@ function _checkScene3Tips(){
       if (sh.shovedOff || sh.caught) continue;
       if (Math.max(Math.abs(sh.tx-px), Math.abs(sh.ty-py)) <= 3){
         showTipPopup('shepherd', { icon:'🧔', title:'Rude Shepherds', vo:'shepherd',
+          pointAtTile: { tx: sh.tx, ty: sh.ty },
           body:'Those rude shepherds block the path. Don’t worry — they can’t hurt Moses. Just go around them.' });
         return;
       }
@@ -12507,6 +12752,15 @@ function triggerInteractable(obj){
   // disappearing after Moses talked to him).
   if (obj.reward === 'hint') {
     play('levelUp1') || play('chime');   // #128 greeting chime — hint NPCs are manual-Interact only
+    // 2026-06-14 (Jane: scenes 1 & 2 award bonus stars for talking to a servant/trader —
+    // do the same for Midian vendors). One-time per vendor (vendors are never marked
+    // `used`, so guard on a fresh flag, cleared in the interactable-reset loops below).
+    if (!obj._bonusGiven) {
+      obj._bonusGiven = true;
+      game.stars += 3; try { updateHudStars(); } catch(e){}
+      try { spawnGlitterBurstAtPlayer(12); } catch(e){}
+      try { play('coin') || play('chime'); } catch(e){}
+    }
     openDialog(obj.name, obj.body);
     return;
   }
@@ -18503,6 +18757,7 @@ function _renderJourneyPanel(){
   const t = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
   const c = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
   const s = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
+  const p = parseInt(_ls('bek.bundle1.totalPoints')    || '0', 10) || 0;  // lifetime points across all 3 scenes
   let owned = [];
   try { owned = JSON.parse(_ls('bek.bundle1.unlocks') || '[]') || []; } catch(e){ owned = []; }
   const _WJ_TIERS = [
@@ -18515,7 +18770,8 @@ function _renderJourneyPanel(){
   const resVal = { treasures: t, crowns: c, scrolls: s };
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
     + '<div class="wj-res">'
-    +   '<span>\u{1F48E} <strong>' + t + '</strong> Treasures</span>'
+    +   '<span>\u{1F4B0} <strong>' + t + '</strong> Treasures</span>'
+    +   '<span>⭐ <strong>' + p + '</strong> Points</span>'
     +   '<span>\u{1F451} <strong>' + c + '</strong> Crowns</span>'
     +   '<span>\u{1F4DC} <strong>' + s + '</strong> Scrolls</span>'
     + '</div><div class="wj-powers">';
@@ -18620,7 +18876,42 @@ function _spawnWinConfetti(){
     }
   } catch(e){}
 }
+// END-OF-JOURNEY tracker (one epic game): show the all-complete journey map,
+// walk Moses into Jethro's tent, then call onContinue (→ the win modal). Reuses
+// the scene-1 world-map look (ported CSS) so all four trackers match.
+function _showEndJourney(onContinue){
+  const overlay = document.getElementById('endJourneyOverlay');
+  if (!overlay) { try { if (onContinue) onContinue(); } catch(e){} return; }
+  overlay._onContinue = onContinue;
+  const moses = document.getElementById('ejMoses');
+  if (moses) moses.classList.remove('arrived');
+  // Gentle triumphant bed (egyptian cover flourish).
+  try { setMusic(null); } catch(e){}
+  try {
+    if (audio.egyptianCover) { audio.egyptianCover.currentTime = 0; audio.egyptianCover.volume = 0.5; audio.egyptianCover.loop = true; audio.egyptianCover.play().catch(()=>{}); }
+  } catch(e){}
+  overlay.classList.add('active');
+  setTimeout(() => { if (moses) moses.classList.add('arrived'); }, 500);
+  const btn = document.getElementById('endJourneyContinueBtn');
+  if (btn && !btn._wired) {
+    btn._wired = true;
+    btn.addEventListener('click', () => {
+      try { play('click'); } catch(e){}
+      try { if (audio.egyptianCover) { audio.egyptianCover.pause(); audio.egyptianCover.loop = false; audio.egyptianCover.currentTime = 0; } } catch(e){}
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        try { overlay.classList.remove('active'); overlay.style.opacity = ''; } catch(e){}
+        const cb = overlay._onContinue; overlay._onContinue = null;
+        try { if (cb) cb(); } catch(e){ console.error('end-journey continue failed', e); }
+      }, 280);
+    });
+  }
+}
 function showWin(){
+  // One epic game: Scene 3 finished → mark the whole bundle complete (progress=3).
+  try { localStorage.setItem('bek.bundle1.progress','3'); } catch(e){}
+  // Bank this scene's score into the lifetime points total (shown on the journey panel below).
+  try { if (!game._pointsBanked) { game._pointsBanked = true; const _pk='bek.bundle1.totalPoints'; localStorage.setItem(_pk, String((parseInt(localStorage.getItem(_pk)||'0',10)||0) + (game.stars||0))); } } catch(e){}
   // compute star rating
   const pct = (game.hearts / 3) * 0.4 + (game.treasureCount / game.treasuresTotal) * 0.4 + (game.timeLeft / game.timeLimit) * 0.2;
   const starRating = pct >= 0.85 ? 3 : pct >= 0.55 ? 2 : 1;
@@ -18737,18 +19028,20 @@ function showWin(){
   };
   const _runClosingThenWin = () => {
     try {
-      playClosingCinematic(_openWinFinal);
+      playClosingCinematic(() => _showEndJourney(_openWinFinal));
     } catch(e) {
-      // fallback: skip cinematic if anything errors, still show the win modal
+      // fallback: skip cinematic if anything errors, still show tracker + win modal
       /* v3.28 strip */
-      _openWinFinal();
+      _showEndJourney(_openWinFinal);
     }
   };
   if (banner) {
     banner.classList.add('active');
     setTimeout(() => {
       banner.classList.remove('active');
-      _openWinFinal();   /* #Jane 2026-06-07: straight to the win modal — the closing+epilogue narration is now the optional "Watch the Ending" button, and is no longer forced before the certificate. */
+      // One epic game (2026-06-14): the end-of-journey tracker plays first
+      // ("Moses Has Finished His Journey!"), then its Continue opens the win modal.
+      _showEndJourney(_openWinFinal);
     }, 2000);
   } else {
     _runClosingThenWin();
@@ -18809,8 +19102,10 @@ if (_winMenuBtn) _winMenuBtn.addEventListener('click', () => {
   // Return to the cover page without a full reload (keeps access unlock intact)
   $('winModal').classList.remove('active');
   $('gamePage').classList.remove('active');
-  $('coverPage').style.display = '';
-  game.state = 'cover';
+  // One epic game (2026-06-14): "Main Menu" returns to the single Scene-1 cover
+  // (the hub), where the Continue chip resumes the furthest scene from its
+  // checkpoint. Was re-showing THIS scene's own cover, breaking the one-cover rule.
+  location.href = 'scene1_palace.html';
 });
 
 /* ---------- DANGER (caught / hit out) ----------
@@ -18895,8 +19190,10 @@ $('dangerMenuBtn').addEventListener('click', () => {
   try { _killAllGameMusic(); } catch(e){}   // A17: no bed bleeds onto the cover page
   $('dangerModal').classList.remove('active');
   $('gamePage').classList.remove('active');
-  $('coverPage').style.display = '';
-  game.state = 'cover';
+  // One epic game (2026-06-14): "Main Menu" returns to the single Scene-1 cover
+  // (the hub), where the Continue chip resumes the furthest scene from its
+  // checkpoint. Was re-showing THIS scene's own cover, breaking the one-cover rule.
+  location.href = 'scene1_palace.html';
 });
 
 /* v2.2.5 FIX: Jane feedback - "I give up" on interactive puzzles was
@@ -19566,8 +19863,10 @@ $('quitBtn').addEventListener('click', () => {
   try { _killAllGameMusic(); } catch(e){}   // A17: no bed bleeds onto the cover page
   $('pauseModal').classList.remove('active');
   $('gamePage').classList.remove('active');
-  $('coverPage').style.display = '';
-  game.state = 'cover';
+  // One epic game (2026-06-14): "Main Menu" returns to the single Scene-1 cover
+  // (the hub), where the Continue chip resumes the furthest scene from its
+  // checkpoint. Was re-showing THIS scene's own cover, breaking the one-cover rule.
+  location.href = 'scene1_palace.html';
 });
 function togglePause(){
   // While a mini-game is open, pause is MINI-GAME specific — never the scene pause/music.

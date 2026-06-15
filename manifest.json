@@ -1,8 +1,8 @@
 {
-  "name": "Moses' Deadly Escape",
-  "short_name": "Moses' Escape",
+  "name": "Moses's Deadly Escape",
+  "short_name": "Moses's Escape",
   "description": "Interactive Bible maze game for kids by Bible Explorer Kids.",
-  "start_url": "./",
+  "start_url": "scene1_palace.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
