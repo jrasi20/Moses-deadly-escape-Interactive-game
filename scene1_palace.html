@@ -13,7 +13,7 @@
      the fallback for first loads / when no SW is active. Bump bek-build on deploy. -->
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="bek-build" content="2026-05-21-cachebust-v5">
+<meta name="bek-build" content="2026-06-14-v82">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <!-- 2026-05-15 PM25 (audit #1: safe-area-insets). viewport-fit=cover
      opts the page into iPhone notch / Dynamic Island / home-indicator
@@ -27,16 +27,16 @@
 <meta name="theme-color" content="#3a1508">
 <meta name="copyright" content="copyright 2026 Bible Explorer Kids. All rights reserved.">
 <meta name="author" content="Bible Explorer Kids">
-<meta name="description" content="Moses' Escape to Midian - Scene 1 - Interactive Bible Adventure for Kids">
+<meta name="description" content="Moses's Deadly Escape - Interactive Bible Adventure for Kids">
 <!-- 2026-05-15 PM27 (audit #38: service worker / PWA manifest). Inline
      manifest via data: URL so we ship the PWA capability without
      adding a second file on Etsy buyers' OneDrive. Lets the game be
      "Add to Home Screen"-installed with a proper icon, name, and
      theme color. Service worker is registered after load further down
      in the bottom <script>. -->
-<link rel="manifest" href='data:application/manifest+json,{"name":"Bible Explorer Kids: Moses Part 1","short_name":"Moses Escape","description":"Moses Escape to Midian - Interactive Bible Adventure","start_url":".","scope":".","display":"standalone","orientation":"any","background_color":"%231a0a00","theme_color":"%233a1508","icons":[{"src":"assets/images/logo%201.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/images/logo%201.png">
-<title>Moses' Escape to Midian - Scene 1: The Palace</title>
+<title>Moses's Deadly Escape</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body {
@@ -4247,7 +4247,7 @@
   <div class="cover-torch-glow right" aria-hidden="true"></div>
 
   <img src="assets/images/logo%201.png" alt="Bible Explorer Kids" class="logo" onerror="this.style.display='none'">
-  <h1 class="cover-title">Moses' Escape<br>to Midian</h1>
+  <h1 class="cover-title">Moses's Deadly<br>Escape</h1>
   <div class="cover-subtitle">Interactive Bible Adventure</div>
   <!-- 3-second hook: tells the kid what they're about to do BEFORE the story card. -->
   <div class="cover-tagline">Sneak past Pharaoh's guards. Solve Bible gates. Reach freedom.</div>
@@ -4434,7 +4434,7 @@
         <tbody>
           <tr><td>Easy</td>   <td>4 min</td><td>Gentle pace · forgiving</td></tr>
           <tr><td>Medium</td> <td>3 min</td><td>Sharper challenges</td></tr>
-          <tr><td>Hard</td>   <td>4 min</td><td>Faster foes · tightest run</td></tr>
+          <tr><td>Hard</td>   <td>3 min</td><td>Faster foes · tightest run</td></tr>
         </tbody>
       </table>
       <div style="font-size:11px;color:#ffeecf;opacity:0.7;margin-top:6px;">
@@ -4549,7 +4549,7 @@
 <div class="world-map-overlay" id="worldMapOverlay" role="dialog" aria-modal="true" aria-labelledby="worldMapTitle">
   <div class="world-map-box">
     <h2 class="world-map-title" id="worldMapTitle">Moses's Journey</h2>
-    <p class="world-map-sub">From Egypt to Midian — one step at a time.</p>
+    <p class="world-map-sub" id="worldMapSub">From Egypt to Midian — one step at a time.</p>
     <div class="world-map-canvas" aria-hidden="true">
       <!-- 2026-05-19 PM63d (Jane: "use moses sprite for figurine ... for
            icon for palace use color palace.png. for midian use
@@ -4578,9 +4578,11 @@
           <image href="assets/images/color%20palace.png" x="-46" y="-46" width="92" height="92"
                  preserveAspectRatio="xMidYMid slice" clip-path="circle(46px at 46px 46px)"
                  onerror="this.style.display='none'"/>
-          <!-- Green completed badge in corner -->
-          <circle cx="38" cy="-38" r="18" fill="#3a8a5e" stroke="#1a4830" stroke-width="2.5"/>
-          <text x="38" y="-32" text-anchor="middle" font-size="22" fill="#fff" font-weight="900">✓</text>
+          <!-- Green completed badge in corner (hidden in 'start' mode by _setJourneyState) -->
+          <g id="wmBadgePalaceDone">
+            <circle cx="38" cy="-38" r="18" fill="#3a8a5e" stroke="#1a4830" stroke-width="2.5"/>
+            <text x="38" y="-32" text-anchor="middle" font-size="22" fill="#fff" font-weight="900">✓</text>
+          </g>
           <text x="0" y="-78" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="800">Palace</text>
         </g>
         <!-- Desert pin (ACTIVE, current scene). 2026-05-20 PM63g
@@ -4594,15 +4596,17 @@
           <image href="assets/images/palm%20shadow.png" x="-48" y="-48" width="96" height="96"
                  preserveAspectRatio="xMidYMid slice" clip-path="circle(48px at 48px 48px)"
                  onerror="this.style.display='none'"/>
-          <!-- Amber play-badge in corner showing this is the live scene -->
-          <circle cx="40" cy="-40" r="17" fill="#e8a83a" stroke="#7a4509" stroke-width="2.5"/>
-          <text x="40" y="-33" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="900">▸</text>
+          <!-- Amber play-badge in corner showing this is the live scene (hidden in 'start' mode) -->
+          <g id="wmBadgeDesertActive">
+            <circle cx="40" cy="-40" r="17" fill="#e8a83a" stroke="#7a4509" stroke-width="2.5"/>
+            <text x="40" y="-33" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="900">▸</text>
+          </g>
           <text x="0" y="-80" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="800">Desert</text>
         </g>
         <!-- Midian pin (NEXT, scene 3 entry) -->
         <g class="wm-pin wm-pin-lock" transform="translate(540, 220)">
           <circle r="52" fill="#fffbe6" stroke="#555" stroke-width="5"/>
-          <image href="assets/images/newmidian.png" x="-42" y="-42" width="84" height="84"
+          <image href="assets/images/new%20midian.png" x="-42" y="-42" width="84" height="84"
                  preserveAspectRatio="xMidYMid slice" clip-path="circle(42px at 42px 42px)"
                  opacity="0.85" onerror="this.setAttribute('href','assets/images/midian%201.png'); this.onerror=null;"/>
           <!-- Lock badge -->
@@ -4623,7 +4627,7 @@
         <g id="wmMoses" class="wm-moses">
           <circle class="wm-moses-glow" r="46" fill="rgba(255,217,118,0.65)"/>
           <circle r="38" fill="#5a2510" stroke="#ffd976" stroke-width="4"/>
-          <image href="assets/images/moses.png" x="-32" y="-32" width="64" height="64"
+          <image href="assets/images/moses%20front%20facing.png" x="-32" y="-32" width="64" height="64"
                  preserveAspectRatio="xMidYMid meet"
                  onerror="this.style.display='none'"/>
         </g>
@@ -5136,26 +5140,26 @@
 
 <!-- ================ AUDIO (unlocked on first input) ================ -->
 <audio id="audBgm" loop preload="auto" src="assets/audio/palace%20tension.mp3"></audio>
-<audio id="audFootstep" preload="auto" src="assets/audio/guard%20footsteps.mp3"></audio>
-<audio id="audSword" preload="auto" src="assets/audio/sword%20clink.mp3"></audio>
-<audio id="audDog" preload="auto" src="assets/audio/dog%20bark.mp3"></audio>
-<audio id="audPop" preload="auto" src="assets/audio/pop.mp3"></audio>
-<audio id="audChime" preload="auto" src="assets/audio/chime2.mp3"></audio>
-<audio id="audSuccess" preload="auto" src="assets/audio/success%204.mp3"></audio>
-<audio id="audError" preload="auto" src="assets/audio/error%203.mp3"></audio>
-<audio id="audUhOh" preload="auto" src="assets/audio/uh%20oh.mp3"></audio>
-<audio id="audGate" preload="auto" src="assets/audio/gate%20unlock.mp3"></audio>
-<audio id="audWin" preload="auto" src="assets/audio/win%20sound.mp3"></audio>
-<audio id="audClick" preload="auto" src="assets/audio/magic%20button%20click%202.mp3"></audio>
+<audio id="audFootstep" preload="none" src="assets/audio/guard%20footsteps.mp3"></audio>
+<audio id="audSword" preload="none" src="assets/audio/sword%20clink.mp3"></audio>
+<audio id="audDog" preload="none" src="assets/audio/dog%20bark.mp3"></audio>
+<audio id="audPop" preload="none" src="assets/audio/pop.mp3"></audio>
+<audio id="audChime" preload="none" src="assets/audio/chime2.mp3"></audio>
+<audio id="audSuccess" preload="none" src="assets/audio/success%204.mp3"></audio>
+<audio id="audError" preload="none" src="assets/audio/error%203.mp3"></audio>
+<audio id="audUhOh" preload="none" src="assets/audio/uh%20oh.mp3"></audio>
+<audio id="audGate" preload="none" src="assets/audio/gate%20unlock.mp3"></audio>
+<audio id="audWin" preload="none" src="assets/audio/win%20sound.mp3"></audio>
+<audio id="audClick" preload="none" src="assets/audio/magic%20button%20click%202.mp3"></audio>
 <!-- v3.4: character-input click (letter taps, match/unscramble/sequence) -->
-<audio id="audTap" preload="auto" src="assets/audio/click.mp3"></audio>
+<audio id="audTap" preload="none" src="assets/audio/click.mp3"></audio>
 <!-- v3.4: fast tension music that kicks in when guards become 'alerted' -->
-<audio id="audAlerted" loop preload="auto" src="assets/audio/guards%20tension.mp3"></audio>
+<audio id="audAlerted" loop preload="none" src="assets/audio/guards%20tension.mp3"></audio>
 <!-- v3.6: narration-only cinematic music + new pickup/outcome sounds -->
 <audio id="audNarration" loop preload="auto" src="assets/audio/narration%20bg%20music.mp3"></audio>
-<audio id="audCoin"      preload="auto" src="assets/audio/coin%20collect.mp3"></audio>
-<audio id="audCaptured"  preload="auto" src="assets/audio/captured%20by%20guard.mp3"></audio>
-<audio id="audTimeUp"    preload="auto" src="assets/audio/time%20up.mp3"></audio>
+<audio id="audCoin"      preload="none" src="assets/audio/coin%20collect.mp3"></audio>
+<audio id="audCaptured"  preload="none" src="assets/audio/captured%20by%20guard.mp3"></audio>
+<audio id="audTimeUp"    preload="none" src="assets/audio/time%20up.mp3"></audio>
 <!-- AUDIO VARIETY (Jane 2026-05-02) — files Jane will generate next.
      Each <audio> tag preloads silently so they're ready the first time
      they fire. The play() function gracefully no-ops on missing files,
@@ -5169,78 +5173,99 @@
 <!-- 2026-05-19 PM61 (Jane: "egyptian cover music.mp3 can be used as we
      transition between scenes"). Plays on the world-map screen
      between Scene 1 win and Scene 2 entry. -->
-<audio id="audEgyptianCover" preload="auto" src="assets/audio/egyptian%20cover%20music.mp3"></audio>
+<audio id="audEgyptianCover" preload="none" src="assets/audio/egyptian%20cover%20music.mp3"></audio>
 <!-- 2026-05-19 PM63f (Jane: "for desert, on journey tracker, use palm
      shadow.mp3"). Loaded with loop=true so the journey-tracker
      overlay has a steady desert ambience while the kid reads the
      captions. Falls back gracefully if Jane hasn't dropped the file
      yet (audio.play() rejects silently). -->
-<audio id="audPalmShadow" loop preload="auto" src="assets/audio/palm%20shadow.mp3"></audio>
+<audio id="audPalmShadow" loop preload="none" src="assets/audio/palm%20shadow.mp3"></audio>
 <!-- Wave 3a (2026-05-07): heartbeat ambient that fades in when ANY guard's
      cone reaches within 3 tiles of Moses, plus the per-zone music tracks
      (throne / corridor / exit). All loop, all preloaded. play()/pause()
      gracefully no-op if any file is missing. -->
-<audio id="audHeartbeat"   loop preload="auto" src="assets/audio/heartbeat.mp3"></audio>
-<audio id="audBgmCorridor" loop preload="auto" src="assets/audio/bgm-corridor.mp3"></audio>
-<audio id="audBgmThrone"   loop preload="auto" src="assets/audio/palace%20throne.mp3"></audio>
-<audio id="audBgmExit"     loop preload="auto" src="assets/audio/palace%20exit%20corridor.mp3"></audio>
-<audio id="audSlip"        preload="auto" src="assets/audio/marble%20slip.mp3"></audio>
-<audio id="audGateClear"   preload="auto" src="assets/audio/gate%20clear%20gong.mp3"></audio>
-<audio id="audSwordDraw"   preload="auto" src="assets/audio/sword%20unsheathe.mp3"></audio>
-<audio id="audPageTurn"    preload="auto" src="assets/audio/page%20turn.mp3"></audio>
-<audio id="audConfetti"    preload="auto" src="assets/audio/win%20confetti%20sparkle.mp3"></audio>
-<audio id="audFootStone"   preload="auto" src="assets/audio/footstep%20stone.mp3"></audio>
-<audio id="audDoorOpen"    preload="auto" src="assets/audio/palace%20door%20open.mp3"></audio>
-<audio id="audTorchFall"   preload="auto" src="assets/audio/torch%20fall%20whoosh.mp3"></audio>
-<audio id="audCaptainEntrance" preload="auto" src="assets/audio/captain%20entrance%20stinger.mp3"></audio>
+<audio id="audHeartbeat"   loop preload="none" src="assets/audio/heartbeat.mp3"></audio>
+<audio id="audBgmCorridor" loop preload="none" src="assets/audio/bgm-corridor.mp3"></audio>
+<audio id="audBgmThrone"   loop preload="none" src="assets/audio/palace%20throne.mp3"></audio>
+<audio id="audBgmExit"     loop preload="none" src="assets/audio/bgm-exit.mp3"></audio>
+<audio id="audSlip"        preload="none" src="assets/audio/marble%20slip.mp3"></audio>
+<audio id="audGateClear"   preload="none" src="assets/audio/gate%20clear%20gong.mp3"></audio>
+<audio id="audSwordDraw"   preload="none" src="assets/audio/sword%20unsheathe.mp3"></audio>
+<audio id="audPageTurn"    preload="none" src="assets/audio/page%20turn.mp3"></audio>
+<audio id="audConfetti"    preload="none" src="assets/audio/win%20confetti%20sparkle.mp3"></audio>
+<audio id="audFootStone"   preload="none" src="assets/audio/footstep%20stone.mp3"></audio>
+<audio id="audDoorOpen"    preload="none" src="assets/audio/palace%20door%20open.mp3"></audio>
+<audio id="audTorchFall"   preload="none" src="assets/audio/torch%20fall%20whoosh.mp3"></audio>
+<audio id="audCaptainEntrance" preload="none" src="assets/audio/captain%20entrance%20stinger.mp3"></audio>
 <!-- 2026-05-16 PM29 (Jane: "when moses goes to the exit without clearing
      the gates, play exit shut.mp3"). -->
-<audio id="audExitShut"        preload="auto" src="assets/audio/exit%20shut.mp3"></audio>
+<audio id="audExitShut"        preload="none" src="assets/audio/exit%20shut.mp3"></audio>
 <!-- 2026-05-16 PM34 (Jane: "every time power unlock is used, play
      power spell.mp3. when guard is frozen, use frozen.mp3"). -->
-<audio id="audPowerSpell"      preload="auto" src="assets/audio/power%20spell.mp3"></audio>
-<audio id="audFrozen"          preload="auto" src="assets/audio/frozen.mp3"></audio>
+<audio id="audPowerSpell"      preload="none" src="assets/audio/power%20spell.mp3"></audio>
+<audio id="audFrozen"          preload="none" src="assets/audio/frozen.mp3"></audio>
 <!-- 2026-05-08 (Jane: "for modes losing heart, the audio is incorrect.
      follow scene 2 audio for losing heart and for caught modal").
      Scene 2 plays danger alert.mp3 for non-fatal heart-loss events and
      captured by guard.mp3 for the full caught-modal. Wired both keys
      here so scene 1 matches. -->
-<audio id="audDangerAlert" preload="auto" src="assets/audio/danger%20alert.mp3"></audio>
+<audio id="audDangerAlert" preload="none" src="assets/audio/danger%20alert.mp3"></audio>
 <!-- 2026-05-08 (Jane: "the audio should change to pharaoh entry
      announcement.mp3" for the chariot cameo). -->
-<audio id="audPharaohEntry"  preload="auto" src="assets/audio/pharaoh%20entry%20announcement.mp3"></audio>
+<audio id="audPharaohEntry"  preload="none" src="assets/audio/pharaoh%20entry%20announcement.mp3"></audio>
 <!-- 2026-05-08 PM10 (Jane: "treasure chest opening, reveal should be
      animated, have special graphics and audio. refer scene2"). Wire
      the dedicated chest-open creak so the truth-chest reveal has its
      own signature sound. -->
-<audio id="audChestOpen"     preload="auto" src="assets/audio/treasure%20chest%20open.mp3"></audio>
+<audio id="audChestOpen"     preload="none" src="assets/audio/treasure%20chest%20open.mp3"></audio>
 <!-- 2026-05-12 PM16 (Jane PM16 audio mappings) -->
-<audio id="audAllChallenges"  preload="auto" src="assets/audio/all%20challenges%20complete.mp3"></audio>
-<audio id="audChallengeModal" preload="auto" src="assets/audio/challenge%20modal.mp3"></audio>
-<audio id="audHint"           preload="auto" src="assets/audio/hint.mp3"></audio>
-<audio id="audLevelUp3"       preload="auto" src="assets/audio/level%20up%203.mp3"></audio>
-<audio id="audRankReveal"     preload="auto" src="assets/audio/rank%20reveal.mp3"></audio>
-<audio id="audSuccessModal"   preload="auto" src="assets/audio/success%20modal.mp3"></audio>
-<audio id="audWaterSkin"      preload="auto" src="assets/audio/water%20skin.mp3"></audio>
-<audio id="audTimpaniRoll"    preload="auto" src="assets/audio/timpani%20roll.mp3"></audio>
-<audio id="audEat"            preload="auto" src="assets/audio/eat.mp3"></audio>
+<audio id="audAllChallenges"  preload="none" src="assets/audio/all%20challenges%20complete.mp3"></audio>
+<audio id="audChallengeModal" preload="none" src="assets/audio/challenge%20modal.mp3"></audio>
+<audio id="audHint"           preload="none" src="assets/audio/hint.mp3"></audio>
+<audio id="audLevelUp3"       preload="none" src="assets/audio/level%20up%203.mp3"></audio>
+<audio id="audRankReveal"     preload="none" src="assets/audio/rank%20reveal.mp3"></audio>
+<audio id="audSuccessModal"   preload="none" src="assets/audio/success%20modal.mp3"></audio>
+<audio id="audWaterSkin"      preload="none" src="assets/audio/water%20skin.mp3"></audio>
+<audio id="audTimpaniRoll"    preload="none" src="assets/audio/timpani%20roll.mp3"></audio>
+<audio id="audEat"            preload="none" src="assets/audio/eat.mp3"></audio>
 <!-- 2026-05-19 PM51 (Jane: "you can use treasure chime.mp3, rank reveal.mp3 ... victory chime.mp3, wind chimes.mp3, chime and chomp.mp3, door open.mp3, magic sfx.mp3, collect.mp3"). New distinct sfx so the same generic chime stops firing for every event. Each maps to a single specific moment (see sound-design wiring lower in the script). -->
-<audio id="audTreasureChime"  preload="auto" src="assets/audio/treasure%20chime.mp3"></audio>
-<audio id="audVictoryChime"   preload="auto" src="assets/audio/victory%20chime.mp3"></audio>
-<audio id="audWindChimes"     preload="auto" src="assets/audio/wind%20chimes.mp3"></audio>
-<audio id="audChimeChomp"     preload="auto" src="assets/audio/chime%20and%20chomp.mp3"></audio>
-<audio id="audClearCombo"     preload="auto" src="assets/audio/clear%20combo.mp3"></audio>
-<audio id="audCorrectAnswer"  preload="auto" src="assets/audio/correct.mp3"></audio>
-<audio id="audMagicSfx"       preload="auto" src="assets/audio/magic%20sfx.mp3"></audio>
-<audio id="audCollect"        preload="auto" src="assets/audio/collect.mp3"></audio>
+<audio id="audTreasureChime"  preload="none" src="assets/audio/treasure%20chime.mp3"></audio>
+<audio id="audVictoryChime"   preload="none" src="assets/audio/victory%20chime.mp3"></audio>
+<audio id="audWindChimes"     preload="none" src="assets/audio/wind%20chimes.mp3"></audio>
+<audio id="audChimeChomp"     preload="none" src="assets/audio/chime%20and%20chomp.mp3"></audio>
+<audio id="audClearCombo"     preload="none" src="assets/audio/clear%20combo.mp3"></audio>
+<audio id="audCorrectAnswer"  preload="none" src="assets/audio/correct.mp3"></audio>
+<audio id="audMagicSfx"       preload="none" src="assets/audio/magic%20sfx.mp3"></audio>
+<audio id="audCollect"        preload="none" src="assets/audio/collect.mp3"></audio>
 <!-- 2026-05-19 PM55 (Jane: "when you show 'God was with moses' as the
      scene completes, play bgm-exit.mp3 as it leads to the purple
      victory modal"). Separate from audBgmExit (zone-bgm) since this
      is a one-shot transition pad, not a loop. -->
-<audio id="audBgmExitOut"     preload="auto" src="assets/audio/bgm-exit.mp3"></audio>
+<audio id="audBgmExitOut"     preload="none" src="assets/audio/bgm-exit.mp3"></audio>
 <!-- 2026-05-19 PM55 (Jane: "you can use level up 2.mp3 also somewhere
      may be when GOD is arranged"). -->
-<audio id="audLevelUp2"       preload="auto" src="assets/audio/level%20up%202.mp3"></audio>
+<audio id="audLevelUp2"       preload="none" src="assets/audio/level%20up%202.mp3"></audio>
+<!-- 2026-06-14: voice-first onboarding lines (Jane's vo-s1-* recordings) + the 5
+     shared power-up lines (reused from scene 3). Lazy (preload="none") so they don't
+     weigh down the cold load; background-warmed by _warmLazyAudio() after start. -->
+<audio id="audVoS1Goal"      preload="none" src="assets/audio/vo-s1-goal.mp3"></audio>
+<audio id="audVoS1Move"      preload="none" src="assets/audio/vo-s1-move.mp3"></audio>
+<audio id="audVoS1Hide"      preload="none" src="assets/audio/vo-s1-hide.mp3"></audio>
+<audio id="audVoS1Gates"     preload="none" src="assets/audio/vo-s1-gates.mp3"></audio>
+<audio id="audVoS1GateFirst" preload="none" src="assets/audio/vo-s1-gate-first.mp3"></audio>
+<audio id="audVoS1Guard"     preload="none" src="assets/audio/vo-s1-guard.mp3"></audio>
+<audio id="audVoS1Captain"   preload="none" src="assets/audio/vo-s1-captain.mp3"></audio>
+<audio id="audVoS1Treasure"  preload="none" src="assets/audio/vo-s1-treasure.mp3"></audio>
+<audio id="audVoS1Scroll"    preload="none" src="assets/audio/vo-s1-scroll.mp3"></audio>
+<audio id="audVoS1Dog"       preload="none" src="assets/audio/vo-s1-dog.mp3"></audio>
+<audio id="audVoS1Chariot"   preload="none" src="assets/audio/vo-s1-chariot.mp3"></audio>
+<audio id="audVoS1Key"       preload="none" src="assets/audio/vo-s1-key.mp3"></audio>
+<audio id="audVoS1Win"       preload="none" src="assets/audio/vo-s1-win.mp3"></audio>
+<audio id="audVoS3Speed"         preload="none" src="assets/audio/vo-s3-speed.mp3"></audio>
+<audio id="audVoS3Freeze"        preload="none" src="assets/audio/vo-s3-freeze.mp3"></audio>
+<audio id="audVoS3Jar"           preload="none" src="assets/audio/vo-s3-jar.mp3"></audio>
+<audio id="audVoS3TruthSeeker"   preload="none" src="assets/audio/vo-s3-truthseeker.mp3"></audio>
+<audio id="audVoS3ScribesWisdom" preload="none" src="assets/audio/vo-s3-scribeswisdom.mp3"></audio>
 
 <script>
 /* ============================================================================
@@ -5484,6 +5509,13 @@ const audio = {
   exitShut:         $('audExitShut'),       // PM29: locked-exit cue
   powerSpell:       $('audPowerSpell'),     // PM34: power-up activation
   frozen:           $('audFrozen'),         // PM34: guard-freeze cue
+  // 2026-06-14: voice-first onboarding (vo-s1-*) + shared power-up lines (vo-s3-*).
+  voS1Goal: $('audVoS1Goal'), voS1Move: $('audVoS1Move'), voS1Hide: $('audVoS1Hide'),
+  voS1Gates: $('audVoS1Gates'), voS1GateFirst: $('audVoS1GateFirst'), voS1Guard: $('audVoS1Guard'),
+  voS1Captain: $('audVoS1Captain'), voS1Treasure: $('audVoS1Treasure'), voS1Scroll: $('audVoS1Scroll'),
+  voS1Dog: $('audVoS1Dog'), voS1Chariot: $('audVoS1Chariot'), voS1Key: $('audVoS1Key'), voS1Win: $('audVoS1Win'),
+  voS3Speed: $('audVoS3Speed'), voS3Freeze: $('audVoS3Freeze'), voS3Jar: $('audVoS3Jar'),
+  voS3TruthSeeker: $('audVoS3TruthSeeker'), voS3ScribesWisdom: $('audVoS3ScribesWisdom'),
   // Wave 3a (2026-05-07): heartbeat + corridor-zone bgm. Heartbeat is
   // gated by guard-distance (see _updateHeartbeat in the main loop).
   // Corridor bgm joins the existing _LOOP_TRACKS set so the single-music
@@ -6496,7 +6528,28 @@ for (const k in IMG_SRC) {
    and update the inline cover bar + full-screen overlay so kids on slow
    connections see a progress bar instead of a frozen screen. */
 let _audioReady = 0;
-const _audioEls = Array.from(document.querySelectorAll('audio[id^="aud"]'));
+// 2026-06-14 phone-load fix: gate ONLY on the few critical scene-start tracks
+// (preload="auto" — bgm, narration bed, cover music); everything else is
+// preload="none" and background-warmed by _warmLazyAudio() after load, so a cold
+// QR scan doesn't eagerly download every SFX/VO up front.
+const _audioEls = Array.from(document.querySelectorAll('audio[id^="aud"][preload="auto"]'));
+let _lazyAudioWarmed = false;
+function _warmLazyAudio(){
+  if (_lazyAudioWarmed) return;
+  _lazyAudioWarmed = true;
+  try {
+    const lazy = Array.from(document.querySelectorAll('audio[preload="none"]'));
+    let i = 0;
+    const step = () => {
+      for (let n = 0; n < 4 && i < lazy.length; n++, i++) {
+        try { lazy[i].preload = 'auto'; lazy[i].load(); } catch(e){}
+      }
+      if (i < lazy.length) setTimeout(step, 600);
+    };
+    setTimeout(step, 1500);
+  } catch(e){}
+}
+try { window.addEventListener('load', () => { setTimeout(() => { try { _warmLazyAudio(); } catch(e){} }, 3000); }); } catch(e){}
 const _audioTotal = _audioEls.length;
 _audioEls.forEach(a => {
   let counted = false;
@@ -6907,17 +6960,18 @@ const DIFFICULTY_CONFIG = {
   //                              entire map)
   //   guardPatrolMs 460  → 560  (still faster than Medium 620, but no
   //                              longer relentless)
-  //   timeLimit     180  → 240  (Easy's budget — 6 gates in 3 min was
-  //                              too tight even for adults; 4 min gives
-  //                              breathing room for the kid to scout
-  //                              between gates)
+  //   timeLimit     240  → 180  (2026-06-14 Jane: one-world spec is
+  //                              Easy 240 / Medium 180 / Hard 180 across
+  //                              all 3 scenes. Hard now has only 5 gates
+  //                              (was 6) so 3 min is fair; playtest if it
+  //                              feels tight.)
   //   censerSpeed   1.95 → 1.6  (smoke hazard cycles slower, easier to
   //                              time crossings)
   // 2026-05-19 PM53: gateCount 6 → 5 since CHALLENGE_POSITIONS now has
   // only 5 reachable cells (orphaned (29,7) removed). seedChallenges
   // would have capped at 5 anyway; making it explicit so HUD math is
   // always consistent on first-load.
-  hard:   { timeLimit: 240, guardCount: 4, guardSeeRadius: 4, guardPatrolMs: 560,
+  hard:   { timeLimit: 180, guardCount: 4, guardSeeRadius: 4, guardPatrolMs: 560,
             censerActive: true,  censerSpeed: 1.6, servantActive: true,
             gateCount: 5 },
 };
@@ -9687,7 +9741,10 @@ function _beginAdventure(){
       // Begin Adventure now goes STRAIGHT to Section 2; the prelude is
       // an explicit-opt-in Watch button. Kids who haven't seen the
       // prelude yet still have it available on the cover.
-      openCinematic();
+      // 2026-06-14 (one epic game): show the START journey-tracker bookend
+      // first ("Moses's Journey Begins"), then its Continue rolls the
+      // opening cinematic. Only on a fresh start (resume skips this).
+      _showWorldMap('start');
     }
   };
   if (_preloadPct() >= 100) {
@@ -9773,10 +9830,26 @@ window._beginAdventure = _beginAdventure;
     const chip = document.getElementById('coverContinueChip');
     const sub  = document.getElementById('coverContinueSub');
     if (!chip) return;
+    // CROSS-SCENE CONTINUE (one epic game): the single Scene-1 cover is the hub.
+    // bek.bundle1.progress = highest completed scene (0..3). If Scene 1 (and maybe
+    // 2) are done, Continue jumps the kid to their furthest scene; otherwise it
+    // resumes the Scene-1 local checkpoint. The sequential gate in scenes 2/3
+    // allows these direct jumps because progress is high enough.
+    let prog = 0;
+    try { prog = parseInt(localStorage.getItem('bek.bundle1.progress') || '0', 10) || 0; } catch(e){}
+    if (prog >= 1 && prog <= 2) {
+      chip.dataset.local  = '0';
+      chip.dataset.target = (prog >= 2) ? 'scene3_midian.html' : 'scene2_desert.html';
+      chip.style.display  = 'inline-flex';
+      if (sub) sub.textContent = (prog >= 2) ? '· Midian' : '· The Desert';
+      return;
+    }
+    // Fallback: resume the Scene-1 checkpoint (kid still on Scene 1).
     let saved = null;
     try { saved = _loadCheckpoint(); } catch(e){}
     const valid = saved && (saved.hearts || 0) > 0 && (saved.gatesCleared || 0) > 0;
     if (valid) {
+      chip.dataset.local = '1';
       chip.style.display = 'inline-flex';
       if (sub) {
         const diff = saved.difficulty ? (saved.difficulty[0].toUpperCase() + saved.difficulty.slice(1)) : '';
@@ -9789,6 +9862,14 @@ window._beginAdventure = _beginAdventure;
   const chip = document.getElementById('coverContinueChip');
   if (chip) chip.addEventListener('click', () => {
     try { unlockAudio(); play('click'); } catch(e){}
+    // Cross-scene Continue → navigate to the furthest scene the kid has reached.
+    // That scene's auto-launch resumes its own checkpoint (or starts it fresh).
+    if (chip.dataset.local === '0' && chip.dataset.target) {
+      try { _stopCoverMusic(); } catch(e){}
+      location.href = chip.dataset.target;
+      return;
+    }
+    // Scene-1 local checkpoint resume.
     let saved = null;
     try { saved = _loadCheckpoint(); } catch(e){}
     if (!saved) return;
@@ -11725,6 +11806,7 @@ const _firstEventSeen = {
 };
 function _resetFirstEventSeen(){
   for (const k in _firstEventSeen) _firstEventSeen[k] = false;
+  try { if (typeof _s1voReset === 'function') _s1voReset(); } catch(e){}   // replay onboarding narration on restart
 }
 // Show the first-event tip popup. If tutMode is OFF, falls back to a
 // one-shot toast (so the kid still gets the info but without the modal
@@ -11734,10 +11816,71 @@ function _resetFirstEventSeen(){
 let _tipPopupPrevState = null;
 let _tipPopupActiveRing = null;
 let _tipPopupActiveHand = null;
+// ===================== SCENE 1 — VOICE-FIRST ONBOARDING =====================
+// Ported from scene 3: Jane's vo-s1-* lines play JUST-IN-TIME, once each, single-
+// channel (one voice at a time), ducking the music beds so the line is audible.
+let _curVoiceLine = null, _voiceDucking = false, _voiceDuckSaved = null, _voiceDuckTimer = null;
+const _VOICE_DUCK_TRACKS = ['bgm','coverMusic','narration','bgmThrone','bgmCorridor','bgmExit','bgmExitOut','egyptianCover','palmShadow'];
+function _beginVoiceDuck(voEl){
+  try {
+    if (!_voiceDucking){
+      _voiceDuckSaved = {};
+      for (const k of _VOICE_DUCK_TRACKS){ const a = audio[k]; if (a){ _voiceDuckSaved[k] = a.volume; try { a.volume = Math.min(a.volume, 0.05); } catch(e){} } }
+      _voiceDucking = true;
+    }
+    if (_voiceDuckTimer){ clearTimeout(_voiceDuckTimer); _voiceDuckTimer = null; }
+    const restore = () => {
+      if (!_voiceDucking) return;
+      _voiceDucking = false;
+      if (_voiceDuckSaved){ for (const k in _voiceDuckSaved){ const a = audio[k]; if (a){ try { a.volume = _voiceDuckSaved[k]; } catch(e){} } } _voiceDuckSaved = null; }
+      if (_voiceDuckTimer){ clearTimeout(_voiceDuckTimer); _voiceDuckTimer = null; }
+    };
+    if (voEl){ try { voEl.addEventListener('ended', restore, { once:true }); } catch(e){} }
+    const ms = (voEl && voEl.duration && isFinite(voEl.duration) && voEl.duration > 0) ? (voEl.duration*1000 + 500) : 11000;
+    _voiceDuckTimer = setTimeout(restore, ms);
+  } catch(e){}
+}
+function playVoiceLine(elKey){
+  try {
+    const a = audio[elKey]; if (!a) return false;
+    if (typeof _soundOn !== 'undefined' && !_soundOn) return false;   // master mute
+    if (_curVoiceLine && _curVoiceLine !== a){ try { _curVoiceLine.pause(); _curVoiceLine.currentTime = 0; } catch(e){} }
+    _curVoiceLine = a;
+    try { _beginVoiceDuck(a); } catch(e){}
+    try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){}
+    return true;
+  } catch(e){ return false; }
+}
+const _S1VO_KEY = {
+  goal:'voS1Goal', move:'voS1Move', hide:'voS1Hide', gates:'voS1Gates', 'gate-first':'voS1GateFirst',
+  guard:'voS1Guard', captain:'voS1Captain', treasure:'voS1Treasure', scroll:'voS1Scroll',
+  dog:'voS1Dog', chariot:'voS1Chariot', key:'voS1Key', win:'voS1Win',
+  speed:'voS3Speed', freeze:'voS3Freeze', jar:'voS3Jar', truthseeker:'voS3TruthSeeker', scribeswisdom:'voS3ScribesWisdom'
+};
+// showTipPopup eventKey -> vo key
+const _S1VO_BY_EVENT = { gate:'gate-first', treasure:'treasure', scroll:'scroll', guard:'guard', captain:'captain', dog:'dog', secretDoor:'chariot', chariot:'chariot', exitLocked:'key' };
+// power-up key -> vo key (royalVision = the Goblet/decoy lure; reuses scene-3's jar line)
+const _S1VO_POWER = { speedBurst:'speed', guardFreeze:'freeze', royalVision:'jar', truthSeeker:'truthseeker', scribesWisdom:'scribeswisdom' };
+const _s1voPlayed = new Set();
+function _s1voReset(){ try { _s1voPlayed.clear(); } catch(e){} }
+function _s1vo(key, opts){
+  opts = opts || {};
+  if (!key) return;
+  if (!opts.repeat && _s1voPlayed.has(key)) return;
+  const mapKey = _S1VO_KEY[key]; if (!mapKey || !audio[mapKey]) return;
+  const fire = () => {
+    if (!opts.repeat){ if (_s1voPlayed.has(key)) return; _s1voPlayed.add(key); }
+    try { playVoiceLine(mapKey); } catch(e){}
+  };
+  if (opts.delay) setTimeout(fire, opts.delay); else fire();
+}
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
   if (eventKey) _firstEventSeen[eventKey] = true;
+  // 2026-06-14: play the matching narration line (just-in-time, once) in BOTH the
+  // tutorial-popup and the tutorials-off toast-fallback paths.
+  try { if (eventKey && _S1VO_BY_EVENT[eventKey]) _s1vo(_S1VO_BY_EVENT[eventKey], {delay:200}); } catch(e){}
   if (!_tutModeOn()) {
     // Fallback: tutorials disabled — kid still gets the gist as a toast.
     try { toast((opts.icon || '👋') + ' ' + opts.body); } catch(e){}
@@ -12066,9 +12209,9 @@ setTimeout(() => {
   } catch(e){}
 }, 0);
 const TUT_STEPS = [
-  { icon:'[>]',  title:'Move Moses', body:'Tap the arrows below, swipe the screen, or use arrow keys on a keyboard to move Moses through the palace.' },
-  { icon:'[#]',  title:'Hide Behind Cover', body:'Step beside a stone pillar, statue, curtain, or alcove to crouch. A blue ✓ HIDING badge shows when you are safe — guards cannot see you!' },
-  { icon:'[?]',  title:'Solve Bible Gates to Reach the Exit', body:'Glowing scroll gates block every corridor. Answer 3 Bible questions at each gate — clear them ALL to unlock the city-gate exit at the far side of the palace.' },
+  { icon:'[>]', vo:'move',  title:'Move Moses', body:'Tap the arrows below, swipe the screen, or use arrow keys on a keyboard to move Moses through the palace.' },
+  { icon:'[#]', vo:'hide',  title:'Hide Behind Cover', body:'Step beside a stone pillar, statue, curtain, or alcove to crouch. A green ✓ HIDING badge appears above Moses when you are safe — guards cannot see you!' },
+  { icon:'[?]', vo:'gates', title:'Solve Bible Gates to Reach the Exit', body:'Glowing scroll gates block every corridor. Answer 3 Bible questions at each gate — clear them ALL to unlock the city-gate exit at the far side of the palace.' },
 ];
 function showTutorial(step){
   // 2026-05-16 PM29 (Jane PM29): if the kid has disabled tutorials on
@@ -12099,6 +12242,7 @@ function showTutorial(step){
   $('tutIcon').textContent = t.icon;
   $('tutTitle').textContent = t.title;
   $('tutBody').textContent = t.body;
+  if (t.vo){ try { _s1vo(t.vo, {delay:200}); } catch(e){} }   // matching narration line
   $('tutProgress').textContent = (step+1)+' of '+TUT_STEPS.length;
   $('tutNextBtn').textContent = (step === TUT_STEPS.length-1) ? 'Start!' : 'Next';
   $('tutorialModal').classList.add('active');
@@ -12209,6 +12353,7 @@ function _maybeFireOnboardingTip(){
     window._tutFlags.goalShown = true;
     _markTutSeen('goal');
     try { toast('🗝️ Goal: find the Golden Key, then reach the EXIT.'); } catch(e){}
+    try { _s1vo('goal', {delay:120}); } catch(e){}
   }
   // 2) Gates tip — fires 12 s in (after goal tip clears), explains the unlock chain.
   if (!_hasTutSeen('gates') && elapsed > 12000 && !_introPanActive && !window._tutFlags.gatesShown) {
@@ -12373,7 +12518,7 @@ function _maybeFireFirstEventTip(){
           // the ring position every frame against the live camera so
           // the halo stays glued to the scroll's tile even as Moses
           // or camera moves.
-          body: 'Walk RIGHT NEXT to a scroll and it picks itself up. Bible-truth scrolls heal Moses by +1 heart. Clue scrolls hide a letter — collect all 3 to spell GOD!',
+          body: 'Walk right next to a scroll to collect it. Bible-truth scrolls heal Moses by +1 heart. Clue scrolls hide a letter — collect all 3 to spell GOD!',
           pointAtTile: { tx: o.tx, ty: o.ty },
         });
         return;
@@ -16103,6 +16248,8 @@ function _activatePowerup(key){
     try { toast('⏳ ' + tier.label + ' recharging — ' + left + 's left.'); } catch(e){}
     return;
   }
+  // 2026-06-14: speak the matching power-up narration on first use (once per scene).
+  try { if (_S1VO_POWER[key]) _s1vo(_S1VO_POWER[key]); } catch(e){}
   // Per-power effects.
   const now = performance.now();
   if (key === 'speedBurst') {
@@ -16520,6 +16667,11 @@ function showWin(){
   //   4. Cover music loops under the modal so the kid hears "we won!"
   //      atmosphere while they read the score / badges.
   const _fireWinCelebration = () => {
+    // One epic game: bank this scene's score into the lifetime points total
+    // (shown on the Scene-3 win "Your Journey So Far" panel). Guarded so it banks
+    // once per play of this scene.
+    try { if (!game._pointsBanked) { game._pointsBanked = true; const _pk='bek.bundle1.totalPoints'; localStorage.setItem(_pk, String((parseInt(localStorage.getItem(_pk)||'0',10)||0) + (game.stars||0))); } } catch(e){}
+    try { _s1vo('win'); } catch(e){}   // 2026-06-14: scene-1 win narration line
     try {
       const modal = document.querySelector('#winModal .modal-content');
       if (modal) {
@@ -16815,67 +16967,16 @@ function _playTransitionToScene2(){
 // the Palace pin, then walk to the Desert pin), and wire the Continue
 // button to redirect to Scene 2 with `?from=scene1` so Scene 2 knows
 // to skip its cover.
-function _showWorldMap(){
-  const overlay = document.getElementById('worldMapOverlay');
-  if (!overlay) {
-    // Hard fallback: world-map HTML missing — go straight to Scene 2.
-    try { location.href = 'scene2_desert.html?from=scene1'; } catch(e){}
-    return;
-  }
-  // Reset state in case kid replays the section.
-  const moses = document.getElementById('wmMoses');
-  if (moses) moses.classList.remove('arrived');
-  const caption = document.getElementById('worldMapCaption');
-  // 2026-05-19 PM62 (Jane: "'arrived at the desert' wordings don't
-  // work for me"). Rewrote captions with more dramatic kid-friendly
-  // copy that matches the Moses-keeps-going beat.
-  if (caption) caption.textContent = 'Egypt is behind you, Moses.';
-  overlay.classList.add('active');
-  // 2026-05-19 PM62 (Jane: "scene 1's cover audio starts playing after
-  // playing the track for the journey tracker"). Defensively stop
-  // every previously-playing music loop BEFORE we start the
-  // egyptianCover track. Without this, the cover-music or any leftover
-  // bgm continues underneath. Same teardown shape as _killAllGameMusic
-  // but inlined to avoid the post-cinematic restart it does for bgm.
+function _wmTrackerAmbience(){
+  // 2026-05-19 PM63f (Jane: "for desert, on journey tracker, use palm
+  // shadow.mp3"). Prefer palmShadow; fall back to egyptianCover then
+  // coverMusic so the tracker is never silent.
   try {
-    if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; }
-    if (audio.bgm) { audio.bgm.pause(); audio.bgm.currentTime = 0; }
-    if (audio.bgmThrone) { audio.bgmThrone.pause(); audio.bgmThrone.currentTime = 0; }
-    if (audio.bgmCorridor) { audio.bgmCorridor.pause(); audio.bgmCorridor.currentTime = 0; }
-    if (audio.bgmExit) { audio.bgmExit.pause(); audio.bgmExit.currentTime = 0; }
-    if (audio.bgmExitOut) { audio.bgmExitOut.pause(); audio.bgmExitOut.currentTime = 0; }
-    if (audio.alerted) { audio.alerted.pause(); audio.alerted.currentTime = 0; }
-    if (audio.narration) { audio.narration.pause(); audio.narration.currentTime = 0; }
-    if (audio.heartbeat) { audio.heartbeat.pause(); audio.heartbeat.currentTime = 0; }
-  } catch(e){}
-  // Kick off the Moses-figurine travel animation. The CSS transition
-  // (transform 2.6 s cubic-bezier) does the visual; we just toggle the
-  // .arrived class to set the destination transform.
-  setTimeout(() => {
-    if (moses) moses.classList.add('arrived');
-  }, 400);
-  // Mid-animation, update the caption so the kid reads progress.
-  setTimeout(() => {
-    if (caption) caption.textContent = 'Sand under his sandals. Stars over his head.';
-  }, 1500);
-  setTimeout(() => {
-    if (caption) caption.textContent = 'Keep going, Moses. God is with you.';
-  }, 3000);
-  // 2026-05-19 PM61 (Jane: "egyptian cover music.mp3 can be used as
-  // we transition between scenes"). Egyptian cover music flourish
-  // plays as the world-map opens. PM62: explicit teardown of every
-  // other audio loop above first so this track doesn't layer.
-  try {
-    // 2026-05-19 PM63f (Jane: "for desert, on journey tracker, use palm
-    // shadow.mp3"). Prefer palmShadow as the desert ambience for the
-    // journey-tracker overlay. Falls back to egyptianCover and then
-    // coverMusic if palm shadow.mp3 isn't dropped yet — never silent.
     if (audio.palmShadow && audio.palmShadow.src && audio.palmShadow.readyState !== 0) {
       audio.palmShadow.currentTime = 0;
       audio.palmShadow.volume = 0.55;
       audio.palmShadow.loop = true;
       audio.palmShadow.play().catch(()=>{
-        // fall back to egyptianCover if palmShadow rejected (missing file)
         try {
           if (audio.egyptianCover) {
             audio.egyptianCover.currentTime = 0;
@@ -16898,6 +16999,69 @@ function _showWorldMap(){
     }
   } catch(e){}
 }
+// One-world journey tracker. mode:
+//   'start'      — BEFORE Scene 1: Moses at the Palace, nothing complete yet.
+//   'transition' — AFTER Scene 1 (default): travel Palace -> Desert, go to Scene 2.
+function _showWorldMap(mode){
+  mode = mode || 'transition';
+  const overlay = document.getElementById('worldMapOverlay');
+  if (!overlay) {
+    // Hard fallback: world-map HTML missing.
+    if (mode === 'start') { try { openCinematic(); } catch(e){} return; }
+    try { location.href = 'scene2_desert.html?from=scene1'; } catch(e){}
+    return;
+  }
+  overlay.dataset.mode = mode;
+  const moses    = document.getElementById('wmMoses');
+  if (moses) moses.classList.remove('arrived');
+  const caption  = document.getElementById('worldMapCaption');
+  const _bPalace = document.getElementById('wmBadgePalaceDone');
+  const _bDesert = document.getElementById('wmBadgeDesertActive');
+  const _titleEl = document.getElementById('worldMapTitle');
+  const _subEl   = document.getElementById('worldMapSub');
+  const _btnEl   = document.getElementById('worldMapContinueBtn');
+  // Defensively stop every previously-playing music loop BEFORE the tracker
+  // ambience so nothing layers underneath (PM62).
+  try {
+    if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; }
+    if (audio.bgm) { audio.bgm.pause(); audio.bgm.currentTime = 0; }
+    if (audio.bgmThrone) { audio.bgmThrone.pause(); audio.bgmThrone.currentTime = 0; }
+    if (audio.bgmCorridor) { audio.bgmCorridor.pause(); audio.bgmCorridor.currentTime = 0; }
+    if (audio.bgmExit) { audio.bgmExit.pause(); audio.bgmExit.currentTime = 0; }
+    if (audio.bgmExitOut) { audio.bgmExitOut.pause(); audio.bgmExitOut.currentTime = 0; }
+    if (audio.alerted) { audio.alerted.pause(); audio.alerted.currentTime = 0; }
+    if (audio.narration) { audio.narration.pause(); audio.narration.currentTime = 0; }
+    if (audio.heartbeat) { audio.heartbeat.pause(); audio.heartbeat.currentTime = 0; }
+  } catch(e){}
+  if (mode === 'start') {
+    // BEFORE Scene 1 (journey-tracker bookend): no leg complete yet, so hide
+    // the Palace "done" + Desert "active" badges; Moses pulses at the Palace
+    // as the "you are here" marker. Continue rolls the opening cinematic.
+    if (_bPalace) _bPalace.style.display = 'none';
+    if (_bDesert) _bDesert.style.display = 'none';
+    if (_titleEl) _titleEl.textContent = "Moses’s Journey Begins";
+    if (_subEl)   _subEl.textContent   = "From Pharaoh’s palace to a new life in Midian.";
+    if (caption)  caption.textContent  = "His journey starts now — help Moses escape the palace!";
+    if (_btnEl)   _btnEl.textContent   = "Begin →";
+    overlay.classList.add('active');
+    _wmTrackerAmbience();
+    return;
+  }
+  // 'transition' (default): Scene 1 done — restore the done/active badges and
+  // travel Palace -> Desert.
+  if (_bPalace) _bPalace.style.display = '';
+  if (_bDesert) _bDesert.style.display = '';
+  if (_titleEl) _titleEl.textContent = "Moses’s Journey";
+  if (_subEl)   _subEl.textContent   = "From Egypt to Midian — one step at a time.";
+  if (_btnEl)   _btnEl.textContent   = "Begin the Desert →";
+  if (caption)  caption.textContent  = 'Egypt is behind you, Moses.';
+  overlay.classList.add('active');
+  // Moses-figurine travel animation (CSS transition does the visual).
+  setTimeout(() => { if (moses) moses.classList.add('arrived'); }, 400);
+  setTimeout(() => { if (caption) caption.textContent = 'Sand under his sandals. Stars over his head.'; }, 1500);
+  setTimeout(() => { if (caption) caption.textContent = 'Keep going, Moses. God is with you.'; }, 3000);
+  _wmTrackerAmbience();
+}
 // Wire the Continue button — redirects to Scene 2 with the from-scene1
 // flag so Scene 2 skips its cover page.
 (function _wireWorldMapContinue(){
@@ -16907,20 +17071,22 @@ function _showWorldMap(){
     btn._wired = true;
     btn.addEventListener('click', () => {
       try { play('click'); } catch(e){}
-      // 2026-05-19 PM63d: now that the journey-tracker music is set to
-      // loop:true, explicitly stop it when the kid hits Continue so it
-      // doesn't double-up with Scene 2's bgm after the redirect.
+      const overlay = document.getElementById('worldMapOverlay');
+      const _mode = (overlay && overlay.dataset && overlay.dataset.mode) ? overlay.dataset.mode : 'transition';
+      // Stop the looping tracker ambience so it doesn't bleed into the next screen.
       try {
         if (audio.palmShadow)    { audio.palmShadow.pause();    audio.palmShadow.loop    = false; audio.palmShadow.currentTime    = 0; }
         if (audio.egyptianCover) { audio.egyptianCover.pause(); audio.egyptianCover.loop = false; audio.egyptianCover.currentTime = 0; }
         if (audio.coverMusic)    { audio.coverMusic.pause();    audio.coverMusic.loop    = false; audio.coverMusic.currentTime    = 0; }
       } catch(e){}
-      // Fade the overlay (CSS animation will reverse-ish) then hop.
-      try {
-        const overlay = document.getElementById('worldMapOverlay');
-        if (overlay) overlay.style.opacity = '0';
-      } catch(e){}
+      try { if (overlay) overlay.style.opacity = '0'; } catch(e){}
       setTimeout(() => {
+        if (_mode === 'start') {
+          // BEFORE Scene 1: hide the tracker and roll the opening cinematic.
+          try { if (overlay) { overlay.classList.remove('active'); overlay.style.opacity = ''; } } catch(e){}
+          try { openCinematic(); } catch(e){ console.error('start-cinematic failed', e); }
+          return;
+        }
         try { location.href = 'scene2_desert.html?from=scene1'; }
         catch(e) {
           // Absolute last resort — open in same window via assign.
@@ -22661,365 +22827,11 @@ requestAnimationFrame(loop);
 updateHudHearts(); updateHudStars(); updateHudTreasure(); updateHudTimer(); try{updateHudGates();}catch(e){}
 console.log('Moses Scene 1 (Palace) ready. (c) 2026 Bible Explorer Kids.');
 
-// 2026-05-15 PM27 (audit #38: service worker / PWA). Inline service
-// worker via a Blob URL so the whole PWA lives in a single HTML file
-// — no separate sw.js to ship through Etsy/OneDrive. Strategy:
-//   - On install, cache the shell URL (this page) so subsequent loads
-//     work offline.
-//   - On fetch, network-first for HTML / audio / video (keeps content
-//     fresh + lets BGM stream); cache-first for images + CSS + JS
-//     (which are inlined here, but covers any future linked assets).
-//   - On a network miss, fall back to the cached shell so the kid
-//     never sees a browser "no internet" page mid-flight on a flaky
-//     mobile connection.
-// Only registered over https or localhost — file:// won't accept it.
-// Wrapped in try/catch so any failure is silent (we never want a
-// service-worker hiccup to take down the game).
-(function registerServiceWorker(){
-  try {
-    if (!('serviceWorker' in navigator)) return;
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
-    // 2026-05-16 PM28: bumped v1 → v2 to invalidate the cache from
-    // PM27 (which was holding the old 3800ms slideshow timing + the
-    // stale section 3 narration text). Bump this on every meaningful
-    // content change so returning kids get fresh code/assets.
-    // 2026-05-16 PM29: bumped v2 → v3 so the tutorial overhaul +
-    // golden-key/servant/toast fixes reach returning kids on next visit.
-    // 2026-05-16 PM30: bumped v3 → v4 for spot-diff pixel-diff rewire,
-    // tutorial cascade throttle, lore glow boost, dog tutorial, etc.
-    // 2026-05-16 PM31: bumped v4 → v5 for tile-pointer rAF tracking,
-    // intro-pan tutorial gate, message cleanup, win modal polish, etc.
-    // 2026-05-16 PM32: bumped v5 → v6 to push the scene-complete
-    // banner Truth-Card line removal.
-    // 2026-05-16 PM33: bumped v6 → v7 for full resume preservation
-    // (MAP grid + crown + lore + clue letters), guard-freeze ice +
-    // meter + cone/music suppression, eventHud cleanup, gatekeeper
-    // dialog branching, exit-pillar fix, hard-gates copy, treasure
-    // total fix, scroll halo top-anchor.
-    // 2026-05-16 PM34: bumped v7 → v8 for Jane's hand-curated
-    // spot-diff coords (all 5 entries), bank-coords-primary,
-    // halo clamping + overflow:hidden, power spell + frozen SFX.
-    // 2026-05-16 PM35: bumped v8 → v9 for the eSdiff1 courtyard
-    // coords (5 hand-drawn diffs, answer bumped 4 → 5).
-    // 2026-05-17 PM36: bumped v9 → v10 for tutorial polish (treasure,
-    // marble, guard, dog, audio-janitor), landscape sizing,
-    // portrait HUD + narration image fix.
-    // 2026-05-17 PM37: bumped v10 → v11 for dim-tutorial-before-dim,
-    // halo removal (scroll + marble), power-up tutorial suppression,
-    // pharaoh-shadow toast removal, guards-off-gate rule, eSdiff1
-    // back to 4 diffs.
-    // 2026-05-17 PM38: bumped v11 → v12 for eSdiff1 5-coords-4-goal
-    // forgiveness mode, all tapR 18→22, force SW update on every
-    // load so stuck-on-old-cache kids get fresh HTML.
-    // 2026-05-17 PM39: bumped v12 → v13 for count-puzzle copy fix,
-    // halo-at-tap, exit width budget, portrait narration contain,
-    // HUD min-height, tip-ring rounded-rect, landscape 1-row dpad.
-    // 2026-05-17 PM40: bumped v13 → v14 for scroll-tutorial halo
-    // restore, toast cleanup, servant collision, guard gate-evict,
-    // tutorial top-anchor on low pointAtEl, landscape dpad labels +
-    // power-up dock scroll, HUD wrap (no scroll), cover lock,
-    // exit moved col 35 → 33 + width budget 5×TILE.
-    // 2026-05-17 PM41: bumped v14 → v15 for secret-door move (col
-    // 32 → 16), exit compression removed, chase-state gate block,
-    // chariot tutorial separate event key, easier unscramble clues,
-    // conditional golden-key toast, power-up dock OUT of canvas,
-    // split-screen landscape dpad, portrait HUD declutter.
-    // 2026-05-18 PM45: bumped to v17 for cover-page duplicate
-    // difficulty removal, exit render-order (defer to after floor),
-    // runtime guard-evict in updateGuards, chariot live-tracker
-    // pointer, resume gate fallback, treasure total lock, lore bob
-    // removed, power-up tutorial-popup per unlock, 'tap glowing'
-    // toast removed, servant single-reward, TAP arrow above button.
-    // 2026-05-18 PM46: bumped to v18 for landscape unified bottom
-    // row: LEFT UP [Interact Hint Menu] [⚡👁🪶] DOWN RIGHT;
-    // top hudPowerups strip hidden on landscape (canvas grows).
-    // 2026-05-18 PM47: bumped to v19 — Begin Adventure click handler
-    // fix (was checking deleted .difficulty-btn.selected), duplicate
-    // bottom #startBtn removed, accurate 3-row difficulty legend table,
-    // landscape cover-quickstart nowrap + tightened items so the gear
-    // no longer wraps to a new line, .cover-info-card padding override
-    // for the bottom legend card's blank-band issue, treasure tutorial
-    // skips banner-concealed bags (was pointing at "empty" tiles).
-    // 2026-05-18 PM48: bumped to v20 — tutorial modal no longer
-    // dismissed by background taps (arrow buttons were closing it),
-    // CHALLENGE_POSITIONS (30,7) → (29,7) so Hard finally seeds the
-    // full 6 gates, landscape slider puzzle + map peek enlarged,
-    // compass faded on landscape so lore tile is visible underneath,
-    // intro-pan banner repositioned + shrunk on landscape so it no
-    // longer covers EXIT, chariot tutorial halo seeds from live
-    // chariot position (was frozen at tile 0,0 / MAP button), lore
-    // tile halo gradients removed (kept glyph + thin ring only).
-    // 2026-05-19 PM49: bumped to v21 — chariot halo really fixed
-    // (seeds from doorIn ALWAYS, only switches to chariot when it
-    // has moved); guard #2 patrol no longer requires gate crossing
-    // (was stuck at row 8 trying to step onto unsolved gate);
-    // _updateTorchlight gated on dim tutorial; Hard difficulty
-    // eased (4 guards, sight 4, 240s, censer 1.6); spot-diff red
-    // bird coord moved 52→35 + tapR 30; spot-diff portrait width
-    // 92vw → 84vw so it fits in modal padding; spot-diff +
-    // count-soldiers enlarged on landscape; tip-popup card narrowed
-    // to 56vw so halos stop overlapping it.
-    // 2026-05-19 PM50: bumped to v22 — Scene 1 → Scene 2 continuity
-    // wired end-to-end. Win modal Next → SECTION_4 cinematic (already
-    // existed) → NEW world-map overlay with parchment art, three pins
-    // (Palace ✓ / Desert ▸ / Midian 🔒), Moses figurine animates from
-    // Palace pin to Desert pin → Continue button redirects to
-    // scene2_desert.html?from=scene1. Scene 2 detects the URL param
-    // and skips its cover entirely, auto-unlocks the access gate
-    // (kid already proved purchase on Scene 1), picks medium
-    // difficulty by default, and launches the opening cinematic.
-    // Mario-flow: no second cover page between worlds.
-    // 2026-05-19 PM51: bumped to v23 — bag-count persistence (save
-    // + restore game.treasuresTotal so HUD denominator stays stable
-    // across resume sessions); 8 new sfx wired (treasureChime on bag
-    // pickup, clearCombo on color-bag bonus, magicSfx on power-ups,
-    // chimeChomp on clue-letter pickup, correctAnswer on right
-    // answer, victoryChime on gate clear, windChimes on palace dim);
-    // personalized "proud of you" win-modal block — kid-name prompt
-    // on first win, persistent in localStorage, plus a verse tuned
-    // to the kid's finish quality (perfect / no-loss / persevered /
-    // generic). Scene 2: cover page killed entirely (always auto-
-    // launches into cinematic + gameplay), _clampSpriteX upgraded
-    // with 4-px right-edge margin (matches Scene 1 PM45).
-    // 2026-05-19 PM52: bumped to v24 — overhead toasts removed
-    // (palace dog barks ×3, scene restarted, guard-saw-you, nobody-
-    // nearby — all already covered by SFX / vignette / tutorial /
-    // gate halo). Cover difficulty legend simplified — gates +
-    // guards columns dropped (varied per scene; Scene 3 has
-    // shepherds not guards), replaced with "What to expect" vibe
-    // note. Truth Seeker fixed (was reading q.answer not q.correct,
-    // so the wrong-index set sometimes greyed out the right
-    // answer). Slider puzzle landscape sizing uses max() not min()
-    // so it claims real estate on landscape phones (thumb max(50vh,
-    // 42vw); grid min(90vw, 85vh, max(75vh, 60vw)) so it stays
-    // square but ~2× bigger). Tutorial modal landscape: added
-    // left-anchored / right-anchored classes — modal flips to the
-    // opposite horizontal half from the halo tile so they never
-    // overlap. Fixed misleading MAP_STR row-7 comment (gaps at
-    // 5/17/29, not 5/16/27 as previous comment claimed).
-    // 2026-05-19 PM53: bumped to v25 — orphaned gate (29,7) removed
-    // from CHALLENGE_POSITIONS (BFS proves it's unreachable from
-    // Moses's start tile — 144 tiles of chamber C / corridor 3 are
-    // walled off). Hard's gateCount 6 → 5 to match the new pool.
-    // Scene 2 deep-dive ported all Scene 1 fixes that apply:
-    // distinct sfx wiring (treasureChime on bag pickup, victoryChime
-    // on checkpoint clear, magicSfx/clearCombo/chimeChomp/windChimes
-    // pre-registered for future use), redundant toasts removed
-    // (caravan-trader bump, camel-grazing, checkpoint-activated,
-    // scout-closes-in, look-for-travelers, hiding-well, scene-
-    // restarted), bag-count denominator now saved + restored on
-    // resume with the same reachability cap as Scene 1.
-    // 2026-05-19 PM54: bumped to v26 — Scene 2 deep-dive part II.
-    // Reduced 9 → 6 checkpoints (4 zone + 2 climbs); ported full
-    // power-up dock + 5 unlocks (⚡❄️👁️📖🪶) using the SAME cross-
-    // scene lifetime counters as Scene 1, so unlocks earned in Scene
-    // 1 are immediately usable in Scene 2; Foe Freeze power-up now
-    // freezes BOTH guards AND pursuit scouts (Jane: "scouts are
-    // there in scene 2 in addition to the guards"); EXIT sprite
-    // scale bumped 1.85 → 2.1 TILE with _clampSpriteX guard.
-    // 2026-05-19 PM56: bumped to v28 — 6-fix polish pass:
-    // * Count challenge image enlarged on landscape (65vh fixed
-    //   height + modal max-height bumped 92vh→96vh)
-    // * Scribe's Wisdom auto-skip path now ONLY plays chimeChomp
-    //   (Jane: "remove victory chime.mp3 after gate opens using
-    //   scribe. only play chime and chomp.mp3")
-    // * triggerGuardAlert no-ops when Moses is crouched — fixes the
-    //   re-arm loop where dog barks every few seconds were alerting
-    //   guards even while Moses hid in cover
-    // * Hard mode dog ease — dogs now scale with difficulty (Hard
-    //   gets seeRadius 4 instead of 5, patrolMs 600 not 520) so the
-    //   exit-corridor dog+guard pincer is survivable
-    // * "Caught — N hearts" overhead toast removed — HUD heart
-    //   animation conveys the loss; toast was redundant noise
-    // * Personal Best stats-panel cut on portrait fixed — added
-    //   box-sizing: border-box to stats-panel + stats-section, tightened
-    //   outer panel padding, capped section width 100%
-    // 2026-05-19 PM55: bumped to v27 — large polish pass:
-    // * Win modal "Next: The Desert" button hardened with defensive
-    //   _inPrelude reset + modal cleanup + last-resort redirect
-    // * Power-up activation reverted from magicSfx → powerSpell
-    //   (Jane preferred power spell.mp3)
-    // * Scribe's Wisdom gate-clear layers chime+chomp on top
-    // * Hint logic stripped of obsolete "arrange GOD" branch — key
-    //   is constant, hint points kid at key tile or exit
-    // * Scene-complete: victoryChime + door open layered, bgmExitOut
-    //   pad plays through the "God was with Moses" lesson modal
-    // * GOD-arrangement plays levelUp2.mp3
-    // * Portrait slider thumb 120×120 → min(220px, 60vw, 30vh)
-    // * Lore-tile glyph clamp-bug fixed (was pinning to canvas top
-    //   edge near the top of the map; now flips above/below smartly)
-    // * Scene 2 EXIT sprite REVERTED PM54 bump+clamp (matched
-    //   HANDOFF_scene2_v3.28 Bug 35/46/48 — clamp causes "jumping"
-    //   during camera pan; 1.85× TILE is the known-good scale)
-    // 2026-05-19 PM57: bumped to v29 — Scene 2 tutorial popup port:
-    // tip-popup overlay HTML + CSS + JS (showTipPopup,
-    // _firstEventSeen, _hideTipPopup) ported from Scene 1's PM29+
-    // first-event system. Wired 5 first-encounter triggers in Scene
-    // 2: treasure pickup, checkpoint approach, scout proximity,
-    // oasis step, mirage step. Backdrop-tap dismiss is swallowed
-    // (matches Scene 1 PM48 — arrow-button-tap regression). No
-    // halo/hand pointer ported yet — deferred to PM58 alongside
-    // Scene 2's power-up dock landscape relocation.
-    // 2026-05-19 PM58: bumped to v30 — Scene 2 PM55 queue items 2+3:
-    // power-up dock landscape relocation (#hudPowerups moves into
-    // .controls on landscape ≤960px wide; restored above canvas on
-    // portrait; .game-page > #hudPowerups hidden on landscape so top
-    // strip is gone). Halo/hand-pointer system ported (CSS for
-    // .tip-pointer-ring + .tip-pointer-hand; JS _tipPointAtTile rAF
-    // tracker; pointAtTile wired on treasure / checkpoint / oasis /
-    // mirage first-event triggers; scout intentionally NOT wired
-    // because scouts move every frame).
-    // 2026-05-19 PM59: bumped to v31 — comprehensive Scene 1→Scene 2
-    // parity port. Per Jane: "every fix you did for scene 1 needs to
-    // be checked and fixed for scene 2 if relevant." Ported to Scene 2:
-    // * Slider puzzle portrait thumb min(220px, 60vw, 30vh) + landscape
-    //   max(50vh, 42vw) thumb / min(90vw, 85vh, max(75vh, 60vw)) grid
-    // * Spot-diff portrait container min(540px, 84vw) (was overflowing)
-    // * Spot-diff landscape: image max(72vh, 36vw), side-by-side row
-    // * Count-scene image landscape: height 65vh, max-width 80vw
-    // * Pictionary image landscape sizing
-    // * Challenge modal max-height 96vh on landscape so bigger images fit
-    // * Map peek landscape: width min(98svw, 960px), legend tightened,
-    //   canvas max-height (96svh - 64px)
-    // * Intro-pan REACH-THIS-EXIT banner: top 46px on landscape (was
-    //   12%), padding 5/14, font 13/11 — no longer overlaps exit
-    // * Tip-popup landscape left-anchored / right-anchored CSS classes
-    // * showTipPopup JS sets left/right anchor based on halo tile x
-    // * Win-modal personalization (kid-name + Moses-centric verse —
-    //   Hebrews 11:27 + Exodus 2:15 only, NO Abraham per Jane PM57)
-    // Compass scale already adequate in Scene 2 (PM scaling 0.50 on
-    // landscape covers it). Scout-arm loop N/A (Scene 2 scouts don't
-    // have alerted state machine, they move every tick). Caught-toast
-    // N/A (Scene 2 uses danger modal not toast).
-    // 2026-05-19 PM60: bumped to v32 — second-pass Scene 2 parity port.
-    // Per Jane PM59: "atleast 100 bugs you fixed for scene 1. check to
-    // see if scene 2 still has those bugs." Deeper audit caught:
-    // * Truth Seeker not wired in Scene 2 at all (always silently
-    //   fizzled). Added the MCQ hook + q.correct over q.answer fix.
-    // * Scribe's Wisdom auto-skip not wired (set the flag but never
-    //   consumed). Added gate auto-solve with chime+chomp.
-    // * Power-up activation sfx: magicSfx → powerSpell primary (Jane
-    //   PM55 preference). Added audPowerSpell + audFrozen elements
-    //   to Scene 2.
-    // * HUD treasure numerator now Math.min-clamped at denominator
-    //   (parity with Scene 1 PM45 — prevents "33/30" on stale resume).
-    // * 6 checkpoints for ALL 3 difficulties (was 4/5/6 — Jane
-    //   confirmed all-6 is fine). Hard time bumped 120 → 240, see
-    //   radius 5 → 4, patrol 460 → 540 (parity with Scene 1 PM49).
-    // * Win modal: confetti + doorOpen + victoryChime layered (Scene
-    //   2 was missing all three sounds).
-    // Verified already correct (no port needed):
-    //   - Resume gate logic — Scene 2 overwrites gate positions from
-    //     save (more robust than Scene 1's position-match fallback)
-    //   - gate._submitting paths — already reset in retry branches
-    //   - MAP button width — already a pill since v3.21
-    // 2026-05-19 PM61: bumped to v33 — CARAVAN-MAP JIGSAW shipped for
-    // Scene 2 (Jane: "i like 2 ... caravan map jigsaw ... it should be
-    // exciting and catchy ... colorful crystals not parchment ...
-    // exit sprite is revealed and we do the camera pan to show exit
-    // way found"). Three colored crystal fragments scattered across
-    // Scene 2: amethyst (4,5), turquoise (20,14), emerald (36,18).
-    // Each gives +5 stars on pickup. When 3 fragments collected AND
-    // all 6 checkpoints solved, jigsaw modal auto-opens with 3 unique
-    // crystal shapes (rotatable on tap, draggable to slots, snap on
-    // correct piece+rotation, bounce on wrong). Solve fires
-    // puzzleComplete.mp3 → "Moses — keep going!" overlay with Hebrews
-    // 11:27 verse → mystical.mp3 → camera pan → exit sprite finally
-    // reveals. Exit tile step is GATED on both "all checkpoints
-    // solved" AND "jigsawSolved" — locked toast otherwise.
-    // Also wired: puzzleBg.mp3 (loops in modal), scene2NarrBg.mp3
-    // (Scene 2 opening cinematic bed), egyptianCover.mp3 (world-map
-    // transition flourish).
-    // 2026-05-19 PM62: bumped to v34 — Jane post-PM61 audit fixes:
-    // * SECTION_4_PANELS replaced with canonical narration script
-    //   text + audio paths from NARRATION_SCRIPTS_AND_PROMPTS_bundle1
-    //   (Section 4). Removed the chronologically-wrong "well +
-    //   shepherd girls" panel — that belongs to Scene 3.
-    // * Scene 2 CIN_PANELS rewritten to match Section 5 (was 4
-    //   off-script ACT II panels; now 3 beats of the canonical
-    //   scene-2-narration text + audio).
-    // * cinNextBtn label context-aware — opening = "Begin Scene 1",
-    //   SECTION_4 transition deck = "Continue →" (no more wrong
-    //   "Begin Scene 1" appearing on the transition last panel).
-    // * Count image landscape: 65vh → 78vh, max-width 80vw → 90vw +
-    //   min-width 60vw; challenge-modal max-height 96vh → 98vh.
-    // * "Collect 3 torn scrolls" Interact toast removed — golden key
-    //   is a constant fixture; toast now points at its location.
-    // * Journey tracker overhauled: SVG viewBox 600×220 → 700×380,
-    //   pins 22r → 36r, Moses 14r → 22r with a pulsing amber glow
-    //   underneath, region labels (EGYPT/DESERT/MIDIAN), painted-
-    //   map gradient bg (orange-red Egypt / golden desert / teal
-    //   Midian), compass-rose corner, dramatic kid-friendly copy.
-    // * World-map audio leak: tear down every other loop track
-    //   BEFORE egyptianCover plays so it doesn't layer.
-    const SW_VERSION = 'bek-moses1-v42';
-    const swSource = [
-      "const CACHE = '" + SW_VERSION + "';",
-      "const SHELL = [self.registration.scope];",
-      "self.addEventListener('install', e => {",
-      "  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(()=>{}));",
-      "  self.skipWaiting();",
-      "});",
-      "self.addEventListener('activate', e => {",
-      "  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));",
-      "  self.clients.claim();",
-      "});",
-      "self.addEventListener('fetch', e => {",
-      "  const req = e.request;",
-      "  if (req.method !== 'GET') return;",
-      "  const url = new URL(req.url);",
-      "  if (url.origin !== self.location.origin) return;",
-      "  const isHtml = req.mode === 'navigate' || req.destination === 'document';",
-      "  const isStreamed = req.destination === 'audio' || req.destination === 'video';",
-      "  if (isHtml || isStreamed) {",
-      "    e.respondWith(",
-      "      fetch(req).then(res => {",
-      "        if (isHtml && res && res.status === 200) {",
-      "          const copy = res.clone();",
-      "          caches.open(CACHE).then(c => c.put(req, copy)).catch(()=>{});",
-      "        }",
-      "        return res;",
-      "      }).catch(() => caches.match(req).then(r => r || caches.match(self.registration.scope)))",
-      "    );",
-      "    return;",
-      "  }",
-      "  e.respondWith(",
-      "    caches.match(req).then(hit => hit || fetch(req).then(res => {",
-      "      if (res && res.status === 200 && res.type === 'basic') {",
-      "        const copy = res.clone();",
-      "        caches.open(CACHE).then(c => c.put(req, copy)).catch(()=>{});",
-      "      }",
-      "      return res;",
-      "    }).catch(() => caches.match(self.registration.scope)))",
-      "  );",
-      "});"
-    ].join('\n');
-    const blob = new Blob([swSource], { type: 'application/javascript' });
-    const swUrl = URL.createObjectURL(blob);
-    // Defer to after first paint so SW registration never blocks the
-    // cover render. swUrl is short-lived but registration completes
-    // within a tick — we don't need to revoke for the SW to install.
-    // 2026-05-17 PM38 (Jane: "it is looking for 5 differences now. i
-    // am not able to proceed"). Returning kids could be stuck on a
-    // stale-cached HTML because the previous SW served the cached v9
-    // shell. Force an update on every page load: register, then on
-    // resolve immediately call `.update()` so the new SW source
-    // (with the bumped SW_VERSION) is fetched + installed + activates
-    // (its `activate` event already clears old caches). Belt-and-
-    // suspenders: also unregister any other SWs whose script URL
-    // doesn't match this one so dead registrations don't keep
-    // serving old caches.
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register(swUrl).then(reg => {
-        try { reg.update().catch(()=>{}); } catch(e){}
-      }).catch(() => {});
-    });
-  } catch(e){}
-})();
 </script>
-<!-- 2026-05-19 (Jane: QR/hosted build). Shared service worker for instant
-     repeat-loads + scene jumps. Supersedes the old inline blob: SW above
-     (which browsers reject, so it never actually registered). No-op on file://. -->
+<!-- Shared service worker (sw.js) for instant repeat-loads + scene jumps + fresh
+     HTML on every QR scan. (The old inline blob-SW that used to live above was
+     removed 2026-06-14 — browsers reject blob: SWs, so it never registered.)
+     No-op on file://. -->
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
