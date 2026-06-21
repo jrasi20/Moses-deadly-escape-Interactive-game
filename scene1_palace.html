@@ -708,8 +708,25 @@
     color:#ffd976;
     font-size:15px;
     font-weight:700;
-    margin-bottom:8px;
+    margin:6px auto 10px;
     text-align:center;
+    background:rgba(90,29,6,0.85);
+    border:1.5px solid #ffd976;
+    border-radius:12px;
+    padding:8px 14px;
+    max-width:340px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  }
+  /* J1 (Jane 2026-06-19): nudge the difficulty pills when Begin is tapped
+     with nothing selected. */
+  .cover-quickdiff.needs-pick {
+    animation: diffNudge 0.45s ease-in-out 0s 3;
+    border-radius:20px;
+  }
+  @keyframes diffNudge {
+    0%,100% { transform:translateX(0); box-shadow:0 0 0 rgba(255,215,118,0); }
+    25%     { transform:translateX(-6px); box-shadow:0 0 18px rgba(255,215,118,0.85); }
+    75%     { transform:translateX(6px);  box-shadow:0 0 18px rgba(255,215,118,0.85); }
   }
   .start-btn {
     background: linear-gradient(145deg,#ffd976,#f2a83a);
@@ -4573,7 +4590,7 @@
              All pin radii + the Moses figurine bumped ~30 %. Labels moved
              further from the pin so they don't sit on the icon art. -->
         <!-- Palace pin (DONE) — color palace.png inside green ring -->
-        <g class="wm-pin wm-pin-done" transform="translate(130, 250)">
+        <g id="wmPinPalace" class="wm-pin wm-pin-done" transform="translate(130, 250)">
           <circle r="56" fill="#fffbe6" stroke="#1a4830" stroke-width="6"/>
           <image href="assets/images/color%20palace.png" x="-46" y="-46" width="92" height="92"
                  preserveAspectRatio="xMidYMid slice" clip-path="circle(46px at 46px 46px)"
@@ -4591,7 +4608,7 @@
              active scene visually parallels the Palace/Midian/Jethro
              art-disc style. The ▸ arrow moved INTO the corner as a
              small "active" badge. -->
-        <g class="wm-pin wm-pin-active" transform="translate(320, 250)">
+        <g id="wmPinDesert" class="wm-pin wm-pin-active" transform="translate(320, 250)">
           <circle r="58" fill="#fffbe6" stroke="#7a4509" stroke-width="6"/>
           <image href="assets/images/palm%20shadow.png" x="-48" y="-48" width="96" height="96"
                  preserveAspectRatio="xMidYMid slice" clip-path="circle(48px at 48px 48px)"
@@ -4600,6 +4617,11 @@
           <g id="wmBadgeDesertActive">
             <circle cx="40" cy="-40" r="17" fill="#e8a83a" stroke="#7a4509" stroke-width="2.5"/>
             <text x="40" y="-33" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="900">▸</text>
+          </g>
+          <!-- I1: lock badge shown in 'start' mode (Desert not yet unlocked) -->
+          <g id="wmBadgeDesertLock" style="display:none">
+            <circle cx="40" cy="-40" r="17" fill="#888" stroke="#444" stroke-width="2.5"/>
+            <text x="40" y="-34" text-anchor="middle" font-size="18" fill="#fff">🔒</text>
           </g>
           <text x="0" y="-80" text-anchor="middle" font-size="22" fill="#3a1505" font-weight="800">Desert</text>
         </g>
@@ -5266,6 +5288,12 @@
 <audio id="audVoS3Jar"           preload="none" src="assets/audio/vo-s3-jar.mp3"></audio>
 <audio id="audVoS3TruthSeeker"   preload="none" src="assets/audio/vo-s3-truthseeker.mp3"></audio>
 <audio id="audVoS3ScribesWisdom" preload="none" src="assets/audio/vo-s3-scribeswisdom.mp3"></audio>
+<audio id="audVoS1Dim"        preload="none" src="assets/audio/vo-s1-dim.mp3"></audio>
+<audio id="audVoS1Servant"    preload="none" src="assets/audio/vo-s1-servant.mp3"></audio>
+<audio id="audVoS1Marble"     preload="none" src="assets/audio/vo-s1-marble.mp3"></audio>
+<audio id="audVoPowerupLure"  preload="none" src="assets/audio/vo-powerup-lure.mp3"></audio>
+<audio id="audVoPowerupSpeed" preload="none" src="assets/audio/vo-powerup-speed.mp3"></audio>
+<audio id="audVoPowerupFreeze" preload="none" src="assets/audio/vo-powerup-freeze.mp3"></audio>
 
 <script>
 /* ============================================================================
@@ -5516,6 +5544,8 @@ const audio = {
   voS1Dog: $('audVoS1Dog'), voS1Chariot: $('audVoS1Chariot'), voS1Key: $('audVoS1Key'), voS1Win: $('audVoS1Win'),
   voS3Speed: $('audVoS3Speed'), voS3Freeze: $('audVoS3Freeze'), voS3Jar: $('audVoS3Jar'),
   voS3TruthSeeker: $('audVoS3TruthSeeker'), voS3ScribesWisdom: $('audVoS3ScribesWisdom'),
+  voS1Dim: $('audVoS1Dim'), voS1Servant: $('audVoS1Servant'), voS1Marble: $('audVoS1Marble'), voPowerupLure: $('audVoPowerupLure'),
+  voPowerupSpeed: $('audVoPowerupSpeed'), voPowerupFreeze: $('audVoPowerupFreeze'),
   // Wave 3a (2026-05-07): heartbeat + corridor-zone bgm. Heartbeat is
   // gated by guard-distance (see _updateHeartbeat in the main loop).
   // Corridor bgm joins the existing _LOOP_TRACKS set so the single-music
@@ -5807,6 +5837,18 @@ function drawCloseCallFlash(){
 // `which` flows through setMusic() which atomically pauses every other
 // loop track in _LOOP_TRACKS — so we can never end up with two tracks
 // overlapping on a slow phone.
+// J8/C4: cache the exit tile (type 7) so the zone-music check can keep
+// the exit pad off until Moses actually reaches the gate.
+let _exitTileCache = null;
+function _getExitTile(){
+  if (_exitTileCache) return _exitTileCache;
+  try {
+    for (let _y = 0; _y < MAP_H; _y++) for (let _x = 0; _x < MAP_W; _x++) {
+      if (MAP[_y][_x] === 7) _exitTileCache = { tx: _x, ty: _y };
+    }
+  } catch(e){}
+  return _exitTileCache;
+}
 function _maybeSwapZoneMusic(){
   if (typeof game === 'undefined' || game.state !== 'playing') return;
   if (_anyBlockingModalOpen()) return;
@@ -5814,7 +5856,21 @@ function _maybeSwapZoneMusic(){
   // Determine zone by tile coords
   let target = 'bgm';
   if (player.ty <= 6) target = 'bgmThrone';
-  else if (player.ty >= 19) target = 'bgmExit';
+  else if (player.ty >= 19) {
+    // J8/C4 (Jane 2026-06-19): "bgm-exit.mp3 is still playing as soon as
+    // Moses enters the lowest level. it keeps looping. fix it." The whole
+    // bottom corridor (golden-key / chest aisle) was looping the exit pad.
+    // Now the exit loop plays ONLY when Moses is on / right next to the
+    // actual exit tile (type 7). The rest of the bottom zone uses the
+    // normal corridor loop. (The victory "God was with Moses" pad is a
+    // separate one-shot, bgmExitOut.)
+    const ex = _getExitTile();
+    if (ex && Math.abs(player.tx - ex.tx) <= 1 && Math.abs(player.ty - ex.ty) <= 1) {
+      target = 'bgmExit';
+    } else {
+      target = 'bgmCorridor';
+    }
+  }
   else target = 'bgmCorridor';
   // Swap only if this zone's track isn't already the active loop
   const a = audio[target];
@@ -6539,17 +6595,29 @@ function _warmLazyAudio(){
   _lazyAudioWarmed = true;
   try {
     const lazy = Array.from(document.querySelectorAll('audio[preload="none"]'));
+    // Voice-over clips are small + needed just-in-time — warm them FIRST, immediately,
+    // so the first time a kid hits an event the line is already loaded (fixes "no VO
+    // the first time, works on replay").
+    const isVo = a => /vos[123]/i.test(a.id || '') || /\/vo-/i.test(a.getAttribute('src') || '');
+    const vo = lazy.filter(isVo), rest = lazy.filter(a => !isVo(a));
+    vo.forEach(a => { try { a.preload = 'auto'; a.load(); } catch(e){} });
     let i = 0;
     const step = () => {
-      for (let n = 0; n < 4 && i < lazy.length; n++, i++) {
-        try { lazy[i].preload = 'auto'; lazy[i].load(); } catch(e){}
+      for (let n = 0; n < 4 && i < rest.length; n++, i++) {
+        try { rest[i].preload = 'auto'; rest[i].load(); } catch(e){}
       }
-      if (i < lazy.length) setTimeout(step, 600);
+      if (i < rest.length) setTimeout(step, 600);
     };
     setTimeout(step, 1500);
   } catch(e){}
 }
-try { window.addEventListener('load', () => { setTimeout(() => { try { _warmLazyAudio(); } catch(e){} }, 3000); }); } catch(e){}
+// Robust trigger: fire whether or not 'load' already happened (on fast file:// the load
+// event can fire before this listener attaches), plus a belt-and-suspenders fallback.
+try {
+  const _armWarm = () => setTimeout(() => { try { _warmLazyAudio(); } catch(e){} }, 800);
+  if (document.readyState === 'complete') _armWarm(); else window.addEventListener('load', _armWarm);
+  setTimeout(() => { try { _warmLazyAudio(); } catch(e){} }, 4000);
+} catch(e){}
 const _audioTotal = _audioEls.length;
 _audioEls.forEach(a => {
   let counted = false;
@@ -7348,6 +7416,14 @@ function _updatePharaohHunt(dt){
         // the chariot is a bright-phase threat. If we're currently dim,
         // wait one more tick and try again — never overlap.
         try { if (_torchlight && _torchlight.isDim) { return; } } catch(e){}
+        // I8 (Jane 2026-06-17): don't barge in over a narration or modal — defer the
+        // chariot cameo until the spoken line + any modal are clear (one event at a time).
+        try {
+          if ((typeof _voiceDucking !== 'undefined' && _voiceDucking)
+              || (typeof _anyBlockingModalOpen === 'function' && _anyBlockingModalOpen())) {
+            _pharaohHunt.nextEventAt = now + 2500; return;
+          }
+        } catch(e){}
         const picks = _pickHuntDoors();
         _pharaohHunt.doorIn  = picks.inDoor;
         // 2026-05-08 PM5: chariot enters AND exits through the SAME door
@@ -7976,28 +8052,22 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot-courtyard-1a.png',
       imgB:'assets/images/spot-courtyard-1b.png',
       answer:4,
-      // 2026-05-17 PM38 (Jane: "halos for spot the differences are
-      // still not what i sent you"). All 5 spots Jane circled on the
-      // original drawing are now in `diffs[]`, but `answer: 4` keeps
-      // the goal at 4. `_onDetectionDone` resolves
-      // `totalDiffs = min(answer, diffs.length) = 4`, so the kid
-      // only needs to find 4 — but tapping ANY of the 5 spots Jane
-      // marked registers as a hit. Forgiving for ambiguous diffs.
-      // Tap radius bumped from 18 → 22% so a kid's finger anywhere
-      // near the marked area lands the hit.
-      //  1. foliage/plant in the upper center above the fountain  (~38%, 28%)
-      //  2. plant / object at the left pillar base, mid-left  (~28%, 38%)
-      //  3. blue bird perched at the lower-left pillar  (~28%, 57%)
-      //  4. gold coins / items piled on the bottom-left table corner  (~28%, 70%)
-      //  5. plant / foliage by the right-side pillar  (~88%, 32%)
+      // I4 v2 (Jane 2026-06-19): the runtime pixel-diff found ZERO regions
+      // on the compressed PNGs, so every tap missed (all red halos = the
+      // showstopper). PROPER FIX: coords below were COMPUTED OFFLINE from the
+      // real A/B pixel differences (_spotdiff_detect.py) and visually verified
+      // on the annotated overlay — they land exactly on the 4 real changes:
+      //  1. lamp/lantern by the right curtain        (~85%, 47%)
+      //  2. small statue on the fountain edge (gone) (~39%, 43%)
+      //  3. items on the low table                   (~33%, 69%)
+      //  4. goblet near the left pillar              (~28%, 50%)
       diffs:[
-        { x:38, y:28, r:5, tapR:22 },
-        { x:28, y:38, r:5, tapR:22 },
-        { x:28, y:57, r:5, tapR:22 },
-        { x:28, y:70, r:5, tapR:22 },
-        { x:88, y:32, r:5, tapR:22 },
+        { x:85, y:47, r:5, tapR:14 },
+        { x:39, y:43, r:5, tapR:14 },
+        { x:33, y:69, r:5, tapR:14 },
+        { x:28, y:50, r:5, tapR:14 },
       ],
-      clue:'Look at the foliage above the fountain, the left pillar (2 spots), the gold items on the table corner, and the plant by the right pillar. Find any 4 to clear the gate.',
+      clue:'Four things changed: the lamp by the right curtain, the little statue on the fountain edge, the items on the low table, and the goblet near the left pillar.',
       verse:'Exodus 2:10 NIV' },
     // 2026-05-12 PM18 v2 (Jane: "i still see repeated questions. i want
     // more interactive questions"). Easy-bank pool was too small for the
@@ -8326,16 +8396,18 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot-throne-room-1a.png',
       imgB:'assets/images/spot-throne-room-1b.png',
       answer:4,
-      // 2026-05-14 PM23 — recalibrated to Jane's hand-verified spec:
-      //  1. center runner rug (red -> blue in B)
-      //  2. wall torch center-left (missing in B)
-      //  3. treasure box bottom-right (missing in B)
-      //  4. statue center-right (missing in B)
+      // I4 v2 (2026-06-19): coords COMPUTED from real pixel diffs
+      // (_spotdiff_detect.py) — old hand coords had the rug/box/statue a
+      // few % off, so halos mis-landed. Verified against annotated overlay:
+      //  1. center runner rug      (~50%, 88%)
+      //  2. wall torch center-left (~17%, 41%)
+      //  3. treasure box bottom-rt (~88%, 77%)
+      //  4. statue center-right    (~82%, 54%)
       diffs:[
-        { x:50, y:78, r:5, tapR:16 },
-        { x:16, y:38, r:5, tapR:16 },
-        { x:84, y:80, r:5, tapR:16 },
-        { x:74, y:48, r:5, tapR:16 },
+        { x:50, y:88, r:5, tapR:14 },
+        { x:17, y:41, r:5, tapR:14 },
+        { x:88, y:77, r:5, tapR:14 },
+        { x:82, y:54, r:5, tapR:14 },
       ],
       clue:'Look at the center runner rug, the wall torch (center-left), the treasure box (bottom-right), and the statue (center-right).',
       verse:'Exodus 2:11 NIV' },
@@ -8346,15 +8418,16 @@ const CHALLENGE_BANK = {
       answer:4,
       // 2026-05-16 PM34 — Jane re-drew the differences on the live PNG.
       // Coords below are TILE CENTERS as percentages of image dims.
-      //  1. wall niche / arch top-left  (~10%, 24%)
-      //  2. sandals + blue cloth rolls bottom-left  (~12%, 78%)
-      //  3. bowls / pottery on the table right side  (~78%, 72%)
-      //  4. large amphora / pot far-right  (~94%, 62%)
+      // I4 v2 (2026-06-19): coords COMPUTED from real pixel diffs.
+      //  1. wall niche / arch top-left  (~12%, 36%)
+      //  2. sandals + cloth rolls bottom-left  (~19%, 88%)
+      //  3. bowls / pottery on the table right side  (~76%, 72%)
+      //  4. large amphora / pot far-right  (~82%, 62%)
       diffs:[
-        { x:10, y:24, r:5, tapR:22 },
-        { x:12, y:78, r:5, tapR:22 },
-        { x:78, y:72, r:5, tapR:22 },
-        { x:94, y:62, r:5, tapR:22 },
+        { x:12, y:36, r:5, tapR:14 },
+        { x:19, y:88, r:5, tapR:14 },
+        { x:76, y:72, r:5, tapR:14 },
+        { x:82, y:62, r:5, tapR:14 },
       ],
       clue:'Look at the wall niche (top-left), the sandals + cloth rolls (bottom-left), the bowls on the right-side table, and the large amphora (far right).',
       verse:"Moses' parents were not afraid. (Hebrews 11:23 NIV)" },
@@ -8550,17 +8623,18 @@ const CHALLENGE_BANK = {
       imgB:'assets/images/spot%20the%20difference%20moses%20in%20nile%20B.png',
       answer:4,
       // 2026-05-16 PM34 — Jane re-drew the differences on the live PNG.
-      //  1. hut + lily pad area bottom-left  (~12%, 55%)
-      //  2. rock + lily pad reflection mid-water  (~38%, 50%)
-      //  3. basket weave detail mid-bottom  (~50%, 76%)
-      //  4. rock + lily pad bottom-right  (~88%, 92%)
+      // I4 v2 (2026-06-19): coords COMPUTED from real pixel diffs.
+      //  1. basket + baby Moses (center)  (~51%, 70%)
+      //  2. lily pad / rock bottom-right  (~89%, 88%)
+      //  3. reeds / reflection mid-water  (~49%, 41%)
+      //  4. hut + lily pad bottom-left    (~13%, 56%)
       diffs:[
-        { x:12, y:55, r:5, tapR:22 },
-        { x:38, y:50, r:5, tapR:22 },
-        { x:50, y:76, r:5, tapR:22 },
-        { x:88, y:92, r:5, tapR:22 },
+        { x:51, y:70, r:5, tapR:14 },
+        { x:89, y:88, r:5, tapR:14 },
+        { x:49, y:41, r:5, tapR:14 },
+        { x:13, y:56, r:5, tapR:14 },
       ],
-      clue:'Look at the hut (bottom-left), the rock in the water (mid-left), the basket weave, and the rock (bottom-right).',
+      clue:'Look at the basket holding baby Moses (center), the lily pad (bottom-right), the reeds over the water (center), and the hut (bottom-left).',
       verse:'Exodus 2:3-4 NIV' },
     { id:'hSdiff2', type:'spotdiff',
       q:"Tap on the 4 differences in this princess rescue scene!",
@@ -8575,15 +8649,18 @@ const CHALLENGE_BANK = {
       // water surface). Jane's tap on the actual bird at y:~35 was
       // outside the 22% tapR around y:52. Moved coord up to (25, 35)
       // and bumped tapR 22 → 30 so kids have a wider hit window.
-      //  1. princess's crown (top-right)  (~75%, 20%)
-      //  2. two handmaidens (right-mid)  (~65%, 42%)
-      //  3. red bird (left-center in the sky)  (~25%, 35%)  [PM49]
-      //  4. baby Moses in the basket (lower-mid)  (~38%, 70%)
+      // I4 v2 (2026-06-19): coords COMPUTED from real pixel diffs +
+      // visually verified — the bird's REAL diff is at y:50, not y:35
+      // (that's why PM49's tap "showed detection further down").
+      //  1. handmaiden's sash / dress (right-mid)  (~67%, 52%)
+      //  2. baby Moses in the basket (lower-mid)   (~39%, 63%)
+      //  3. princess's crown (top-right)           (~79%, 21%)
+      //  4. red bird in the sky (left)             (~20%, 50%)
       diffs:[
-        { x:75, y:20, r:5, tapR:22 },
-        { x:65, y:42, r:5, tapR:22 },
-        { x:25, y:35, r:5, tapR:30 },
-        { x:38, y:70, r:5, tapR:22 },
+        { x:67, y:52, r:5, tapR:14 },
+        { x:39, y:63, r:5, tapR:14 },
+        { x:79, y:21, r:5, tapR:14 },
+        { x:20, y:50, r:5, tapR:14 },
       ],
       clue:"Look at the princess's crown (top-right), the two handmaidens, the bird over the water, and baby Moses in the basket.",
       verse:'Exodus 2:5-6 NIV' },
@@ -8593,15 +8670,16 @@ const CHALLENGE_BANK = {
       imgB:'assets/images/spot%20the%20difference%20moses%20running%20B.png',
       answer:4,
       // 2026-05-16 PM34 — Jane re-drew the differences on the live PNG.
-      //  1. sun in sky (upper-left)  (~20%, 25%)
-      //  2. dune / cloud below the sun  (~22%, 38%)
-      //  3. waterskin pouch on Moses's belt  (~42%, 62%)
-      //  4. camel rear / saddle (right)  (~85%, 62%)
+      // I4 v2 (2026-06-19): coords COMPUTED from real pixel diffs.
+      //  1. sun in sky (upper-left)  (~24%, 33%)
+      //  2. dune / cloud below the sun  (~17%, 41%)
+      //  3. waterskin pouch on Moses's belt  (~42%, 58%)
+      //  4. camel rear / saddle (right)  (~85%, 57%)
       diffs:[
-        { x:20, y:25, r:5, tapR:22 },
-        { x:22, y:38, r:5, tapR:22 },
-        { x:42, y:62, r:5, tapR:22 },
-        { x:85, y:62, r:5, tapR:22 },
+        { x:24, y:33, r:5, tapR:14 },
+        { x:17, y:41, r:5, tapR:14 },
+        { x:42, y:58, r:5, tapR:14 },
+        { x:85, y:57, r:5, tapR:14 },
       ],
       clue:"Look at the sun, the dune below it, Moses's waterskin on his belt, and the camel's saddle.",
       verse:'Exodus 2:15 NIV' },
@@ -8611,17 +8689,18 @@ const CHALLENGE_BANK = {
       imgB:'assets/images/spot%20the%20difference%20moses%20at%20the%20well%20B.png',
       answer:4,
       // 2026-05-16 PM34 — Jane re-drew the differences on the live PNG.
-      //  1. sand dune in the background (~38%, 21%)
-      //  2. hook / rope on the well frame  (~36%, 40%)
-      //  3. sand patch at the base of the well  (~28%, 80%)
-      //  4. sand patch by the right-side palm tree  (~95%, 35%)
+      // I4 v2 (2026-06-19): coords COMPUTED from real pixel diffs.
+      //  1. rope / hook on the well frame  (~33%, 48%)
+      //  2. right-side palm tree  (~90%, 38%)
+      //  3. sand dune in the background  (~37%, 26%)
+      //  4. sand patch at the base of the well  (~34%, 75%)
       diffs:[
-        { x:38, y:21, r:5, tapR:22 },
-        { x:36, y:40, r:5, tapR:22 },
-        { x:28, y:80, r:5, tapR:22 },
-        { x:95, y:35, r:5, tapR:22 },
+        { x:33, y:48, r:5, tapR:14 },
+        { x:90, y:38, r:5, tapR:14 },
+        { x:37, y:26, r:5, tapR:14 },
+        { x:34, y:75, r:5, tapR:14 },
       ],
-      clue:'Look at the background sand dune, the rope on the well frame, the sand at the base of the well, and the sand by the right palm.',
+      clue:'Look at the rope on the well frame, the right-side palm tree, the dune in the background, and the sand at the base of the well.',
       verse:'Exodus 2:16-17 NIV' },
   ],
 };
@@ -9698,23 +9777,51 @@ document.querySelectorAll('.difficulty-btn').forEach(btn => {
 //      so the single remaining button uses a single canonical path.
 function _beginAdventure(){
   unlockAudio();
+  // L16: fresh play of Scene 1 — reset this scene's run accumulator so a
+  // replay re-collects from scratch (sum-of-best-runs, no double-count).
+  try { if (typeof game !== 'undefined') { game._pointsBanked = false; if (typeof _resetRunAccum === 'function') _resetRunAccum(); } } catch(e){}
   // Difficulty gate: top quickstart pill must be selected (the bottom
   // card's pills no longer exist).
   if (!document.querySelector('.cover-quickdiff-btn.selected')) {
-    const sel = document.querySelector('.cover-quickdiff');
-    if (sel) {
-      sel.style.outline = '3px solid #ffd976';
-      sel.style.borderRadius = '20px';
-      setTimeout(() => { sel.style.outline=''; }, 1800);
-    }
-    const hint = document.getElementById('difficultyHint');
-    if (hint) {
+    // J1 (Jane 2026-06-19): "if kids click Begin without selecting a
+    // difficulty, prompt them to select + provide sfx." The old gate
+    // referenced a #difficultyHint element that never existed in the
+    // HTML, so NO message ever showed and there was no sound. Now: play
+    // a soft error cue, shake the pills, and show an inline nudge that
+    // is injected right under the difficulty group (always near Begin).
+    try { play('error'); } catch(e){}
+    const grp = document.querySelector('.cover-quickdiff');
+    if (grp) {
+      grp.classList.remove('needs-pick');
+      // reflow so the animation re-triggers on repeated taps
+      void grp.offsetWidth;
+      grp.classList.add('needs-pick');
+      setTimeout(() => { grp.classList.remove('needs-pick'); }, 1600);
+      let hint = document.getElementById('difficultyHint');
+      if (!hint) {
+        hint = document.createElement('div');
+        hint.id = 'difficultyHint';
+        hint.textContent = '👆 Pick a difficulty first — Easy, Medium, or Hard — then tap Begin Adventure!';
+        grp.insertAdjacentElement('afterend', hint);
+      }
       hint.style.display = 'block';
-      setTimeout(() => { hint.style.display='none'; }, 2500);
+      setTimeout(() => { try { hint.style.display = 'none'; } catch(e){} }, 3200);
     }
     return;
   }
   play('click');
+  // O10 (Jane 2026-06-20: "fix at the ROOT cause so difficulty is preserved
+  // across all levels" — she picked Medium, Scene 1 was 3 min but Scenes 2/3
+  // showed 4 min). ROOT CAUSE: the chosen difficulty was only persisted by the
+  // pill CLICK handler — any path that set it another way (or a stale value)
+  // left bek.lastDifficulty wrong, so Scenes 2/3 fell back to their default.
+  // Persist the ACTUALLY-SELECTED difficulty the instant Begin is tapped, so
+  // the carry-over is always correct.
+  try {
+    const _sel = document.querySelector('.cover-quickdiff-btn.selected');
+    const _d = _sel && _sel.dataset.quickdiff;
+    if (_d === 'easy' || _d === 'medium' || _d === 'hard') { game.difficulty = _d; _saveDifficulty(_d); applyDifficultyConfig(_d); }
+  } catch(e){}
   const launchCinematic = () => {
     // Wave 2: stop cover-page ambient music as soon as the kid leaves the
     // cover. The opening cinematic / in-game bgm take over from here.
@@ -10287,7 +10394,7 @@ if (accessInput) accessInput.addEventListener('keydown', e => { if (e.key === 'E
 const PRELUDE_PANELS = [
   {
     text: "Long ago, in the land of Egypt, the family of Israel grew very, very big. They were called Hebrews. Once, a man named Joseph had saved Egypt from a great famine. But many years passed, and a new Pharaoh came who didn't remember Joseph at all.",
-    cap:  "PRELUDE - PANEL 1 - JOSEPH FORGOTTEN",
+    cap:  "PRELUDE - JOSEPH FORGOTTEN",
     images: [
       'assets/images/prelude-1-joseph-forgotten 1.png',
       'assets/images/prelude-1-joseph-forgotten 2.png',
@@ -10297,7 +10404,7 @@ const PRELUDE_PANELS = [
   },
   {
     text: "The new Pharaoh was afraid. \"There are so many Hebrews,\" he said. \"They could fight against us!\" So he made the Hebrews into slaves. Day after day, under a hot sun, they made bricks from clay and straw. Their backs ached. Their hands burned. But they prayed, and God heard.",
-    cap:  "PRELUDE - PANEL 2 - HEBREWS ENSLAVED",
+    cap:  "PRELUDE - HEBREWS ENSLAVED",
     images: [
       'assets/images/prelude-2-hebrews-enslaved 1.png',
       'assets/images/prelude-2-hebrews-enslaved 2.png',
@@ -10307,7 +10414,7 @@ const PRELUDE_PANELS = [
   },
   {
     text: "But Pharaoh's heart grew harder. He called his guards and gave a terrible order. \"Every Hebrew baby boy must be thrown into the Nile river!\" Hebrew mothers wept. But two brave women, Shiphrah and Puah, feared God more than the king. They saved as many babies as they could.",
-    cap:  "PRELUDE - PANEL 3 - PHARAOH'S ORDER",
+    cap:  "PRELUDE - PHARAOH'S ORDER",
     images: [
       'assets/images/prelude-3-pharaohs-order 1.png',
       'assets/images/prelude-3-pharaohs-order 2.png',
@@ -10317,7 +10424,7 @@ const PRELUDE_PANELS = [
   },
   {
     text: "One Hebrew mother named Jochebed had a beautiful baby boy. She hid him for three months. When she could hide him no longer, she made a tiny basket from papyrus reeds. She rubbed it with sticky tar to keep the water out. Then, with prayers and tears, she set the basket gently floating on the Nile.",
-    cap:  "PRELUDE - PANEL 4 - BABY IN THE BASKET",
+    cap:  "PRELUDE - BABY IN THE BASKET",
     images: [
       'assets/images/prelude-4-baby-in-basket 1.png',
       'assets/images/prelude-4-baby-in-basket 2.png',
@@ -10328,7 +10435,7 @@ const PRELUDE_PANELS = [
   },
   {
     text: "Pharaoh's own daughter came to bathe in the river. She saw the basket among the reeds. When she opened it, the baby cried, and her heart melted. \"I will name him Moses,\" she said, \"because I drew him out of the water.\" And so the boy who was meant to die grew up in Pharaoh's palace as a prince.",
-    cap:  "PRELUDE - PANEL 5 - PRINCESS FINDS HIM",
+    cap:  "PRELUDE - PRINCESS FINDS HIM",
     images: [
       'assets/images/prelude-5-princess-finds-him 1.png',
       'assets/images/prelude-5-princess-finds-him 2.png',
@@ -10363,7 +10470,7 @@ let _preludeStep = 0;
 const CIN_PANELS = [
   {
     text: "Years passed. Moses grew up. He wore the linen of an Egyptian prince — but his heart was Hebrew. One day, he walked out to the brick fields where his real family worked.",
-    cap:  "ACT I - PANEL 1 - MOSES THE PRINCE",
+    cap:  "ACT I - MOSES THE PRINCE",
     images: [
       'assets/images/opening-1-moses-grown_1.png',
       'assets/images/opening-1-moses-grown_2.png',
@@ -10373,19 +10480,19 @@ const CIN_PANELS = [
   },
   {
     text: "He saw it. An Egyptian taskmaster, raising his whip. A Hebrew slave, on his knees. Moses' heart pounded.",
-    cap:  "ACT I - PANEL 2 - THE TASKMASTER",
+    cap:  "ACT I - THE TASKMASTER",
     image: 'assets/images/opening-2-taskmaster.png',
     audio: 'assets/audio/opening-2-taskmaster.mp3',
   },
   {
     text: "He looked this way. He looked that way. No one was watching.",
-    cap:  "ACT I - PANEL 3 - LOOKED BOTH WAYS",
+    cap:  "ACT I - LOOKED BOTH WAYS",
     image: 'assets/images/opening-3-looks-both-ways.png',
     audio: 'assets/audio/opening-3-looks-both-ways.mp3',
   },
   {
     text: "Moses struck the Egyptian. And buried him in the sand. But the next day, Pharaoh heard. And sent guards to find him.",
-    cap:  "ACT I - PANEL 4 - THE CHOICE THAT CHANGED EVERYTHING",
+    cap:  "ACT I - THE CHOICE THAT CHANGED EVERYTHING",
     images: [
       'assets/images/opening-4-buried-in-sand_1.png',
       'assets/images/opening-4-buried-in-sand_2.png',
@@ -11017,7 +11124,7 @@ function startScene1() {
         d.state = 'patrol'; d.timer = 0; d.pi = 0; d.lostSight = 0;
         d.met = false; d.barking = false; d.barkingUntil = 0;
         d._spentCatch = false;
-        d.friendly = Math.random() < 0.2;   // 2026-05-15 PM25 (audit #12): match original 20% spec, was drifted to 50%
+        d.friendly = false;   // I5 (Jane 2026-06-17): the dog is a THREAT (catches Moses → loses a heart). No friendly/pet/+star version.   // 2026-05-15 PM25 (audit #12): match original 20% spec, was drifted to 50%
       });
     }
   } catch(e){}
@@ -11699,7 +11806,7 @@ function restartScene() {
   if (Array.isArray(dogs)) {
     dogs.forEach(d => {
       d.met = false;
-      d.friendly = Math.random() < 0.2;   // 2026-05-15 PM25 (audit #12): restored 20% (was drifted to 50% over patches)
+      d.friendly = false;   // I5 (Jane 2026-06-17): the dog is a THREAT (catches Moses → loses a heart). No friendly/pet/+star version.   // 2026-05-15 PM25 (audit #12): restored 20% (was drifted to 50% over patches)
       d.barking = false;
       d.barkingUntil = 0;
       d.state = 'patrol';
@@ -11820,7 +11927,12 @@ let _tipPopupActiveHand = null;
 // Ported from scene 3: Jane's vo-s1-* lines play JUST-IN-TIME, once each, single-
 // channel (one voice at a time), ducking the music beds so the line is audible.
 let _curVoiceLine = null, _voiceDucking = false, _voiceDuckSaved = null, _voiceDuckTimer = null;
-const _VOICE_DUCK_TRACKS = ['bgm','coverMusic','narration','bgmThrone','bgmCorridor','bgmExit','bgmExitOut','egyptianCover','palmShadow'];
+// C3/J5 (Jane 2026-06-19: "narration for the pharaoh's chariot gets
+// drowned under the sfx for the pharaoh's chariot music"). Added the
+// chariot stingers (pharaohEntry trumpet + timpaniRoll) so any spoken
+// line ducks them too — previously only the looped beds were ducked, so
+// the one-shot chariot SFX blasted over the VO.
+const _VOICE_DUCK_TRACKS = ['bgm','coverMusic','narration','bgmThrone','bgmCorridor','bgmExit','bgmExitOut','egyptianCover','palmShadow','pharaohEntry','timpaniRoll'];
 function _beginVoiceDuck(voEl){
   try {
     if (!_voiceDucking){
@@ -11855,20 +11967,38 @@ const _S1VO_KEY = {
   goal:'voS1Goal', move:'voS1Move', hide:'voS1Hide', gates:'voS1Gates', 'gate-first':'voS1GateFirst',
   guard:'voS1Guard', captain:'voS1Captain', treasure:'voS1Treasure', scroll:'voS1Scroll',
   dog:'voS1Dog', chariot:'voS1Chariot', key:'voS1Key', win:'voS1Win',
-  speed:'voS3Speed', freeze:'voS3Freeze', jar:'voS3Jar', truthseeker:'voS3TruthSeeker', scribeswisdom:'voS3ScribesWisdom'
+  dim:'voS1Dim', servant:'voS1Servant', marble:'voS1Marble', lure:'voPowerupLure',
+  speed:'voPowerupSpeed', freeze:'voPowerupFreeze', jar:'voS3Jar', truthseeker:'voS3TruthSeeker', scribeswisdom:'voS3ScribesWisdom'
 };
 // showTipPopup eventKey -> vo key
-const _S1VO_BY_EVENT = { gate:'gate-first', treasure:'treasure', scroll:'scroll', guard:'guard', captain:'captain', dog:'dog', secretDoor:'chariot', chariot:'chariot', exitLocked:'key' };
+const _S1VO_BY_EVENT = { gate:'gate-first', treasure:'treasure', scroll:'scroll', guard:'guard', captain:'captain', dog:'dog', secretDoor:'chariot', chariot:'chariot', exitLocked:'key', dim:'dim', servant:'servant', marble:'marble' };
 // power-up key -> vo key (royalVision = the Goblet/decoy lure; reuses scene-3's jar line)
-const _S1VO_POWER = { speedBurst:'speed', guardFreeze:'freeze', royalVision:'jar', truthSeeker:'truthseeker', scribesWisdom:'scribeswisdom' };
+// Power-up VO — only GENERIC lines play in scenes 1/2. lure→vo-powerup-lure (generic).
+// speedBurst OMITTED until a generic vo-powerup-speed exists (the scene-3 speed clip says
+// "Jethro's tent / before sunset"). truthSeeker/scribesWisdom are mechanic-based (generic);
+// guardFreeze ("all guards freeze") is generic enough to reuse.
+const _S1VO_POWER = { speedBurst:'speed', guardFreeze:'freeze', royalVision:'lure', truthSeeker:'truthseeker', scribesWisdom:'scribeswisdom' };
 const _s1voPlayed = new Set();
 function _s1voReset(){ try { _s1voPlayed.clear(); } catch(e){} }
+// I3 (Jane 2026-06-17): if a HARD blocking modal is up (challenge / danger / win / dialog
+// / chest), onboarding VO must WAIT for it to close so the spoken line matches the screen
+// and lines never overlap. Tutorial + tip popups ACCOMPANY their own VO, so they are
+// intentionally NOT in this wait list.
+function _s1voShouldWait(){
+  try {
+    const ids = ['challengeModal','dangerModal','pauseModal','dialogModal','truthChestModal','mapPeekOverlay','lessonModal'];
+    for (const id of ids){ const el = document.getElementById(id); if (el && el.classList.contains('active')) return true; }
+  } catch(e){}
+  return false;
+}
 function _s1vo(key, opts){
   opts = opts || {};
   if (!key) return;
   if (!opts.repeat && _s1voPlayed.has(key)) return;
   const mapKey = _S1VO_KEY[key]; if (!mapKey || !audio[mapKey]) return;
+  let _waits = 0;
   const fire = () => {
+    if (_s1voShouldWait() && _waits++ < 60){ setTimeout(fire, 400); return; }
     if (!opts.repeat){ if (_s1voPlayed.has(key)) return; _s1voPlayed.add(key); }
     try { playVoiceLine(mapKey); } catch(e){}
   };
@@ -11877,10 +12007,31 @@ function _s1vo(key, opts){
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
+  // M2/I3 (Jane 2026-06-20: "modal opened over modal"). Never stack a popup on
+  // top of one that's already open (e.g. a Power-Up Unlocked popup landing over
+  // a tip's "Got it!" card). If the tip overlay is already active, WAIT and
+  // retry so the new line shows only after the current one is dismissed.
+  try {
+    const _ovBusy = document.getElementById('tipPopupOverlay');
+    if (_ovBusy && _ovBusy.classList.contains('active')) {
+      opts._tipRetries = (opts._tipRetries || 0) + 1;
+      if (opts._tipRetries < 40) { setTimeout(() => { try { showTipPopup(eventKey, opts); } catch(e){} }, 700); }
+      return;
+    }
+  } catch(e){}
   if (eventKey) _firstEventSeen[eventKey] = true;
   // 2026-06-14: play the matching narration line (just-in-time, once) in BOTH the
   // tutorial-popup and the tutorials-off toast-fallback paths.
-  try { if (eventKey && _S1VO_BY_EVENT[eventKey]) _s1vo(_S1VO_BY_EVENT[eventKey], {delay:200}); } catch(e){}
+  // C3/J5: the chariot fires a trumpet stinger + timpani roll right before
+  // this popup. Give the chariot VO a longer lead so the trumpet
+  // announcement lands FIRST, then the spoken line plays over the ducked
+  // SFX tail (instead of being buried under the full-volume stingers).
+  try {
+    if (eventKey && _S1VO_BY_EVENT[eventKey]) {
+      const _voDelay = (eventKey === 'chariot') ? 1700 : 200;
+      _s1vo(_S1VO_BY_EVENT[eventKey], {delay:_voDelay});
+    }
+  } catch(e){}
   if (!_tutModeOn()) {
     // Fallback: tutorials disabled — kid still gets the gist as a toast.
     try { toast((opts.icon || '👋') + ' ' + opts.body); } catch(e){}
@@ -11888,7 +12039,20 @@ function showTipPopup(eventKey, opts){
   }
   const overlay = document.getElementById('tipPopupOverlay');
   if (!overlay) return;
-  document.getElementById('tipPopupIcon').textContent = opts.icon || '👋';
+  // 2026-06-19 (Jane J3: "shouldn't treasure bag modal show image of
+  // treasure bags? diamond here is confusing"). Support a real sprite
+  // icon via opts.iconImg — falls back to the emoji when absent.
+  {
+    const _ic = document.getElementById('tipPopupIcon');
+    if (opts.iconImg) {
+      _ic.textContent = '';
+      _ic.innerHTML = '<img src="' + opts.iconImg + '" alt="" draggable="false" '
+        + 'style="width:1.5em;height:1.5em;object-fit:contain;vertical-align:middle;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));">';
+    } else {
+      _ic.innerHTML = '';
+      _ic.textContent = opts.icon || '👋';
+    }
+  }
   document.getElementById('tipPopupTitle').textContent = opts.title;
   document.getElementById('tipPopupBody').textContent  = opts.body;
   overlay.classList.add('active');
@@ -12023,6 +12187,10 @@ function _tipPointAtTile(tx, ty){
   if (_tipPopupActiveHand) { try { _tipPopupActiveHand.remove(); } catch(e){} _tipPopupActiveHand = null; }
   if (_tipPointerRAF) { try { cancelAnimationFrame(_tipPointerRAF); } catch(e){} _tipPointerRAF = 0; }
   _tipPointerTile = null;
+  // 2026-06-17 (Jane): the DOM-overlay tile halo + pointing hand mis-positioned across
+  // devices/viewports (long bug history). Disabled — the tip popup still teaches. A
+  // canvas-drawn pointer (same coords as the sprites) can be added later if wanted.
+  return;
   const cnv = document.getElementById('gameCanvas');
   if (!cnv || typeof camera === 'undefined' || typeof TILE === 'undefined') return;
   _tipPointerTile = { tx, ty };
@@ -12493,7 +12661,8 @@ function _maybeFireFirstEventTip(){
     }
     if (bag) {
       showTipPopup('treasure', {
-        icon: '💎',
+        icon: '💰',
+        iconImg: 'assets/images/treasure%20bag%20blue.png',
         title: 'A Treasure Bag',
         // 2026-05-17 PM36 (Jane: "in treasure bag tutorial, remove
         // 'No button needed'"). Dropped the parenthetical.
@@ -12998,7 +13167,9 @@ function triggerInteractable(obj){
   // rewarded before. Dialog still opens at the bottom; only the
   // star/heart payouts are gated.
   if (_isReplayableNPC && _rewardAlreadyGiven) {
-    openDialog(obj.name, obj.body);
+    // I7 (Jane 2026-06-17): no reward on a repeat tap — strip the "+5 stars" promise from
+    // the dialog so it never says "+5" without adding any. (First tap still awards + shows it.)
+    openDialog(obj.name, (obj.body || '').replace(/\s*\+\d+\s*stars?/ig, ''));
     return;
   }
   if (obj.reward === 'heal') {
@@ -13892,7 +14063,9 @@ function getHintForQuestion(q){
     // GEOGRAPHY (lowest priority — only triggers when no specific story
     // term is present)
     if (text.includes('egypt'))
-      return 'Egypt was the land where the Hebrews were slaves. Pyramids are there.';
+      // J14 (Jane 2026-06-19): "Pyramids are there" was a misleading
+      // dead-end hint. Neutral re-read nudge instead.
+      return 'This part of the story is set in Egypt, where the Hebrews were enslaved. Re-read the question and think about which moment of Moses’ story it points to.';
     if (text.includes('midian') || text.includes('jethro') || text.includes('zipporah') || text.includes('reuel'))
       return 'Moses fled to Midian, a desert land. Jethro took him in and gave him Zipporah as wife (Exodus 2:15-21).';
     if (text.includes('gershom') || text.includes('son'))
@@ -15099,7 +15272,7 @@ function renderSpotDiff(gate, q, container){
         detectedDiffs = q.diffs.map(d => ({
           x: d.x, y: d.y,
           r: (typeof d.r === 'number') ? d.r : 5,
-          tapR: (typeof d.tapR === 'number') ? d.tapR : 18,
+          tapR: (typeof d.tapR === 'number') ? d.tapR : 12,
         }));
         return _onDetectionDone();
       }
@@ -15218,7 +15391,7 @@ function renderSpotDiff(gate, q, container){
         detectedDiffs = q.diffs.map(d => ({
           x: d.x, y: d.y,
           r: (typeof d.r === 'number') ? d.r : 5,
-          tapR: (typeof d.tapR === 'number') ? d.tapR : 16,
+          tapR: (typeof d.tapR === 'number') ? d.tapR : 12,
         }));
       }
       _onDetectionDone();
@@ -15227,7 +15400,7 @@ function renderSpotDiff(gate, q, container){
       detectedDiffs = (Array.isArray(q.diffs) ? q.diffs : []).map(d => ({
         x: d.x, y: d.y,
         r: (typeof d.r === 'number') ? d.r : 5,
-        tapR: (typeof d.tapR === 'number') ? d.tapR : 16,
+        tapR: (typeof d.tapR === 'number') ? d.tapR : 12,
       }));
       _onDetectionDone();
     }
@@ -16120,17 +16293,39 @@ function _loadLifetimeScrolls(){
 }
 // Generic: bump a lifetime counter, then check if any tier whose `resource`
 // matches `which` was JUST crossed. Notifies the kid + plays a chime.
+// === SUM-OF-BEST-RUNS aggregation (Jane 2026-06-20, L16) — _SCENE_NO=1.
+// Per-scene bests in bek.scene{N}.{res}; bundle totals = sum of bests with the
+// current scene contributing max(its best, this run). Replays never inflate. ==
+const _SCENE_NO = 1;
+function _resKey(w){ return w==='crowns'?_LIFETIME_CROWNS_KEY : w==='scrolls'?_LIFETIME_SCROLLS_KEY : w==='points'?'bek.bundle1.totalPoints' : _LIFETIME_TREASURES_KEY; }
+function _sceneBest(w, n){ try { return parseInt(localStorage.getItem('bek.scene'+n+'.'+w)||'0',10)||0; } catch(e){ return 0; } }
+function _otherScenesBest(w){ var s=0; [1,2,3].forEach(function(n){ if(n!==_SCENE_NO) s+=_sceneBest(w,n); }); return s; }
+function _runAccum(w){ try { return (game._runAccum && game._runAccum[w]) || 0; } catch(e){ return 0; } }
+function _liveBundleTotal(w){ return _otherScenesBest(w) + Math.max(_sceneBest(w,_SCENE_NO), _runAccum(w)); }
+function _writeBundleTotal(w){ var t=_liveBundleTotal(w); try { localStorage.setItem(_resKey(w), String(t)); } catch(e){} return t; }
+function _bankSceneBests(){
+  ['treasures','crowns','scrolls','points'].forEach(function(w){
+    var run = (w==='points') ? ((typeof game!=='undefined' && game.stars)||0) : _runAccum(w);
+    var best = Math.max(_sceneBest(w,_SCENE_NO), run);
+    try { localStorage.setItem('bek.scene'+_SCENE_NO+'.'+w, String(best)); } catch(e){}
+  });
+  ['treasures','crowns','scrolls','points'].forEach(function(w){
+    var s=0; [1,2,3].forEach(function(n){ s+=_sceneBest(w,n); });
+    try { localStorage.setItem(_resKey(w), String(s)); } catch(e){}
+  });
+}
+function _resetRunAccum(){
+  try { if (typeof game !== 'undefined') game._runAccum = {}; } catch(e){}
+  ['treasures','crowns','scrolls','points'].forEach(function(w){ try { _writeBundleTotal(w); } catch(e){} });
+}
 function _addLifetimeResource(which, n){
-  const KEY = which === 'crowns'  ? _LIFETIME_CROWNS_KEY
-            : which === 'scrolls' ? _LIFETIME_SCROLLS_KEY
-            :                       _LIFETIME_TREASURES_KEY;
-  let cur = 0;
-  try { cur = parseInt(localStorage.getItem(KEY) || '0', 10) || 0; } catch(e){}
-  const next = cur + (n || 0);
-  try { localStorage.setItem(KEY, String(next)); } catch(e){}
+  try { if (!game._runAccum) game._runAccum = {}; } catch(e){}
+  const cur = _liveBundleTotal(which);
+  try { game._runAccum[which] = (game._runAccum[which]||0) + (n||0); } catch(e){}
+  const next = _writeBundleTotal(which);
   const have = new Set(_loadUnlocks());
   const granted = [];
-  for (const tier of UNLOCK_TIERS) {
+  if (next > cur) for (const tier of UNLOCK_TIERS) {
     if ((tier.resource || 'treasures') !== which) continue;
     if (cur < tier.threshold && next >= tier.threshold && !have.has(tier.key)) {
       have.add(tier.key);
@@ -16670,8 +16865,9 @@ function showWin(){
     // One epic game: bank this scene's score into the lifetime points total
     // (shown on the Scene-3 win "Your Journey So Far" panel). Guarded so it banks
     // once per play of this scene.
-    try { if (!game._pointsBanked) { game._pointsBanked = true; const _pk='bek.bundle1.totalPoints'; localStorage.setItem(_pk, String((parseInt(localStorage.getItem(_pk)||'0',10)||0) + (game.stars||0))); } } catch(e){}
-    try { _s1vo('win'); } catch(e){}   // 2026-06-14: scene-1 win narration line
+    // L16: bank this scene's run as its BEST + recompute bundle totals (sum-of-best-runs).
+    try { if (!game._pointsBanked) { game._pointsBanked = true; _bankSceneBests(); } } catch(e){}
+    try { _s1vo('win', {delay:1800}); } catch(e){}   // win line AFTER the fanfare burst so it isn't buried (C7)
     try {
       const modal = document.querySelector('#winModal .modal-content');
       if (modal) {
@@ -17020,6 +17216,8 @@ function _showWorldMap(mode){
   const _titleEl = document.getElementById('worldMapTitle');
   const _subEl   = document.getElementById('worldMapSub');
   const _btnEl   = document.getElementById('worldMapContinueBtn');
+  const _pPalace = document.getElementById('wmPinPalace');
+  const _pDesert = document.getElementById('wmPinDesert');
   // Defensively stop every previously-playing music loop BEFORE the tracker
   // ambience so nothing layers underneath (PM62).
   try {
@@ -17039,6 +17237,12 @@ function _showWorldMap(mode){
     // as the "you are here" marker. Continue rolls the opening cinematic.
     if (_bPalace) _bPalace.style.display = 'none';
     if (_bDesert) _bDesert.style.display = 'none';
+    // A1/A2 (Jane 2026-06-17): the PALACE is the current level — pulse it (not Desert),
+    // and hide the Moses figurine so the palace icon is visible underneath.
+    if (_pPalace) _pPalace.classList.add('wm-pin-active');
+    if (_pDesert) _pDesert.classList.remove('wm-pin-active');
+    if (moses)    moses.style.display = 'none';
+    { const _bDL = document.getElementById('wmBadgeDesertLock'); if (_bDL) _bDL.style.display = ''; }   // I1: Desert locked at start
     if (_titleEl) _titleEl.textContent = "Moses’s Journey Begins";
     if (_subEl)   _subEl.textContent   = "From Pharaoh’s palace to a new life in Midian.";
     if (caption)  caption.textContent  = "His journey starts now — help Moses escape the palace!";
@@ -17051,6 +17255,11 @@ function _showWorldMap(mode){
   // travel Palace -> Desert.
   if (_bPalace) _bPalace.style.display = '';
   if (_bDesert) _bDesert.style.display = '';
+  // restore: Palace done (no pulse), Desert active (pulse), Moses figurine visible.
+  if (_pPalace) _pPalace.classList.remove('wm-pin-active');
+  if (_pDesert) _pDesert.classList.add('wm-pin-active');
+  if (moses)    moses.style.display = '';
+  { const _bDL = document.getElementById('wmBadgeDesertLock'); if (_bDL) _bDL.style.display = 'none'; }   // Desert unlocked after Scene 1
   if (_titleEl) _titleEl.textContent = "Moses’s Journey";
   if (_subEl)   _subEl.textContent   = "From Egypt to Midian — one step at a time.";
   if (_btnEl)   _btnEl.textContent   = "Begin the Desert →";
@@ -17717,6 +17926,31 @@ function _rebaseTimerAnchor(){
   _wasFrozenLastTick = false;
 }
 window._rebaseTimerAnchor = _rebaseTimerAnchor;
+// D2 fix (Jane 2026-06-17): the main timer freezes while a modal is open, but the
+// power-up COOLDOWN deadlines (absolute performance.now() values) kept ticking. This
+// watcher records pause time and, on resume, pushes any still-pending cooldown +
+// active-power deadlines forward by the paused duration — so cooldowns freeze too.
+(function _puPauseFreeze(){
+  let _puPauseStart = 0;
+  function tick(){
+    try {
+      const playing = (typeof game !== 'undefined' && game.state === 'playing');
+      if (!playing) { if (!_puPauseStart) _puPauseStart = performance.now(); }
+      else if (_puPauseStart) {
+        const ps = _puPauseStart; _puPauseStart = 0;
+        const paused = performance.now() - ps;
+        if (paused > 16) {
+          ['_puCooldownUntil','_puActiveUntil'].forEach(mapName => {
+            const m = window[mapName]; if (!m) return;
+            for (const k in m) { if (typeof m[k] === 'number' && m[k] > ps) m[k] += paused; }
+          });
+        }
+      }
+    } catch(e){}
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
 function startTimers(){
   if (timerInterval) clearInterval(timerInterval);
   _timerStartedAtMs = Date.now();
@@ -17725,6 +17959,10 @@ function startTimers(){
   // Keep `game.startedAt` for legacy reads (dialog tracking etc.) but the
   // canonical anchor is now `_timerStartedAtMs`.
   if (!game.startedAt) game.startedAt = _timerStartedAtMs;
+  // C1 (Jane 2026-06-17): arm Pharaoh's first chariot cameo relative to GAMEPLAY start
+  // (after the tutorial/cinematic), not scene-init — so it never barges in right after
+  // the instructions. ~40s buffer.
+  try { if (typeof _pharaohHunt !== 'undefined' && _pharaohHunt) _pharaohHunt.nextEventAt = performance.now() + 40000; } catch(e){}
   timerInterval = setInterval(() => {
     // 2026-05-08 PM7 (Jane: "when the camera pans... game timer keeps
     // going"). Treat the intro-pan window as a paused-equivalent state
@@ -18081,7 +18319,14 @@ function updateGuards(dt){
 const ZONE_BGM_KEY = {
   throne:   'bgmThrone',
   corridor: 'bgm',
-  exit:     'bgmExit',
+  // M1/J8/C4 (Jane, 3x): "remove bgm-exit.mp3 before Moses lands on the exit
+  // door." The bottom stretch (ty>=18) used to loop bgm-exit the WHOLE way
+  // down the golden-key/chest corridor. It now keeps the default bgm. bgm-exit
+  // only plays as the one-shot victory pad (bgmExitOut) when Moses actually
+  // reaches the exit → "God was with Moses" lesson modal. (NOTE: there were
+  // TWO _maybeSwapZoneMusic definitions; the earlier J8 fix patched the dead
+  // one — this ZONE_BGM_KEY change fixes the function that actually runs.)
+  exit:     'bgm',
 };
 function _zoneAt(ty){
   if (ty < 7)  return 'throne';
@@ -18376,6 +18621,15 @@ function _updateTorchlight(){
   // re-entrant pattern from PM37) re-anchors startedAt so the dim
   // cycle resumes cleanly after the modal closes.
   if (shouldBeDim && !_torchlight.isDim && !_firstEventSeen.dim && _tutModeOn()) {
+    // I8 (Jane 2026-06-17): hold the dim tutorial (+VO) if a narration or modal is up, so
+    // events never overlap a spoken line. Re-anchor so the dim resumes once it's clear.
+    try {
+      if ((typeof _voiceDucking !== 'undefined' && _voiceDucking)
+          || (typeof _anyBlockingModalOpen === 'function' && _anyBlockingModalOpen())) {
+        _torchlight.startedAt = performance.now() - (_torchlight.tCycleMs - _torchlight.dimMs - 200);
+        return;
+      }
+    } catch(e){}
     try {
       showTipPopup('dim', {
         icon: '🪔',
@@ -18907,6 +19161,9 @@ function drawInteractPrompt(){
     }
   }
   if (!nearest) return;
+  // I5 (Jane 2026-06-17): the dog is a THREAT (catches Moses → loses a heart), not an
+  // interactable — never show a "PET" action bubble over it.
+  if (nearest.kind === 'dog') return;
   const bx = nearest.tx * TILE - camera.px + TILE/2;
   let by = nearest.ty * TILE - camera.py - 4;
   // #131 Jane 2026-06-04: servant NPCs draw at SRV_SCALE=1.5 (sprite extends
@@ -21320,6 +21577,14 @@ function _drawEntitiesYSorted(){
   for (const g of guards) {
     ents.push({ sortY: ((g.py || 0) / TILE) + 1.0, fn: () => drawGuard(g) });
   }
+  // J9 (Jane 2026-06-19: "for lure power up, can we visibly show a goblet
+  // rolling on the floor"). Goblet Lure tosses a decoy; draw the rolling
+  // goblet + noise ripples at the decoy tile so the kid SEES the
+  // distraction in place (Scene 2 already draws a rock, Scene 3 a water pot).
+  if (window._decoyTile && performance.now() < (window._decoyUntil || 0)) {
+    const _dt = window._decoyTile;
+    ents.push({ sortY: _dt.y + 0.95, fn: () => drawDecoyGoblet(_dt) });
+  }
   // Moses.
   ents.push({ sortY: ((player.py || 0) / TILE) + 1.0, fn: drawMoses });
   // Stable sort by sortY ascending — lowest first (back), highest last (front).
@@ -21812,6 +22077,39 @@ function _drawVisionCone(cx, cy, dir, radiusTiles, state){
   ctx.restore();
 }
 
+// J9: the tossed Goblet Lure — rolling goblet + expanding noise ripples at
+// the decoy tile, so the distraction is clearly visible. IMG.goblet may be a
+// pre-rendered offscreen canvas OR an <img>; drawImage handles both, and the
+// readiness check covers naturalWidth (img) or width (canvas).
+function drawDecoyGoblet(dt){
+  const ddx = dt.x * TILE - camera.px, ddy = dt.y * TILE - camera.py;
+  if (ddx < -TILE*2 || ddx > CANVAS_W + TILE*2 || ddy < -TILE*2 || ddy > CANVAS_H + TILE*2) return;
+  const ccx = ddx + TILE/2, ccy = ddy + TILE/2, _n = performance.now();
+  ctx.save();
+  // expanding noise ripples (the "clatter" that pulls the guards in)
+  for (let i = 0; i < 3; i++){
+    const ph = ((_n/600) + i/3) % 1;
+    ctx.beginPath(); ctx.arc(ccx, ccy, TILE*(0.3 + ph*1.3), 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,210,120,' + (0.5*(1-ph)).toFixed(2) + ')';
+    ctx.lineWidth = 3; ctx.stroke();
+  }
+  // rolling goblet: bob + wobble-rotate so it reads as rolling on the floor
+  const _bob  = Math.sin(_n/180) * 2;
+  const _roll = Math.sin(_n/130) * 0.55;   // radians wobble
+  const _sz   = TILE * 0.85;
+  const g = IMG.goblet || IMG.colorGoblet;
+  ctx.translate(ccx, ccy + _bob);
+  ctx.rotate(_roll);
+  if (g && (g.naturalWidth > 0 || g.width > 0)) {
+    ctx.shadowColor = 'rgba(40,20,5,0.4)'; ctx.shadowBlur = 4; ctx.shadowOffsetY = 2;
+    ctx.drawImage(g, -_sz/2, -_sz/2, _sz, _sz);
+  } else {
+    ctx.font = Math.round(TILE*0.7) + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('\u{1F377}', 0, 0);
+  }
+  ctx.restore();
+}
 function drawGuard(g){
   const dx = g.tx*TILE - camera.px;
   const dy = g.ty*TILE - camera.py;

@@ -26,8 +26,19 @@
     if (/(?:welltest|rescuetest|testjigsaw|dev)=/.test(location.search)) return;
     var from = new URLSearchParams(location.search).get('from');
     var p = parseInt(localStorage.getItem('bek.bundle1.progress') || '0', 10) || 0;
-    if (from === 'scene1') { if (p < 1) { try { localStorage.setItem('bek.bundle1.progress','1'); } catch(e){} } return; }
-    if (p < 1) { location.replace('scene1_palace.html'); }
+    var unlocked = false;
+    try { unlocked = localStorage.getItem('bek.moses2.unlocked') === '1' || localStorage.getItem('bek.moses.bundle.unlocked') === '1'; } catch(e){}
+    if (from === 'scene1') { if (p < 1) { try { localStorage.setItem('bek.bundle1.progress','1'); } catch(e){} } }
+    else if (p < 1) { location.replace('scene1_palace.html'); return; }
+    // I10 (Jane 2026-06-17): auto-launching (one-world flow) — hide the access gate + cover
+    // BEFORE paint so they never flash between scenes. A <style> gated on the html class is
+    // applied before the body parses.
+    if (from === 'scene1' || p >= 1 || unlocked) {
+      document.documentElement.classList.add('bek-autolaunch');
+      var s = document.createElement('style');
+      s.textContent = 'html.bek-autolaunch #accessGate, html.bek-autolaunch #coverPage { display:none !important; }';
+      (document.head || document.documentElement).appendChild(s);
+    }
   } catch(e){}
 })();
 </script>
@@ -2273,14 +2284,18 @@
   /* v2.2.6 Jane feedback: kids didn't know which cell was START vs FINISH.
      A wrapper now sits above the board with explicit START and FINISH
      labels (arrows pointing into the maze corners). */
+  /* M8 v2 (Jane, twice): the maze kept clipping because the board's `94%`
+     resolved against the WRAPPER, which is an auto-width flex column (no
+     constraint) — so it never actually capped. Fix: constrain the WRAPPER to
+     the modal width here; the board + label row then simply fill it (100%). */
   .ch-maze-wrapper {
     display:flex; flex-direction:column; align-items:center; gap:4px;
-    margin:6px auto;
+    margin:6px auto; box-sizing:border-box;
+    width:100%; max-width:min(520px, 92vw);
   }
   .ch-maze-label-row {
     display:flex; justify-content:space-between; align-items:center;
-    width: calc(var(--maze-size, 5) * 36px + 8px * 2);
-    max-width:100%;
+    width:100%;
     padding: 0 4px;
     font-size:11px; font-weight:900; letter-spacing:1px;
     color:#ffd976; text-transform:uppercase;
@@ -2293,19 +2308,29 @@
     background:rgba(158,216,158,0.95); color:#1f4d1f;
     padding:3px 8px; border-radius:6px; border:2px solid #2e5e2e;
   }
+  /* J15 (Jane 2026-06-19: "make the mini maze in scene 2 larger like it is
+     in scene 1. make sure it doesn't clip on smaller devices."). Bumped
+     cells 36 → 72 px to match Scene 1, plus a responsive clamp below so the
+     board never overflows a narrow portrait modal. */
+  /* M8 (Jane 2026-06-20: "the mini maze in scene 2 is too large that its
+     right side is getting cut"). The board was a FIXED 72px×N (width:max-
+     content) which overflowed the challenge modal once N got big. Now the
+     board WIDTH is capped to the modal (min of the natural 72px-based width
+     and 94% of the parent), the columns are equal fractions, and the cells
+     are SQUARE via aspect-ratio — so the maze fills the modal and never
+     clips, at any size or zoom, on phone or desktop. */
   .ch-maze-board {
-    --maze-size: 5;
     display:grid;
-    grid-template-columns:repeat(var(--maze-size), 36px);
-    grid-template-rows:repeat(var(--maze-size), 36px);
-    gap:2px; justify-content:center; margin:0 auto;
-    padding:6px; background: rgba(0,0,0,0.25); border:2px dashed #ffd976;
-    border-radius:10px; width:max-content;
+    grid-template-columns: repeat(var(--maze-size, 7), 1fr);
+    gap:3px; margin:0 auto;
+    padding:10px; background: rgba(0,0,0,0.25); border:2px dashed #ffd976;
+    border-radius:12px; box-sizing:border-box;
+    width:100%;            /* fill the modal-constrained wrapper; never overflow */
   }
   .ch-maze-cell {
-    width:36px; height:36px; border-radius:4px;
+    width:100%; aspect-ratio:1; height:auto; border-radius:6px;
     display:flex; align-items:center; justify-content:center;
-    font-size:22px;
+    font-size:clamp(14px, 3.6vw, 22px); position:relative; overflow:hidden;
   }
   .ch-maze-cell.open { background:#f7e6bc; }
   /* v3.11 Jane 2026-04-24: maze cells now show sprite art instead of plain
@@ -3718,7 +3743,9 @@
     </div>
     <div class="win-badge-strip" id="winBadges"></div>
     <p class="win-motivate" id="winMotivate">Collect more Truth Cards in the next scene to unlock the Truth Finder badge!</p>
-    <button class="btn" id="winNextBtn">Continue Adventure -></button>
+    <!-- K9 (Jane 2026-06-19): name the destination like Scene 1's win modal
+         says "Desert" — Scene 2 leads to Midian. -->
+    <button class="btn" id="winNextBtn">Continue to Midian -></button>
     <button class="btn ghost" id="winReplayBtn">Replay Scene 2</button>
     <button class="btn ghost" id="winMenuBtn">Main Menu</button>
   </div>
@@ -3957,6 +3984,11 @@
 <audio id="audVoS3Jar"           preload="none" src="assets/audio/vo-s3-jar.mp3"></audio>
 <audio id="audVoS3TruthSeeker"   preload="none" src="assets/audio/vo-s3-truthseeker.mp3"></audio>
 <audio id="audVoS3ScribesWisdom" preload="none" src="assets/audio/vo-s3-scribeswisdom.mp3"></audio>
+<audio id="audVoPowerupLure"  preload="none" src="assets/audio/vo-powerup-lure.mp3"></audio>
+<audio id="audVoPowerupSpeed" preload="none" src="assets/audio/vo-powerup-speed.mp3"></audio>
+<audio id="audVoPowerupFreeze" preload="none" src="assets/audio/vo-powerup-freeze.mp3"></audio>
+<audio id="audVoS2Vulture"    preload="none" src="assets/audio/vo-s2-vulture.mp3"></audio>
+<audio id="audVoS2Fox"        preload="none" src="assets/audio/vo-s2-fox.mp3"></audio>
 
 <script>
 /* ============================================================================
@@ -4206,6 +4238,8 @@ const audio = {
   voS2Treasure: $('audVoS2Treasure'), voS2Win: $('audVoS2Win'),
   voS3Speed: $('audVoS3Speed'), voS3Freeze: $('audVoS3Freeze'), voS3Jar: $('audVoS3Jar'),
   voS3TruthSeeker: $('audVoS3TruthSeeker'), voS3ScribesWisdom: $('audVoS3ScribesWisdom'),
+  voPowerupLure: $('audVoPowerupLure'), voS2Vulture: $('audVoS2Vulture'), voS2Fox: $('audVoS2Fox'),
+  voPowerupSpeed: $('audVoPowerupSpeed'), voPowerupFreeze: $('audVoPowerupFreeze'),
   confetti:      $('audConfetti'),        // win-screen sparkle (PM60)
   // 2026-05-19 PM61: jigsaw mechanic + scene transition audio.
   puzzleBg:        $('audPuzzleBg'),        // loops while jigsaw modal is open
@@ -4840,17 +4874,29 @@ function _warmLazyAudio(){
   _lazyAudioWarmed = true;
   try {
     const lazy = Array.from(document.querySelectorAll('audio[preload="none"]'));
+    // Voice-over clips are small + needed just-in-time — warm them FIRST, immediately,
+    // so the first time a kid hits an event the line is already loaded (fixes "no VO
+    // the first time, works on replay").
+    const isVo = a => /vos[123]/i.test(a.id || '') || /\/vo-/i.test(a.getAttribute('src') || '');
+    const vo = lazy.filter(isVo), rest = lazy.filter(a => !isVo(a));
+    vo.forEach(a => { try { a.preload = 'auto'; a.load(); } catch(e){} });
     let i = 0;
     const step = () => {
-      for (let n = 0; n < 4 && i < lazy.length; n++, i++) {
-        try { lazy[i].preload = 'auto'; lazy[i].load(); } catch(e){}
+      for (let n = 0; n < 4 && i < rest.length; n++, i++) {
+        try { rest[i].preload = 'auto'; rest[i].load(); } catch(e){}
       }
-      if (i < lazy.length) setTimeout(step, 600);
+      if (i < rest.length) setTimeout(step, 600);
     };
     setTimeout(step, 1500);
   } catch(e){}
 }
-try { window.addEventListener('load', () => { setTimeout(() => { try { _warmLazyAudio(); } catch(e){} }, 3000); }); } catch(e){}
+// Robust trigger: fire whether or not 'load' already happened (on fast file:// the load
+// event can fire before this listener attaches), plus a belt-and-suspenders fallback.
+try {
+  const _armWarm = () => setTimeout(() => { try { _warmLazyAudio(); } catch(e){} }, 800);
+  if (document.readyState === 'complete') _armWarm(); else window.addEventListener('load', _armWarm);
+  setTimeout(() => { try { _warmLazyAudio(); } catch(e){} }, 4000);
+} catch(e){}
 const _audioTotal = _audioEls.length;
 _audioEls.forEach(a => {
   let counted = false;
@@ -5751,9 +5797,15 @@ const CHALLENGE_BANK = {
       verse:'"Moses was educated in all the wisdom of the Egyptians and was powerful in speech and action." (Acts 7:22 NIV)' },
     { id:'m2', type:'trivia', q:'What did Moses see that stirred his heart to act?',
       options:['A dream','A Hebrew worker being hurt','A vision','A messenger'], correct:1,
+      // J13 (Jane 2026-06-19): no clue → keyword fallback gave an
+      // irrelevant hint. Added an explicit, crisp one.
+      clue:'Moses saw one of his own people — a Hebrew slave — being beaten by an Egyptian. That cruelty is what stirred him to act (Exodus 2:11).',
       verse:'"He saw an Egyptian beating a Hebrew..." (Exodus 2:11 NIV)' },
     { id:'m3', type:'trivia', q:'When Moses left Egypt, where did God lead him?',
       options:['Jericho','Jerusalem','Midian','Bethlehem'], correct:2,
+      // J14 (Jane 2026-06-19): the keyword fallback wrongly talked about
+      // pyramids/Egypt. Moses fled AWAY from Egypt to a desert land.
+      clue:'Not a city in the Promised Land — Moses fled far from Egypt to a desert land, where he later met his wife at a well. It starts with M (Exodus 2:15).',
       verse:'"Moses fled from Pharaoh and went to live in Midian..." (Exodus 2:15 NIV)' },
     { id:'m4', type:'fill', q:'"By faith he left Egypt... he persevered because he saw him who is _______."',
       options:['Merciful','Invisible','Strong','Kind'], correct:1,
@@ -5797,6 +5849,7 @@ const CHALLENGE_BANK = {
       verse:'"During that long period, the king of Egypt died..." (Exodus 2:23 NIV)' },
     { id:'m17', type:'trivia', q:'Why did Moses flee from Egypt to Midian?',
       options:['He was bored','Pharaoh tried to kill him','He lost a race','He wanted a vacation'], correct:1,
+      clue:'Moses had to run for his life — Pharaoh found out what he had done and wanted to harm him, so Moses escaped far away to Midian.',
       verse:'"When Pharaoh heard of this, he tried to kill Moses, but Moses fled..." (Exodus 2:15 NIV)' },
     { id:'m18', type:'trivia', q:'Why did Moses name his son Gershom?',
       options:['It means strong','He was a stranger in a foreign land','To honor God','To remember Egypt'], correct:1,
@@ -5849,7 +5902,9 @@ const CHALLENGE_BANK = {
     { id:'mU3', type:'unscramble',
       q:'Unscramble the cruel overseers Pharaoh set over the Israelites:',
       answer:'TASKMASTERS',
-      clue:'We drove the Hebrews with whips, forcing them to build Pharaoh\'s cities.',
+      // M7 (Jane 2026-06-20): too hard — give kids the answer in two easy
+      // pieces so they can build it letter by letter.
+      clue:'Sound it out in two parts: TASK + MASTERS. They were the cruel bosses who forced the Hebrews to make bricks and build Pharaoh’s cities.',
       verse:'"So they put slave masters over them to oppress them with forced labor..." (Exodus 1:11 NIV)' },
     { id:'mU4', type:'unscramble',
       q:'Unscramble what God remembered when He heard the Israelites groan:',
@@ -5999,11 +6054,13 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference moses running A.png',
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
-      // 2026-05-20 PM63 merge: real per-image coords pixel-diffed by the
-      // caravan-map agent. sun (top-left), vulture (left), Moses'
-      // hand/object (centre), camel (right).
-      diffs:[{x:20,y:30,r:9},{x:12,y:49,r:9},{x:40,y:52,r:10},{x:85,y:57,r:10}],
-      clue:'Look very carefully at both pictures — some things have changed!',
+      // M5 (Jane 2026-06-20: "if i click on the vulture it is not recognized;
+      // only if i click under it it detects"). Re-computed offline + visually
+      // verified on the annotated overlay — the VULTURE's real centre is
+      // (17,41), not (12,49). Corrected all 4: sun (24,32), vulture (17,41),
+      // Moses's belt pouch (42,58), camel (85,57). Bigger tap radius too.
+      diffs:[{x:24,y:32,r:12},{x:17,y:41,r:12},{x:42,y:58,r:12},{x:85,y:57,r:12}],
+      clue:'Four things changed: the sun in the sky, the black bird on the palm tree, the pouch on Moses’s belt, and the camel on the right.',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     // --- Pictionary ---
     { id:'mPict1', type:'pictionary',
@@ -7362,7 +7419,12 @@ try {
         const gate = document.getElementById('accessGate');
         if (gate) gate.classList.add('hidden');
         // Difficulty: take last-used from localStorage (cross-scene
-        // setting key 'bek.lastDifficulty'); fallback to medium.
+        // setting key 'bek.lastDifficulty').
+        // O10 (Jane 2026-06-20): the M4 'easy' fallback was a band-aid that
+        // broke a Medium/Hard carry-over (Medium showed 4 min). The ROOT fix is
+        // in Scene 1's _beginAdventure (it now persists the chosen difficulty on
+        // Begin), so the read below is reliable. Fallback is the neutral
+        // 'medium' only if there is genuinely no saved value.
         let _diff = 'medium';
         try {
           const stored = localStorage.getItem('bek.lastDifficulty');
@@ -7374,16 +7436,18 @@ try {
             applyDifficultyConfig(_diff);
           }
         } catch(e){}
-        try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}
+        // J10 (Jane 2026-06-19: "the audio narration panels before scene 2
+        // have no audio. only images keep playing on a slide show.").
+        // ROOT CAUSE: this auto-launch runs from a page-load timer with NO
+        // user gesture — and user activation does NOT survive the Scene 1 →
+        // Scene 2 navigation. So the browser's autoplay policy blocked the
+        // cinematic voice-over. Worse, the old early unlockAudio() here
+        // latched audioUnlocked=true with no gesture, so even a later real
+        // tap couldn't unlock audio. FIX: do NOT unlock here. Show the
+        // loading bar, then a one-tap "Continue the Journey" splash — the
+        // kid's tap is the gesture that unlocks audio, and ONLY THEN does
+        // the cinematic play, now WITH its recorded narration.
         try {
-          // 2026-05-19 PM63d (Jane: "its taking a few seconds for sprites
-          // to be loaded. so put a loading bar before game can open").
-          // The Scene-1 auto-launch path skipped the preload overlay and
-          // jumped straight to the cinematic — so the kid saw broken
-          // sprites for a few seconds while images finished decoding.
-          // Now: if assets aren't ready, show the preload overlay first
-          // and defer the cinematic launch until they are (or until the
-          // 12 s safety ceiling fires).
           const _launchCin = () => {
             try {
               const _savedGame = (typeof _loadCheckpoint === 'function') ? _loadCheckpoint() : null;
@@ -7395,13 +7459,41 @@ try {
               }
             } catch(e){}
           };
+          const _gestureThenCin = () => {
+            try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}
+            _launchCin();
+          };
+          const _showJourneyTapGate = () => {
+            try { const _ov = document.getElementById('preloadOverlay'); if (_ov) _ov.classList.remove('active'); } catch(e){}
+            let g = document.getElementById('s2JourneyTapGate');
+            if (!g) {
+              g = document.createElement('div');
+              g.id = 's2JourneyTapGate';
+              g.setAttribute('role', 'button');
+              g.setAttribute('tabindex', '0');
+              g.setAttribute('aria-label', 'Continue Moses’s journey');
+              g.style.cssText = 'position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(circle at 50% 35%,#5a2510,#2a1206 80%);cursor:pointer;text-align:center;padding:24px;';
+              g.innerHTML =
+                '<div style="font-family:Georgia,serif;color:#ffd976;font-size:22px;font-weight:900;text-shadow:0 0 10px rgba(255,217,118,0.5);max-width:520px;line-height:1.4;">Moses has slipped out of the palace…</div>'
+                + '<button type="button" style="font-family:Georgia,serif;font-size:20px;font-weight:900;color:#5a1d06;background:linear-gradient(145deg,#ffd976,#f2a83a);border:3px solid #ffd976;border-radius:16px;padding:14px 34px;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,0.5);">▶ Continue the Journey</button>'
+                + '<div style="color:#e8c98a;font-size:13px;opacity:0.85;">Tap to begin the desert crossing — turn your sound on!</div>';
+              document.body.appendChild(g);
+            }
+            g.style.display = 'flex';
+            let _fired = false;
+            const _go = () => {
+              if (_fired) return; _fired = true;
+              try { g.style.display = 'none'; g.remove(); } catch(e){}
+              _gestureThenCin();
+            };
+            g.addEventListener('click', _go);
+            g.addEventListener('touchstart', _go, { passive: true });
+            g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') _go(); });
+          };
           if (typeof _preloadPct === 'function' && _preloadPct() < 100) {
             const _overlay = document.getElementById('preloadOverlay');
             if (_overlay) _overlay.classList.add('active');
-            _pendingBeginTap = () => {
-              try { if (_overlay) _overlay.classList.remove('active'); } catch(e){}
-              _launchCin();
-            };
+            _pendingBeginTap = _showJourneyTapGate;
             // 12 s safety: never strand the kid on the preload screen.
             setTimeout(() => {
               if (_pendingBeginTap) {
@@ -7409,7 +7501,7 @@ try {
               }
             }, 12000);
           } else {
-            _launchCin();
+            _showJourneyTapGate();
           }
         } catch(e){}
       } catch(e){}
@@ -7523,9 +7615,23 @@ function openCinematic() {
   // file and the panels still function as plain captions.
   try {
     if (audio.cinNarrate) {
-      audio.cinNarrate.currentTime = 0;
       audio.cinNarrate.volume = 0.95;
-      audio.cinNarrate.play().catch(()=>{});
+      // M3 (Jane 2026-06-20: "i still don't hear the audio narration before
+      // scene 2 — The desert is wide..."). Force a load() (helps on file://
+      // where preload may not have settled), and if the first play() is still
+      // blocked, retry on the very next tap/keypress anywhere (one-shot) so the
+      // narration starts the moment the kid interacts.
+      try { audio.cinNarrate.load(); } catch(e){}
+      const _playCin = () => { try { audio.cinNarrate.currentTime = 0; return audio.cinNarrate.play(); } catch(e){ return Promise.reject(e); } };
+      _playCin().catch(() => {
+        const _retry = () => {
+          document.removeEventListener('pointerdown', _retry, true);
+          document.removeEventListener('keydown', _retry, true);
+          _playCin().catch(()=>{});
+        };
+        document.addEventListener('pointerdown', _retry, true);
+        document.addEventListener('keydown', _retry, true);
+      });
       // PM63i: sync the panel dwell to the narration's real length so the
       // text/image slideshow finishes about when the voice-over does.
       // Spread the audio across all panels; the LAST panel still waits
@@ -7872,6 +7978,8 @@ function showResumePrompt(p) {
 function startScene1() {
   game.state = 'playing';
   game.startedAt = performance.now();
+  // L16: fresh run — reset this scene's treasure/crown/scroll/points accumulator.
+  try { game._pointsBanked = false; _resetRunAccum(); } catch(e){}
   // v2.3.1 (Jane): single-source music switcher guarantees narration + alerted
   // are fully stopped before the bgm (desert tension) starts. Fixes the
   // "two musics playing together" bug.
@@ -8092,6 +8200,10 @@ function restartScene() {
     playIntroPan(() => {
       game.state = 'playing';
       startTimers();
+      // H7 (Jane 2026-06-17): anchor the scout grace to the REAL gameplay start so it
+      // isn't "used up" during the opening cinematic (scouts were catching Moses at once).
+      try { game.scoutsArmedAt = performance.now(); } catch(e){}
+      try { _reconcileUnlocks(); } catch(e){}   // D1: ensure carried-over power-ups are present
       try { _s2vo('goal', {delay:400}); } catch(e){}   // scene-2 objective narration once interactive
       /* 2026-05-19 PM53 (ported from Scene 1 PM52): scene-restart toast removed — cinematic + HUD reset is enough feedback. */
     });
@@ -8114,9 +8226,14 @@ function restartScene() {
    A linear-play kid (S1->S2->S3) sees controls intro on S1 only.
    A standalone replayer (Etsy QR straight to S2) still sees controls
    because no bundle flag was ever set on that device. */
+// K15/I12 (Jane 2026-06-19): the on-screen tutorial TEXT below is now aligned
+// WORD-FOR-WORD with the recording scripts so the recorded VO and the modal
+// text match (see NARRATION_scene1_scene2_RECORDING_SCRIPTS.md → "Scene 2
+// tutorial modals"). The dynamic checkpoint count was dropped (it would make
+// the recording drift) — the copy now says "every checkpoint".
 const CONTROLS_TUT_STEPS = [
-  { icon:'▲', vo:'move',     title:'Move with the arrows', body:'Tap UP DOWN LEFT RIGHT below the game, swipe across the screen, or use the arrow keys on a keyboard to walk Moses across the desert. The way out stays sealed until you clear the checkpoints and rebuild the caravan map.' },
-  { icon:'✋', vo:'interact', title:'Talk to the caravan trader', body:'When a glowing caravan trader appears, step next to them and tap the Interact button (keyboard: press Space) to talk and earn a bonus. Treasures, the oasis, and map pieces collect on their own when you walk over them — no button needed.' },
+  { icon:'▲', vo:'move',     title:'Move with the arrows', body:'Tap the arrow buttons, swipe the screen, or use your keyboard arrows to walk Moses across the desert. The way out stays sealed until you clear the checkpoints and rebuild the caravan map.' },
+  { icon:'✋', vo:'interact', title:'Talk to the caravan trader', body:'When a glowing caravan trader appears, step right next to them and tap the Interact button to talk and earn a bonus. Treasures, the oasis, and map pieces you collect just by walking over them.' },
 ];
 const SCENE_TUT_STEPS = [
   // v3.28 Jane 2026-04-27: scene-specific mechanics. The two control-intro
@@ -8126,22 +8243,18 @@ const SCENE_TUT_STEPS = [
   // wrong now that gateCount is dynamic AND the jigsaw covers the exit
   // until all gates are solved). Body is a function — composed at tutorial
   // launch from live game.gateCount so the copy never drifts from reality.
+  // K15/I12 (Jane 2026-06-19): body aligned word-for-word with the recording
+  // script; dropped the dynamic count so the recorded line never drifts.
   { icon:'?', vo:'checkpoint', title:'Solve every checkpoint',
-    body: () => {
-      const n = (typeof game !== 'undefined' && game.gateCount) ? game.gateCount : 6;
-      return n + ' glowing checkpoints (?) are scattered across the desert. Walk near one and Moses pauses for 3 Bible questions. Solve ALL ' + n + ' — you cannot walk around them.';
-    } },
+    body:'Glowing checkpoints are scattered across the desert. Walk up to one and Moses stops for three Bible questions. Solve every checkpoint — you can’t go around them.' },
   // 2026-05-21 PM63i (Jane: "this needs to be modified since we have
   // updated the game play for the path getting uncovered now"). The 3 map
   // pieces + jigsaw now gate the path to Midian — added a step for them.
   { icon:'\u{1F5FA}\u{FE0F}', vo:'map', title:'Find the 3 caravan map pieces',
-    body:'Three torn map scraps are hidden across the desert. Walk over each one to pick it up. Collect all 3 AND clear every checkpoint to unlock the caravan map.' },
-  { icon:'⚠', vo:'scouts', title:'Avoid Pharaoh\'s scouts', body:'Red guards and orange scouts patrol the desert. Stay near dunes, boulders, and caves to break line-of-sight. Caves are sanctuary; enemies cannot enter.' },
+    body:'Three torn map pieces are hidden across the desert. Walk over each one to pick it up. Find all three, and clear every checkpoint, to unlock the caravan map.' },
+  { icon:'⚠', vo:'scouts', title:'Avoid Pharaoh\'s scouts', body:'Red guards and orange scouts patrol the desert. Hide near dunes, boulders, and caves to break their line of sight. Caves are safe — enemies can’t follow you inside.' },
   { icon:'\u2605', vo:'midian', title:'Reach Midian!',
-    body: () => {
-      const n = (typeof game !== 'undefined' && game.gateCount) ? game.gateCount : 6;
-      return 'Clear all ' + n + ' checkpoints AND find the 3 map pieces, then piece the caravan map together. The map reveals the hidden path — walk east and Moses crosses into Midian. Tap Start to begin!';
-    } },
+    body:'Clear every checkpoint and find all three map pieces, then put the caravan map together. The map reveals the hidden path — walk east, and Moses crosses into Midian!' },
 ];
 // v3.28: Two flags. The bundle flag travels across all 3 scenes; the
 // scene flag is per-scene. Either being missing → show that block.
@@ -8233,20 +8346,34 @@ const _S2VO_KEY = {
   goal:'voS2Goal', move:'voS2Move', interact:'voS2Interact', checkpoint:'voS2Checkpoint',
   map:'voS2Map', scouts:'voS2Scouts', midian:'voS2Midian', oasis:'voS2Oasis',
   mirage:'voS2Mirage', treasure:'voS2Treasure', win:'voS2Win',
-  speed:'voS3Speed', freeze:'voS3Freeze', jar:'voS3Jar', truthseeker:'voS3TruthSeeker', scribeswisdom:'voS3ScribesWisdom'
+  vulture:'voS2Vulture', fox:'voS2Fox', lure:'voPowerupLure',
+  speed:'voPowerupSpeed', freeze:'voPowerupFreeze', jar:'voS3Jar', truthseeker:'voS3TruthSeeker', scribeswisdom:'voS3ScribesWisdom'
 };
 // showTipPopup eventKey -> vo key
 const _S2VO_BY_EVENT = { checkpoint:'checkpoint', treasure:'treasure', mapPiece:'map', oasis:'oasis', scout:'scouts', mirage:'mirage' };
 // power-up key -> vo key (royalVision = the lure; reuses scene-3's jar line)
-const _S2VO_POWER = { speedBurst:'speed', guardFreeze:'freeze', royalVision:'jar', truthSeeker:'truthseeker', scribesWisdom:'scribeswisdom' };
+// Power-up VO — generic only. lure→vo-powerup-lure. speedBurst omitted until a generic
+// vo-powerup-speed exists (scene-3 speed clip says "Jethro's tent / sunset").
+const _S2VO_POWER = { speedBurst:'speed', guardFreeze:'freeze', royalVision:'lure', truthSeeker:'truthseeker', scribesWisdom:'scribeswisdom' };
 const _s2voPlayed = new Set();
 function _s2voReset(){ try { _s2voPlayed.clear(); } catch(e){} }
+// I3 (Jane 2026-06-17): wait for a HARD blocking modal to close so VO matches the screen
+// and lines never overlap. Tutorial + tip popups accompany their own VO (not in the list).
+function _s2voShouldWait(){
+  try {
+    const ids = ['challengeModal','dangerModal','pauseModal','dialogModal','mapPeekOverlay'];
+    for (const id of ids){ const el = document.getElementById(id); if (el && el.classList.contains('active')) return true; }
+  } catch(e){}
+  return false;
+}
 function _s2vo(key, opts){
   opts = opts || {};
   if (!key) return;
   if (!opts.repeat && _s2voPlayed.has(key)) return;
   const mapKey = _S2VO_KEY[key]; if (!mapKey || !audio[mapKey]) return;
+  let _waits = 0;
   const fire = () => {
+    if (_s2voShouldWait() && _waits++ < 60){ setTimeout(fire, 400); return; }
     if (!opts.repeat){ if (_s2voPlayed.has(key)) return; _s2voPlayed.add(key); }
     try { playVoiceLine(mapKey); } catch(e){}
   };
@@ -8255,6 +8382,15 @@ function _s2vo(key, opts){
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
+  // O1/M2 (Jane 2026-06-20): never stack a popup over an open one — wait + retry.
+  try {
+    const _ovBusy = document.getElementById('tipPopupOverlay');
+    if (_ovBusy && _ovBusy.classList.contains('active')) {
+      opts._tipRetries = (opts._tipRetries || 0) + 1;
+      if (opts._tipRetries < 40) { setTimeout(() => { try { showTipPopup(eventKey, opts); } catch(e){} }, 700); }
+      return;
+    }
+  } catch(e){}
   if (eventKey) _firstEventSeen[eventKey] = true;
   // 2026-06-14: play the matching narration line (just-in-time, once).
   try { if (eventKey && _S2VO_BY_EVENT[eventKey]) _s2vo(_S2VO_BY_EVENT[eventKey], {delay:200}); } catch(e){}
@@ -8325,6 +8461,9 @@ function _tipPointAtTile(tx, ty){
   if (_tipPopupActiveHand) { try { _tipPopupActiveHand.remove(); } catch(e){} _tipPopupActiveHand = null; }
   if (_tipPointerRAF) { try { cancelAnimationFrame(_tipPointerRAF); } catch(e){} _tipPointerRAF = 0; }
   _tipPointerTile = null;
+  // 2026-06-17 (Jane): the DOM-overlay tile halo + pointing hand mis-positioned across
+  // devices/viewports. Disabled — the tip popup still teaches.
+  return;
   const cnv = document.getElementById('gameCanvas');
   if (!cnv || typeof camera === 'undefined' || typeof TILE === 'undefined') return;
   _tipPointerTile = { tx, ty };
@@ -8882,6 +9021,15 @@ function _onJigsawSolved(){
   _playMapReveal();
 }
 function _playMapReveal(){
+  // K5 (Jane 2026-06-19: "after the jigsaw is solved, that audio sfx and
+  // desert bgm are overlapping"). Silence the puzzle loop + desert/zone bgm
+  // so the puzzle-complete sting and the mystical reveal play CLEANLY. The
+  // bgm resumes after the reveal pan (handled in _showMosesKeepGoing).
+  try { if (audio.puzzleBg){ audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
+  try { if (audio.bgm){ audio.bgm.pause(); } } catch(e){}
+  try { if (audio.bgmCorridor){ audio.bgmCorridor.pause(); } } catch(e){}
+  try { if (audio.alerted){ audio.alerted.pause(); _alertMusicOn = false; } } catch(e){}
+  try { if (typeof setMusic === 'function') setMusic(null); } catch(e){}
   const board  = document.getElementById('jigsawBoard');
   const status = document.getElementById('jigsawStatus');
   const verse  = document.getElementById('jigsawVerse');
@@ -9672,7 +9820,11 @@ function getHintForQuestion(q){
     if (hasWord('faith'))
       return 'Hebrews 11 teaches that Moses\' family hid him by faith (Hebrews 11:23-24).';
     if (hasWord('egypt'))
-      return 'Egypt was the land where the Hebrews were slaves. Pyramids are there.';
+      // J14 (Jane 2026-06-19): the old "Pyramids are there" line was a
+      // misleading dead-end hint (it fired for "where did God lead Moses"
+      // whose answer is MIDIAN, not Egypt). Neutral re-read nudge instead;
+      // the verse reference (layer 4) is appended for knowledge questions.
+      return 'This part of the story is set in Egypt, where the Hebrews were enslaved. Re-read the question and think about which moment of Moses’ story (Exodus 1-2) it points to.';
     if (hasWord('staff','rod'))
       return 'A shepherd\'s staff. Later God would use Moses\' staff to do miracles.';
     if (hasWord('flock','sheep','lamb','lambs'))
@@ -9731,10 +9883,21 @@ function getHintForQuestion(q){
   }
 
   // Assemble the best available hint. Combine type coaching + topic if both are useful.
-  if (topic && typeHint) return typeHint + ' ' + topic;
-  if (topic)             return topic;
-  if (typeHint)          return typeHint;
-  if (verseHint)         return verseHint;
+  // J13/J14 (Jane 2026-06-19): for KNOWLEDGE questions (trivia/fill/tf) the
+  // verse reference is ground truth — always append it so even a generic
+  // topic match still sends the kid to the exact Scripture with the answer.
+  // This is the root fix for the 35+ clue-less knowledge questions that
+  // previously relied on (sometimes wrong) keyword routing alone.
+  const _isKnowledge = (q.type === 'trivia' || q.type === 'fill' || q.type === 'tf');
+  let _base = null;
+  if (topic && typeHint) _base = typeHint + ' ' + topic;
+  else if (topic)        _base = topic;
+  else if (typeHint)     _base = typeHint;
+  if (_isKnowledge && verseHint) {
+    return (_base ? _base + ' ' : '') + verseHint;
+  }
+  if (_base)     return _base;
+  if (verseHint) return verseHint;
   return 'Think about the Moses story and choose your best guess.';
 }
 
@@ -11381,32 +11544,71 @@ function _loadUnlocks(){
 function _hasUnlock(key){
   return _loadUnlocks().includes(key);
 }
+// D1 fix (Jane 2026-06-17): power-ups earned in an earlier scene weren't always present
+// here. The grant only fires at the exact moment a threshold is crossed, so any desync
+// (e.g. unlocks array reset while lifetime totals stayed high) left power-ups hidden.
+// Reconcile on scene start: unlock anything the lifetime totals ALREADY qualify for.
+function _reconcileUnlocks(){
+  try {
+    const have = new Set(_loadUnlocks());
+    const _g = (k) => parseInt(localStorage.getItem(k) || '0', 10) || 0;
+    const totals = { treasures:_g('bek.bundle1.totalTreasures'), crowns:_g('bek.bundle1.totalCrowns'), scrolls:_g('bek.bundle1.totalScrolls') };
+    let changed = false;
+    for (const tier of UNLOCK_TIERS) {
+      const res = tier.resource || 'treasures';
+      if ((totals[res] || 0) >= tier.threshold && !have.has(tier.key)) { have.add(tier.key); changed = true; }
+    }
+    if (changed) { try { localStorage.setItem(_UNLOCKS_KEY, JSON.stringify([...have])); } catch(e){} }
+    try { _refreshUnlockButtons(); } catch(e){}
+  } catch(e){}
+}
+// === SUM-OF-BEST-RUNS aggregation (Jane 2026-06-20, L16) — identical to the
+// scene1/scene3 module, _SCENE_NO=2. Per-scene bests in bek.scene{N}.{res};
+// bundle totals = sum of bests with the current scene contributing
+// max(its best, this run). Replaying never double-counts. ===============
+const _SCENE_NO = 2;
+function _resKey(w){ return w==='crowns'?_LIFETIME_CROWNS_KEY : w==='scrolls'?_LIFETIME_SCROLLS_KEY : w==='points'?'bek.bundle1.totalPoints' : _LIFETIME_TREASURES_KEY; }
+function _sceneBest(w, n){ try { return parseInt(localStorage.getItem('bek.scene'+n+'.'+w)||'0',10)||0; } catch(e){ return 0; } }
+function _otherScenesBest(w){ var s=0; [1,2,3].forEach(function(n){ if(n!==_SCENE_NO) s+=_sceneBest(w,n); }); return s; }
+function _runAccum(w){ try { return (game._runAccum && game._runAccum[w]) || 0; } catch(e){ return 0; } }
+function _liveBundleTotal(w){ return _otherScenesBest(w) + Math.max(_sceneBest(w,_SCENE_NO), _runAccum(w)); }
+function _writeBundleTotal(w){ var t=_liveBundleTotal(w); try { localStorage.setItem(_resKey(w), String(t)); } catch(e){} return t; }
 function _addLifetimeResource(which, n){
-  const KEY = which === 'crowns'  ? _LIFETIME_CROWNS_KEY
-            : which === 'scrolls' ? _LIFETIME_SCROLLS_KEY
-            :                       _LIFETIME_TREASURES_KEY;
-  let cur = 0;
-  try { cur = parseInt(localStorage.getItem(KEY) || '0', 10) || 0; } catch(e){}
-  const next = cur + (n || 0);
-  try { localStorage.setItem(KEY, String(next)); } catch(e){}
-  const have = new Set(_loadUnlocks());
-  const granted = [];
-  for (const tier of UNLOCK_TIERS) {
-    if ((tier.resource || 'treasures') !== which) continue;
-    if (cur < tier.threshold && next >= tier.threshold && !have.has(tier.key)) {
-      have.add(tier.key);
-      granted.push(tier);
+  try { if (!game._runAccum) game._runAccum = {}; } catch(e){}
+  const prev = _liveBundleTotal(which);
+  try { game._runAccum[which] = (game._runAccum[which]||0) + (n||0); } catch(e){}
+  const next = _writeBundleTotal(which);
+  if (next > prev) {
+    const have = new Set(_loadUnlocks());
+    const granted = [];
+    for (const tier of UNLOCK_TIERS) {
+      if ((tier.resource || 'treasures') !== which) continue;
+      if (prev < tier.threshold && next >= tier.threshold && !have.has(tier.key)) { have.add(tier.key); granted.push(tier); }
+    }
+    if (granted.length) {
+      try { localStorage.setItem(_UNLOCKS_KEY, JSON.stringify([...have])); } catch(e){}
+      try { play('rankReveal') || play('success'); } catch(e){}
+      try { spawnGlitterBurstAtPlayer(28); } catch(e){}
+      granted.forEach(g => { try { toast('✨ ' + g.label + ' unlocked! Tap the new button above to use it.'); } catch(e){} });
+      try { _refreshUnlockButtons(); } catch(e){}
     }
   }
-  if (granted.length) {
-    try { localStorage.setItem(_UNLOCKS_KEY, JSON.stringify([...have])); } catch(e){}
-    try { play('rankReveal') || play('success'); } catch(e){}
-    try { spawnGlitterBurstAtPlayer(28); } catch(e){}
-    granted.forEach(g => {
-      try { toast('✨ ' + g.label + ' unlocked! Tap the new button above to use it.'); } catch(e){}
-    });
-  }
   return next;
+}
+function _bankSceneBests(){
+  ['treasures','crowns','scrolls','points'].forEach(function(w){
+    var run = (w==='points') ? ((typeof game!=='undefined' && game.stars)||0) : _runAccum(w);
+    var best = Math.max(_sceneBest(w,_SCENE_NO), run);
+    try { localStorage.setItem('bek.scene'+_SCENE_NO+'.'+w, String(best)); } catch(e){}
+  });
+  ['treasures','crowns','scrolls','points'].forEach(function(w){
+    var s=0; [1,2,3].forEach(function(n){ s+=_sceneBest(w,n); });
+    try { localStorage.setItem(_resKey(w), String(s)); } catch(e){}
+  });
+}
+function _resetRunAccum(){
+  try { if (typeof game !== 'undefined') game._runAccum = {}; } catch(e){}
+  ['treasures','crowns','scrolls','points'].forEach(function(w){ try { _writeBundleTotal(w); } catch(e){} });
 }
 function _addLifetimeTreasures(n){ return _addLifetimeResource('treasures', n); }
 function _addLifetimeCrowns(n){    return _addLifetimeResource('crowns',    n); }
@@ -11522,9 +11724,16 @@ function _refreshUnlockButtons(){
   } catch(e){}
 }
 // Initial render at module load + after each scene start.
-setTimeout(_refreshUnlockButtons, 100);
-// Tick the cooldown timer every second so the badge counts down visually.
-setInterval(() => { try { _refreshUnlockButtons(); } catch(e){} }, 1000);
+setTimeout(_reconcileUnlocks, 100);
+// K2 (Jane 2026-06-19: "the power-ups i had in scene 1 are still not present
+// in scene 2"). The old tick only RE-RENDERED the existing unlocks array — so
+// if reconcile ever missed (a timing gap on a slow load, or the array was
+// briefly empty when a gameplay-start path ran), the dock stayed empty
+// forever. Now the tick RE-RECONCILES (idempotent + cheap: a few localStorage
+// reads), so the dock SELF-HEALS — as soon as the carried-over lifetime totals
+// or unlocks array qualify, the buttons appear within ~1 s regardless of which
+// start path fired. (Also still counts down the cooldown badges.)
+setInterval(() => { try { _reconcileUnlocks(); } catch(e){} }, 1000);
 
 /* ---------- v3.4 GLITTER SPARKLES ----------
    Spawns a ring of tiny "spark" spans around Moses's screen position. Each
@@ -11691,8 +11900,11 @@ $('lessonContinueBtn').addEventListener('click', () => {
 function showWin(){
   // One epic game: bank this scene's score into the lifetime points total
   // (shown on the Scene-3 win journey panel). Guarded to bank once per play.
-  try { if (!game._pointsBanked) { game._pointsBanked = true; const _pk='bek.bundle1.totalPoints'; localStorage.setItem(_pk, String((parseInt(localStorage.getItem(_pk)||'0',10)||0) + (game.stars||0))); } } catch(e){}
-  try { _s2vo('win'); } catch(e){}   // 2026-06-14: scene-2 win narration line
+  // L16: bank this scene's run as its BEST + recompute bundle totals (sum-of-best-runs).
+  try { if (!game._pointsBanked) { game._pointsBanked = true; _bankSceneBests(); } } catch(e){}
+  // K7 (Jane 2026-06-19): the win VO is sequenced AFTER the fanfare in the
+  // banner block below (the old delay:1800 here landed right on the fanfare
+  // burst and was buried).
   // compute star rating
   const pct = (game.hearts / 3) * 0.4 + (game.treasureCount / game.treasuresTotal) * 0.4 + (game.timeLeft / game.timeLimit) * 0.2;
   const starRating = pct >= 0.85 ? 3 : pct >= 0.55 ? 2 : 1;
@@ -11785,30 +11997,53 @@ function showWin(){
   $('winMotivate').textContent = motivate;
 
   // play scene-complete banner first, then the win modal after 2s
-  try { audio.bgm.pause(); } catch(e){}
+  // K7 (Jane 2026-06-19): "lots of audio sfx overlaps on the win modal. bgm
+  // should not play. the win narration is drowned — wait for the sfx to play
+  // out, THEN do the narration." Stop ALL gameplay loops (not just bgm), play
+  // ONE clean fanfare (the old win+levelUp+confetti triple-stack was the
+  // chaos), do NOT start a bgm bed under the modal, and SEQUENCE the win VO so
+  // it only speaks after the fanfare has rung out.
+  _killWinModalLoops();
   play('chime');
   const banner = $('sceneBanner');
+  const _fireWinAudioAndVo = () => {
+    // N2 (Jane 2026-06-20): the win narration was STILL buried under the win
+    // fanfare (a fixed 2.4s delay landed mid-fanfare). Now the VO fires only
+    // when the fanfare actually ENDS (its 'ended' event), with a 4.5s safety
+    // fallback — so the spoken line is always clear of the SFX.
+    let _voFired = false;
+    const _fireVo = () => { if (_voFired) return; _voFired = true; try { _s2vo('win', {delay: 250}); } catch(e){} };
+    try {
+      const wa = audio.win;
+      play('win');
+      try { play('confetti'); } catch(e){}   // sparkle visual cue
+      if (wa) wa.addEventListener('ended', _fireVo, { once:true });
+      setTimeout(_fireVo, 4500);
+    } catch(e){ setTimeout(_fireVo, 2500); }
+  };
   if (banner) {
     banner.classList.add('active');
     setTimeout(() => {
       banner.classList.remove('active');
-      play('win');
-      try { play('levelUp'); } catch(e){}  // v2.2.7 victory-modal fanfare
-      try { play('confetti'); } catch(e){}  // PM60: parity with Scene 1 win sparkle
+      _fireWinAudioAndVo();
       $('winModal').classList.add('active');
-      try { _startWinMusic(); } catch(e){}  // PM64: calm theme under the modal
       try { _personalizeWinModal(); } catch(e){}
-      // v3.4: no chest animation here -- chest plays mid-scene only so the
-      // finish modal is compact and never cut off by small screens.
     }, 2000);
   } else {
-    play('win');
-    try { play('levelUp'); } catch(e){}  // v2.2.7 victory-modal fanfare
-    try { play('confetti'); } catch(e){}
+    _fireWinAudioAndVo();
     $('winModal').classList.add('active');
-    try { _startWinMusic(); } catch(e){}  // PM64: calm theme under the modal
     try { _personalizeWinModal(); } catch(e){}
   }
+}
+// K7: stop every gameplay loop so nothing bleeds under the win modal.
+function _killWinModalLoops(){
+  const loops = ['bgm','bgmCorridor','alerted','narration','scene2NarrBg','cinNarrate',
+                 'sandstormRumble','winMusic','egyptianCover','palmShadow','puzzleBg'];
+  for (const k of loops){
+    try { const a = audio[k]; if (a){ a.pause(); a.currentTime = 0; a.loop = false; } } catch(e){}
+  }
+  try { if (typeof setMusic === 'function') setMusic(null); } catch(e){}
+  try { _alertMusicOn = false; } catch(e){}
 }
 // 2026-05-21 PM64: win-modal background music. The fanfares (win/levelUp/
 // confetti) are one-shot, so the modal sat in silence after ~2s. Loop a calm
@@ -11898,7 +12133,7 @@ function _renderJourneyPanel(){
   const resVal = { treasures: t, crowns: c, scrolls: s };
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
     + '<div class="wj-res">'
-    +   '<span>\u{1F48E} <strong>' + t + '</strong> Treasures</span>'
+    +   '<span>\u{1F4B0} <strong>' + t + '</strong> Treasures</span>'  /* K8: 💰 bags (was 💎) for cross-scene consistency */
     +   '<span>\u{1F451} <strong>' + c + '</strong> Crowns</span>'
     +   '<span>\u{1F4DC} <strong>' + s + '</strong> Scrolls</span>'
     + '</div>';
@@ -11936,13 +12171,13 @@ function _renderJourneyPanel(){
 const TRANS_2TO3_PANELS = [
   {
     text: "Forty days Moses wandered the desert. His water ran dry. His feet burned. His lips cracked.",
-    cap: "THE JOURNEY CONTINUES · PANEL 1 of 5",
+    cap: "THE JOURNEY CONTINUES",
     audio: "trans-2to3-1-forty-days.mp3",
     image: 'assets/images/trans-2to3-1-forty-days.png',
   },
   {
     text: '"God of my fathers," he prayed, "don\'t let me die out here. Keep my steps steady."',
-    cap: "PANEL 2 of 5",
+    cap: "",
     audio: "trans-2to3-2-prayer.mp3",
     images: [
       'assets/images/trans-2to3-2-prayer_1.png',
@@ -11951,19 +12186,19 @@ const TRANS_2TO3_PANELS = [
   },
   {
     text: "Through shimmering heat, he saw something shining — a stone well! And girls drawing water.",
-    cap: "PANEL 3 of 5",
+    cap: "",
     audio: "trans-2to3-3-the-well.mp3",
     image: 'assets/images/trans-2to3-3-the-well.png',
   },
   {
     text: "Then rogue shepherds burst in, shoving the sisters aside. Moses' old courage roared back to life.",
-    cap: "PANEL 4 of 5",
+    cap: "",
     audio: "trans-2to3-4-shepherds.mp3",
     image: 'assets/images/trans-2to3-4-shepherds.png',
   },
   {
     text: "He wasn't a scared runaway anymore. He was a protector. And God was about to open a new door.",
-    cap: "PANEL 5 of 5",
+    cap: "",
     audio: "trans-2to3-5-protector.mp3",
     images: [
       'assets/images/trans-2to3-5-protector_1.png',
@@ -11978,7 +12213,20 @@ function _stopTransFrameCycle2(){
   if (_transFrameTimer2) { clearTimeout(_transFrameTimer2); _transFrameTimer2 = null; }
 }
 function _playTransAudio2(p) {
-  try { const a = audio.transNarrate || $('audTransNarrate'); if (!a || !p.audio) return; a.pause(); a.src = 'assets/audio/' + p.audio; a.currentTime = 0; a.volume = 0.85; a.play().catch(()=>{}); } catch(e){}
+  // K11 (Jane 2026-06-19: "audio parts from the act panels don't work at all
+  // between scene 2 and scene 3"). The #audTransNarrate element is preload=
+  // "none" with NO static src — just setting a.src and calling play() left it
+  // stuck at readyState 0 (HAVE_NOTHING), so no audio. Calling a.load() AFTER
+  // changing src forces the element to fetch the new clip, then it plays.
+  try {
+    const a = audio.transNarrate || $('audTransNarrate');
+    if (!a || !p.audio) return;
+    a.pause();
+    a.src = 'assets/audio/' + p.audio;
+    try { a.load(); } catch(e){}   // load() resets currentTime to 0; don't set it manually (aborts the fresh load)
+    a.volume = 0.9;
+    a.play().catch(()=>{});
+  } catch(e){}
 }
 function showTransPanel2() {
   const p = TRANS_2TO3_PANELS[_transStep2];
@@ -12098,11 +12346,15 @@ function _showWorldMap2(){
         if (audio.egyptianCover) { audio.egyptianCover.pause(); audio.egyptianCover.loop = false; audio.egyptianCover.currentTime = 0; }
         if (audio.coverMusic)    { audio.coverMusic.pause();    audio.coverMusic.loop    = false; audio.coverMusic.currentTime    = 0; }
       } catch(e){}
-      try { const overlay = document.getElementById('worldMapOverlay'); if (overlay) overlay.style.opacity = '0'; } catch(e){}
+      // K10 (Jane 2026-06-19: "when i hit begin journey from the journey
+      // tracker it flashes the desert game scene"). The overlay was faded to
+      // opacity 0 BEFORE navigating, so for ~280ms the Scene-2 desert canvas
+      // showed through. Keep the overlay FULLY OPAQUE (covering the desert)
+      // right up until the page navigates — no flash.
       setTimeout(() => {
         try { location.href = 'scene3_midian.html?from=scene2'; }
         catch(e) { try { window.location.assign('scene3_midian.html?from=scene2'); } catch(err){} }
-      }, 280);
+      }, 140);
     });
   };
   document.addEventListener('DOMContentLoaded', _wire);
@@ -12709,6 +12961,54 @@ let timerInterval = null;
 let _verseDriftInterval = null;
 let _timerStartedAtMs = 0;
 let _timerStartTimeLeft = 0;
+// D2 fix (Jane 2026-06-17): freeze power-up cooldowns while a modal is open (the main
+// timer already freezes). On resume, push pending cooldown/active deadlines forward by
+// the paused duration.
+(function _puPauseFreeze(){
+  let _puPauseStart = 0;
+  function tick(){
+    try {
+      const playing = (typeof game !== 'undefined' && game.state === 'playing');
+      if (!playing) { if (!_puPauseStart) _puPauseStart = performance.now(); }
+      else if (_puPauseStart) {
+        const ps = _puPauseStart; _puPauseStart = 0;
+        const paused = performance.now() - ps;
+        if (paused > 16) {
+          ['_puCooldownUntil','_puActiveUntil'].forEach(mapName => {
+            const m = window[mapName]; if (!m) return;
+            for (const k in m) { if (typeof m[k] === 'number' && m[k] > ps) m[k] += paused; }
+          });
+          // J12 (Jane 2026-06-19): "as soon as the tutorial part is over /
+          // the moment a tutorial modal closes, the scouts catch Moses."
+          // ROOT CAUSE: the 20 s scout grace was WALL-CLOCK based, so the
+          // time the kid spent reading the 6 tutorial modals burned the
+          // whole grace — scouts armed the instant the last modal closed.
+          // Push scoutsArmedAt forward by the paused duration so the grace
+          // only counts ACTUAL gameplay time. Same for each scout's own
+          // 5 s spawn grace.
+          try {
+            // Only shift if the grace was ALREADY running before this pause
+            // (scoutsArmedAt < ps). Guards against the initial cover→play
+            // transition, where scoutsArmedAt is set AT resume and a huge
+            // "paused" (cover/loading time) would otherwise delay scouts
+            // forever.
+            if (typeof game !== 'undefined' && game.scoutsArmedAt && game.scoutsArmedAt < ps) {
+              game.scoutsArmedAt += paused;
+            }
+            if (typeof pursuitScouts !== 'undefined' && Array.isArray(pursuitScouts)) {
+              for (const s of pursuitScouts) {
+                if (s && typeof s.spawnGraceUntil === 'number' && s.spawnGraceUntil > ps) s.spawnGraceUntil += paused;
+                if (s && typeof s.lastAdvance === 'number' && s.lastAdvance > 0) s.lastAdvance += paused;
+              }
+            }
+          } catch(e){}
+        }
+      }
+    } catch(e){}
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
 function startTimers(){
   if (timerInterval) clearInterval(timerInterval);
   _timerStartedAtMs = Date.now();
@@ -12916,7 +13216,7 @@ function startSandstorm(){
       banner.className = 'sandstorm-banner';
       document.body.appendChild(banner);
     }
-    banner.textContent = 'Sandstorm! Vision reduced (15s)';
+    banner.textContent = 'Sandstorm! Vision reduced (7s)';
     requestAnimationFrame(() => {
       overlay.classList.add('on');
       banner.classList.add('on');
@@ -12925,7 +13225,10 @@ function startSandstorm(){
     try { play('sandstormSfx'); } catch(e){}  // v2.2.7 sandstorm swell
     try { play('dangerAlert'); } catch(e){}
     if (_sandstormEndTimeout) clearTimeout(_sandstormEndTimeout);
-    _sandstormEndTimeout = setTimeout(() => { endSandstorm(); }, 15000);
+    // K3 (Jane 2026-06-19: "sandstorm in scene 2 lasts for a long time ... may
+    // be challenging for kids"). 15s of reduced vision was too punishing —
+    // shortened to 7s so it's a thrilling beat, not a slog.
+    _sandstormEndTimeout = setTimeout(() => { endSandstorm(); }, 7000);
   } catch(e){ game.sandstormActive = false; }
 }
 function endSandstorm(){
@@ -13015,6 +13318,13 @@ function seedPursuitScouts(){
 let _scoutCloseWarnAt = 0;   // v2.2 hoofbeat/scout-alert cooldown (ms)
 function updatePursuitScouts(dt){
   if (game.scene !== 2 || game.state !== 'playing') return;
+  // J16 (Jane 2026-06-19): "when the jigsaw is solved, a camera pan reveals
+  // the exit — but even during that time the guards/scouts are catching
+  // Moses. When the camera pan happens, no catching should happen." The
+  // exit-reveal restores game.state='playing' BEFORE running playIntroPan,
+  // so scouts ran during the pan. updateGuards already freezes on this
+  // flag (PM63g) — scouts must too. Covers the intro pan as well.
+  if (window._introPanActive) return;
   // 2026-05-19 PM63d (Jane: "as soon as we begin, the scouts are catching
   // moses. give atleast 10 to 15 seconds after the camera pan to bring
   // in the scouts"). game.startedAt was set BEFORE the intro pan, so by
@@ -13023,7 +13333,7 @@ function updatePursuitScouts(dt){
   // callback fires (see showTutorial close handler), and use a fresh
   // 15-second buffer from THAT point.
   const _armed = game.scoutsArmedAt || game.startedAt || 0;
-  if (_armed && (performance.now() - _armed) < 15000) return;
+  if (_armed && (performance.now() - _armed) < 20000) return;   // H7: 20s grace at scene start
   // 2026-05-19 PM54: Foe Freeze power-up also freezes pursuit scouts
   // (Jane: "scouts are there in scene 2 in addition to the guards").
   // Scene 1's freeze only had to stop guards; Scene 2 has both.
@@ -13050,9 +13360,12 @@ function updatePursuitScouts(dt){
     if ((now < (window._decoyUntil || 0)) && window._decoyTile) {
       const _dT = window._decoyTile;
       const _gd = Math.abs(s.tx - _dT.x) + Math.abs(s.ty - _dT.y);
-      if (_gd <= 8) {
+      if (_gd <= 10) {
         s._decoyLured = true;
-        if (now - s.lastAdvance >= s.advanceMs) {
+        // K4 (Jane 2026-06-19): rush to the decoy on a FAST cadence (≤240ms)
+        // instead of the normal advance cadence so the lure visibly pulls the
+        // scout away from Moses within the 5 s window.
+        if (now - s.lastAdvance >= Math.min(s.advanceMs || 600, 240)) {
           s.lastAdvance = now;
           const _pre = { x: s.tx, y: s.ty };
           if (_gd > 1) {
@@ -13266,8 +13579,31 @@ function drawPursuitScouts(ctx){
     if (s.caught) continue;
     const sx = s.tx * TILE - camera.px;
     const sy = s.ty * TILE - camera.py;
-    // skip if off-screen
-    if (sx < -TILE*2 || sx > CANVAS_W + TILE || sy < -TILE || sy > CANVAS_H + TILE) continue;
+    // M6 (Jane 2026-06-20: "now i don't see the scouts at all, but the caught
+    // modal says scouts caught Moses"). Scouts chase from BEHIND (they spawn
+    // off the WEST edge), so the camera — which follows Moses east — kept them
+    // off-screen and they caught him invisibly. When a scout is off-screen but
+    // closing in, draw a pulsing red warning chevron at the screen edge so the
+    // kid SEES the threat coming and from which side.
+    if (sx < -TILE*2 || sx > CANVAS_W + TILE || sy < -TILE || sy > CANVAS_H + TILE) {
+      try {
+        const _cheb = Math.max(Math.abs(s.tx - player.tx), Math.abs(s.ty - player.ty));
+        if (_cheb <= 8) {
+          const _m = 20;
+          const _ex = Math.max(_m, Math.min(CANVAS_W - _m, sx + TILE/2));
+          const _ey = Math.max(_m, Math.min(CANVAS_H - _m, sy + TILE/2));
+          const _p = 0.6 + 0.4*Math.sin(performance.now()/200);
+          ctx.save();
+          ctx.fillStyle = 'rgba(210,40,30,' + (0.55 + 0.35*_p).toFixed(2) + ')';
+          ctx.beginPath(); ctx.arc(_ex, _ey, 14, 0, Math.PI*2); ctx.fill();
+          ctx.strokeStyle = '#ffe2a0'; ctx.lineWidth = 2; ctx.stroke();
+          ctx.fillStyle = '#fff'; ctx.font = 'bold 18px Georgia'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('!', _ex, _ey + 1);
+          ctx.restore();
+        }
+      } catch(e){}
+      continue;
+    }
     // v2.3 Jane: visible scout vision cone — scouts chasing Moses treated
     // as "alerted" so kids see a red forward cone while they close in.
     // 2026-05-26: suppress the cone while frozen (a frozen foe isn't scanning).
@@ -13716,7 +14052,7 @@ function updateGuards(dt){
   // PM63g: use scoutsArmedAt (set at pan-end) instead of startedAt so
   // the 15 s grace counts from the moment gameplay actually starts.
   const _armed = game.scoutsArmedAt || game.startedAt || 0;
-  if (game.scene === 2 && _armed && (performance.now() - _armed) < 15000) return;
+  if (game.scene === 2 && _armed && (performance.now() - _armed) < 20000) return;   // H7: 20s grace
   // 2026-05-19 PM54: Foe Freeze power-up — skip ALL guard logic for 5 s
   // when armed. Mirrors Scene 1's guardFreeze gate.
   if (performance.now() < (window._guardFreezeUntil || 0)) {
@@ -13728,6 +14064,35 @@ function updateGuards(dt){
   for (const g of guards) {
     g.timer -= dt;
     if (g.swordOut) g.swordAnim = Math.min(g.swordAnim + dt*0.003, 1);
+
+    // K4 (Jane 2026-06-19: "lure power up doesn't work in scene 2 with guards
+    // and scouts ... work on guards and scouts moving AWAY from chasing
+    // moses"). Patrol GUARDS had NO decoy logic, so the rock lure never pulled
+    // them. Now, while the tossed-rock decoy is active, any guard within range
+    // BREAKS OFF the chase and rushes to the noise — on a fast cadence so the
+    // pull is clearly visible (scouts get the same speed-up below).
+    if ((performance.now() < (window._decoyUntil || 0)) && window._decoyTile) {
+      const _dT = window._decoyTile;
+      const _gd = Math.abs(g.tx - _dT.x) + Math.abs(g.ty - _dT.y);
+      if (_gd <= 10) {
+        if (g.state === 'alerted' || g.state === 'suspicious') {
+          g.state = 'patrol'; g.swordOut = false; g.swordAnim = 0;
+        }
+        g._lureTimer = (typeof g._lureTimer === 'number') ? g._lureTimer - dt : 0;
+        if (g._lureTimer <= 0 && _gd > 1) {
+          let _best = null, _bestD = _gd;
+          const _cands = [[g.tx+1,g.ty,'right'],[g.tx-1,g.ty,'left'],[g.tx,g.ty+1,'down'],[g.tx,g.ty-1,'up']];
+          for (const _c of _cands) {
+            if (!isWalkable(_c[0], _c[1])) continue;
+            const _d = Math.abs(_c[0]-_dT.x) + Math.abs(_c[1]-_dT.y);
+            if (_d < _bestD) { _bestD = _d; _best = _c; }
+          }
+          if (_best) { g.tx = _best[0]; g.ty = _best[1]; g.dir = _best[2]; }
+          g._lureTimer = 240;   // fast rush toward the clatter
+        }
+        continue;   // skip normal patrol/chase while lured
+      }
+    }
 
     if (g.state === 'patrol') {
       if (canGuardSeePlayer(g)) {
@@ -15398,6 +15763,39 @@ function drawChallengeGate(gate){
     ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(255,235,170,0.65)';
     ctx.shadowBlur = 1.5;
+    ctx.fillText('?', dx + TILE/2, dy + TILE/2);
+    ctx.restore();
+  } else {
+    // J11 (Jane 2026-06-19): "checkpoint image doesn't load always." When
+    // the checkpoint sprite hasn't decoded yet (slow load, a watchdog-
+    // skipped decode, or a deployed build missing assets/images), the old
+    // code drew NOTHING here — the kid saw only a bare floating "!". Draw a
+    // guaranteed VECTOR checkpoint tablet so a clear checkpoint marker
+    // always renders even if the PNG never arrives.
+    const _tW = TILE * 0.9, _tH = TILE * 1.12;
+    const _tx0 = dx + (TILE - _tW) / 2, _ty0 = dy + (TILE - _tH) / 2;
+    const _haloR = TILE * 0.55;
+    const _haloG = ctx.createRadialGradient(dx+TILE/2, dy+TILE/2, 2, dx+TILE/2, dy+TILE/2, _haloR);
+    _haloG.addColorStop(0, 'rgba(255,220,120,' + (0.55*pulse).toFixed(2) + ')');
+    _haloG.addColorStop(1, 'rgba(255,180,60,0)');
+    ctx.fillStyle = _haloG;
+    ctx.beginPath(); ctx.arc(dx+TILE/2, dy+TILE/2, _haloR, 0, Math.PI*2); ctx.fill();
+    ctx.save();
+    const _rr = 6;
+    ctx.beginPath();
+    ctx.moveTo(_tx0 + _rr, _ty0);
+    ctx.arcTo(_tx0 + _tW, _ty0,       _tx0 + _tW, _ty0 + _tH, _rr);
+    ctx.arcTo(_tx0 + _tW, _ty0 + _tH, _tx0,       _ty0 + _tH, _rr);
+    ctx.arcTo(_tx0,       _ty0 + _tH, _tx0,       _ty0,       _rr);
+    ctx.arcTo(_tx0,       _ty0,       _tx0 + _tW, _ty0,       _rr);
+    ctx.closePath();
+    const _grad = ctx.createLinearGradient(_tx0, _ty0, _tx0, _ty0 + _tH);
+    _grad.addColorStop(0, '#f0d28c'); _grad.addColorStop(1, '#cf9a4e');
+    ctx.fillStyle = _grad; ctx.fill();
+    ctx.strokeStyle = '#7a4809'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#3a1a00';
+    ctx.font = 'bold ' + Math.max(14, Math.floor(TILE*0.6)) + 'px Georgia';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('?', dx + TILE/2, dy + TILE/2);
     ctx.restore();
   }

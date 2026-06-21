@@ -26,8 +26,18 @@
     if (/(?:welltest|rescuetest|testjigsaw|dev)=/.test(location.search)) return;
     var from = new URLSearchParams(location.search).get('from');
     var p = parseInt(localStorage.getItem('bek.bundle1.progress') || '0', 10) || 0;
-    if (from === 'scene2') { if (p < 2) { try { localStorage.setItem('bek.bundle1.progress','2'); } catch(e){} } return; }
-    if (p < 2) { location.replace(p >= 1 ? 'scene2_desert.html' : 'scene1_palace.html'); }
+    var unlocked = false;
+    try { unlocked = localStorage.getItem('bek.moses2.unlocked') === '1' || localStorage.getItem('bek.moses.bundle.unlocked') === '1'; } catch(e){}
+    if (from === 'scene2') { if (p < 2) { try { localStorage.setItem('bek.bundle1.progress','2'); } catch(e){} } }
+    else if (p < 2) { location.replace(p >= 1 ? 'scene2_desert.html' : 'scene1_palace.html'); return; }
+    // I10 (Jane 2026-06-17): auto-launching — hide the access gate + cover before paint so
+    // they never flash between scenes.
+    if (from === 'scene2' || p >= 2 || unlocked) {
+      document.documentElement.classList.add('bek-autolaunch');
+      var s = document.createElement('style');
+      s.textContent = 'html.bek-autolaunch #accessGate, html.bek-autolaunch #coverPage { display:none !important; }';
+      (document.head || document.documentElement).appendChild(s);
+    }
   } catch(e){}
 })();
 </script>
@@ -3180,7 +3190,7 @@
       <span class="hud-chip"><img src="assets/images/star%207.png" onerror="this.style.display='none'" alt=""><span id="hudStars">0</span></span>
       <span class="hud-chip" id="hudTreasureChip"><img src="assets/images/treasure%20bag%20blue.png" onerror="this.style.display='none'" alt=""><span id="hudTreasure">0</span><span id="hudTreasureDenom" style="display:none;">/<span id="hudTreasureTotal">0</span></span></span>
       <!-- v2.1 Scene 2: altitude chip (shown only on scene 2, updated by updateHudAltitude) -->
-      <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Desert checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/5</span>
+      <span class="hud-chip" id="hudAltitudeChip" style="display:none;background:linear-gradient(145deg,#5b3b84,#8a5db5);border-color:#ffd976;color:#ffd976;" title="Bible checkpoints cleared">&#9650; <span id="hudAltitude">0</span>/5</span>
       <!-- Scene 3: crystal river-tiles. Collect all 3 (one per checkpoint) to build the crossing. -->
       <span class="hud-chip" id="hudCrystalChip" title="Crystal tiles — collect 3 to cross the river">&#128142; <span id="hudCrystals">0</span>/3</span>
       <span class="hud-chip" id="hudFlockChip" style="display:none;background:linear-gradient(145deg,#3a5a2a,#5b8a3a);border-color:#cdeeb0;color:#eaffd6;" title="Sheep safe from the wolves">🐑 <span id="hudFlockSafe">0</span>/<span id="hudFlockTotal">0</span></span>
@@ -3475,7 +3485,9 @@
     </div>
     <div class="win-scorebox" id="winScorebox">
       <span><strong id="winScoreNum">0</strong> Score</span>
-      <span><strong id="winTreasureNum">0/0</strong> Treasures</span>
+      <!-- L12 (Jane 2026-06-20): label this as THIS-SCENE's found count so it
+           doesn't clash with the lifetime "Treasures" in the journey panel. -->
+      <span><strong id="winTreasureNum">0/0</strong> Found this run</span>
       <span><strong id="winHeartsNum">3/3</strong> Hearts</span>
     </div>
     <!-- 2026-05-19 (Jane: cross-scene "Your Journey" tally) -->
@@ -4664,7 +4676,7 @@ if (audio.reachedExit)   audio.reachedExit.volume   = 0.85;
 if (audio.allComplete)   audio.allComplete.volume   = 0.85;
 if (audio.levelUp)       audio.levelUp.volume       = 0.85;
 if (audio.successTrumpet) audio.successTrumpet.volume = 0.85;
-if (audio.egyptianCover) audio.egyptianCover.volume = 0.25;  // #Jane 2026-06-07: halved (was 0.5) — the closing narration wasn't audible over it
+if (audio.egyptianCover) audio.egyptianCover.volume = 0.05;  // P9 (Jane 2026-06-20, repeated): closing-narration bed (sections 8 & 9) STILL too loud at 0.12 → 0.05 so the voice clearly leads; also in _VOICE_DUCK_TRACKS so it dips further under each spoken line
 if (audio.bgmCorridor)   audio.bgmCorridor.volume   = 0.55;  // #15 wolf-attack danger bed
 if (audio.bgmExit)       audio.bgmExit.volume       = 0.7;   // #14 victory heat-up sting
 if (audio.confetti)      audio.confetti.volume      = 0.8;   // #16 win confetti sparkle
@@ -5003,7 +5015,13 @@ const _s3voPlayed = new Set();
 // spoken line always matches what's on screen — e.g. the "those rude shepherds…go
 // around them" line was playing UNDER the crystal stepping-stone modal.
 function _s3voBlockingModalOpen(){
-  const ids = ['crystalReward','challengeModal','rescueModal','wellPulleyModal','winModal','dangerModal','tipPopupOverlay'];
+  // K14 (Jane 2026-06-19: "in scene 3, the bible-checkpoint tutorial narration
+  // starts only AFTER the tutorial text modal is closed"). The tip popup
+  // ACCOMPANIES its own spoken line (showTipPopup fires opts.vo), so it must
+  // NOT make that line wait — removed 'tipPopupOverlay' from the block list
+  // (matches Scene 1's I3 model: tip/tutorial modals carry their own VO). The
+  // real blocking modals below still defer unrelated lines.
+  const ids = ['crystalReward','challengeModal','rescueModal','wellPulleyModal','winModal','dangerModal'];
   for (let i=0;i<ids.length;i++){
     const el = document.getElementById(ids[i]);
     if (el && (el.classList.contains('active') || el.getAttribute('aria-hidden') === 'false')) return true;
@@ -5047,7 +5065,7 @@ function _s3currentObjective(){
     if (!built){
       const have = (typeof _scene3CrystalCount==='function') ? _scene3CrystalCount() : 0;
       const need = Math.max(0, 3 - have);
-      return 'Solve the desert checkpoints for ' + need + ' more crystal' + (need===1?'':'s') + ' — they build the stepping-stones to cross the river.';
+      return 'Solve the Bible checkpoints for ' + need + ' more crystal' + (need===1?'':'s') + ' — they build the stepping-stones to cross the river.';
     }
     if (rescueG && !rescueG.solved) return 'RESCUE Jethro\'s daughters at the well — the rude shepherds are driving them away. (Step onto the “Save the Daughters” billboard.)';
     if (wellG && !wellG.solved)     return 'WATER the flock at the well — the sheep are thirsty. (Step onto the “Water the Flock” billboard.)';
@@ -6893,6 +6911,7 @@ function updateScene3Wolf(dt){
   if (!scene3Wolf.active && now >= scene3Wolf.nextAt) {
     scene3Wolf.active = true;
     scene3Wolf.startedAt = now;
+    scene3Wolf._fleeing = false;
     scene3Wolf.px = -120; // start off west edge in WORLD pixels (we'll adjust by camera)
     scene3Wolf.py = (MAP_H - 2) * TILE; // along south edge
     // distant howl plays once at the start of each appearance
@@ -6912,9 +6931,27 @@ function updateScene3Wolf(dt){
     }
   }
   if (scene3Wolf.active) {
+    // L9 (Jane 2026-06-20: "wolf does not run away after shooing"). The ambient
+    // dusk wolf now BOLTS when Moses gets close — any wolf the kid approaches
+    // should flee (the rescue + herd-raid wolves already do).
+    try {
+      if (typeof player !== 'undefined') {
+        const _dw = Math.hypot(player.px - scene3Wolf.px, player.py - scene3Wolf.py);
+        if (_dw < TILE * 2.6) {
+          scene3Wolf.vx = Math.max(Math.abs(scene3Wolf.vx) * 2.4, 0.22);  // dash off east
+          if (!scene3Wolf._fleeing) {
+            scene3Wolf._fleeing = true;
+            try { if (audio.fox){ audio.fox.currentTime=0; audio.fox.volume=0.4; audio.fox.play().catch(()=>{}); } } catch(e){}
+            try { play('pop') || play('chime'); } catch(e){}
+            try { spawnGlitterBurstAtPlayer(8); } catch(e){}
+          }
+        }
+      }
+    } catch(e){}
     scene3Wolf.px += scene3Wolf.vx * dt;
     if (scene3Wolf.px > MAP_W * TILE + 120 || (now - scene3Wolf.startedAt) > scene3Wolf.duration) {
       scene3Wolf.active = false;
+      scene3Wolf._fleeing = false;
       // schedule next appearance 18-30s later
       scene3Wolf.nextAt = now + 18000 + Math.random() * 12000;
     }
@@ -9150,16 +9187,19 @@ const CHALLENGE_BANK = {
       q:'Tap the item with NO pair:',
       items:[{src:'assets/images/color baby moses.png',alt:'Baby',key:'baby'},{src:'assets/images/color baby moses.png',alt:'Baby',key:'baby'},{src:'assets/images/midian wildflowers.png',alt:'Plant',key:'plant'},{src:'assets/images/midian wildflowers.png',alt:'Plant',key:'plant'},{src:'assets/images/color nile.png',alt:'Water',key:'water'},{src:'assets/images/color nile.png',alt:'Water',key:'water'},{src:'assets/images/star 7.png',alt:'Star',key:'star'},{src:'assets/images/star 7.png',alt:'Star',key:'star'},{src:'assets/images/well bucket.png',alt:'Bucket',key:'bucket'},{src:'assets/images/well bucket.png',alt:'Bucket',key:'bucket'},{src:'assets/images/color crown.png',alt:'Crown',key:'crown'}],
       answer:'crown',
+      clue:'Every picture here has a matching twin except ONE. Tap the single item that appears only once.',
       verse:'Babies, plants, waves, stars, and buckets all come in pairs — but there was only one Pharaoh.' },
     { id:'eP2', type:'pair',
       q:'Find the lone item (only ONE daughter married Moses):',
       items:[{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/midian wildflowers.png',alt:'Flower',key:'flower'},{src:'assets/images/midian wildflowers.png',alt:'Flower',key:'flower'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/goat.png',alt:'Goat',key:'goat'},{src:'assets/images/goat.png',alt:'Goat',key:'goat'},{src:'assets/images/color zipporah.png',alt:'Zipporah',key:'bride'}],
       answer:'bride',
+      clue:'Most pictures come in twos. Only ONE has no twin — the bride. (Zipporah, the daughter who married Moses — Exodus 2:21.)',
       verse:'Zipporah — one of seven sisters — became Moses wife. (Exodus 2:21)' },
     { id:'eP3', type:'pair',
       q:'Which item stands alone at Jethro well?',
       items:[{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/reeds.png',alt:'Reeds',key:'reed'},{src:'assets/images/reeds.png',alt:'Reeds',key:'reed'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/well bucket.png',alt:'Bucket',key:'bucket'},{src:'assets/images/well bucket.png',alt:'Bucket',key:'bucket'},{src:'assets/images/desert cactus.png',alt:'Cactus',key:'cactus'},{src:'assets/images/desert cactus.png',alt:'Cactus',key:'cactus'},{src:'assets/images/jethro.png',alt:'Stranger',key:'stranger'}],
       answer:'stranger',
+      clue:'Look for the picture that appears only once — every other item here has a matching pair.',
       verse:'One stranger — Moses — arrived at the well in Midian. (Exodus 2:15)' },
     // --- Spot: odd-one-out ---
     { id:'eSp1', type:'spot',
@@ -9349,10 +9389,12 @@ const CHALLENGE_BANK = {
     { id:'nve23', type:'pair', q:'Find the lonely item with no match:',
       items:[{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/well bucket.png',alt:'Bucket',key:'well'},{src:'assets/images/well bucket.png',alt:'Bucket',key:'well'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/jethro tent.png',alt:'Tent',key:'tent'},{src:'assets/images/jethro tent.png',alt:'Tent',key:'tent'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/goat.png',alt:'Goat',key:'goat'}],
       answer:'goat',
+      clue:'Every picture here has a matching twin except ONE. Tap the item that appears only once.',
       verse:'Moses tended the flock in Midian. (Exodus 3:1)' },
     { id:'nve24', type:'pair', q:'Which item stands alone?',
       items:[{src:'assets/images/midian well.png',alt:'Well',key:'well'},{src:'assets/images/midian well.png',alt:'Well',key:'well'},{src:'assets/images/reeds.png',alt:'Reeds',key:'reed'},{src:'assets/images/reeds.png',alt:'Reeds',key:'reed'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/sheep.png',alt:'Sheep',key:'sheep'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/dates.png',alt:'Dates',key:'dates'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/water jar.png',alt:'Jar',key:'jar'},{src:'assets/images/color zipporah.png',alt:'Zipporah',key:'bride'}],
       answer:'bride',
+      clue:'Most pictures come in twos. Only ONE stands alone — the bride, Zipporah.',
       verse:'Moses married Zipporah, one faithful wife. (Exodus 2:21)' },
     { id:'nve25', type:'memory', q:'Flip the cards and match all the Midian pairs!',
       verse:'God watched over Moses in the land of Midian.' },
@@ -11200,7 +11242,9 @@ try {
         if (cov) cov.style.display = 'none';
         const gate = document.getElementById('accessGate');
         if (gate) gate.classList.add('hidden');
-        // Difficulty: take last-used (cross-scene key); fallback to medium.
+        // O10 (Jane 2026-06-20): reverted the M4 'easy' band-aid → 'medium'
+        // neutral fallback; the root fix (Scene 1 persists difficulty on Begin)
+        // makes the carry-over reliable.
         let _diff = 'medium';
         try {
           const stored = localStorage.getItem('bek.lastDifficulty');
@@ -11510,10 +11554,23 @@ function _playPanelNarration(p){
     if (!a || !p || !p.audio) return;
     a.pause();
     const want = (p.audio.indexOf('/') >= 0) ? p.audio : ('assets/audio/' + p.audio);
-    if (a.getAttribute('src') !== want) a.src = want;
-    a.currentTime = 0;
+    // N5 (Jane 2026-06-20: "the audio narration before scene 3 did not play,
+    // only the visual"). After swapping src, call load() (otherwise a preload=
+    // "none"/auto element can stay at readyState 0 and never play — same fix as
+    // the 2→3 transition). If the first play() is still blocked, retry on the
+    // next tap/keypress so it starts the moment the kid interacts.
+    if (a.getAttribute('src') !== want) { a.src = want; try { a.load(); } catch(e){} }
     a.volume = 0.9;
-    a.play().catch(()=>{});   // graceful: missing file = silent captions
+    const _go = () => { try { a.currentTime = 0; return a.play(); } catch(e){ return Promise.reject(e); } };
+    _go().catch(() => {
+      const _retry = () => {
+        document.removeEventListener('pointerdown', _retry, true);
+        document.removeEventListener('keydown', _retry, true);
+        _go().catch(()=>{});
+      };
+      document.addEventListener('pointerdown', _retry, true);
+      document.addEventListener('keydown', _retry, true);
+    });
   } catch(e){}
 }
 function showCinPanel() {
@@ -11997,6 +12054,9 @@ function startScene1() {
 function _startScene1Core() {
   game.state = 'playing';
   game.startedAt = performance.now();
+  // L16: fresh run — reset this scene's treasure/crown/scroll/points accumulator
+  // and re-seed the live bundle totals so a replay re-collects from scratch.
+  try { game._pointsBanked = false; _resetRunAccum(); } catch(e){}
   // v2.3.1 (Jane): single-source music switcher guarantees narration + alerted
   // are fully stopped before the bgm (desert tension) starts. Fixes the
   // "two musics playing together" bug.
@@ -12210,13 +12270,26 @@ function restartScene() {
 // plays + ducks the music when the step shows \u2014 so the modal reads what the kid hears.
 const TUT_STEPS = [
   { icon:'\u{1F463}', title:'Move Moses', vo:'move', body:'Use the arrows to help Moses explore the meadow.' },
-  { icon:'\u{1F411}', title:'Your Quest', vo:'goal', body:'Welcome to Midian, Moses! Save the daughters, water the flock, and reach Jethro\u2019s tent before sunset.' },
-  { icon:'\u{1F4DC}', title:'Checkpoints', vo:'checkpoint', body:'A Bible checkpoint! Answer the questions to earn a crystal \u2014 three crystals build the river crossing.' },
+  // L3: show Jethro's tent (the goal) instead of the sheep emoji.
+  { icon:'\u{1F411}', iconImg:'assets/images/jethro%20tent.png', title:'Your Quest', vo:'goal', body:'Welcome to Midian, Moses! Save the daughters, water the flock, and reach Jethro\u2019s tent before sunset.' },
+  // N6 (Jane 2026-06-20): checkpoint 1.png is the RED "CHECKPOINT" maze-glyph
+  // used in Scene 2 \u2014 but Scene 3's on-map checkpoint is a gold "?" medallion.
+  // Show a "?" so the modal matches what the kid sees on the map.
+  { icon:'\u2753', title:'Checkpoints', vo:'checkpoint', body:'A Bible checkpoint! Answer the questions to earn a crystal \u2014 three crystals build the river crossing.' },
 ];
 function showTutorial(step){
   game.tutorialStep = step;
   const t = TUT_STEPS[step];
-  $('tutIcon').textContent = t.icon;
+  // L3/L4 (Jane 2026-06-20): a step can show a real sprite (Jethro's tent for
+  // the Quest, the checkpoint "?" tablet) via t.iconImg instead of an emoji.
+  try {
+    const _ti = $('tutIcon');
+    if (t.iconImg) {
+      _ti.textContent = '';
+      _ti.innerHTML = '<img src="' + t.iconImg + '" alt="" draggable="false" '
+        + 'style="width:1.4em;height:1.4em;object-fit:contain;vertical-align:middle;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));">';
+    } else { _ti.innerHTML = ''; _ti.textContent = t.icon; }
+  } catch(e){}
   $('tutTitle').textContent = t.title;
   $('tutBody').textContent = t.body;
   if (t.vo){ try { _s3vo(t.vo, {delay:200}); } catch(e){} }   // play the matching narration
@@ -12275,6 +12348,9 @@ function _clearTipPointer(){
 }
 function _tipPointAtTile(tx, ty){
   _clearTipPointer();
+  // 2026-06-17 (Jane): DOM-overlay tile halo + pointing hand mis-positioned across
+  // devices. Disabled — the tip popup still teaches.
+  return;
   const cnv = document.getElementById('gameCanvas');
   if (!cnv || typeof camera === 'undefined' || typeof TILE === 'undefined') return;
   _tipPointerTile = { tx, ty };
@@ -12309,6 +12385,15 @@ function _tipPointAtTile(tx, ty){
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
+  // O1/M2 (Jane 2026-06-20): never stack a popup over an open one — wait + retry.
+  try {
+    const _ovBusy = document.getElementById('tipPopupOverlay');
+    if (_ovBusy && _ovBusy.classList.contains('active')) {
+      opts._tipRetries = (opts._tipRetries || 0) + 1;
+      if (opts._tipRetries < 40) { setTimeout(() => { try { showTipPopup(eventKey, opts); } catch(e){} }, 700); }
+      return;
+    }
+  } catch(e){}
   if (eventKey) _firstEventSeen[eventKey] = true;
   // #Jane 2026-06-07: play the MATCHING voiceover so the modal text + the narration
   // say the same thing (and the line ducks the music so it's audible). Fires in both
@@ -12317,7 +12402,16 @@ function showTipPopup(eventKey, opts){
   if (!_tutModeOn()){ try { toast((opts.icon || '👋') + ' ' + opts.body); } catch(e){} return; }
   const overlay = document.getElementById('tipPopupOverlay');
   if (!overlay){ try { toast((opts.icon || '👋') + ' ' + opts.body); } catch(e){} return; }
-  try { $('tipPopupIcon').textContent = opts.icon || '👋'; } catch(e){}
+  // L3/L4 (Jane 2026-06-20): support a real sprite icon via opts.iconImg
+  // (e.g. the checkpoint "?" tablet) instead of an emoji.
+  try {
+    const _ic = $('tipPopupIcon');
+    if (opts.iconImg) {
+      _ic.textContent = '';
+      _ic.innerHTML = '<img src="' + opts.iconImg + '" alt="" draggable="false" '
+        + 'style="width:1.5em;height:1.5em;object-fit:contain;vertical-align:middle;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));">';
+    } else { _ic.innerHTML = ''; _ic.textContent = opts.icon || '👋'; }
+  } catch(e){}
   try { $('tipPopupTitle').textContent = opts.title; } catch(e){}
   try { $('tipPopupBody').textContent  = opts.body; } catch(e){}
   overlay.classList.add('active');
@@ -12378,7 +12472,9 @@ function _checkScene3Tips(){
     for (const g of challengeGates){
       if (g.solved || g.zone !== 'market') continue;
       if (Math.max(Math.abs(g.tx-px), Math.abs(g.ty-py)) <= 3){
-        showTipPopup('checkpoint', { icon:'📜', title:'A Desert Checkpoint', vo:'checkpoint',
+        // L4: checkpoint "?" tablet image. L5: Scene 3 is MIDIAN, not the
+        // desert — "A Desert Checkpoint" was wrong here.
+        showTipPopup('checkpoint', { icon:'❓', title:'A Bible Checkpoint', vo:'checkpoint',
           pointAtTile: { tx: g.tx, ty: g.ty },
           body:'Step onto the glowing checkpoint and answer the Bible questions. Each one you clear earns a crystal — collect 3 to build the path across the river!' });
         return;
@@ -16086,7 +16182,7 @@ function _buildScene3Game3rd(kind){
         correct: 0,
         target: target,
         colors: colors,
-        clue: 'Tap a tile, then a tile right next to it to swap. Make a row of 3 the same to crush them. Line up 4 for a Pharaoh blaster! Stuck? A winning swap will glow to show you a move.',
+        clue: 'Tap a tile, then a tile right next to it to swap. Make a row of 3 the same to crush them. Line up 4 for a Pharaoh blaster (clears a whole row and column), or 5 for a Princess blaster (clears every tile of one kind)! Stuck? A winning swap will glow to show you a move.',
       };
     }
     if (kind === 'sort') {
@@ -18527,28 +18623,59 @@ function _refreshUnlockButtons(){
     dock.querySelectorAll('button[data-pu]').forEach(b => { b.addEventListener('click', () => _activatePowerup(b.getAttribute('data-pu'))); });
   } catch(e){}
 }
+// === SUM-OF-BEST-RUNS aggregation (Jane 2026-06-20, L16) ============
+// Per-scene bests live in bek.scene{N}.{treasures,crowns,scrolls,points}. The
+// bundle totals (bek.bundle1.total*) are kept = sum of those bests, with the
+// CURRENT scene contributing max(its stored best, this run's accumulation). So
+// replaying a scene NEVER double-counts (a worse replay keeps the old best; a
+// better replay raises it), and the journey/unlock totals stay honest.
+const _SCENE_NO = 3;
+function _resKey(w){ return w==='crowns'?_LIFETIME_CROWNS_KEY : w==='scrolls'?_LIFETIME_SCROLLS_KEY : w==='points'?'bek.bundle1.totalPoints' : _LIFETIME_TREASURES_KEY; }
+function _sceneBest(w, n){ try { return parseInt(localStorage.getItem('bek.scene'+n+'.'+w)||'0',10)||0; } catch(e){ return 0; } }
+function _otherScenesBest(w){ var s=0; [1,2,3].forEach(function(n){ if(n!==_SCENE_NO) s+=_sceneBest(w,n); }); return s; }
+function _runAccum(w){ try { return (game._runAccum && game._runAccum[w]) || 0; } catch(e){ return 0; } }
+function _liveBundleTotal(w){ return _otherScenesBest(w) + Math.max(_sceneBest(w,_SCENE_NO), _runAccum(w)); }
+function _writeBundleTotal(w){ var t=_liveBundleTotal(w); try { localStorage.setItem(_resKey(w), String(t)); } catch(e){} return t; }
 function _addLifetimeResource(which, n){
-  const KEY = which === 'crowns'  ? _LIFETIME_CROWNS_KEY
-            : which === 'scrolls' ? _LIFETIME_SCROLLS_KEY
-            :                       _LIFETIME_TREASURES_KEY;
-  let cur = 0;
-  try { cur = parseInt(localStorage.getItem(KEY) || '0', 10) || 0; } catch(e){}
-  const next = cur + (n || 0);
-  try { localStorage.setItem(KEY, String(next)); } catch(e){}
-  const have = new Set(_loadUnlocks());
-  const granted = [];
-  for (const tier of UNLOCK_TIERS) {
-    if ((tier.resource || 'treasures') !== which) continue;
-    if (cur < tier.threshold && next >= tier.threshold && !have.has(tier.key)) { have.add(tier.key); granted.push(tier); }
-  }
-  if (granted.length) {
-    try { localStorage.setItem(_UNLOCKS_KEY, JSON.stringify([...have])); } catch(e){}
-    try { play('rankReveal') || play('success'); } catch(e){}
-    try { spawnGlitterBurstAtPlayer(28); } catch(e){}
-    granted.forEach(g => { try { toast('✨ ' + g.label + ' power unlocked — tap it in the dock!'); } catch(e){} });
-    try { _refreshUnlockButtons(); } catch(e){}
+  try { if (!game._runAccum) game._runAccum = {}; } catch(e){}
+  const prev = _liveBundleTotal(which);
+  try { game._runAccum[which] = (game._runAccum[which]||0) + (n||0); } catch(e){}
+  const next = _writeBundleTotal(which);
+  if (next > prev) {
+    const have = new Set(_loadUnlocks());
+    const granted = [];
+    for (const tier of UNLOCK_TIERS) {
+      if ((tier.resource || 'treasures') !== which) continue;
+      if (prev < tier.threshold && next >= tier.threshold && !have.has(tier.key)) { have.add(tier.key); granted.push(tier); }
+    }
+    if (granted.length) {
+      try { localStorage.setItem(_UNLOCKS_KEY, JSON.stringify([...have])); } catch(e){}
+      try { play('rankReveal') || play('success'); } catch(e){}
+      try { spawnGlitterBurstAtPlayer(28); } catch(e){}
+      granted.forEach(g => { try { toast('✨ ' + g.label + ' power unlocked — tap it in the dock!'); } catch(e){} });
+      try { _refreshUnlockButtons(); } catch(e){}
+    }
   }
   return next;
+}
+// Bank this scene's run as its new BEST (call on WIN), then refresh every
+// bundle total to the sum of per-scene bests. Idempotent.
+function _bankSceneBests(){
+  ['treasures','crowns','scrolls','points'].forEach(function(w){
+    var run = (w==='points') ? ((typeof game!=='undefined' && game.stars)||0) : _runAccum(w);
+    var best = Math.max(_sceneBest(w,_SCENE_NO), run);
+    try { localStorage.setItem('bek.scene'+_SCENE_NO+'.'+w, String(best)); } catch(e){}
+  });
+  ['treasures','crowns','scrolls','points'].forEach(function(w){
+    var s=0; [1,2,3].forEach(function(n){ s+=_sceneBest(w,n); });
+    try { localStorage.setItem(_resKey(w), String(s)); } catch(e){}
+  });
+}
+// Reset this scene's run accumulator + re-seed the live bundle totals (call on
+// scene start / restart so a replay re-collects from scratch without inflating).
+function _resetRunAccum(){
+  try { if (typeof game !== 'undefined') game._runAccum = {}; } catch(e){}
+  ['treasures','crowns','scrolls','points'].forEach(function(w){ try { _writeBundleTotal(w); } catch(e){} });
 }
 function _addLifetimeTreasures(n){ return _addLifetimeResource('treasures', n); }
 function _addLifetimeCrowns(n){    return _addLifetimeResource('crowns',    n); }
@@ -18569,9 +18696,10 @@ function onTreasure(tx, ty){
   play('coin');
   // v3.4: glitter sparkle burst at Moses's screen position on pickup
   spawnGlitterBurstAtPlayer(16);
-  // #16 Jane 2026-06-04: toast now speaks the WALLET language the HUD chip uses
-  // (each pouch banks +5 bags); the "x of y found" keeps a pickup-completion hint.
-  toast('+5 treasure bags · +2 stars!  (' + game.treasureCount + ' of ' + game.treasuresTotal + ' found)');
+  // L6 (Jane 2026-06-20: "overhead message says 5 of 10 treasure bags ...
+  // remove that overhead message"). The glitter burst + coin sound + the HUD
+  // chip tick are enough feedback; the "X of Y found" toast was confusing
+  // (it mixed pickup-count with the wallet number). Removed.
 }
 
 /* ---------- v3.4 GLITTER SPARKLES ----------
@@ -18799,6 +18927,14 @@ function _renderJourneyPanel(){
   host.innerHTML = html;
 }
 function showLessonThenWin(){
+  // L10 (Jane 2026-06-20: "where we show 'You did it', play bgm-exit.mp3 and
+  // sfx to celebrate. right now there is no sfx ... bgm-exit plays late when
+  // the journey tracker opens"). Kick the victory bed + a sting RIGHT HERE so
+  // the celebration lands on the "You did it!" beat (showWin won't restart it).
+  try { if (audio.bgm) audio.bgm.pause(); } catch(e){}
+  try { if (audio.bgmExit) { audio.bgmExit.currentTime = 0; audio.bgmExit.play().catch(()=>{}); } } catch(e){}
+  try { play('levelUp') || play('chime'); } catch(e){}
+  try { spawnGlitterBurstAtPlayer(16); } catch(e){}
   $('lessonModal').classList.add('active');
 }
 $('lessonContinueBtn').addEventListener('click', () => {
@@ -18885,6 +19021,11 @@ function _showEndJourney(onContinue){
   overlay._onContinue = onContinue;
   const moses = document.getElementById('ejMoses');
   if (moses) moses.classList.remove('arrived');
+  // N10 (Jane 2026-06-20: "the bgm-exit.mp3 is playing in the journey tracker
+  // after scene 3. it should play when we say scene 3 complete"). bgm-exit is
+  // the SCENE-3-COMPLETE victory sting — hard-stop it here so it never bleeds
+  // into the journey-tracker screen.
+  try { if (audio.bgmExit) { audio.bgmExit.pause(); audio.bgmExit.currentTime = 0; } } catch(e){}
   // Gentle triumphant bed (egyptian cover flourish).
   try { setMusic(null); } catch(e){}
   try {
@@ -18910,8 +19051,10 @@ function _showEndJourney(onContinue){
 function showWin(){
   // One epic game: Scene 3 finished → mark the whole bundle complete (progress=3).
   try { localStorage.setItem('bek.bundle1.progress','3'); } catch(e){}
-  // Bank this scene's score into the lifetime points total (shown on the journey panel below).
-  try { if (!game._pointsBanked) { game._pointsBanked = true; const _pk='bek.bundle1.totalPoints'; localStorage.setItem(_pk, String((parseInt(localStorage.getItem(_pk)||'0',10)||0) + (game.stars||0))); } } catch(e){}
+  // L16 (Jane 2026-06-20): bank this scene's run as its BEST + recompute every
+  // bundle total as the sum of per-scene bests (sum-of-best-runs). Replaces the
+  // old running-counter point-bank that double-counted on replay.
+  try { if (!game._pointsBanked) { game._pointsBanked = true; _bankSceneBests(); } } catch(e){}
   // compute star rating
   const pct = (game.hearts / 3) * 0.4 + (game.treasureCount / game.treasuresTotal) * 0.4 + (game.timeLeft / game.timeLimit) * 0.2;
   const starRating = pct >= 0.85 ? 3 : pct >= 0.55 ? 2 : 1;
@@ -18945,9 +19088,14 @@ function showWin(){
 
   // #171 Jane 2026-06-06: persist the cert fields so certificate.html can print a
   // personalized certificate (kid's name is already in bek.kidName from Scene 1).
+  // L14 (Jane 2026-06-20): the certificate SCORE was showing "Completed" (its
+  // fallback) — and Jane wants the SCORE to be the TOTAL points collected
+  // (stars) across the whole journey, not a generic word. certRank matches the
+  // victory-modal tier so the modal + certificate read the same title.
   try {
+    const _totalPts = (parseInt(localStorage.getItem('bek.bundle1.totalPoints') || '0', 10) || 0);
     localStorage.setItem('bek.certRank', tierTitle);
-    localStorage.setItem('bek.certScore', starRating + ' of 3 stars  ·  ' + (game.stars || 0) + ' points');
+    localStorage.setItem('bek.certScore', _totalPts + ' points');
   } catch(e){}
 
   // v3.4: Child-friendly truth statements (kid-first language, not raw scripture).
@@ -18996,13 +19144,11 @@ function showWin(){
     badges.forEach(b => { const s=document.createElement('span'); s.className='badge'; s.textContent=b; bs.appendChild(s); });
   }
 
-  // motivate based on what's missing
-  let motivate = 'Moses found his home! Replay to beat your score.';
+  // L13 (Jane 2026-06-20): removed the "You missed N treasures \u2014 find them all
+  // next run" line. The treasure count it used is now a CROSS-SCENE aggregate,
+  // not a scene-wise tally, so "missed N" was misleading on the final modal.
+  let motivate = 'Moses found his home in Midian \u2014 you guided him through the whole journey!';
   if (starRating < 3) motivate = 'Replay and chase 3 stars \u2014 can you become a MIDIAN CHAMPION?';
-  if (game.treasureCount < game.treasuresTotal) {
-    const missed = game.treasuresTotal - game.treasureCount;
-    motivate = 'You missed ' + missed + ' treasure' + (missed !== 1 ? 's' : '') + '! Find them all next run.';
-  }
   $('winMotivate').textContent = motivate;
 
   // Scene 3 closing flow: scene-complete banner (2s) -> 5-panel Refuge in
@@ -19011,12 +19157,15 @@ function showWin(){
   // #14 Jane 2026-06-06: play bgm-exit.mp3 as Moses achieves victory — a heat-up
   // sting under the scene-complete banner before the closing narration.
   play('chime');
-  try { play('bgmExit'); } catch(e){}
+  // L10: bgm-exit already started on the "You did it!" lesson modal — only
+  // start it here if it isn't already playing (don't restart from 0).
+  try { if (audio.bgmExit && audio.bgmExit.paused) { audio.bgmExit.currentTime = 0; audio.bgmExit.play().catch(()=>{}); } } catch(e){}
   const banner = $('sceneBanner');
   const _openWinFinal = () => {
     try { setMusic(null); } catch(e){}   // stop the narration bed so the win fanfare is clean
     try { if (audio.bgmExit) { audio.bgmExit.pause(); audio.bgmExit.currentTime = 0; } } catch(e){}
-    play('win');
+    // L11 (Jane 2026-06-20): removed play('win') (win sound.mp3) from the purple
+    // win modal; levelUp + confetti carry the celebration.
     try { play('levelUp'); } catch(e){}  // victory-modal fanfare
     // #16 Jane 2026-06-06: celebratory win-modal SFX like Scene 1 — confetti sparkle.
     try { play('confetti'); } catch(e){}
@@ -19316,8 +19465,12 @@ function _drawMapPeek(){
       if (MAP[y][x] === 7 && y < exTy) { exTy = y; exTx = x; }
     }
     if (exTx >= 0) {
-      const exg = exTx*cx + cx/2;
-      const eyg = exTy*cy + cy/2;
+      // K13 (Jane 2026-06-19: "mini map shows Exit is crammed"). The EXIT tile
+      // sits at the far-right column, so the unclamped marker + label ran off
+      // the canvas edge. Clamp it fully inside (the checkpoints already are).
+      const _eR = 22;  // outer pulse radius
+      const exg = Math.max(_eR + 2, Math.min(PW - _eR - 2, exTx*cx + cx/2));
+      const eyg = Math.max(_eR + 2, Math.min(PH - _eR - 2, exTy*cy + cy/2));
       const ePulse = 0.6 + 0.4 * Math.sin(performance.now()/240);
       _peekCtx.save();
       _peekCtx.fillStyle = 'rgba(120,255,140,' + (ePulse*0.7).toFixed(2) + ')';
@@ -20947,11 +21100,11 @@ function updateRollingBoulders(dt){
 // Caves live as overlays (not tile codes) because MAP_STR is
 // parsed as digits 0-9 only.
 // ============================================================
-const caves = [
-  { tx: 8,  ty: 8,  img: 'cave1', label: 'Wadi Hollow' },
-  { tx: 22, ty: 16, img: 'cave2', label: 'Oasis Grotto' },
-  { tx: 31, ty: 10, img: 'cave3', label: 'Mesa Hideout' },
-];
+// L1 (Jane 2026-06-20: "C caves / hide spots are not there in scene 3"). The
+// green Midian pasture has no caves — these desert-cave hide-spots were
+// invisible on the meadow yet showed as confusing brown "C" pins on the
+// minimap. Emptied so there are no cave markers and no phantom hide tiles.
+const caves = [];
 function caveAt(tx, ty){
   for (const c of caves) { if (c.tx === tx && c.ty === ty) return c; }
   return null;
@@ -22316,6 +22469,35 @@ function render(){
     if (!_renderErrSeen[k]) { _renderErrSeen[k] = 1; try { console.error('[render]', e); } catch(_){} }
   }
 }
+// J9: the tossed Water-Jar Lure — rolling water pot + expanding noise ripples
+// at the decoy tile, so the distraction is clearly visible. IMG.waterPot may
+// be a pre-rendered offscreen canvas OR an <img>; drawImage handles both.
+function drawScene3DecoyPot(){
+  if (!window._decoyTile || performance.now() >= (window._decoyUntil || 0)) return;
+  if (typeof camera === 'undefined' || typeof TILE === 'undefined') return;
+  const _dt = window._decoyTile, _n = performance.now();
+  const _wx = _dt.x*TILE - camera.px, _wy = _dt.y*TILE - camera.py;
+  if (_wx < -TILE*2 || _wx > CANVAS_W + TILE*2 || _wy < -TILE*2 || _wy > CANVAS_H + TILE*2) return;
+  const ccx = _wx + TILE/2, ccy = _wy + TILE/2;
+  ctx.save();
+  for (let i=0;i<3;i++){
+    const ph=((_n/600)+i/3)%1;
+    ctx.beginPath(); ctx.arc(ccx,ccy,TILE*(0.3+ph*1.3),0,Math.PI*2);
+    ctx.strokeStyle='rgba(120,200,255,'+(0.5*(1-ph)).toFixed(2)+')'; ctx.lineWidth=3; ctx.stroke();
+  }
+  const _bob=Math.sin(_n/180)*2, _roll=Math.sin(_n/130)*0.5, _sz=TILE*0.9;
+  const wp = IMG.waterPot || IMG.waterJar || IMG.waterPotFull;
+  ctx.translate(ccx, ccy + _bob);
+  ctx.rotate(_roll);
+  if (wp && (wp.naturalWidth > 0 || wp.width > 0)){
+    ctx.shadowColor='rgba(40,20,5,0.4)'; ctx.shadowBlur=4; ctx.shadowOffsetY=2;
+    ctx.drawImage(wp, -_sz/2, -_sz/2, _sz, _sz);
+  } else {
+    ctx.font=Math.round(TILE*0.7)+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('\u{1F3FA}', 0, 0);
+  }
+  ctx.restore();
+}
 function _renderInner(){
   // 2026-05-26: defensive transform reset so a leaked ctx.save() can never
   // compound the world-zoom transform below.
@@ -22533,6 +22715,9 @@ function _renderInner(){
   try { drawRollingBoulders(ctx); } catch(e){}
   // Scene 2 caves (drawn under Moses so he can step into them)
   try { drawCaves(ctx); } catch(e){}
+  // J9 (Jane 2026-06-19): Water-Jar Lure — visible tossed pot at the decoy
+  // tile (under Moses, on the floor). Scene 1 shows a goblet, Scene 2 a rock.
+  try { drawScene3DecoyPot(); } catch(e){}
   // moses
   drawMoses();
   // #74 Jane "Walk INTO the tent": replay the EXIT tent + Jethro + label ON TOP
