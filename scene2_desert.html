@@ -14647,6 +14647,7 @@ function spawnActiveVulture(){
   // the danger-alert-2 cue, then the vulture cry underneath.
   try { play('dangerAlert2'); } catch(e){}
   try { play('vulture') || play('friendlyAlert') || play('click'); } catch(e){}  // v2.2.7 vulture dive cry
+  try { _s2vo('vulture', {delay: 400}); } catch(e){}  // Jane 2026-06-22: first-vulture guidance VO (vo-s2-vulture.mp3, once)
 }
 function updateActiveVultures(dt){
   if (window._introPanActive) return; // PM63g
@@ -14816,6 +14817,7 @@ function updateActiveFoxes(dt){
         // fox yip underneath (Jane: "when fox or vultures come").
         try { play('dangerAlert2'); } catch(e){}
         try { play('fox'); } catch(e){}
+        try { _s2vo('fox', {delay: 400}); } catch(e){}  // Jane 2026-06-22: first-fox guidance VO (vo-s2-fox.mp3, once)
         f.soundPlayed = true;
       }
     }
