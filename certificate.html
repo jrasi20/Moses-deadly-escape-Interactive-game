@@ -35,21 +35,27 @@
     border-radius:8px; z-index:0; pointer-events:none; }
   .cert-wrap > .f, .cert-wrap > #cSeal, .cert-wrap > #cDate{ z-index:1; }
   /* dynamic values overlaid on the printed blank lines */
-  .f{ position:absolute; left:33%; width:60%; white-space:nowrap; overflow:hidden;
+  /* Jane 2026-06-21: NAME/RANK/SCORE were clipping on print ("BRAVE TRAVE", "539
+     poir"). ROOT: no Fredoka web-font is loaded, so the text falls back to a WIDER
+     font (Trebuchet/Segoe) and overran the fields. Fix: a touch more field width,
+     smaller font sizes that fit the fallback font, and ellipsis only as a last
+     resort (names are capped at 18 chars in-game so they fit). */
+  .f{ position:absolute; left:31%; width:64%; white-space:nowrap; overflow:hidden;
       text-overflow:ellipsis; transform:translateY(-86%); color:#4a2f12; font-weight:700;
       line-height:1; }
-  #cName  { top:57.0%; font-size:6.0cqw; font-weight:800; color:#7a3a06;
+  #cName  { top:57.0%; font-size:5.0cqw; font-weight:800; color:#7a3a06;
             letter-spacing:0.3px; }
-  #cRank  { top:64.4%; font-size:4.2cqw; }
-  #cScore { top:71.8%; font-size:4.2cqw; }
-  /* gold seal + date, lower-right of the cream area */
+  #cRank  { top:64.4%; font-size:3.4cqw; }
+  #cScore { top:71.8%; font-size:3.4cqw; }
+  /* gold seal + date, lower-right of the cream area. Bigger circle + smaller text so
+     "BIBLE EXPLORER KIDS" fits inside (was clipping to "BIBL EXPLOR KID"). */
   #cSeal{
-    position:absolute; right:7.5%; top:60%; width:15cqw; height:15cqw; border-radius:50%;
+    position:absolute; right:6%; top:59%; width:17cqw; height:17cqw; border-radius:50%;
     background:radial-gradient(circle at 38% 34%, #ffe79a, #f2b441 55%, #c8861f 100%);
     box-shadow:0 3px 8px rgba(0,0,0,0.28), inset 0 2px 4px rgba(255,255,255,0.6);
     border:0.5cqw solid #fff3cf; display:flex; align-items:center; justify-content:center;
-    text-align:center; color:#6b3300; font-weight:800; font-size:2.5cqw; line-height:1.05;
-    transform:rotate(-8deg);
+    text-align:center; color:#6b3300; font-weight:800; font-size:1.95cqw; line-height:1.08;
+    transform:rotate(-8deg); padding:1cqw;
   }
   #cDate{ position:absolute; left:33%; top:80%; font-size:2.5cqw; color:#7a5a30; font-weight:700; }
   /* toolbar (screen only) */
@@ -63,8 +69,12 @@
   @media print{
     body{ background:#fff; padding:0; display:block; }
     .bar, .hint{ display:none !important; }
-    .cert-wrap{ width:100%; max-width:none; aspect-ratio:1344/768; box-shadow:none; border-radius:0; }
-    @page{ size:landscape; margin:0; }
+    /* Jane 2026-06-21: was margin:0 + width:100% which let printers clip the right
+       edge (seal + line ends cut). A small page margin keeps the whole cert inside
+       the printable area; the cert sizes to fit by HEIGHT too so nothing is chopped. */
+    .cert-wrap{ width:100%; max-width:none; max-height:96vh; aspect-ratio:1344/768;
+      margin:0 auto; box-shadow:none; border-radius:0; }
+    @page{ size:landscape; margin:8mm; }
   }
 </style>
 </head>
