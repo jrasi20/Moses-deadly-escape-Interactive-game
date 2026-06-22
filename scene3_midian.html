@@ -19421,6 +19421,19 @@ function showWin(){
     setTimeout(() => { try { _ensureKidNamePrompt(); } catch(e){} }, 1300);
     // #16 confetti shower over the win modal (DOM, so it shows above the canvas)
     try { _spawnWinConfetti(); } catch(e){}
+    // Jane 2026-06-21: also fire a centered GOLD GLITTER BURST over the modal (like
+    // Scene 1) + a few rolling bursts so the victory celebration is unmistakable.
+    try {
+      const _m = document.querySelector('#winModal .modal-content') || document.getElementById('winModal');
+      if (_m) {
+        const r = _m.getBoundingClientRect();
+        const cx = r.left + r.width/2, cy = r.top + Math.min(80, r.height*0.18);
+        spawnGlitterBurst(cx, cy, 40);
+        setTimeout(() => spawnGlitterBurst(cx - 60, cy + 50, 26), 260);
+        setTimeout(() => spawnGlitterBurst(cx + 60, cy + 50, 26), 460);
+        setTimeout(() => spawnGlitterBurst(cx, cy + 95, 30), 680);
+      }
+    } catch(e){}
   };
   const _runClosingThenWin = () => {
     try {

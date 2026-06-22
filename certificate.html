@@ -6,117 +6,138 @@
 <meta name="copyright" content="copyright 2025 Bible Explorer Kids. All rights reserved.">
 <title>Certificate &mdash; Moses' Deadly Escape</title>
 <style>
-  /* Personalized, printable certificate built ON TOP of Jane's
-     "certificate template.png" art (the colourful Bible-tile border, the red
-     CERTIFICATE OF COMPLETION title, the "Moses' Deadly Escape" subtitle, the
-     NAME / RANK / SCORE lines and the Exodus 2:22 footer verse). We overlay the
-     kid's name + rank + score + date onto the blank lines, and add a gold seal.
-     The toolbar is hidden when printing so a clean landscape page comes out. */
+  /* Jane 2026-06-21: the certificate is now drawn onto a CANVAS (template art +
+     the kid's name / rank / score / date / seal at exact pixel positions). This
+     fixes BOTH problems with the old HTML-overlay version: (1) the overlaid text
+     no longer OVERLAPS the baked-in NAME/RANK/SCORE labels, and (2) the kid gets a
+     clean PNG DOWNLOAD instead of a print dialog that clipped the edges. */
   *{ box-sizing:border-box; }
   html,body{ margin:0; height:100%; }
   body{
-    font-family:'Fredoka','Baloo 2','Trebuchet MS','Segoe UI',system-ui,sans-serif;
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;
     background:radial-gradient(ellipse at 50% 0%, #5a3410, #2a1606 70%);
     min-height:100vh; display:flex; flex-direction:column; align-items:center;
     justify-content:center; gap:16px; padding:16px;
   }
-  .cert-wrap{
-    position:relative; width:min(96vw, 1180px); aspect-ratio:1344 / 768;
-    container-type:size;                 /* enable cqw units for responsive text */
-    background:#f7f1df;
-    border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,0.55);
-    image-rendering:auto;
+  #certCanvas{
+    width:min(96vw, 1180px); height:auto; border-radius:8px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.55); background:#f7f1df; display:block;
   }
-  /* P8 (Jane 2026-06-20: "when I try to print the certificate, the pdf doesn't
-     have the certificate"). ROOT CAUSE: the art was a CSS background-image, and
-     browsers OMIT background graphics from print/Save-as-PDF by default — so the
-     page came out blank. Render the art as a real <img> so it always prints. */
-  .cert-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:fill;
-    border-radius:8px; z-index:0; pointer-events:none; }
-  .cert-wrap > .f, .cert-wrap > #cSeal, .cert-wrap > #cDate{ z-index:1; }
-  /* dynamic values overlaid on the printed blank lines */
-  /* Jane 2026-06-21: NAME/RANK/SCORE were clipping on print ("BRAVE TRAVE", "539
-     poir"). ROOT: no Fredoka web-font is loaded, so the text falls back to a WIDER
-     font (Trebuchet/Segoe) and overran the fields. Fix: a touch more field width,
-     smaller font sizes that fit the fallback font, and ellipsis only as a last
-     resort (names are capped at 18 chars in-game so they fit). */
-  .f{ position:absolute; left:31%; width:64%; white-space:nowrap; overflow:hidden;
-      text-overflow:ellipsis; transform:translateY(-86%); color:#4a2f12; font-weight:700;
-      line-height:1; }
-  #cName  { top:57.0%; font-size:5.0cqw; font-weight:800; color:#7a3a06;
-            letter-spacing:0.3px; }
-  #cRank  { top:64.4%; font-size:3.4cqw; }
-  #cScore { top:71.8%; font-size:3.4cqw; }
-  /* gold seal + date, lower-right of the cream area. Bigger circle + smaller text so
-     "BIBLE EXPLORER KIDS" fits inside (was clipping to "BIBL EXPLOR KID"). */
-  #cSeal{
-    position:absolute; right:6%; top:59%; width:17cqw; height:17cqw; border-radius:50%;
-    background:radial-gradient(circle at 38% 34%, #ffe79a, #f2b441 55%, #c8861f 100%);
-    box-shadow:0 3px 8px rgba(0,0,0,0.28), inset 0 2px 4px rgba(255,255,255,0.6);
-    border:0.5cqw solid #fff3cf; display:flex; align-items:center; justify-content:center;
-    text-align:center; color:#6b3300; font-weight:800; font-size:1.95cqw; line-height:1.08;
-    transform:rotate(-8deg); padding:1cqw;
-  }
-  #cDate{ position:absolute; left:33%; top:80%; font-size:2.5cqw; color:#7a5a30; font-weight:700; }
-  /* toolbar (screen only) */
   .bar{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
   .bar button{ font-family:inherit; font-weight:800; font-size:clamp(14px,4vw,17px);
     border:none; border-radius:14px; padding:13px 26px; cursor:pointer;
     box-shadow:0 6px 16px rgba(0,0,0,0.35); }
-  .print{ background:linear-gradient(#ffe07a,#ffc23d); color:#7a3a06; }
-  .back { background:linear-gradient(#d8b878,#c19a52); color:#3a2410; }
-  .hint{ color:#ffe7b8; font-size:13px; opacity:0.85; text-align:center; max-width:90vw; }
-  @media print{
-    body{ background:#fff; padding:0; display:block; }
-    .bar, .hint{ display:none !important; }
-    /* Jane 2026-06-21: was margin:0 + width:100% which let printers clip the right
-       edge (seal + line ends cut). A small page margin keeps the whole cert inside
-       the printable area; the cert sizes to fit by HEIGHT too so nothing is chopped. */
-    .cert-wrap{ width:100%; max-width:none; max-height:96vh; aspect-ratio:1344/768;
-      margin:0 auto; box-shadow:none; border-radius:0; }
-    @page{ size:landscape; margin:8mm; }
-  }
+  .dl  { background:linear-gradient(#ffe07a,#ffc23d); color:#7a3a06; }
+  .back{ background:linear-gradient(#d8b878,#c19a52); color:#3a2410; }
+  .hint{ color:#ffe7b8; font-size:13px; opacity:0.9; text-align:center; max-width:90vw; }
+  #replayNudge{ color:#ffd976; }
 </style>
 </head>
 <body>
-  <div class="cert-wrap" id="cert" role="img" aria-label="Certificate of Completion for Moses' Deadly Escape">
-    <img class="cert-bg" src="assets/images/certificate%20template.png" alt="">
-    <div class="f" id="cName">Brave Explorer</div>
-    <div class="f" id="cRank">Faithful Journey</div>
-    <div class="f" id="cScore">0 points</div>
-    <div id="cSeal">BIBLE<br>EXPLORER<br>KIDS</div>
-    <div id="cDate"></div>
-  </div>
+  <canvas id="certCanvas" width="1344" height="768" role="img"
+          aria-label="Certificate of Completion for Moses' Deadly Escape"></canvas>
   <div class="bar">
-    <button class="print" onclick="window.print()">&#128424;&nbsp; Print / Save as PDF</button>
+    <button class="dl"   id="dlBtn">&#11015;&nbsp; Download Certificate</button>
     <button class="back" id="menuBtn">&#127968;&nbsp; Main Menu</button>
   </div>
-  <div class="hint">Tip: choose <b>Landscape</b> and &ldquo;Save as PDF&rdquo; to keep a copy, or print it to hang on the wall.</div>
+  <div class="hint">Tap <b>Download Certificate</b> to save it as an image you can print or share.</div>
   <div class="hint" id="replayNudge">&#11088; Want an even better score? Tap <b>Main Menu</b> and replay any level to beat your best!</div>
 <script>
   function g(k, d){ try { return (localStorage.getItem(k) || '').trim() || d; } catch(e){ return d; } }
-  document.getElementById('cName').textContent  = g('bek.kidName', 'Brave Explorer');
-  document.getElementById('cRank').textContent  = g('bek.certRank', 'Faithful Journey');
-  // P7 (Jane 2026-06-21): if bek.certScore wasn't written (e.g. the cert was
-  // opened from the main menu, not the Scene-3 win flow), fall back to the live
-  // lifetime points so the certificate never prints "0 points" by default.
-  (function(){
+  var NAME  = g('bek.kidName', 'Brave Explorer');
+  var RANK  = g('bek.certRank', 'Faithful Journey');
+  var SCORE = (function(){
     var sc = g('bek.certScore', '');
-    if (!sc) {
-      var pts = 0; try { pts = parseInt(localStorage.getItem('bek.bundle1.totalPoints') || '0', 10) || 0; } catch(e){}
-      sc = pts + ' points';
-    }
-    document.getElementById('cScore').textContent = sc;
+    if (!sc) { var p = 0; try { p = parseInt(localStorage.getItem('bek.bundle1.totalPoints')||'0',10)||0; } catch(e){} sc = p + ' points'; }
+    return sc;
   })();
-  try {
-    var d = new Date();
-    document.getElementById('cDate').textContent =
-      d.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
-  } catch(e){}
-  // Jane 2026-06-21: do NOT offer "Back to Game" — history.back() dropped the kid
-  // straight back into Scene 3. Send them to the ONE-WORLD hub (the Scene-1 cover /
-  // Main Menu) instead, where the Continue chip + level select let them replay any
-  // scene to beat their best.
+  var DATES = (function(){ try { return new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'}); } catch(e){ return ''; } })();
+
+  var canvas = document.getElementById('certCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+
+  // Fit a string into a max width by shrinking the font until it fits.
+  function fitFont(text, weight, startPx, maxW){
+    var px = startPx;
+    do { ctx.font = weight + ' ' + px + 'px "Trebuchet MS","Segoe UI",sans-serif'; px -= 1; }
+    while (px > 10 && ctx.measureText(text).width > maxW);
+    return px + 1;
+  }
+
+  function draw(bg){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#f7f1df'; ctx.fillRect(0,0,W,H);
+    if (bg) ctx.drawImage(bg, 0, 0, W, H);
+
+    // Values sit on the blank lines, starting well CLEAR of the NAME/RANK/SCORE
+    // labels (labels end ~21% of the width; lines run to ~88%). Left-aligned.
+    var x = W * 0.26;
+    var maxW = W * 0.60;                 // line ends ~0.88, leave a little gap
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    // NAME
+    ctx.fillStyle = '#7a3a06';
+    var fn = fitFont(NAME, 'bold', Math.round(H*0.062), maxW);
+    ctx.font = 'bold ' + fn + 'px "Trebuchet MS","Segoe UI",sans-serif';
+    ctx.fillText(NAME, x, H * 0.575);
+
+    // RANK
+    ctx.fillStyle = '#4a2f12';
+    var fr = fitFont(RANK, 'bold', Math.round(H*0.046), maxW);
+    ctx.font = 'bold ' + fr + 'px "Trebuchet MS","Segoe UI",sans-serif';
+    ctx.fillText(RANK, x, H * 0.652);
+
+    // SCORE
+    var fs = fitFont(SCORE, 'bold', Math.round(H*0.046), maxW);
+    ctx.font = 'bold ' + fs + 'px "Trebuchet MS","Segoe UI",sans-serif';
+    ctx.fillText(SCORE, x, H * 0.728);
+
+    // DATE (small, under the score, on the cream — clear of the centered verse)
+    if (DATES){
+      ctx.fillStyle = '#7a5a30';
+      ctx.font = '600 ' + Math.round(H*0.030) + 'px "Trebuchet MS","Segoe UI",sans-serif';
+      ctx.fillText(DATES, x, H * 0.795);
+    }
+
+    // Gold seal, lower-right of the cream area.
+    var cx = W * 0.845, cy = H * 0.66, r = W * 0.072;
+    var grd = ctx.createRadialGradient(cx - r*0.3, cy - r*0.35, r*0.2, cx, cy, r);
+    grd.addColorStop(0, '#ffe79a'); grd.addColorStop(0.55, '#f2b441'); grd.addColorStop(1, '#c8861f');
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(-8 * Math.PI/180); ctx.translate(-cx, -cy);
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fillStyle = grd; ctx.fill();
+    ctx.lineWidth = r*0.06; ctx.strokeStyle = '#fff3cf'; ctx.stroke();
+    ctx.fillStyle = '#6b3300'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '800 ' + Math.round(r*0.30) + 'px "Trebuchet MS","Segoe UI",sans-serif';
+    ctx.fillText('BIBLE', cx, cy - r*0.34);
+    ctx.fillText('EXPLORER', cx, cy);
+    ctx.fillText('KIDS', cx, cy + r*0.34);
+    ctx.restore();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+
+  // Draw once the template art is ready (real <img> so it always composites).
+  var bg = new Image();
+  bg.onload  = function(){ draw(bg); };
+  bg.onerror = function(){ draw(null); };   // graceful: still render the text on cream
+  bg.src = 'assets/images/certificate%20template.png';
+  draw(null);  // immediate paint so the page is never blank while the art loads
+
+  document.getElementById('dlBtn').addEventListener('click', function(){
+    try {
+      var safe = (NAME || 'certificate').replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'') || 'certificate';
+      var a = document.createElement('a');
+      a.download = 'Moses_Certificate_' + safe + '.png';
+      a.href = canvas.toDataURL('image/png');
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } catch(e){
+      // Fallback for any browser that blocks toDataURL download: open the image.
+      try { window.open(canvas.toDataURL('image/png'), '_blank'); } catch(_e){}
+    }
+  });
+
   document.getElementById('menuBtn').addEventListener('click', function(){
     window.location.href = 'scene1_palace.html';
   });
