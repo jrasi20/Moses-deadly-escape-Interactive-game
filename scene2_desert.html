@@ -12048,10 +12048,14 @@ function showWin(){
     let _voFired = false;
     const _fireVo = () => { if (_voFired) return; _voFired = true; try { _s2vo('win', {delay: 250}); } catch(e){} };
     try {
-      const wa = audio.win;
-      play('win');
+      // Jane 2026-06-21: REMOVED play('win') (win sound.mp3) from the victory modal —
+      // levelUp + confetti carry the celebration (parity with Scene 3). The win VO
+      // still waits for the fanfare to RING OUT (levelUp 'ended', 4.5s safety) so the
+      // "well done" line is never buried under the SFX.
+      const fa = audio.levelUp;
+      play('levelUp');
       try { play('confetti'); } catch(e){}   // sparkle visual cue
-      if (wa) wa.addEventListener('ended', _fireVo, { once:true });
+      if (fa) fa.addEventListener('ended', _fireVo, { once:true });
       setTimeout(_fireVo, 4500);
     } catch(e){ setTimeout(_fireVo, 2500); }
   };
@@ -12201,6 +12205,7 @@ function _renderJourneyPanel(){
   const t = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
   const c = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
   const s = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
+  const p = parseInt(_ls('bek.bundle1.totalPoints')    || '0', 10) || 0;  // Jane 2026-06-21: show the AGGREGATE score here too (this is what the certificate prints) — parity with Scene 3
   let owned = [];
   try { owned = JSON.parse(_ls('bek.bundle1.unlocks') || '[]') || []; } catch(e){ owned = []; }
   const _WJ_TIERS = [
@@ -12214,6 +12219,7 @@ function _renderJourneyPanel(){
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
     + '<div class="wj-res">'
     +   '<span>\u{1F4B0} <strong>' + t + '</strong> Treasures</span>'  /* K8: 💰 bags (was 💎) for cross-scene consistency */
+    +   '<span>⭐ <strong>' + p + '</strong> Points</span>'             /* Jane 2026-06-21: aggregate score = what the certificate shows */
     +   '<span>\u{1F451} <strong>' + c + '</strong> Crowns</span>'
     +   '<span>\u{1F4DC} <strong>' + s + '</strong> Scrolls</span>'
     + '</div>';

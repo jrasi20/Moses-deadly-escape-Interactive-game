@@ -4719,7 +4719,7 @@ if (audio.reachedExit)   audio.reachedExit.volume   = 0.85;
 if (audio.allComplete)   audio.allComplete.volume   = 0.85;
 if (audio.levelUp)       audio.levelUp.volume       = 0.85;
 if (audio.successTrumpet) audio.successTrumpet.volume = 0.85;
-if (audio.egyptianCover) audio.egyptianCover.volume = 0.05;  // P9 (Jane 2026-06-20, repeated): closing-narration bed (sections 8 & 9) STILL too loud at 0.12 → 0.05 so the voice clearly leads; also in _VOICE_DUCK_TRACKS so it dips further under each spoken line
+if (audio.egyptianCover) audio.egyptianCover.volume = 0.03;  // P9 + Jane 2026-06-21: closing-narration bed (sections 8 & 9) lowered again 0.12 → 0.05 → 0.03 so the voice clearly leads; also in _VOICE_DUCK_TRACKS so it dips further under each spoken line
 if (audio.bgmCorridor)   audio.bgmCorridor.volume   = 0.55;  // #15 wolf-attack danger bed
 if (audio.bgmExit)       audio.bgmExit.volume       = 0.7;   // #14 victory heat-up sting
 if (audio.confetti)      audio.confetti.volume      = 0.8;   // #16 win confetti sparkle
@@ -5038,6 +5038,24 @@ function playVoiceLine(name){
     try { _beginVoiceDuck(a); } catch(e){}   // duck music + cut sfx so the line is audible
   } catch(e){}
   return play(name);
+}
+// Jane 2026-06-21: play an OPTIONAL guidance VO by filename (e.g. vo-s3-locked.mp3 —
+// "Uh oh! Moses can't reach Jethro's tent until you rescue the daughters AND water
+// the flock"). GRACEFUL: if the recording isn't in assets/audio yet it silently
+// no-ops (the on-screen banner still teaches). Throttled + ducked so it never nags.
+let _guideVoEl = null, _guideVoAt = 0;
+function _playGuideVO(file){
+  try {
+    const now = performance.now();
+    if (now - _guideVoAt < 6000) return;
+    _guideVoAt = now;
+    if (typeof _soundOn !== 'undefined' && !_soundOn) return;
+    if (!_guideVoEl) _guideVoEl = new Audio();
+    _guideVoEl.src = 'assets/audio/' + file;
+    _guideVoEl.volume = 0.92;
+    try { _beginVoiceDuck(_guideVoEl); } catch(e){}
+    _guideVoEl.play().catch(()=>{});   // missing file → silent
+  } catch(e){}
 }
 
 // ===================== SCENE 3 — VOICE-FIRST ONBOARDING =====================
@@ -11322,7 +11340,11 @@ try {
             applyDifficultyConfig(_diff);
           }
         } catch(e){}
-        try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}
+        // Jane 2026-06-21: do NOT unlockAudio() here — navigating Scene 2 → Scene 3
+        // does NOT carry a user gesture, so the browser autoplay policy BLOCKED the
+        // opening narration (it played silent). Mirror Scene 2's J10 fix: after the
+        // loading bar, show a one-tap "Continue the Journey" splash; the kid's TAP is
+        // the gesture that unlocks audio, THEN the cinematic plays WITH its narration.
         const _launchCin = () => {
           try {
             const overlay = document.getElementById('preloadOverlay');
@@ -11335,21 +11357,40 @@ try {
             }
           } catch(e){}
         };
+        const _gestureThenCin = () => {
+          try { if (typeof unlockAudio === 'function') unlockAudio(); } catch(e){}
+          _launchCin();
+        };
+        const _showJourneyTapGate = () => {
+          try { const _ov = document.getElementById('preloadOverlay'); if (_ov) _ov.classList.remove('active'); } catch(e){}
+          let g = document.getElementById('s3JourneyTapGate');
+          if (!g) {
+            g = document.createElement('div');
+            g.id = 's3JourneyTapGate';
+            g.setAttribute('role','button'); g.setAttribute('tabindex','0');
+            g.setAttribute('aria-label','Continue Moses’s journey into Midian');
+            g.style.cssText = 'position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(circle at 50% 35%,#2a4a1a,#0f2008 80%);cursor:pointer;text-align:center;padding:24px;';
+            g.innerHTML =
+              '<div style="font-family:Georgia,serif;color:#ffd976;font-size:22px;font-weight:900;text-shadow:0 0 10px rgba(255,217,118,0.5);max-width:520px;line-height:1.4;">Moses has reached Midian…</div>'
+              + '<button type="button" style="font-family:Georgia,serif;font-size:20px;font-weight:900;color:#1d3a06;background:linear-gradient(145deg,#ffd976,#f2a83a);border:3px solid #ffd976;border-radius:16px;padding:14px 34px;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,0.5);">▶ Continue the Journey</button>'
+              + '<div style="color:#cfe8a8;font-size:13px;opacity:0.85;">Tap to begin — turn your sound on!</div>';
+            document.body.appendChild(g);
+          }
+          g.style.display = 'flex';
+          let _fired = false;
+          const _go = () => { if (_fired) return; _fired = true; try { g.style.display='none'; g.remove(); } catch(e){} _gestureThenCin(); };
+          g.addEventListener('click', _go);
+          g.addEventListener('touchstart', _go, { passive:true });
+          g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') _go(); });
+        };
         try {
-          // Gate the cinematic on preload so the kid never sees broken sprites.
           if (typeof _preloadPct === 'function' && _preloadPct() < 100) {
             const overlay = document.getElementById('preloadOverlay');
             if (overlay) overlay.classList.add('active');
-            _pendingBeginTap = () => {
-              try { const o = document.getElementById('preloadOverlay'); if (o) o.classList.remove('active'); } catch(e){}
-              _launchCin();
-            };
-            // 12 s safety: never strand the kid on the preload screen.
-            setTimeout(() => {
-              if (_pendingBeginTap) { const fn = _pendingBeginTap; _pendingBeginTap = null; fn(); }
-            }, 12000);
+            _pendingBeginTap = _showJourneyTapGate;
+            setTimeout(() => { if (_pendingBeginTap) { const fn = _pendingBeginTap; _pendingBeginTap = null; fn(); } }, 12000);
           } else {
-            _launchCin();
+            _showJourneyTapGate();
           }
         } catch(e){}
       } catch(e){}
@@ -11866,7 +11907,7 @@ function showEpiloguePanel() {
   const tEl = $('epilText');     if (tEl) tEl.textContent = p.text;
   const cEl = $('epilCaption');  if (cEl) cEl.textContent = p.cap;
   const pEl = $('epilProgress'); if (pEl) { pEl.textContent = ''; pEl.style.display = 'none'; }   // #13: no panel-info counter
-  const nEl = $('epilNextBtn');  if (nEl) nEl.textContent = ((game.epilStep||0) === EPILOGUE_PANELS.length-1) ? 'Get Certificate' : 'Next';
+  const nEl = $('epilNextBtn');  if (nEl) nEl.textContent = ((game.epilStep||0) === EPILOGUE_PANELS.length-1) ? 'Main Menu →' : 'Next';
   // 2026-06-01 — swap epilogue illustration per panel with a short cross-fade.
   try {
     const img = document.getElementById('epilSceneImg');
@@ -17074,11 +17115,17 @@ function openChallenge(gate) {
       // #Jane 2026-06-07: "I'm on the Water-the-Flock tile and keep hearing an error
       // sound standing there." Throttle the lock feedback + use a GENTLE cue, not the
       // harsh error buzz, so it doesn't nag while she's parked on the tile.
+      // Jane 2026-06-21: "stepping on Water-the-Flock does nothing." It WAS gated
+      // (well unlocks after the rescue) but the feedback was a tiny toast that's easy
+      // to miss. Show a can't-miss BANNER so the kid understands the order, + a gentle
+      // cue + an optional guidance VO (silent until vo-s3-locked.mp3 is recorded).
       const _nowL = performance.now();
-      if (!window._wellLockWarnAt || _nowL - window._wellLockWarnAt > 5000){
+      if (!window._wellLockWarnAt || _nowL - window._wellLockWarnAt > 3000){
         window._wellLockWarnAt = _nowL;
-        try { toast('First rescue the daughters — then you can water the flock.'); } catch(e){}
+        try { _showCrossingBanner('💧 <b>Rescue the daughters first!</b> Then water the flock at the well.', 3600); }
+        catch(e){ try { toast('First rescue the daughters — then water the flock.'); } catch(_e){} }
         try { play('pop'); } catch(e){}
+        try { _playGuideVO('vo-s3-locked.mp3'); } catch(e){}
       }
       return;
     }
@@ -19010,7 +19057,16 @@ function onReachExit(){
   // #89 (Jane recorded narration): "Congratulations! You made it to Jethro's
   // tent!" — let the gate/chime land first, then speak the congratulations VO
   // so the narration is heard clearly over the celebration.
-  try { setTimeout(function(){ playVoiceLine('voCongrats'); }, 480); } catch(e){}
+  // Jane 2026-06-21: wait for the victory fanfare to RING OUT before the
+  // "Congratulations" line so it isn't buried under the levelUp/bgm-exit SFX that
+  // showLessonThenWin fires next (parity with scenes 1 & 2). Fire on levelUp's
+  // 'ended' with a 3s safety fallback.
+  try {
+    let _cv=false; const _sayCongrats=()=>{ if(_cv)return; _cv=true; try { playVoiceLine('voCongrats'); } catch(e){} };
+    const _fa = audio.levelUp;
+    if (_fa) _fa.addEventListener('ended', _sayCongrats, { once:true });
+    setTimeout(_sayCongrats, 3000);
+  } catch(e){ try { setTimeout(function(){ playVoiceLine('voCongrats'); }, 1800); } catch(_e){} }
   // v3.28: scene complete — clear the mid-game save so the next play is fresh.
   try { _clearCheckpoint(); } catch(e){}
   showLessonThenWin();
@@ -19406,16 +19462,17 @@ const _winEndingBtn = $('winEndingBtn');
 if (_winEndingBtn) _winEndingBtn.addEventListener('click', () => {
   play('click');
   $('winModal').classList.remove('active');
-  // P10 (Jane 2026-06-21): after the closing (§8) + epilogue (§9) narration, the
-  // epilogue's final button is labelled "Get Certificate" — so it must go STRAIGHT
-  // to the certificate, NOT back to the victory modal. The old _backToWin re-showed
-  // the win modal, which re-offered "Watch the Ending" → an 8↔9 narration loop.
-  const _toCert = () => { try { _doDownloadCertificate(); } catch(e){} };
+  // P10 + Jane 2026-06-21: after the closing (§8) + epilogue (§9) narration, go to
+  // the MAIN MENU (the Scene-1 hub) — NOT back to the victory modal (that re-offered
+  // "Watch the Ending" → an 8↔9 loop) and NOT left sitting on the frozen Scene-3
+  // game page. The certificate is still reachable from the win modal's "Print
+  // Certificate" button. _killAllGameMusic so no bed bleeds onto the cover.
+  const _toMenu = () => { try { _killAllGameMusic(); } catch(e){} try { window.location.href = 'scene1_palace.html'; } catch(e){} };
   try {
     playClosingCinematic(() => {
-      try { openEpilogueCinematic(_toCert); } catch(e){ _toCert(); }
+      try { openEpilogueCinematic(_toMenu); } catch(e){ _toMenu(); }
     });
-  } catch(e){ try { openEpilogueCinematic(_toCert); } catch(_e){ _toCert(); } }
+  } catch(e){ try { openEpilogueCinematic(_toMenu); } catch(_e){ _toMenu(); } }
 });
 const _midChestBtn = $('midChestContinueBtn');
 if (_midChestBtn) _midChestBtn.addEventListener('click', () => {
