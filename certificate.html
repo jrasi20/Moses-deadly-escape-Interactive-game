@@ -79,22 +79,36 @@
   </div>
   <div class="bar">
     <button class="print" onclick="window.print()">&#128424;&nbsp; Print / Save as PDF</button>
-    <button class="back" id="backBtn">&larr;&nbsp; Back to Game</button>
+    <button class="back" id="menuBtn">&#127968;&nbsp; Main Menu</button>
   </div>
   <div class="hint">Tip: choose <b>Landscape</b> and &ldquo;Save as PDF&rdquo; to keep a copy, or print it to hang on the wall.</div>
+  <div class="hint" id="replayNudge">&#11088; Want an even better score? Tap <b>Main Menu</b> and replay any level to beat your best!</div>
 <script>
   function g(k, d){ try { return (localStorage.getItem(k) || '').trim() || d; } catch(e){ return d; } }
   document.getElementById('cName').textContent  = g('bek.kidName', 'Brave Explorer');
   document.getElementById('cRank').textContent  = g('bek.certRank', 'Faithful Journey');
-  document.getElementById('cScore').textContent = g('bek.certScore', '0 points');
+  // P7 (Jane 2026-06-21): if bek.certScore wasn't written (e.g. the cert was
+  // opened from the main menu, not the Scene-3 win flow), fall back to the live
+  // lifetime points so the certificate never prints "0 points" by default.
+  (function(){
+    var sc = g('bek.certScore', '');
+    if (!sc) {
+      var pts = 0; try { pts = parseInt(localStorage.getItem('bek.bundle1.totalPoints') || '0', 10) || 0; } catch(e){}
+      sc = pts + ' points';
+    }
+    document.getElementById('cScore').textContent = sc;
+  })();
   try {
     var d = new Date();
     document.getElementById('cDate').textContent =
       d.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
   } catch(e){}
-  document.getElementById('backBtn').addEventListener('click', function(){
-    try { window.close(); } catch(e){}
-    if (history.length > 1) history.back();
+  // Jane 2026-06-21: do NOT offer "Back to Game" — history.back() dropped the kid
+  // straight back into Scene 3. Send them to the ONE-WORLD hub (the Scene-1 cover /
+  // Main Menu) instead, where the Continue chip + level select let them replay any
+  // scene to beat their best.
+  document.getElementById('menuBtn').addEventListener('click', function(){
+    window.location.href = 'scene1_palace.html';
   });
 </script>
 </body>
