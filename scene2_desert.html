@@ -3096,10 +3096,17 @@
     .hud {
       gap: 3px;
       padding: 6px 6px;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+      /* Q (Jane 2026-06-21): was flex-wrap:nowrap + overflow-x:auto — at 375px the
+         HUD content is ~499px wide, so MAP + Pause were pushed ~118px OFF-SCREEN
+         and the kid couldn't reach them (only a horizontal scroll exposed them).
+         Wrap like Scene 1, and let the wide stats group flow its chips as individual
+         flex items so the whole HUD packs to a tidy 2 rows with everything visible. */
+      flex-wrap: wrap;
+      overflow-x: visible;
+      row-gap: 4px;
+      justify-content: center;
     }
+    .hud > .hud-group:nth-child(2) { display: contents; }
     .hud-chip {
       font-size: 11px;
       padding: 2px 6px;
@@ -10070,6 +10077,15 @@ function openChallenge(gate) {
   if (hintBox) hintBox.style.display = 'none';
   if (hintBtn) { hintBtn.style.display = 'inline-block'; hintBtn.disabled = false; }
   if (hintTxt) hintTxt.textContent = getHintForQuestion(q);
+  // O11 (Jane 2026-06-21): on EASY, auto-reveal the Bible clue so younger players
+  // always see the hint without hunting for the "Show Clue" button. Medium/Hard
+  // keep it behind the tap.
+  try {
+    if ((game.difficulty || 'easy') === 'easy' && hintBox && hintTxt && hintTxt.textContent) {
+      hintBox.style.display = 'block';
+      if (hintBtn) hintBtn.style.display = 'none';
+    }
+  } catch(e){}
   // v3.27 Jane 2026-04-27: populate scenario imagery in the clue panel.
   try {
     const imagesEl = $('chHintImages');
@@ -11571,8 +11587,27 @@ function _resKey(w){ return w==='crowns'?_LIFETIME_CROWNS_KEY : w==='scrolls'?_L
 function _sceneBest(w, n){ try { return parseInt(localStorage.getItem('bek.scene'+n+'.'+w)||'0',10)||0; } catch(e){ return 0; } }
 function _otherScenesBest(w){ var s=0; [1,2,3].forEach(function(n){ if(n!==_SCENE_NO) s+=_sceneBest(w,n); }); return s; }
 function _runAccum(w){ try { return (game._runAccum && game._runAccum[w]) || 0; } catch(e){ return 0; } }
-function _liveBundleTotal(w){ return _otherScenesBest(w) + Math.max(_sceneBest(w,_SCENE_NO), _runAccum(w)); }
-function _writeBundleTotal(w){ var t=_liveBundleTotal(w); try { localStorage.setItem(_resKey(w), String(t)); } catch(e){} return t; }
+// P2/P7 ROOT FIX (Jane 2026-06-21): bank + live totals read the SAME number the
+// HUD shows this run, so they can never diverge. points=stars; treasures=the HUD
+// treasure chip (here game.treasureCount); crowns/scrolls=run accumulator.
+function _liveRunValue(w){
+  try {
+    if (w==='points')    return (typeof game!=='undefined' && +game.stars)        || 0;
+    if (w==='treasures') return (typeof game!=='undefined' && +game.treasureCount) || 0;
+  } catch(e){}
+  return _runAccum(w);
+}
+function _liveBundleTotal(w){ return _otherScenesBest(w) + Math.max(_sceneBest(w,_SCENE_NO), _liveRunValue(w)); }
+// Bundle totals are MONOTONIC: a recomputed sum can only RAISE the stored total,
+// never lower it — preserves legacy accumulated totals so the journey panel +
+// certificate never collapse to "just the scene I finished".
+function _storeBundleTotal(w, val){
+  var prev=0; try { prev = parseInt(localStorage.getItem(_resKey(w))||'0',10)||0; } catch(e){}
+  var out = Math.max(prev, (val||0));
+  try { localStorage.setItem(_resKey(w), String(out)); } catch(e){}
+  return out;
+}
+function _writeBundleTotal(w){ return _storeBundleTotal(w, _liveBundleTotal(w)); }
 function _addLifetimeResource(which, n){
   try { if (!game._runAccum) game._runAccum = {}; } catch(e){}
   const prev = _liveBundleTotal(which);
@@ -11597,13 +11632,12 @@ function _addLifetimeResource(which, n){
 }
 function _bankSceneBests(){
   ['treasures','crowns','scrolls','points'].forEach(function(w){
-    var run = (w==='points') ? ((typeof game!=='undefined' && game.stars)||0) : _runAccum(w);
-    var best = Math.max(_sceneBest(w,_SCENE_NO), run);
+    var best = Math.max(_sceneBest(w,_SCENE_NO), _liveRunValue(w));
     try { localStorage.setItem('bek.scene'+_SCENE_NO+'.'+w, String(best)); } catch(e){}
   });
   ['treasures','crowns','scrolls','points'].forEach(function(w){
     var s=0; [1,2,3].forEach(function(n){ s+=_sceneBest(w,n); });
-    try { localStorage.setItem(_resKey(w), String(s)); } catch(e){}
+    _storeBundleTotal(w, s);
   });
 }
 function _resetRunAccum(){
@@ -12028,11 +12062,13 @@ function showWin(){
       _fireWinAudioAndVo();
       $('winModal').classList.add('active');
       try { _personalizeWinModal(); } catch(e){}
+      setTimeout(() => { try { _ensureKidNamePrompt(); } catch(e){} }, 1300);  // N3
     }, 2000);
   } else {
     _fireWinAudioAndVo();
     $('winModal').classList.add('active');
     try { _personalizeWinModal(); } catch(e){}
+    setTimeout(() => { try { _ensureKidNamePrompt(); } catch(e){} }, 1300);  // N3
   }
 }
 // K7: stop every gameplay loop so nothing bleeds under the win modal.
@@ -12069,6 +12105,50 @@ function _stopWinMusic(){
 // MOSES-centric per Jane's PM57 clarification.
 function _getKidName(){
   try { return (localStorage.getItem('bek.kidName') || '').trim(); } catch(e){ return ''; }
+}
+// N3 (Jane 2026-06-21): prompt for the kid's name here too when it's still empty
+// (Scene-1 prompt skipped, or scene reached without finishing Scene 1) so the
+// certificate + victory shoutout aren't blank. One-time (respects the skip flag).
+// Self-contained — builds its own scrim styled to match Scene 1's.
+function _ensureKidNamePrompt(){
+  try {
+    if ((localStorage.getItem('bek.kidName') || '').trim()) return;
+    if (localStorage.getItem('bek.kidNameSkipped')) return;
+  } catch(e){ return; }
+  let scrim = document.getElementById('kidNameScrim');
+  if (!scrim) {
+    scrim = document.createElement('div');
+    scrim.id = 'kidNameScrim';
+    scrim.setAttribute('role','dialog'); scrim.setAttribute('aria-modal','true');
+    scrim.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;';
+    scrim.innerHTML =
+      '<div style="background:linear-gradient(180deg,#fff3c8 0%,#e9cf8a 60%,#d6b369 100%);border:3px solid #8a5a22;border-radius:16px;padding:22px 20px;width:min(360px,96%);color:#3a1a00;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.7),inset 0 0 0 2px #c59754;">'
+      +   '<h3 style="font-family:Georgia,serif;color:#5a2a05;font-size:22px;margin:0 0 6px;">You did it!</h3>'
+      +   '<div style="font-size:14px;color:#6a3a18;margin-bottom:14px;font-style:italic;">Add your name so it appears on your certificate!</div>'
+      +   '<input id="kidNameInput" type="text" maxlength="18" placeholder="Your first name" autocomplete="off" inputmode="text" style="width:100%;padding:12px 14px;font-size:18px;border:2px solid #8a5a22;border-radius:10px;background:#fff8e7;color:#3a1a00;font-family:Georgia,serif;text-align:center;margin-bottom:12px;box-sizing:border-box;">'
+      +   '<button id="kidNameSaveBtn" type="button" style="background:linear-gradient(180deg,#ffd976 0%,#e0a544 100%);color:#3a1505;border:2px solid #8a5a22;border-radius:24px;padding:10px 22px;font-family:Georgia,serif;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(80,40,10,0.4),inset 0 -2px 0 rgba(0,0,0,0.18);">That\'s me!</button>'
+      +   '<button id="kidNameSkipBtn" type="button" style="display:block;margin:10px auto 0;background:transparent;border:none;color:#6a3a18;font-size:12px;text-decoration:underline;cursor:pointer;">Not now</button>'
+      + '</div>';
+    document.body.appendChild(scrim);
+    const input = scrim.querySelector('#kidNameInput');
+    const commit = () => {
+      const v = (input && input.value) ? input.value.trim().slice(0,18) : '';
+      if (!v) { if (input) input.focus(); return; }
+      try { localStorage.setItem('bek.kidName', v); } catch(e){}
+      try { play('chime'); } catch(e){}
+      scrim.remove();
+      try { _personalizeWinModal(); } catch(e){}
+    };
+    scrim.querySelector('#kidNameSaveBtn').addEventListener('click', commit);
+    if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); commit(); } });
+    scrim.querySelector('#kidNameSkipBtn').addEventListener('click', () => {
+      try { localStorage.setItem('bek.kidNameSkipped','1'); } catch(e){}
+      try { play('click'); } catch(e){}
+      scrim.remove();
+    });
+  }
+  const input = scrim.querySelector('#kidNameInput');
+  if (input) { input.value = ''; setTimeout(() => { try { input.focus(); } catch(e){} }, 200); }
 }
 function _personalizeWinModal(){
   const name = _getKidName();
@@ -12327,7 +12407,7 @@ function _showWorldMap2(){
   // Kick off the figurine travel (CSS transition does the move) + caption beats.
   setTimeout(() => { if (moses) moses.classList.add('arrived'); }, 400);
   setTimeout(() => { if (caption) caption.textContent = 'Sand behind, green hills ahead. Press on, Moses.'; }, 1500);
-  setTimeout(() => { if (caption) caption.textContent = 'Midian is near. God is with you.'; }, 3000);
+  setTimeout(() => { if (caption) caption.textContent = 'You’ve reached Midian. God is with you.'; }, 3000);
   // Journey-tracker ambience — prefer palm-shadow, fall back gracefully.
   try {
     const a = audio.palmShadow || audio.egyptianCover || audio.coverMusic;

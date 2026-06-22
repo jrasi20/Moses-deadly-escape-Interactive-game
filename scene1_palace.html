@@ -7130,7 +7130,7 @@ dog.met = false;
 const interactables = [
   { tx: 6,  ty: 2,  kind:'servant', icon:'[S]',
     name:'A Kind Palace Maid',
-    body:'"Shhh! The guards are restless today. Hide behind a pillar (the tall ones at columns 8 and 31) when you hear footsteps — guards lose sight of you completely. Bless you, young Moses." +5 stars',
+    body:'"Shhh! The guards are restless today. Hide behind a pillar when you hear footsteps — guards lose sight of you completely. Bless you, young Moses." +5 stars',
     used:false, reward:'stars5', vanish:true },
   { tx: 28, ty: 2,  kind:'scroll', icon:'[#]',
     name:'Royal Scroll',
@@ -8067,7 +8067,7 @@ const CHALLENGE_BANK = {
         { x:33, y:69, r:5, tapR:14 },
         { x:28, y:50, r:5, tapR:14 },
       ],
-      clue:'Four things changed: the lamp by the right curtain, the little statue on the fountain edge, the items on the low table, and the goblet near the left pillar.',
+      clue:'Four things changed: the Egyptian guard, the chariot wheel, the goblet, and the eagle statue.',
       verse:'Exodus 2:10 NIV' },
     // 2026-05-12 PM18 v2 (Jane: "i still see repeated questions. i want
     // more interactive questions"). Easy-bank pool was too small for the
@@ -8429,7 +8429,7 @@ const CHALLENGE_BANK = {
         { x:76, y:72, r:5, tapR:14 },
         { x:82, y:62, r:5, tapR:14 },
       ],
-      clue:'Look at the wall niche (top-left), the sandals + cloth rolls (bottom-left), the bowls on the right-side table, and the large amphora (far right).',
+      clue:'Four things changed: the window (top-left), the rolled-up fabric (bottom-left), the bread on the table, and the candelabra (far right).',
       verse:"Moses' parents were not afraid. (Hebrews 11:23 NIV)" },
   ],
   hard: [
@@ -9868,6 +9868,24 @@ function _beginAdventure(){
 // Expose to global scope so the quickstart wirer + any legacy callers
 // can hit the same code path.
 window._beginAdventure = _beginAdventure;
+// Q (Jane 2026-06-21: "after Begin the tutorial VO kicks in immediately but the
+// game takes a while to load — show a loading bar"). Scene 1 ended the opening
+// cinematic by calling startScene1() DIRECTLY, so if assets weren't fully decoded
+// the canvas rendered blank/slow while the tutorial VO played over nothing. Mirror
+// Scene 2's _beginGameplayWhenReady: gate startScene1 behind the preload bar so the
+// bar holds until assets are ready, THEN gameplay + the tutorial VO begin together.
+function _beginScene1WhenReady(){
+  const _go = () => { try { startScene1(); } catch(e){ console.error('startScene1 failed', e); } };
+  if (typeof _preloadPct === 'function' && _preloadPct() < 100) {
+    const overlay = document.getElementById('preloadOverlay');
+    if (overlay) overlay.classList.add('active');
+    _pendingBeginTap = () => { try { if (overlay) overlay.classList.remove('active'); } catch(e){} _go(); };
+    // Safety ceiling so a stuck asset never strands the kid on the loading bar.
+    setTimeout(() => { if (_pendingBeginTap) { const fn = _pendingBeginTap; _pendingBeginTap = null; fn(); } }, 16000);
+  } else {
+    _go();
+  }
+}
 
 // 2026-05-18 PM44 (Jane audit #5/#6/#13): wire the above-the-fold
 // quick-start panel — Continue chip + 3 difficulty pills + Begin button +
@@ -10594,20 +10612,52 @@ function openCinematic() {
 // previous panel's voice when the kid clicks Next early. Plays at 0.85
 // volume on top of the looped 'narration bg music' bed (audio.narration).
 let _narrationVoice = null;
+// Section-4 (Scene 1 → Scene 2) HANDS-FREE narration slideshow (Jane 2026-06-21:
+// "only the visuals appear, no voiceover ... it's one mp3 over an image slideshow").
+// ROOT CAUSE: scene-1's cinematic shell never auto-advanced, so the transition sat
+// on panel 1 unless the kid kept tapping "Next" — most kids waited, heard beat 1,
+// then silence. When window._s4AutoAdvance is on, each beat plays and, the moment it
+// ENDS, the slideshow advances to the next image+beat — so the five recordings play
+// as ONE continuous narration over the slideshow. A fallback timer advances if a clip
+// never fires 'ended' (load failure) so the kid is never stranded.
+let _s4FallbackTimer = 0;
+function _s4Advance(){
+  if (!window._s4AutoAdvance) return;
+  if (game.cinStep < CIN_PANELS.length - 1) { game.cinStep++; showCinPanel(); }
+  // On the last panel we STOP — the kid taps "Continue →" (or "Skip"); both → Scene 2.
+}
+function _s4ScheduleAdvance(ms, idx){
+  if (_s4FallbackTimer) { clearTimeout(_s4FallbackTimer); _s4FallbackTimer = 0; }
+  const _i = (typeof idx === 'number') ? idx : game.cinStep;
+  _s4FallbackTimer = setTimeout(() => { if (window._s4AutoAdvance && game.cinStep === _i) _s4Advance(); }, ms);
+}
+function _s4ClearAdvance(){
+  if (_s4FallbackTimer) { clearTimeout(_s4FallbackTimer); _s4FallbackTimer = 0; }
+  window._s4AutoAdvance = false;
+}
 function _playPanelNarration(panel){
+  if (_s4FallbackTimer) { clearTimeout(_s4FallbackTimer); _s4FallbackTimer = 0; }
   if (_narrationVoice) {
-    try { _narrationVoice.pause(); _narrationVoice.currentTime = 0; } catch(e){}
+    try { _narrationVoice.onended = null; _narrationVoice.pause(); _narrationVoice.currentTime = 0; } catch(e){}
   }
-  if (!panel || !panel.audio) return;
+  const _s4 = !!window._s4AutoAdvance;
+  const _idx = (typeof game !== 'undefined') ? game.cinStep : 0;
+  if (!panel || !panel.audio) { if (_s4) _s4ScheduleAdvance(5000, _idx); return; }
   try {
     _narrationVoice = new Audio(panel.audio);
     _narrationVoice.volume = 0.92;
-    _narrationVoice.play().catch(()=>{}); // graceful: missing file = silent
-  } catch(e){}
+    if (_s4) {
+      // advance the slideshow the instant THIS beat finishes (continuous narration)
+      _narrationVoice.onended = () => { if (game.cinStep === _idx) _s4Advance(); };
+      _s4ScheduleAdvance(12000, _idx);   // safety: advance even if 'ended' never fires
+    }
+    _narrationVoice.play().catch(()=>{ if (_s4) _s4ScheduleAdvance(5000, _idx); }); // graceful: missing file = silent
+  } catch(e){ if (_s4) _s4ScheduleAdvance(5000, _idx); }
 }
 function _stopPanelNarration(){
+  if (_s4FallbackTimer) { clearTimeout(_s4FallbackTimer); _s4FallbackTimer = 0; }
   if (_narrationVoice) {
-    try { _narrationVoice.pause(); _narrationVoice.currentTime = 0; } catch(e){}
+    try { _narrationVoice.onended = null; _narrationVoice.pause(); _narrationVoice.currentTime = 0; } catch(e){}
     _narrationVoice = null;
   }
 }
@@ -10758,7 +10808,7 @@ $('cinNextBtn').addEventListener('click', () => {
       try { _cb(); } catch(e){}
     } else {
       $('openingCinematic').classList.remove('active');
-      startScene1();
+      _beginScene1WhenReady();   // Q: gate gameplay behind the loading bar
     }
   } else {
     showCinPanel();
@@ -10806,7 +10856,7 @@ $('cinSkipBtn').addEventListener('click', () => {
     return;
   }
   // Direct to game — no second cinematic step on skip.
-  startScene1();
+  _beginScene1WhenReady();   // Q: gate gameplay behind the loading bar
 });
 
 // 2026-05-03: PRELUDE flow — first-run-only Exodus-1 setup.
@@ -12376,10 +12426,15 @@ setTimeout(() => {
     }
   } catch(e){}
 }, 0);
+// Q (Jane 2026-06-21: "the 3 start tutorials for scene 1 don't match the text
+// shown"). Aligned the on-screen body text WORD-FOR-WORD to the recorded
+// vo-s1-move / vo-s1-hide / vo-s1-gates narration (per
+// NARRATION_scene1_scene2_RECORDING_SCRIPTS.md) so audio + modal read identically
+// — same fix the Scene-2 tutorials got (K15/I12).
 const TUT_STEPS = [
-  { icon:'[>]', vo:'move',  title:'Move Moses', body:'Tap the arrows below, swipe the screen, or use arrow keys on a keyboard to move Moses through the palace.' },
-  { icon:'[#]', vo:'hide',  title:'Hide Behind Cover', body:'Step beside a stone pillar, statue, curtain, or alcove to crouch. A green ✓ HIDING badge appears above Moses when you are safe — guards cannot see you!' },
-  { icon:'[?]', vo:'gates', title:'Solve Bible Gates to Reach the Exit', body:'Glowing scroll gates block every corridor. Answer 3 Bible questions at each gate — clear them ALL to unlock the city-gate exit at the far side of the palace.' },
+  { icon:'[>]', vo:'move',  title:'Move Moses', body:'Tap the arrows, swipe the screen, or use your keyboard to move Moses through the palace.' },
+  { icon:'[#]', vo:'hide',  title:'Hide Behind Cover', body:'Step beside a pillar, statue, or curtain to hide. When the green HIDING badge appears above Moses, you\'re safe — the guards can\'t see you!' },
+  { icon:'[?]', vo:'gates', title:'Solve Bible Gates to Reach the Exit', body:'Glowing scroll gates block the halls. Answer three Bible questions at each gate, and clear them all to unlock the way out of the palace!' },
 ];
 function showTutorial(step){
   // 2026-05-16 PM29 (Jane PM29): if the kid has disabled tutorials on
@@ -14227,6 +14282,16 @@ function openChallenge(gate) {
   if (hintBox) hintBox.style.display = 'none';
   if (hintBtn) { hintBtn.style.display = 'inline-block'; hintBtn.disabled = false; }
   if (hintTxt) hintTxt.textContent = getHintForQuestion(q);
+  // O11 (Jane 2026-06-21): on EASY, auto-reveal the Bible clue so younger players
+  // always see the hint without hunting for the "Show Clue" button. Medium/Hard
+  // keep it behind the tap so the clue stays an earned choice. (Truth Seeker still
+  // overrides below for the wrong-answer elimination.)
+  try {
+    if ((game.difficulty || 'easy') === 'easy' && hintBox && hintTxt && hintTxt.textContent) {
+      hintBox.style.display = 'block';
+      if (hintBtn) hintBtn.style.display = 'none';
+    }
+  } catch(e){}
   // v3.6.2: normalize bank's 'unscr' -> 'unscramble' and 'seq' -> 'sequence'.
   // The bank also has 'seq' entries using {cards:[...], answer:[0,1,2,3]} shape;
   // we convert to renderSequence's expected {items:[...ordered correct...]} shape.
@@ -16301,17 +16366,38 @@ function _resKey(w){ return w==='crowns'?_LIFETIME_CROWNS_KEY : w==='scrolls'?_L
 function _sceneBest(w, n){ try { return parseInt(localStorage.getItem('bek.scene'+n+'.'+w)||'0',10)||0; } catch(e){ return 0; } }
 function _otherScenesBest(w){ var s=0; [1,2,3].forEach(function(n){ if(n!==_SCENE_NO) s+=_sceneBest(w,n); }); return s; }
 function _runAccum(w){ try { return (game._runAccum && game._runAccum[w]) || 0; } catch(e){ return 0; } }
-function _liveBundleTotal(w){ return _otherScenesBest(w) + Math.max(_sceneBest(w,_SCENE_NO), _runAccum(w)); }
-function _writeBundleTotal(w){ var t=_liveBundleTotal(w); try { localStorage.setItem(_resKey(w), String(t)); } catch(e){} return t; }
+// P2/P7 ROOT FIX (Jane 2026-06-21): the journey panel + certificate were reading
+// a counter (game._runAccum) that had DIVERGED from the number the HUD shows.
+// _liveRunValue returns the SAME number the kid sees in the HUD this run, so
+// banking + live totals can never diverge again. points=stars; treasures=the
+// HUD treasure chip (here game.treasureCount); crowns/scrolls=run accumulator.
+function _liveRunValue(w){
+  try {
+    if (w==='points')    return (typeof game!=='undefined' && +game.stars)        || 0;
+    if (w==='treasures') return (typeof game!=='undefined' && +game.treasureCount) || 0;
+  } catch(e){}
+  return _runAccum(w);
+}
+function _liveBundleTotal(w){ return _otherScenesBest(w) + Math.max(_sceneBest(w,_SCENE_NO), _liveRunValue(w)); }
+// Bundle totals are MONOTONIC: a recomputed sum can only RAISE the stored total,
+// never lower it. This preserves legacy accumulated totals for kids who finished
+// scenes before per-scene bests existed (no migration data to split them) — so
+// the journey panel + certificate never collapse to "just the scene I finished".
+function _storeBundleTotal(w, val){
+  var prev=0; try { prev = parseInt(localStorage.getItem(_resKey(w))||'0',10)||0; } catch(e){}
+  var out = Math.max(prev, (val||0));
+  try { localStorage.setItem(_resKey(w), String(out)); } catch(e){}
+  return out;
+}
+function _writeBundleTotal(w){ return _storeBundleTotal(w, _liveBundleTotal(w)); }
 function _bankSceneBests(){
   ['treasures','crowns','scrolls','points'].forEach(function(w){
-    var run = (w==='points') ? ((typeof game!=='undefined' && game.stars)||0) : _runAccum(w);
-    var best = Math.max(_sceneBest(w,_SCENE_NO), run);
+    var best = Math.max(_sceneBest(w,_SCENE_NO), _liveRunValue(w));
     try { localStorage.setItem('bek.scene'+_SCENE_NO+'.'+w, String(best)); } catch(e){}
   });
   ['treasures','crowns','scrolls','points'].forEach(function(w){
     var s=0; [1,2,3].forEach(function(n){ s+=_sceneBest(w,n); });
-    try { localStorage.setItem(_resKey(w), String(s)); } catch(e){}
+    _storeBundleTotal(w, s);
   });
 }
 function _resetRunAccum(){
@@ -17115,6 +17201,10 @@ function _playTransitionToScene2(){
     CIN_PANELS.length = 0;
     SECTION_4_PANELS.forEach(p => CIN_PANELS.push(p));
     game.cinStep = 0;
+    // Q (Jane 2026-06-21): play the section-4 narration HANDS-FREE — each recorded
+    // beat auto-advances the slideshow when it ends, so the kid hears the whole
+    // narration without tapping Next (was: stuck on panel 1, "no voiceover").
+    window._s4AutoAdvance = true;
     showCinPanel();
     $('openingCinematic').classList.add('active');
     // 2026-05-19 PM63d (Jane: "in the test link, i don't hear any
@@ -17136,6 +17226,7 @@ function _playTransitionToScene2(){
     // future Replay-Scene-1 still works), close the cinematic overlay,
     // and reveal the world-map screen which holds the Continue button.
     window._cinPostPlay = () => {
+      try { _s4ClearAdvance(); } catch(e){}   // stop the hands-free slideshow auto-advance
       try {
         CIN_PANELS.length = 0;
         (window._cinDeckBackup || []).forEach(p => CIN_PANELS.push(p));

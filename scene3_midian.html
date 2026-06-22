@@ -782,6 +782,29 @@
   }
   .action-btn:active { transform:scale(0.97); background:rgba(255,215,118,0.16); }
 
+  /* O13 (Jane 2026-06-21): make Scene-3 controls CONSISTENT with Scenes 1 & 2.
+     Scene 3 used to lay the bottom bar out as [power-ups | d-pad | actions]
+     (space-between → power-ups LEFT, d-pad CENTER, actions RIGHT). Scenes 1 & 2
+     put power-ups in a TOP strip and the bottom bar as actions-LEFT + d-pad-RIGHT.
+     _relocatePowerupsForOrientation() (JS, ported from Scene 1) moves #hudPowerups
+     to the top strip on desktop/portrait and back into .controls on landscape;
+     these rules give the top strip its look + order the bottom bar to match. */
+  .game-page > #hudPowerups {
+    display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px;
+    padding: 4px max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left));
+    justify-content: center;
+    background: linear-gradient(180deg, rgba(40,14,3,0.85), rgba(58,22,7,0.75));
+    border-bottom: 1px solid rgba(255,215,118,0.35);
+    z-index: 5; flex-shrink: 0;
+  }
+  #hudPowerups:empty { display: none !important; }
+  /* Bottom bar (desktop + portrait): actions LEFT, d-pad RIGHT (Scene-1 parity).
+     Plain selectors (specificity 0,1,0) so the LATER landscape media-query rules
+     (`.dpad`/`.action-panel`) win on source order and flip to d-pad-left/actions-
+     right in landscape — matching Scenes 1 & 2 in every orientation. */
+  .action-panel { order: 0; }
+  .dpad { order: 2; }
+
   /* ============ MODALS (shared) ============ */
   .modal-overlay {
     position:fixed; inset:0;
@@ -3494,7 +3517,7 @@
     <div class="win-journey" id="winJourney"></div>
     <div class="win-truth-card" id="winTruthCard">
       <span class="tc-label">&#9733; 1 Truth Card Collected &#9733;</span>
-      <div class="tc-body" id="winTruthText">God had a plan for Moses.</div>
+      <div class="tc-body" id="winTruthText">God had a plan for Moses — and He has a wonderful plan for YOU too!</div>
     </div>
     <div class="win-badge-strip" id="winBadges"></div>
     <p class="win-motivate" id="winMotivate">Jethro welcomes Moses into his tent. Moses marries Zipporah, and God names their firstborn Gershom - "a stranger here." (Exodus 2:22)</p>
@@ -4487,9 +4510,29 @@ function resizeCanvas() {
   ctx.imageSmoothingQuality = 'high';
   updateCamera();
 }
-window.addEventListener('resize', () => { resizeCanvas(); });
+// O13 (Jane 2026-06-21): ported from Scene 1 — keep #hudPowerups in a TOP strip on
+// desktop/portrait (above the canvas) and move it INTO .controls on landscape (the
+// slim bottom bar beside the d-pad), so Scene 3's control layout matches Scenes 1 & 2.
+// The dock is a single DOM element; relocation is just appendChild/insertBefore.
+function _relocatePowerupsForOrientation() {
+  try {
+    const dock = document.getElementById('hudPowerups');
+    const gamePage = document.getElementById('gamePage');
+    if (!dock || !gamePage) return;
+    const isLandscape = window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches;
+    const controls = gamePage.querySelector('.controls');
+    if (isLandscape && controls) {
+      if (dock.parentNode !== controls) controls.appendChild(dock);  // bottom bar (matches the landscape CSS)
+    } else {
+      const wrapper = gamePage.querySelector('.canvas-wrapper');     // top strip, above the canvas (Scene-1 parity)
+      if (wrapper && dock.parentNode !== gamePage) gamePage.insertBefore(dock, wrapper);
+    }
+  } catch(e){}
+}
+setTimeout(_relocatePowerupsForOrientation, 0);
+window.addEventListener('resize', () => { resizeCanvas(); try { _relocatePowerupsForOrientation(); } catch(e){} });
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => { resizeCanvas(); });
+  window.visualViewport.addEventListener('resize', () => { resizeCanvas(); try { _relocatePowerupsForOrientation(); } catch(e){} });
 }
 
 /* ---------- TILE TYPES ----------
@@ -5888,11 +5931,17 @@ function isWalkable(tx, ty) {
   // v2.2.2 Jane feedback: tile-2 (hazard/campfire) must be WALKABLE so stepping
   // onto it actually triggers onHazardHit. Previously it was solid → silent bump.
   // On Scene 1 the palace TORCH is still treated as solid (via walls in that map).
+  // P3 (Jane 2026-06-21): décor (market stalls, boulders, trees, cookfire, rock
+  // cairns) + Jethro's tent body must be SOLID so Moses routes AROUND them. These
+  // checks were gated behind `game.scene === 2`, but Midian runs with game.scene
+  // === 3, so they never ran and the stalls/tent were walk-through (#163/#148/#9
+  // regressed). Apply them unconditionally — they key off PALACE_DECOR + the tent
+  // body, both of which are this scene's own Midian objects.
+  // Jethro's tent body is SOLID (#148/#9) — never blocks the EXIT door (7).
+  if (t !== 7 && _getTentBodyTiles().has(ty * 100 + tx)) return false;
+  // #163: décor objects are SOLID — Moses goes around them.
+  if (_getDecorSolidTiles().has(ty * 100 + tx)) return false;
   if (game.scene === 2) {
-    // Jethro's tent body is SOLID (Jane #148) — never blocks the EXIT door (7).
-    if (t !== 7 && _getTentBodyTiles().has(ty * 100 + tx)) return false;
-    // #163: décor objects are SOLID — Moses goes around them.
-    if (_getDecorSolidTiles().has(ty * 100 + tx)) return false;
     return t === 0 || t === 2 || t === 5 || t === 6 || t === 7 || t === 8 || t === 9;
   }
   return t === 0 || t === 5 || t === 6 || t === 7 || t === 8 || t === 9;
@@ -6938,18 +6987,28 @@ function updateScene3Wolf(dt){
       if (typeof player !== 'undefined') {
         const _dw = Math.hypot(player.px - scene3Wolf.px, player.py - scene3Wolf.py);
         if (_dw < TILE * 2.6) {
-          scene3Wolf.vx = Math.max(Math.abs(scene3Wolf.vx) * 2.4, 0.22);  // dash off east
           if (!scene3Wolf._fleeing) {
             scene3Wolf._fleeing = true;
+            scene3Wolf._fleeAt = now;
+            // Q (Jane 2026-06-21: "wolf still seen after being shooed off"). The old
+            // flee always dashed EAST — i.e. across the whole map and often TOWARD
+            // Moses — so it lingered on screen for ages. Now it bolts AWAY from
+            // Moses (whichever edge is nearer) and is removed within ~1.2s.
+            scene3Wolf._fleeDir = (scene3Wolf.px <= player.px) ? -1 : 1;
             try { if (audio.fox){ audio.fox.currentTime=0; audio.fox.volume=0.4; audio.fox.play().catch(()=>{}); } } catch(e){}
             try { play('pop') || play('chime'); } catch(e){}
             try { spawnGlitterBurstAtPlayer(8); } catch(e){}
           }
+          scene3Wolf.vx = (scene3Wolf._fleeDir || 1) * Math.max(Math.abs(scene3Wolf.vx) * 2.4, 0.55);  // bolt AWAY, fast
         }
       }
     } catch(e){}
     scene3Wolf.px += scene3Wolf.vx * dt;
-    if (scene3Wolf.px > MAP_W * TILE + 120 || (now - scene3Wolf.startedAt) > scene3Wolf.duration) {
+    // Q: vanish as soon as it's off EITHER edge, OR ~1.2s after being shooed, OR
+    // when its appearance times out — so a shooed wolf never jogs the whole field.
+    const _offEdge = scene3Wolf.px > MAP_W * TILE + 120 || scene3Wolf.px < -180;
+    const _shooExpired = scene3Wolf._fleeing && (now - (scene3Wolf._fleeAt || now)) > 1200;
+    if (_offEdge || _shooExpired || (now - scene3Wolf.startedAt) > scene3Wolf.duration) {
       scene3Wolf.active = false;
       scene3Wolf._fleeing = false;
       // schedule next appearance 18-30s later
@@ -7312,8 +7371,15 @@ function drawScene3RescueFlock(){
     // #Jane 2026-06-06: only ever render the REAL sheep PNG. The old cream
     // fillRect fallback was the "white hand-drawn sheep" Jane saw moving; the PNG
     // is small + preloaded now, so on the rare pre-load frame draw nothing.
+    // Q (Jane 2026-06-21: "brown hand-drawn creatures crossing"). ROOT CAUSE: the
+    // STRANDED rescue flock drew the warm/tan sheep PNG WITHOUT the de-warming
+    // filter that _drawOneSheep (the herd) uses — so these read "brown." Apply the
+    // SAME brightness+desaturate so they read WHITE like every other sheep.
     if (img && img.complete && img.naturalWidth){
+      ctx.save();
+      try { ctx.filter = 'brightness(1.22) saturate(0.55)'; } catch(e){}
       ctx.drawImage(img, dx, dy + yoff, TILE, TILE);
+      ctx.restore();
     }
     if (s.state === 'pinned'){
       // 2026-05-26 JUICE: pulsing red danger ring around the grabbed sheep so
@@ -12950,15 +13016,17 @@ function playMidSceneTruthChestReveal(){
     const ci = document.getElementById('midChestImg');
     if (ci && ci.dataset.closed) ci.src = ci.dataset.closed;
   } catch(e){}
-  // v3.4: child-friendly truths (match the ones shown on the finish card).
+  // P4 (Jane 2026-06-21): kid-FIRST truths \u2014 each links Moses's story straight to
+  // the child, warm and encouraging (ages 6-13), not a flat fact about Moses.
+  // MUST match the finish-card list in showWin so the chest + victory read the same.
   const truths = [
-    'God had a plan for Moses.',
-    'God helped Moses be brave.',
-    'God heard His people when they cried out.',
-    'God took care of baby Moses in the basket.',
-    'God is with us even when we are afraid.',
-    'By faith, Moses chose God\u2019s people over Egypt\u2019s treasures.',
-    'God\u2019s family is more precious than a king\u2019s gold.'
+    'God had a plan for Moses \u2014 and He has a wonderful plan for YOU too!',
+    'God made Moses brave. God can make you brave too.',
+    'God hears you when you pray \u2014 just like He heard His people.',
+    'God watched over baby Moses, and God is watching over you.',
+    'You never have to be afraid \u2014 God is always with you.',
+    'Like Moses, you can choose what is right, even when it\u2019s hard.',
+    'You are precious to God \u2014 more than all the gold in the world!'
   ];
   game.midSceneTruth = truths[Math.floor(Math.random() * truths.length)];
   try {
@@ -13970,6 +14038,10 @@ function _pulleyQuit() {
   try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
   try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; setMusic('bgm'); } } catch(e){} /* #2 route via setMusic so bgm waits out the victory fanfare */
   _pulley.gate = null; try { game.state = 'playing'; } catch(e){}
+  // P6 (Jane 2026-06-21): quitting leaves the task UNDONE — remind the kid it's
+  // still open + how to resume, so they aren't left wondering why the tent stays
+  // sealed. (Jethro's tent stays gated on this gate being solved.)
+  try { toast('💧 You can come back any time — step onto the well billboard to water the flock.'); } catch(e){}
 }
 // ---- drawing helpers ----
 function _pImg(key) {
@@ -15301,7 +15373,12 @@ function _rescueShowWinPanel() {
     + '<br><span style="font-size:13.5px;color:#ffe07a;">Treasure bank: ' + before + ' → <b>' + after + '</b></span>'
     + (_rescue.bossDown ? '<br><span style="font-size:13.5px;color:#ffe07a;">⭐ Pass to the Flock unlocked!</span>' : '');
   // Replay is ALWAYS available — kids love replaying, and each run banks more treasure
-  const rep = document.getElementById('rescueWinReplayBtn'); if (rep) { rep.style.display = ''; rep.textContent = perfect ? '🔁 Play again' : '🔁 Replay for ⭐⭐⭐'; }
+  // P5-OVERRIDE (Jane 2026-06-21): ALL SEVEN daughters must be saved to complete
+  // the rescue and continue. On a partial save, HIDE "Continue" so the only way
+  // forward is to replay (or Quit to Midian, which leaves the gate unsolved); the
+  // gate is solved only on a perfect 7/7 (enforced again in _closeRescue).
+  const rep = document.getElementById('rescueWinReplayBtn'); if (rep) { rep.style.display = ''; rep.textContent = perfect ? '🔁 Play again' : '🔁 Try again — save ALL 7!'; }
+  const cont = document.getElementById('rescueWinContinueBtn'); if (cont) cont.style.display = perfect ? '' : 'none';
   // the rescued daughters dance in celebration
   const dz = document.getElementById('rescueWinDancers');
   if (dz) { let h = ''; const m = Math.min(saved, 7); for (let i = 0; i < m; i++) { const dn = (i % 7) + 1; const u = IMG_SRC['daughter' + dn] || IMG_SRC['daughter1']; if (u) h += '<img src="' + u + '" alt="" style="animation-delay:' + (i * 0.12).toFixed(2) + 's">'; } dz.innerHTML = h; }
@@ -15397,6 +15474,9 @@ function _rescueQuit() {
   try { if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; } } catch(e){}
   try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; setMusic('bgm'); } } catch(e){} /* #2 route via setMusic so bgm waits out the victory fanfare */
   _rescue.gate = null; try { game.state = 'playing'; } catch(e){}
+  // P6 (Jane 2026-06-21): quitting leaves the rescue UNDONE — remind the kid it's
+  // still open + how to resume (the tent stays sealed until this gate is solved).
+  try { toast('🛡️ The daughters still need help — step onto the "Save the Daughters" billboard to try again.'); } catch(e){}
 }
 function _rescueWinContinue() { const ov = document.getElementById('rescueWinOverlay'); if (ov) ov.style.display = 'none'; try { if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; } } catch(e){} _closeRescue(); }
 function _closeRescue() {
@@ -15405,11 +15485,22 @@ function _closeRescue() {
   try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
   try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; setMusic('bgm'); } } catch(e){} /* #2 route via setMusic so bgm waits out the victory fanfare */
   const gate = _rescue.gate; _rescue.gate = null;
+  game.state = 'playing';
   if (!gate) return;
-  gate.solved = true; game.state = 'playing';
+  // P5-OVERRIDE (Jane 2026-06-21): the rescue is complete ONLY when ALL SEVEN
+  // daughters are saved. A partial save returns to Midian with the gate STILL
+  // unsolved (the tent stays sealed), so the kid must come back and rescue them
+  // all. (The win panel already hides "Continue" on a partial — this is the
+  // belt-and-suspenders guard so a partial can never solve the gate.)
+  if ((_rescue.daughtersLost || 0) > 0) {
+    const _saved = 7 - (_rescue.daughtersLost || 0);
+    try { toast('🛡️ Only ' + _saved + ' of 7 saved — you must rescue ALL seven. Step on the billboard to try again.'); } catch(e){}
+    return;
+  }
+  gate.solved = true;
   const earned = _rescue.stars || 3;
   try { spawnGlitterBurstAtPlayer(20); } catch(e){}
-  try { toast('You rescued Jethro\'s daughters! ' + '⭐'.repeat(earned) + ' +' + earned + ' stars!'); } catch(e){}
+  try { toast('You rescued all seven of Jethro\'s daughters! ' + '⭐'.repeat(earned) + ' +' + earned + ' stars!'); } catch(e){}
   game.stars += earned; try { updateHudStars(); } catch(e){}
   try { _announceAllGatesCleared(); } catch(e){}
   try { _saveCheckpoint(); } catch(e){}
@@ -17124,6 +17215,15 @@ function openChallenge(gate) {
   if (hintBox) hintBox.style.display = 'none';
   if (hintBtn) { hintBtn.style.display = 'inline-block'; hintBtn.disabled = false; }
   if (hintTxt) hintTxt.textContent = getHintForQuestion(q);
+  // O11 (Jane 2026-06-21): on EASY, auto-reveal the Bible clue so younger players
+  // always see the hint without hunting for the "Show Clue" button. Medium/Hard
+  // keep it behind the tap.
+  try {
+    if ((game.difficulty || 'easy') === 'easy' && hintBox && hintTxt && hintTxt.textContent) {
+      hintBox.style.display = 'block';
+      if (hintBtn) hintBtn.style.display = 'none';
+    }
+  } catch(e){}
   // v3.6.2: normalize bank's 'unscr' -> 'unscramble' and 'seq' -> 'sequence'.
   // The bank also has 'seq' entries using {cards:[...], answer:[0,1,2,3]} shape;
   // we convert to renderSequence's expected {items:[...ordered correct...]} shape.
@@ -18497,6 +18597,28 @@ const _PU_TAPPED_KEY = 'bek.bundle1.puTapped';
 function _loadPuTapped(){ try { return new Set(JSON.parse(localStorage.getItem(_PU_TAPPED_KEY) || '[]')); } catch(e){ return new Set(); } }
 function _markPuTapped(key){ try { const s=_loadPuTapped(); s.add(key); localStorage.setItem(_PU_TAPPED_KEY, JSON.stringify([...s])); } catch(e){} }
 function _hasUnlock(key){ return _loadUnlocks().includes(key); }
+// K2 / P2 (Jane 2026-06-21): Scene 3 was the only scene WITHOUT a reconcile, so
+// power-ups the lifetime totals already qualified for could stay hidden — and now
+// that Scene-3 treasures track the bags WALLET (incremented outside the crossing
+// detector) the threshold-grant alone could miss. Self-heal from the totals on a
+// 1s tick, exactly like scenes 1 & 2. Silent (no toast) — just back-fills + renders.
+function _reconcileUnlocks(){
+  try {
+    if (typeof UNLOCK_TIERS === 'undefined') return;
+    const have = new Set(_loadUnlocks());
+    const _g = (k) => parseInt(localStorage.getItem(k) || '0', 10) || 0;
+    const totals = { treasures:_g('bek.bundle1.totalTreasures'), crowns:_g('bek.bundle1.totalCrowns'), scrolls:_g('bek.bundle1.totalScrolls') };
+    let changed = false;
+    for (const tier of UNLOCK_TIERS) {
+      const res = tier.resource || 'treasures';
+      if ((totals[res] || 0) >= tier.threshold && !have.has(tier.key)) { have.add(tier.key); changed = true; }
+    }
+    if (changed) { try { localStorage.setItem(_UNLOCKS_KEY, JSON.stringify([...have])); } catch(e){} }
+    try { _refreshUnlockButtons(); } catch(e){}
+  } catch(e){}
+}
+setTimeout(() => { try { _reconcileUnlocks(); } catch(e){} }, 120);
+setInterval(() => { try { _reconcileUnlocks(); } catch(e){} }, 1000);
 
 /* ---------- IN-GAME POWER DOCK (ported from scenes 1 & 2, wired to scene-3 systems) ----------
    Same dock UI/cooldown framework as the other scenes; the EFFECTS target scene 3's
@@ -18634,8 +18756,29 @@ function _resKey(w){ return w==='crowns'?_LIFETIME_CROWNS_KEY : w==='scrolls'?_L
 function _sceneBest(w, n){ try { return parseInt(localStorage.getItem('bek.scene'+n+'.'+w)||'0',10)||0; } catch(e){ return 0; } }
 function _otherScenesBest(w){ var s=0; [1,2,3].forEach(function(n){ if(n!==_SCENE_NO) s+=_sceneBest(w,n); }); return s; }
 function _runAccum(w){ try { return (game._runAccum && game._runAccum[w]) || 0; } catch(e){ return 0; } }
-function _liveBundleTotal(w){ return _otherScenesBest(w) + Math.max(_sceneBest(w,_SCENE_NO), _runAccum(w)); }
-function _writeBundleTotal(w){ var t=_liveBundleTotal(w); try { localStorage.setItem(_resKey(w), String(t)); } catch(e){} return t; }
+// P2/P7 ROOT FIX (Jane 2026-06-21): the journey panel + certificate were banking
+// game._runAccum.treasures (the small pickup COUNT) while the HUD treasure chip
+// shows game.treasureBags (the spendable BAGS WALLET — the "414"). They diverged.
+// _liveRunValue returns the SAME number the HUD shows, so banking + live totals
+// match. points=stars; treasures=the bags wallet; crowns/scrolls=run accumulator.
+function _liveRunValue(w){
+  try {
+    if (w==='points')    return (typeof game!=='undefined' && +game.stars)        || 0;
+    if (w==='treasures') return (typeof game!=='undefined' && +game.treasureBags) || 0;
+  } catch(e){}
+  return _runAccum(w);
+}
+function _liveBundleTotal(w){ return _otherScenesBest(w) + Math.max(_sceneBest(w,_SCENE_NO), _liveRunValue(w)); }
+// Bundle totals are MONOTONIC: a recomputed sum can only RAISE the stored total,
+// never lower it — preserves legacy accumulated totals so the journey panel +
+// certificate never collapse to "just the scene I finished" / "0 points".
+function _storeBundleTotal(w, val){
+  var prev=0; try { prev = parseInt(localStorage.getItem(_resKey(w))||'0',10)||0; } catch(e){}
+  var out = Math.max(prev, (val||0));
+  try { localStorage.setItem(_resKey(w), String(out)); } catch(e){}
+  return out;
+}
+function _writeBundleTotal(w){ return _storeBundleTotal(w, _liveBundleTotal(w)); }
 function _addLifetimeResource(which, n){
   try { if (!game._runAccum) game._runAccum = {}; } catch(e){}
   const prev = _liveBundleTotal(which);
@@ -18662,13 +18805,12 @@ function _addLifetimeResource(which, n){
 // bundle total to the sum of per-scene bests. Idempotent.
 function _bankSceneBests(){
   ['treasures','crowns','scrolls','points'].forEach(function(w){
-    var run = (w==='points') ? ((typeof game!=='undefined' && game.stars)||0) : _runAccum(w);
-    var best = Math.max(_sceneBest(w,_SCENE_NO), run);
+    var best = Math.max(_sceneBest(w,_SCENE_NO), _liveRunValue(w));
     try { localStorage.setItem('bek.scene'+_SCENE_NO+'.'+w, String(best)); } catch(e){}
   });
   ['treasures','crowns','scrolls','points'].forEach(function(w){
     var s=0; [1,2,3].forEach(function(n){ s+=_sceneBest(w,n); });
-    try { localStorage.setItem(_resKey(w), String(s)); } catch(e){}
+    _storeBundleTotal(w, s);
   });
 }
 // Reset this scene's run accumulator + re-seed the live bundle totals (call on
@@ -18943,6 +19085,53 @@ $('lessonContinueBtn').addEventListener('click', () => {
   showWin();
 });
 
+// N3 (Jane 2026-06-21): the certificate + victory shoutout were BLANK when the
+// kid never entered a name (Scene-1 prompt skipped, or this scene reached without
+// finishing Scene 1). Prompt for it here too, when empty — so the cert/victory get
+// personalized. One-time (respects bek.kidNameSkipped). Self-contained: builds its
+// own scrim styled to match Scene 1's, so no shared HTML/CSS is required.
+function _ensureKidNamePrompt(){
+  try {
+    if ((localStorage.getItem('bek.kidName') || '').trim()) return;
+    if (localStorage.getItem('bek.kidNameSkipped')) return;
+  } catch(e){ return; }
+  let scrim = document.getElementById('kidNameScrim');
+  if (!scrim) {
+    scrim = document.createElement('div');
+    scrim.id = 'kidNameScrim';
+    scrim.setAttribute('role','dialog'); scrim.setAttribute('aria-modal','true');
+    scrim.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;';
+    scrim.innerHTML =
+      '<div style="background:linear-gradient(180deg,#fff3c8 0%,#e9cf8a 60%,#d6b369 100%);border:3px solid #8a5a22;border-radius:16px;padding:22px 20px;width:min(360px,96%);color:#3a1a00;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.7),inset 0 0 0 2px #c59754;">'
+      +   '<h3 style="font-family:Georgia,serif;color:#5a2a05;font-size:22px;margin:0 0 6px;">You did it!</h3>'
+      +   '<div style="font-size:14px;color:#6a3a18;margin-bottom:14px;font-style:italic;">Add your name so it appears on your certificate!</div>'
+      +   '<input id="kidNameInput" type="text" maxlength="18" placeholder="Your first name" autocomplete="off" inputmode="text" style="width:100%;padding:12px 14px;font-size:18px;border:2px solid #8a5a22;border-radius:10px;background:#fff8e7;color:#3a1a00;font-family:Georgia,serif;text-align:center;margin-bottom:12px;box-sizing:border-box;">'
+      +   '<button id="kidNameSaveBtn" type="button" style="background:linear-gradient(180deg,#ffd976 0%,#e0a544 100%);color:#3a1505;border:2px solid #8a5a22;border-radius:24px;padding:10px 22px;font-family:Georgia,serif;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(80,40,10,0.4),inset 0 -2px 0 rgba(0,0,0,0.18);">That\'s me!</button>'
+      +   '<button id="kidNameSkipBtn" type="button" style="display:block;margin:10px auto 0;background:transparent;border:none;color:#6a3a18;font-size:12px;text-decoration:underline;cursor:pointer;">Not now</button>'
+      + '</div>';
+    document.body.appendChild(scrim);
+    const input = scrim.querySelector('#kidNameInput');
+    const commit = () => {
+      const v = (input && input.value) ? input.value.trim().slice(0,18) : '';
+      if (!v) { if (input) input.focus(); return; }
+      try { localStorage.setItem('bek.kidName', v); } catch(e){}
+      try { play('chime'); } catch(e){}
+      scrim.remove();
+      try { _personalizeWinModal(); } catch(e){}
+      // refresh the cert score so the freshly-entered name lands with a real score
+      try { const _pts = parseInt(localStorage.getItem('bek.bundle1.totalPoints')||'0',10)||0; localStorage.setItem('bek.certScore', _pts + ' points'); } catch(e){}
+    };
+    scrim.querySelector('#kidNameSaveBtn').addEventListener('click', commit);
+    if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); commit(); } });
+    scrim.querySelector('#kidNameSkipBtn').addEventListener('click', () => {
+      try { localStorage.setItem('bek.kidNameSkipped','1'); } catch(e){}
+      try { play('click'); } catch(e){}
+      scrim.remove();
+    });
+  }
+  const input = scrim.querySelector('#kidNameInput');
+  if (input) { input.value = ''; setTimeout(() => { try { input.focus(); } catch(e){} }, 200); }
+}
 /* #83 Jane 2026-06-03: Scene-1-style personalized victory shoutout. Picks a
    celebratory tag + a verse "said over" the child based on how the run went,
    addresses them by name if one was saved (shared 'bek.kidName' key from
@@ -19098,17 +19287,17 @@ function showWin(){
     localStorage.setItem('bek.certScore', _totalPts + ' points');
   } catch(e){}
 
-  // v3.4: Child-friendly truth statements (kid-first language, not raw scripture).
-  // If the player opened the mid-scene chest, we re-use THAT truth on the
-  // finish card so the game is consistent.
+  // P4 (Jane 2026-06-21): kid-FIRST truths (match the mid-scene chest list above).
+  // If the player opened the mid-scene chest, we re-use THAT truth on the finish
+  // card so the game is consistent.
   const truths = [
-    'God had a plan for Moses.',
-    'God helped Moses be brave.',
-    'God heard His people when they cried out.',
-    'God took care of baby Moses in the basket.',
-    'God is with us even when we are afraid.',
-    'By faith, Moses chose God\u2019s people over Egypt\u2019s treasures.',
-    'God\u2019s family is more precious than a king\u2019s gold.'
+    'God had a plan for Moses \u2014 and He has a wonderful plan for YOU too!',
+    'God made Moses brave. God can make you brave too.',
+    'God hears you when you pray \u2014 just like He heard His people.',
+    'God watched over baby Moses, and God is watching over you.',
+    'You never have to be afraid \u2014 God is always with you.',
+    'Like Moses, you can choose what is right, even when it\u2019s hard.',
+    'You are precious to God \u2014 more than all the gold in the world!'
   ];
   const truth = game.midSceneTruth || truths[Math.floor(Math.random() * truths.length)];
 
@@ -19172,6 +19361,8 @@ function showWin(){
     $('winModal').classList.add('active');
     try { _personalizeWinModal(); } catch(e){}   // #83 hero shoutout + verse
     try { _renderJourneyPanel(); } catch(e){}
+    // N3: if no name was ever captured, ask now so the certificate isn't blank.
+    setTimeout(() => { try { _ensureKidNamePrompt(); } catch(e){} }, 1300);
     // #16 confetti shower over the win modal (DOM, so it shows above the canvas)
     try { _spawnWinConfetti(); } catch(e){}
   };
@@ -19215,12 +19406,16 @@ const _winEndingBtn = $('winEndingBtn');
 if (_winEndingBtn) _winEndingBtn.addEventListener('click', () => {
   play('click');
   $('winModal').classList.remove('active');
-  const _backToWin = () => { try { $('winModal').classList.add('active'); } catch(e){} };
+  // P10 (Jane 2026-06-21): after the closing (§8) + epilogue (§9) narration, the
+  // epilogue's final button is labelled "Get Certificate" — so it must go STRAIGHT
+  // to the certificate, NOT back to the victory modal. The old _backToWin re-showed
+  // the win modal, which re-offered "Watch the Ending" → an 8↔9 narration loop.
+  const _toCert = () => { try { _doDownloadCertificate(); } catch(e){} };
   try {
     playClosingCinematic(() => {
-      try { openEpilogueCinematic(_backToWin); } catch(e){ _backToWin(); }
+      try { openEpilogueCinematic(_toCert); } catch(e){ _toCert(); }
     });
-  } catch(e){ try { openEpilogueCinematic(_backToWin); } catch(_e){ _backToWin(); } }
+  } catch(e){ try { openEpilogueCinematic(_toCert); } catch(_e){ _toCert(); } }
 });
 const _midChestBtn = $('midChestContinueBtn');
 if (_midChestBtn) _midChestBtn.addEventListener('click', () => {
@@ -20131,7 +20326,15 @@ function startTimers(){
     // not tick against the kid. The cutscene keeps game.state='playing' (it freezes
     // the world via _cutHold, not the state), so check it explicitly.
     const _cutHold = !!(window._scene3WellCut && window._scene3WellCut.active);
-    if (game.state !== 'playing' || _cutHold) {
+    // P1 (Jane 2026-06-21): the timer also kept ticking while NARRATION / tip-popup
+    // modals were open (e.g. the rude-shepherds line) — Moses is frozen reading, so
+    // the clock must not run. Freeze on ANY blocking modal + the narration tip popup.
+    let _modalHold = false;
+    try {
+      const _tip = document.getElementById('tipPopupOverlay');
+      _modalHold = _anyBlockingModalOpen() || !!(_tip && _tip.classList.contains('active'));
+    } catch(e){}
+    if (game.state !== 'playing' || _cutHold || _modalHold) {
       // Pause-aware: while not playing (or frozen for the cutscene), slide
       // _timerStartedAtMs forward so timeLeft stays frozen until the kid resumes.
       _timerStartedAtMs = Date.now() - (_timerStartTimeLeft - game.timeLeft) * 1000;
