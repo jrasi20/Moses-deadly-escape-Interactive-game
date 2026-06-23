@@ -9347,7 +9347,7 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference moses in nile A.png',
       imgB:'assets/images/spot the difference moses in nile B.png',
       answer:4,
-      diffs:[{x:13,y:55,r:10},{x:48,y:42,r:10},{x:47,y:67,r:11},{x:88,y:88,r:9}],
+      diffs:[{x:14,y:56,r:10},{x:49,y:41,r:10},{x:54,y:68,r:11},{x:89,y:88,r:9}],
       clue:'Look very carefully — some colours, shapes or objects have changed between the two pictures!',
       verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
     { id:'s3eSdiff2', type:'spotdiff',
@@ -9355,7 +9355,7 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference moses running A.png',
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
-      diffs:[{x:20,y:30,r:9},{x:12,y:49,r:9},{x:40,y:52,r:10},{x:85,y:57,r:10}],
+      diffs:[{x:17,y:41,r:9},{x:55,y:82,r:9},{x:43,y:58,r:10},{x:84,y:57,r:10}],
       clue:'Look carefully at both pictures — things like clothes, colours, or objects may have changed!',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     // --- Pictionary ---
@@ -9727,7 +9727,7 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference moses in nile A.png',
       imgB:'assets/images/spot the difference moses in nile B.png',
       answer:4,
-      diffs:[{x:13,y:55,r:10},{x:48,y:42,r:10},{x:47,y:67,r:11},{x:88,y:88,r:9}],
+      diffs:[{x:14,y:56,r:10},{x:49,y:41,r:10},{x:54,y:68,r:11},{x:89,y:88,r:9}],
       clue:'Some shapes, colours or background details have changed between the two pictures. Look closely!',
       verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
     // --- Pictionary ---
@@ -10096,7 +10096,7 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference moses running A.png',
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
-      diffs:[{x:20,y:30,r:9},{x:12,y:49,r:9},{x:40,y:52,r:10},{x:85,y:57,r:10}],
+      diffs:[{x:17,y:41,r:9},{x:55,y:82,r:9},{x:43,y:58,r:10},{x:84,y:57,r:10}],
       clue:'Study both images carefully. Not everything is as it seems — colours, objects, or backgrounds may have changed.',
       verse:'"By faith he left Egypt, not fearing the king\'s anger." (Hebrews 11:27 NIV)' },
     { id:'s3hSdiff2', type:'spotdiff',
@@ -11226,7 +11226,23 @@ document.querySelectorAll('.dpad-btn').forEach(btn => {
   const dir = btn.dataset.dir;
   btn.addEventListener('click', () => { unlockAudio(); handleDirInput(dir); });
 });
-document.addEventListener('click', unlockAudio, { once:true });
+// Jane 2026-06-22: unlock audio on the FIRST gesture of ANY kind (touch taps
+// often land as pointerdown with a suppressed click), AND best-effort go
+// FULLSCREEN to reclaim the screen from the browser chrome (the "white tab"
+// Jane wants gone) — gives gameplay the whole screen + more landscape height.
+// Page navigation exits fullscreen, so each scene re-requests on its first tap.
+window._goFullscreen = window._goFullscreen || function(){
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement) return;
+    var el = document.documentElement;
+    var rq = el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (rq) { var p = rq.call(el); if (p && p.catch) p.catch(function(){}); }
+  } catch(e){}
+};
+['pointerdown','touchstart','keydown','click'].forEach(function(ev){
+  try { document.addEventListener(ev, unlockAudio, { once:true, capture:true }); } catch(e){}
+  try { document.addEventListener(ev, window._goFullscreen, { once:true, capture:true }); } catch(e){}
+});
 
 /* ---------- COVER PAGE / DIFFICULTY ---------- */
 document.querySelectorAll('.difficulty-btn').forEach(btn => {

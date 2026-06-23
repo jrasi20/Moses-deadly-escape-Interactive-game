@@ -5759,7 +5759,7 @@ const CHALLENGE_BANK = {
       // 2026-05-20 PM63 merge: real per-image coords pixel-diffed by the
       // caravan-map agent (replaces the placeholder spread). pottery
       // (left), boat sail (top-centre), basket (centre), frog (bottom-right).
-      diffs:[{x:13,y:55,r:10},{x:48,y:42,r:10},{x:47,y:67,r:11},{x:88,y:88,r:9}],
+      diffs:[{x:14,y:56,r:10},{x:49,y:41,r:10},{x:54,y:68,r:11},{x:89,y:88,r:9}],
       clue:'Look very carefully — some colours, shapes or objects have changed between the two pictures!',
       verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
     // --- Pictionary ---
@@ -6068,7 +6068,7 @@ const CHALLENGE_BANK = {
       // verified on the annotated overlay — the VULTURE's real centre is
       // (17,41), not (12,49). Corrected all 4: sun (24,32), vulture (17,41),
       // Moses's belt pouch (42,58), camel (85,57). Bigger tap radius too.
-      diffs:[{x:24,y:32,r:12},{x:17,y:41,r:12},{x:42,y:58,r:12},{x:85,y:57,r:12}],
+      diffs:[{x:17,y:41,r:12},{x:43,y:58,r:12},{x:84,y:57,r:12},{x:55,y:82,r:12}],
       clue:'Four things changed: the sun in the sky, the black bird on the palm tree, the pouch on Moses’s belt, and the camel on the right.',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     // --- Pictionary ---
@@ -7272,7 +7272,23 @@ document.querySelectorAll('.dpad-btn').forEach(btn => {
   const dir = btn.dataset.dir;
   btn.addEventListener('click', () => { unlockAudio(); handleDirInput(dir); });
 });
-document.addEventListener('click', unlockAudio, { once:true });
+// Jane 2026-06-22: unlock audio on the FIRST gesture of ANY kind (touch taps
+// often land as pointerdown with a suppressed click), AND best-effort go
+// FULLSCREEN to reclaim the screen from the browser chrome (the "white tab"
+// Jane wants gone) — gives gameplay the whole screen + more landscape height.
+// Page navigation exits fullscreen, so each scene re-requests on its first tap.
+window._goFullscreen = window._goFullscreen || function(){
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement) return;
+    var el = document.documentElement;
+    var rq = el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (rq) { var p = rq.call(el); if (p && p.catch) p.catch(function(){}); }
+  } catch(e){}
+};
+['pointerdown','touchstart','keydown','click'].forEach(function(ev){
+  try { document.addEventListener(ev, unlockAudio, { once:true, capture:true }); } catch(e){}
+  try { document.addEventListener(ev, window._goFullscreen, { once:true, capture:true }); } catch(e){}
+});
 
 /* ---------- COVER PAGE / DIFFICULTY ---------- */
 document.querySelectorAll('.difficulty-btn').forEach(btn => {

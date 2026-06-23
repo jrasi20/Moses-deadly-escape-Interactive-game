@@ -3570,8 +3570,9 @@
     pointer-events: none;
     mix-blend-mode: overlay;
   }
-  .treasure-chip .chip-emoji { font-size: 16px; }
-  .treasure-chip .chip-num   { color: #3a1708; font-weight: 800; font-size: 14px; }
+  .treasure-chip { font-size: 14.5px; }  /* Jane 2026-06-22: readable on small phones */
+  .treasure-chip .chip-emoji { font-size: 17px; }
+  .treasure-chip .chip-num   { color: #3a1708; font-weight: 800; font-size: 15px; }
 
   /* 2026-05-13 PM21 — STATS PANEL on cover page. Three grouped sections
      (Personal Best / Collections / Progress) replace the flat 7-chip row.
@@ -3614,15 +3615,17 @@
                 0 0 14px rgba(255,217,118,0.20);
   }
   .stats-section-label {
-    color: #ffe9b0;
-    font-size: 11px;
-    letter-spacing: 1.4px;
+    /* Jane 2026-06-22: bumped 11→13px + brighter gold so the section labels are
+       readable on small phones (were faint + tiny). */
+    color: #ffeec2;
+    font-size: 13px;
+    letter-spacing: 1.2px;
     text-transform: uppercase;
     font-weight: 800;
     margin-bottom: 7px;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.7);
   }
-  #statsPersonal .stats-section-label { color: #fff3cf; font-size: 11.5px; }
+  #statsPersonal .stats-section-label { color: #fff7e2; font-size: 13.5px; }
   .stats-section-row {
     display: flex;
     flex-wrap: wrap;
@@ -8629,10 +8632,10 @@ const CHALLENGE_BANK = {
       //  3. reeds / reflection mid-water  (~49%, 41%)
       //  4. hut + lily pad bottom-left    (~13%, 56%)
       diffs:[
-        { x:51, y:70, r:5, tapR:14 },
+        { x:54, y:68, r:5, tapR:14 },
         { x:89, y:88, r:5, tapR:14 },
         { x:49, y:41, r:5, tapR:14 },
-        { x:13, y:56, r:5, tapR:14 },
+        { x:14, y:56, r:5, tapR:14 },
       ],
       clue:'Look at the basket holding baby Moses (center), the lily pad (bottom-right), the reeds over the water (center), and the hut (bottom-left).',
       verse:'Exodus 2:3-4 NIV' },
@@ -8676,10 +8679,10 @@ const CHALLENGE_BANK = {
       //  3. waterskin pouch on Moses's belt  (~42%, 58%)
       //  4. camel rear / saddle (right)  (~85%, 57%)
       diffs:[
-        { x:24, y:33, r:5, tapR:14 },
         { x:17, y:41, r:5, tapR:14 },
-        { x:42, y:58, r:5, tapR:14 },
-        { x:85, y:57, r:5, tapR:14 },
+        { x:43, y:58, r:5, tapR:14 },
+        { x:84, y:57, r:5, tapR:14 },
+        { x:55, y:82, r:5, tapR:14 },
       ],
       clue:"Look at the sun, the dune below it, Moses's waterskin on his belt, and the camel's saddle.",
       verse:'Exodus 2:15 NIV' },
@@ -9747,6 +9750,23 @@ document.querySelectorAll('.dpad-btn').forEach(btn => {
 // and the cover/narration audio stayed "blocked." Listen broadly + capture.
 ['pointerdown','touchstart','keydown','click'].forEach(function(ev){
   try { document.addEventListener(ev, unlockAudio, { once:true, capture:true }); } catch(e){}
+});
+// Jane 2026-06-22: reclaim the screen from the mobile browser chrome ("get rid of
+// that white browser tab"). On the FIRST user gesture, best-effort request
+// fullscreen — this hides the URL/title bar so the game gets the WHOLE screen
+// (also gives landscape more vertical room / line of sight). Page navigation
+// exits fullscreen, so each scene re-requests on its own first tap. Fully
+// graceful: any browser that blocks/!supports it (e.g. iOS Safari) just no-ops.
+window._goFullscreen = function(){
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement) return;
+    var el = document.documentElement;
+    var rq = el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (rq) { var p = rq.call(el); if (p && p.catch) p.catch(function(){}); }
+  } catch(e){}
+};
+['pointerdown','touchstart','click','keydown'].forEach(function(ev){
+  try { document.addEventListener(ev, window._goFullscreen, { once:true, capture:true }); } catch(e){}
 });
 
 /* ---------- COVER PAGE / DIFFICULTY ---------- */
@@ -16806,6 +16826,17 @@ function _refreshCoverBestBadge(){
     if (scEl) { if (scrls  > 0) setChip(scEl, '📜', 'scrolls',   scrls)  ; else scEl.style.display = 'none'; }
     if (uEl)  { if (unlocks.length > 0) setChip(uEl, '🔓', 'unlocks', unlocks.length + '/' + UNLOCK_TIERS.length); else uEl.style.display = 'none'; }
     if (tlEl) { if (truths.length  > 0) setChip(tlEl,'📖', 'truths',  truths.length); else tlEl.style.display = 'none'; }
+    // Jane 2026-06-22: collapse a whole SECTION when it has NO visible chips, so the
+    // panel never shows big EMPTY framed cards (the "empty rectangle" she saw on
+    // phones — Collections/Progress were drawn as blank cards before anything is earned).
+    try {
+      ['statsPersonal','statsCollect','statsProgress'].forEach(function(secId){
+        var sec = document.getElementById(secId); if (!sec) return;
+        var row = sec.querySelector('.stats-section-row');
+        var anyVisible = row && Array.prototype.some.call(row.children, function(ch){ return ch.style.display !== 'none'; });
+        sec.style.display = anyVisible ? '' : 'none';
+      });
+    } catch(e){}
     // 2026-05-09 PM15 v4 (Jane: "even on cover page, when showing anything
     // about treasures accumulated so far. kids love to see how much they
     // have earned. so make it magical"). Fire a small sparkle burst at
