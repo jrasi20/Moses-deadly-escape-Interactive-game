@@ -70,10 +70,12 @@
     ctx.fillStyle = '#f7f1df'; ctx.fillRect(0,0,W,H);
     if (bg) ctx.drawImage(bg, 0, 0, W, H);
 
-    // Values sit on the blank lines, starting well CLEAR of the NAME/RANK/SCORE
-    // labels (labels end ~21% of the width; lines run to ~88%). Left-aligned.
-    var x = W * 0.26;
-    var maxW = W * 0.60;                 // line ends ~0.88, leave a little gap
+    // Values sit ON the blank underlines, which (measured from the template art)
+    // begin at x=0.336W and run to x=0.763W; the printed NAME/RANK/SCORE labels
+    // live to the LEFT of that. Start values just inside the line start so they
+    // never touch the labels, and cap the width before the line ends / the seal.
+    var x = W * 0.345;
+    var maxW = W * 0.40;                 // line ends ~0.763W; gold seal starts ~0.773W
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
 
