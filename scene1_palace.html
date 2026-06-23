@@ -8662,7 +8662,7 @@ const CHALLENGE_BANK = {
         { x:79, y:21, r:5, tapR:14 },
         { x:20, y:50, r:5, tapR:14 },
       ],
-      clue:"Look at the princess's crown (top-right), the two handmaidens, the bird over the water, and baby Moses in the basket.",
+      clue:'Look at the crown on the princess, the dress colour of the servants, the dragonfly, and the swaddle colour of baby Moses.',
       verse:'Exodus 2:5-6 NIV' },
     { id:'hSdiff3', type:'spotdiff',
       q:'Tap on the 4 differences in this scene of Moses fleeing!',
@@ -8688,19 +8688,21 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot%20the%20difference%20moses%20at%20the%20well%20A.png',
       imgB:'assets/images/spot%20the%20difference%20moses%20at%20the%20well%20B.png',
       answer:4,
-      // 2026-05-16 PM34 — Jane re-drew the differences on the live PNG.
-      // I4 v2 (2026-06-19): coords COMPUTED from real pixel diffs.
-      //  1. rope / hook on the well frame  (~33%, 48%)
-      //  2. right-side palm tree  (~90%, 38%)
-      //  3. sand dune in the background  (~37%, 26%)
-      //  4. sand patch at the base of the well  (~34%, 75%)
+      // Coords COMPUTED from a real A-vs-B pixel diff (_spotdiff.py) — these 4 ARE
+      // the actual changes. Jane 2026-06-22: the clue was describing the WRONG things
+      // (rope/palm/dune/sand) so the revealed halos looked "wrong." Corrected the clue
+      // to name what actually changes at each coord:
+      //  1. (33%,48%) the ORANGE daughter in the middle
+      //  2. (89%,37%) the SHEPHERD on the far right
+      //  3. (37%,24%) the BUCKET on the well frame
+      //  4. (34%,76%) the BAG at the foot of the well
       diffs:[
         { x:33, y:48, r:5, tapR:14 },
         { x:90, y:38, r:5, tapR:14 },
         { x:37, y:26, r:5, tapR:14 },
         { x:34, y:75, r:5, tapR:14 },
       ],
-      clue:'Look at the rope on the well frame, the right-side palm tree, the dune in the background, and the sand at the base of the well.',
+      clue:'Look at the orange daughter in the middle, the bucket on the well, the bag at the foot of the well, and the shepherd on the far right.',
       verse:'Exodus 2:16-17 NIV' },
   ],
 };
@@ -10675,9 +10677,11 @@ function _playPanelNarration(panel){
     // warm the NEXT panel's clip now so the advance is instant too
     try { const _nx = CIN_PANELS[_idx + 1]; if (_nx && _nx.audio) _warmPanelAudio(_nx.audio); } catch(e){}
     if (_s4) {
-      // advance the slideshow the instant THIS beat finishes (continuous narration)
-      _narrationVoice.onended = () => { if (game.cinStep === _idx) _s4Advance(); };
-      _s4ScheduleAdvance(12000, _idx);   // safety: advance even if 'ended' never fires
+      // Jane 2026-06-22: linger ~1s AFTER each beat finishes before advancing, so the
+      // slideshow is a touch slower and the audio fully clears + stays in sync with
+      // the on-screen image/text (was snapping to the next panel the instant audio ended).
+      _narrationVoice.onended = () => { if (game.cinStep === _idx) setTimeout(function(){ if (game.cinStep === _idx) _s4Advance(); }, 1000); };
+      _s4ScheduleAdvance(13000, _idx);   // safety: advance even if 'ended' never fires
     } else {
       _narrationVoice.onended = null;
     }
@@ -16846,6 +16850,10 @@ setInterval(() => {
 }, 6500);
 
 function showWin(){
+  // Jane 2026-06-22 SEQUENTIAL GATE: mark Scene 1 genuinely COMPLETE here (not just
+  // "arrived at Scene 2"), so the Scene-2/3 gates can require real completion and a
+  // typed ?from= URL can no longer unlock a scene the kid hasn't earned.
+  try { var _pp = parseInt(localStorage.getItem('bek.bundle1.progress')||'0',10)||0; if (_pp < 1) localStorage.setItem('bek.bundle1.progress','1'); } catch(e){}
   // compute star rating
   const pct = (game.hearts / 3) * 0.4 + (game.treasureCount / game.treasuresTotal) * 0.4 + (game.timeLeft / game.timeLimit) * 0.2;
   const starRating = pct >= 0.85 ? 3 : pct >= 0.55 ? 2 : 1;

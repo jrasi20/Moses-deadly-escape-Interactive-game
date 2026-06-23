@@ -28,17 +28,15 @@
     var p = parseInt(localStorage.getItem('bek.bundle1.progress') || '0', 10) || 0;
     var unlocked = false;
     try { unlocked = localStorage.getItem('bek.moses2.unlocked') === '1' || localStorage.getItem('bek.moses.bundle.unlocked') === '1'; } catch(e){}
-    if (from === 'scene1') { if (p < 1) { try { localStorage.setItem('bek.bundle1.progress','1'); } catch(e){} } }
-    else if (p < 1) { location.replace('scene1_palace.html'); return; }
-    // I10 (Jane 2026-06-17): auto-launching (one-world flow) — hide the access gate + cover
-    // BEFORE paint so they never flash between scenes. A <style> gated on the html class is
-    // applied before the body parses.
-    if (from === 'scene1' || p >= 1 || unlocked) {
-      document.documentElement.classList.add('bek-autolaunch');
-      var s = document.createElement('style');
-      s.textContent = 'html.bek-autolaunch #accessGate, html.bek-autolaunch #coverPage { display:none !important; }';
-      (document.head || document.documentElement).appendChild(s);
-    }
+    // Jane 2026-06-22: SEQUENTIAL ONLY. Scene 2 requires Scene 1 GENUINELY complete
+    // (progress>=1, set by Scene 1's showWin). The ?from= param no longer GRANTS
+    // progress — typing scene2_desert.html?from=scene1 can't skip Scene 1 anymore.
+    if (p < 1) { location.replace('scene1_palace.html'); return; }
+    // Past Scene 1 → skip the (vestigial one-world) cover + access gate before paint.
+    document.documentElement.classList.add('bek-autolaunch');
+    var s = document.createElement('style');
+    s.textContent = 'html.bek-autolaunch #accessGate, html.bek-autolaunch #coverPage { display:none !important; }';
+    (document.head || document.documentElement).appendChild(s);
   } catch(e){}
 })();
 </script>
@@ -5452,8 +5450,12 @@ const caravanTrader = {
 // collides with or follows the caravan trader. Still a cinematic desert
 // companion, just not tethered to the trader.
 const friendlyCamel = {
-  tx: 17, ty: 15,
-  minTx: 15, maxTx: 26,   // grazes the Dunes/Oasis border
+  // Jane 2026-06-22: the OASIS heart-restore tile is at (17,15) and the camel used
+  // to START on it (tx:17) and patrol cols 15–26, so its solid body (±1 tile) sat
+  // on/around the oasis and the kid "couldn't access the oasis next to the camel."
+  // Moved the patrol EAST of the oasis (min col 19) so col 17 is always free.
+  tx: 21, ty: 15,
+  minTx: 19, maxTx: 26,   // grazes east of the oasis (col 17) so it never blocks it
   dir: -1,
   tick: 0,
   speedMs: 820,           // lazier than the trader (camels plod)
@@ -6340,8 +6342,8 @@ const CHALLENGE_BANK = {
       // 2026-05-20 PM63 merge: real per-image coords pixel-diffed by the
       // caravan-map agent. dragonfly (left), crown (top-right),
       // attendants' dresses (centre-right), baby's blanket (centre).
-      diffs:[{x:20,y:50,r:10},{x:78,y:22,r:9},{x:65,y:52,r:11},{x:38,y:64,r:10}],
-      clue:'Look very carefully at both pictures — some things have changed between them!',
+      diffs:[{x:20,y:51,r:10},{x:80,y:28,r:10},{x:70,y:47,r:11},{x:42,y:65,r:10}],
+      clue:'Look at the crown on the princess, the dress colour of the servants, the dragonfly, and the swaddle colour of baby Moses.',
       verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
     // --- Pictionary ---
     { id:'hPict1', type:'pictionary',
@@ -6356,9 +6358,9 @@ const CHALLENGE_BANK = {
       q:'Which Bible verse does this picture show?',
       image:'assets/images/moses with sheep color 2.png',
       alt:'Moses tending the flock in Midian',
-      options:['Exodus 2:15 — Moses fled from Pharaoh and went to Midian','1 Samuel 16:11 — The youngest son was tending the sheep','Genesis 29:9 — Rachel came with her father Laban\'s sheep','Exodus 3:1 — Moses tended Jethro\'s flock'],
+      options:['Exodus 2:11 — Moses saw an Egyptian beating a Hebrew','1 Samuel 16:11 — The youngest son was tending the sheep','Genesis 29:9 — Rachel came with her father Laban\'s sheep','Exodus 3:1 — Moses tended Jethro\'s flock'],
       correct:3,
-      clue:'Moses has become a shepherd in a foreign land, tending the flock of his father-in-law near the mountain of God.',
+      clue:'In this picture Moses is SHEPHERDING — gently tending a flock of sheep, not fleeing or fighting. Which verse is about Moses keeping a flock?',
       verse:'"Moses was tending the flock of Jethro his father-in-law, the priest of Midian." (Exodus 3:1 NIV)' },
     // --- Count (scene image) ---
     { id:'hCountImg1', type:'count',
@@ -8179,6 +8181,10 @@ function restartScene() {
   // v3.4: cut any lingering alert music
   _alertMusicOn = false;
   try { if (audio.alerted) audio.alerted.pause(); } catch(e){}
+  // Jane 2026-06-22: the jigsaw ("torn caravan map") bg music kept LOOPING after a
+  // restart because restartScene closed the modal but never stopped puzzleBg. Hard-stop it.
+  try { if (audio.puzzleBg) { audio.puzzleBg.pause(); audio.puzzleBg.currentTime = 0; } } catch(e){}
+  try { window._jigsawPrevState = null; } catch(e){}
   // v3.6: restart palace tension from the very beginning of the loop so
   // replays feel fresh instead of resuming mid-track.
   try {
@@ -8743,6 +8749,13 @@ function _openJigsawModal(){
   const modal = document.getElementById('jigsawModal');
   if (!modal || game.jigsawSolved) return;
   if (modal.classList.contains('active')) return;
+  // Jane 2026-06-22: if the kid PAUSED during the 800ms pre-open delay, do NOT open
+  // the jigsaw over the pause modal (that left state='puzzle' so Resume — which needs
+  // 'paused' — did nothing, locking the game). Wait until they un-pause, then open.
+  var _pm = document.getElementById('pauseModal');
+  if (game.state === 'paused' || (_pm && _pm.classList.contains('active'))) {
+    setTimeout(_openJigsawModal, 500); return;
+  }
   // Randomise slot → piece assignments so the puzzle isn't memorisable.
   // Each game: one of the 6 permutations of (piece1, piece2, piece3)
   // across (slot1, slot2, slot3).
@@ -11931,6 +11944,10 @@ $('lessonContinueBtn').addEventListener('click', () => {
 });
 
 function showWin(){
+  // Jane 2026-06-22 SEQUENTIAL GATE: mark Scene 2 genuinely COMPLETE here so the
+  // Scene-3 gate can require real completion (a typed ?from=scene2 URL can no longer
+  // unlock Scene 3 for a kid who hasn't finished Scene 2).
+  try { var _pp = parseInt(localStorage.getItem('bek.bundle1.progress')||'0',10)||0; if (_pp < 2) localStorage.setItem('bek.bundle1.progress','2'); } catch(e){}
   // One epic game: bank this scene's score into the lifetime points total
   // (shown on the Scene-3 win journey panel). Guarded to bank once per play.
   // L16: bank this scene's run as its BEST + recompute bundle totals (sum-of-best-runs).
