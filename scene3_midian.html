@@ -28,16 +28,16 @@
     var p = parseInt(localStorage.getItem('bek.bundle1.progress') || '0', 10) || 0;
     var unlocked = false;
     try { unlocked = localStorage.getItem('bek.moses2.unlocked') === '1' || localStorage.getItem('bek.moses.bundle.unlocked') === '1'; } catch(e){}
-    if (from === 'scene2') { if (p < 2) { try { localStorage.setItem('bek.bundle1.progress','2'); } catch(e){} } }
-    else if (p < 2) { location.replace(p >= 1 ? 'scene2_desert.html' : 'scene1_palace.html'); return; }
-    // I10 (Jane 2026-06-17): auto-launching — hide the access gate + cover before paint so
-    // they never flash between scenes.
-    if (from === 'scene2' || p >= 2 || unlocked) {
-      document.documentElement.classList.add('bek-autolaunch');
-      var s = document.createElement('style');
-      s.textContent = 'html.bek-autolaunch #accessGate, html.bek-autolaunch #coverPage { display:none !important; }';
-      (document.head || document.documentElement).appendChild(s);
-    }
+    // Jane 2026-06-22: SEQUENTIAL ONLY. Scene 3 requires Scene 2 GENUINELY complete
+    // (progress>=2, set by Scene 2's showWin). The ?from= param no longer GRANTS
+    // progress — typing scene3_midian.html?from=scene2 can't skip Scene 2 anymore;
+    // an out-of-order kid is bounced to the furthest scene they've actually earned.
+    if (p < 2) { location.replace(p >= 1 ? 'scene2_desert.html' : 'scene1_palace.html'); return; }
+    // Past Scene 2 → skip the (vestigial one-world) cover + access gate before paint.
+    document.documentElement.classList.add('bek-autolaunch');
+    var s = document.createElement('style');
+    s.textContent = 'html.bek-autolaunch #accessGate, html.bek-autolaunch #coverPage { display:none !important; }';
+    (document.head || document.documentElement).appendChild(s);
   } catch(e){}
 })();
 </script>
@@ -9719,8 +9719,8 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference princess rescue A.png',
       imgB:'assets/images/spot the difference princess rescue B.png',
       answer:4,
-      diffs:[{x:20,y:50,r:10},{x:78,y:22,r:9},{x:65,y:52,r:11},{x:38,y:64,r:10}],
-      clue:'Look carefully at both pictures — some colours, objects or details have changed!',
+      diffs:[{x:20,y:51,r:10},{x:80,y:28,r:10},{x:70,y:47,r:11},{x:42,y:65,r:10}],
+      clue:'Look at the crown on the princess, the dress colour of the servants, the dragonfly, and the swaddle colour of baby Moses.',
       verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
     { id:'s3mSdiff2', type:'spotdiff',
       q:'Tap the 4 differences in these two pictures of Moses by the Nile!',
@@ -10104,8 +10104,8 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference princess rescue A.png',
       imgB:'assets/images/spot the difference princess rescue B.png',
       answer:4,
-      diffs:[{x:20,y:50,r:10},{x:78,y:22,r:9},{x:65,y:52,r:11},{x:38,y:64,r:10}],
-      clue:'Examine the pictures closely — some details, colours or items have been changed in one of them.',
+      diffs:[{x:20,y:51,r:10},{x:80,y:28,r:10},{x:70,y:47,r:11},{x:42,y:65,r:10}],
+      clue:'Look at the crown on the princess, the dress colour of the servants, the dragonfly, and the swaddle colour of baby Moses.',
       verse:'"When she opened it, she saw the baby. He was crying, and she felt sorry for him." (Exodus 2:6 NIV)' },
     // --- Pictionary ---
     { id:'s3hPict1', type:'pictionary',
@@ -14990,7 +14990,11 @@ function _rescueCfg() {
   // coins = the per-round PURSE (spending budget for THIS round only — NOT the player's bank)
   // #Jane 2026-06-07: "the rescue game is too slow." Faster foes + quicker spawns so
   // the action keeps moving (was foeSpeed 40-52 / spawnEvery 1.15-1.6).
-  if (d === 'hard')   return { total: 34, spawnEvery: 0.90, foeSpeed: 72, bigChance: 0.26, fastChance: 0.34, coins: 100, bossHp: 44 };
+  // Jane 2026-06-22: "rescue on HARD is really hard — the shepherds arrive way too fast."
+  // Slowed the ARRIVAL cadence a lot (0.90s→1.05s between shepherds) and trimmed foe
+  // speed (72→66) + total waves (34→30) so it's noticeably gentler. Still the TOUGHEST
+  // tier — faster foes, more of them, and a bigger boss than medium — just not frantic.
+  if (d === 'hard')   return { total: 30, spawnEvery: 1.05, foeSpeed: 66, bigChance: 0.24, fastChance: 0.30, coins: 115, bossHp: 40 };
   if (d === 'medium') return { total: 28, spawnEvery: 1.05, foeSpeed: 64, bigChance: 0.22, fastChance: 0.30, coins: 130, bossHp: 34 };
   return { total: 22, spawnEvery: 1.25, foeSpeed: 56, bigChance: 0.18, fastChance: 0.26, coins: 160, bossHp: 24 }; // easy
 }
