@@ -3398,8 +3398,9 @@
 <!-- ================ LESSON MODAL ================ -->
 <div class="modal-overlay lesson-modal" id="lessonModal">
   <div class="modal-content">
-    <h2>You did it! Moses is safe in Midian!</h2>
-    <p>You guided Moses past every danger to his new home. Just as God had a plan for Moses, God has a wonderful plan for YOU, too. Well done, explorer!</p>
+    <img id="lessonJethro" src="assets/images/jethro.png" alt="" style="width:104px;height:auto;margin:0 auto 8px;display:block;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));" onerror="this.onerror=null;this.src='assets/images/jethro%20tent.png';">
+    <h2>Jethro welcomes Moses home!</h2>
+    <p id="lessonText">&ldquo;You stood up for my daughters and watered our flock, brave traveler. Come — share a meal and make your home with my family.&rdquo; Jethro blesses Moses with a gift for the road. <b>+15 stars!</b></p>
     <button class="btn" id="lessonContinueBtn">Continue</button>
   </div>
 </div>
@@ -7393,15 +7394,11 @@ function drawScene3RescueFlock(){
     // #Jane 2026-06-06: only ever render the REAL sheep PNG. The old cream
     // fillRect fallback was the "white hand-drawn sheep" Jane saw moving; the PNG
     // is small + preloaded now, so on the rare pre-load frame draw nothing.
-    // Q (Jane 2026-06-21: "brown hand-drawn creatures crossing"). ROOT CAUSE: the
-    // STRANDED rescue flock drew the warm/tan sheep PNG WITHOUT the de-warming
-    // filter that _drawOneSheep (the herd) uses — so these read "brown." Apply the
-    // SAME brightness+desaturate so they read WHITE like every other sheep.
+    // Jane 2026-06-22: sheep sprites are now BAKED to white wool at build time
+    // (_whiten_sheep.py), so the stranded rescue flock reads white on every
+    // device without depending on the flaky runtime ctx.filter. Draw as-is.
     if (img && img.complete && img.naturalWidth){
-      ctx.save();
-      try { ctx.filter = 'brightness(1.22) saturate(0.55)'; } catch(e){}
       ctx.drawImage(img, dx, dy + yoff, TILE, TILE);
-      ctx.restore();
     }
     if (s.state === 'pinned'){
       // 2026-05-26 JUICE: pulsing red danger ring around the grabbed sheep so
@@ -8112,14 +8109,12 @@ function _drawOneSheep(px,py,dir,kind,alt,extraY){
     const drawW=Math.round(drawH*ar);
     const ox=Math.round(dx+TILE/2-drawW/2);
     const oy=Math.round(dy+TILE-drawH-extraY);
-    // #Jane 2026-06-07: the white sheep PNGs render warm cream/tan under the golden
-    // scene light and read as "brown hand-drawn animals" at small scale. Lift them to
-    // read WHITE — brighten + pull the warm/yellow cast out (desaturate).
-    ctx.save();
-    try { ctx.filter = 'brightness(1.22) saturate(0.55)'; } catch(e){}
-    if (mirror){ ctx.translate(ox+drawW,oy); ctx.scale(-1,1); ctx.drawImage(img,0,0,drawW,drawH); }
+    // Jane 2026-06-22: the sheep sprites are now BAKED to white wool at build
+    // time (see _whiten_sheep.py) so they read white on EVERY device — the old
+    // runtime ctx.filter silently no-opped on some mobile browsers and left them
+    // brown ("hand-drawn creatures"). Draw the PNG as-is, no filter.
+    if (mirror){ ctx.save(); ctx.translate(ox+drawW,oy); ctx.scale(-1,1); ctx.drawImage(img,0,0,drawW,drawH); ctx.restore(); }
     else ctx.drawImage(img,ox,oy,drawW,drawH);
-    ctx.restore();
   }
   // #172 Jane 2026-06-06: NO procedural fallback. The old hand-drawn blob (white
   // body + brown head) was the "brown hand-drawn sheep" Jane saw crossing when
@@ -15185,6 +15180,12 @@ function openRescueGame(gate) {
   try { _killWolfRaidBed(); } catch(e){}   // stop any wolf-raid loop bleeding into the mini-game
   try { _s3vo('rescue'); } catch(e){}   // entering the Rescue-the-Daughters mini-game
   _rescue.gate = gate; _rescue.last = 0;
+  // Jane 2026-06-22: remember the treasure-bag bank the kid walked in with (the
+  // number the overworld HUD is showing). On exit — even after N replays — we
+  // animate the FULL net gain flying into the HUD so the bags they earned in the
+  // rescue are visibly added. Captured once per session (the billboard launch),
+  // NOT reset by _rescueReset/replay, so replays keep accumulating against it.
+  try { _rescue.bagsAtOpen = Math.max(0, Math.round((typeof game !== 'undefined' && game.treasureBags) || 0)); } catch(e){ _rescue.bagsAtOpen = 0; }
   if (window._rescueTestMode) { try { game.stars = Math.max(game.stars || 0, 14); game.treasureCount = Math.max(game.treasureCount || 0, 5); game.treasureBags = Math.max(game.treasureBags || 0, 80); } catch(e){} }
   _rescueReset();
   game.state = 'dialog';
@@ -15499,6 +15500,7 @@ function _rescueLoseQuit() {
   _rescue.gate = null;
   if (restart) { try { game.state = 'playing'; } catch(e){} try { restartScene(); } catch(e){} return; }
   try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; setMusic('bgm'); } } catch(e){} /* #2 route via setMusic so bgm waits out the victory fanfare */
+  try { updateHudTreasure(); } catch(e){}   // Jane 2026-06-22: reflect bags banked even on a lost round
   try { game.state = 'playing'; } catch(e){}
 }
 function _rescueRetry() {
@@ -15519,6 +15521,7 @@ function _rescueQuit() {
   try { if (audio.coverMusic) { audio.coverMusic.pause(); audio.coverMusic.currentTime = 0; } } catch(e){}
   try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; setMusic('bgm'); } } catch(e){} /* #2 route via setMusic so bgm waits out the victory fanfare */
   _rescue.gate = null; try { game.state = 'playing'; } catch(e){}
+  try { updateHudTreasure(); } catch(e){}   // Jane 2026-06-22: reflect any bags banked before quitting
   // P6 (Jane 2026-06-21): quitting leaves the rescue UNDONE — remind the kid it's
   // still open + how to resume (the tent stays sealed until this gate is solved).
   try { toast('🛡️ The daughters still need help — step onto the "Save the Daughters" billboard to try again.'); } catch(e){}
@@ -15539,6 +15542,7 @@ function _closeRescue() {
   // belt-and-suspenders guard so a partial can never solve the gate.)
   if ((_rescue.daughtersLost || 0) > 0) {
     const _saved = 7 - (_rescue.daughtersLost || 0);
+    try { updateHudTreasure(); } catch(e){}   // keep the wallet chip in sync even on a partial save
     try { toast('🛡️ Only ' + _saved + ' of 7 saved — you must rescue ALL seven. Step on the billboard to try again.'); } catch(e){}
     return;
   }
@@ -15547,6 +15551,14 @@ function _closeRescue() {
   try { spawnGlitterBurstAtPlayer(20); } catch(e){}
   try { toast('You rescued all seven of Jethro\'s daughters! ' + '⭐'.repeat(earned) + ' +' + earned + ' stars!'); } catch(e){}
   game.stars += earned; try { updateHudStars(); } catch(e){}
+  // Jane 2026-06-22: fly the treasure bags earned across the WHOLE rescue session
+  // (replays included) into the HUD wallet so the kid SEES them added — game.treasureBags
+  // already holds the new bank; bagsAtOpen is what they walked in with.
+  try {
+    var _bagGain = Math.max(0, Math.round((game.treasureBags || 0) - (_rescue.bagsAtOpen || 0)));
+    if (_bagGain > 0) { setTimeout(function(){ try { _flyTreasureBagsToHud(_bagGain); } catch(e){ try { updateHudTreasure(); } catch(_){} } }, 360); }
+    else { updateHudTreasure(); }
+  } catch(e){ try { updateHudTreasure(); } catch(_){} }
   try { _announceAllGatesCleared(); } catch(e){}
   try { _saveCheckpoint(); } catch(e){}
   // #58 Mario-style framing: triumphant "final stage cleared" beat coming OUT.
@@ -19137,6 +19149,9 @@ function showLessonThenWin(){
   try { if (audio.bgmExit) { audio.bgmExit.currentTime = 0; audio.bgmExit.play().catch(()=>{}); } } catch(e){}
   try { play('levelUp') || play('chime'); } catch(e){}
   try { spawnGlitterBurstAtPlayer(16); } catch(e){}
+  // Jane 2026-06-22: meeting Jethro at the tent is now a real interaction with a
+  // reward — Jethro blesses Moses with +15 stars (banked at showWin). One-time.
+  try { if (!game._jethroBonus) { game._jethroBonus = true; game.stars = (game.stars || 0) + 15; updateHudStars(); } } catch(e){}
   $('lessonModal').classList.add('active');
 }
 $('lessonContinueBtn').addEventListener('click', () => {

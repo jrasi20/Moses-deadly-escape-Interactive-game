@@ -9737,7 +9737,15 @@ document.querySelectorAll('.dpad-btn').forEach(btn => {
   // If the window loses focus mid-hold (tab-blur), release.
   window.addEventListener('blur', () => _stopDpadHold(dir));
 });
-document.addEventListener('click', unlockAudio, { once:true });
+// Jane 2026-06-22: unlock audio on the FIRST gesture of ANY kind — not just
+// 'click'. On replay (returning to the cover after a full page navigation) the
+// page has no audio activation, and on touch devices the first tap often lands
+// as pointerdown/touchstart whose synthesized click is suppressed (e.g. on the
+// d-pad / Begin button via preventDefault), so a click-only unlock never fired
+// and the cover/narration audio stayed "blocked." Listen broadly + capture.
+['pointerdown','touchstart','keydown','click'].forEach(function(ev){
+  try { document.addEventListener(ev, unlockAudio, { once:true, capture:true }); } catch(e){}
+});
 
 /* ---------- COVER PAGE / DIFFICULTY ---------- */
 // 2026-05-19 PM63 (Jane: "so at the initial cover if kids pick easy level,
@@ -10612,6 +10620,22 @@ function openCinematic() {
 // previous panel's voice when the kid clicks Next early. Plays at 0.85
 // volume on top of the looped 'narration bg music' bed (audio.narration).
 let _narrationVoice = null;
+// Jane 2026-06-22: WARM-CACHE the panel narration clips so a beat plays the INSTANT
+// its panel appears. The old code did `new Audio(url)` then `.play()` per panel —
+// a cold element that had to DOWNLOAD the mp3 before any sound, which is exactly why
+// the narration "started late / seemed to need a click." We now preload each clip
+// (preload='auto' + load()) ahead of time and REUSE the buffered element.
+const _panelAudioCache = {};
+function _warmPanelAudio(url){
+  if (!url) return null;
+  let a = _panelAudioCache[url];
+  if (!a){ a = new Audio(); a.preload = 'auto'; a.src = url; try { a.load(); } catch(e){} _panelAudioCache[url] = a; }
+  return a;
+}
+function _preloadDeckAudio(deck){ try { (deck||[]).forEach(p => { if (p && p.audio) _warmPanelAudio(p.audio); }); } catch(e){} }
+// Warm BOTH the opening cinematic and the Scene1→2 transition clips up front so
+// neither narration ever has to download mid-show (they're small VO files).
+try { _preloadDeckAudio(CIN_PANELS); _preloadDeckAudio(SECTION_4_PANELS); } catch(e){}
 // Section-4 (Scene 1 → Scene 2) HANDS-FREE narration slideshow (Jane 2026-06-21:
 // "only the visuals appear, no voiceover ... it's one mp3 over an image slideshow").
 // ROOT CAUSE: scene-1's cinematic shell never auto-advanced, so the transition sat
@@ -10644,12 +10668,18 @@ function _playPanelNarration(panel){
   const _idx = (typeof game !== 'undefined') ? game.cinStep : 0;
   if (!panel || !panel.audio) { if (_s4) _s4ScheduleAdvance(5000, _idx); return; }
   try {
-    _narrationVoice = new Audio(panel.audio);
+    // reuse the PRELOADED, buffered clip so it plays immediately (no download delay)
+    _narrationVoice = _warmPanelAudio(panel.audio);
+    try { _narrationVoice.currentTime = 0; } catch(e){}
     _narrationVoice.volume = 0.92;
+    // warm the NEXT panel's clip now so the advance is instant too
+    try { const _nx = CIN_PANELS[_idx + 1]; if (_nx && _nx.audio) _warmPanelAudio(_nx.audio); } catch(e){}
     if (_s4) {
       // advance the slideshow the instant THIS beat finishes (continuous narration)
       _narrationVoice.onended = () => { if (game.cinStep === _idx) _s4Advance(); };
       _s4ScheduleAdvance(12000, _idx);   // safety: advance even if 'ended' never fires
+    } else {
+      _narrationVoice.onended = null;
     }
     _narrationVoice.play().catch(()=>{ if (_s4) _s4ScheduleAdvance(5000, _idx); }); // graceful: missing file = silent
   } catch(e){ if (_s4) _s4ScheduleAdvance(5000, _idx); }

@@ -9314,17 +9314,16 @@ function interact(){
             setTimeout(() => { try { audio.camelGrunt.pause(); audio.camelGrunt.currentTime = 0; } catch(e){} }, 1400);
           }
         } catch(e){}
-        if (game.hearts < 3) {
-          game.hearts++;
-          updateHudHearts();
-          spawnGlitterBurstAtPlayer(14);
-          openDialog('A Caravan Trader', '"You look parched, friend. Drink from my water skin - the Lord watches over the wanderer." (+1 heart)');
-        } else {
-          game.stars += 3;
-          updateHudStars();
-          spawnGlitterBurstAtPlayer(12);
-          openDialog('A Caravan Trader', '"You are strong, traveler. Take these dried dates for the road instead. Go with the blessing of the God of Abraham." (+3 stars)');
-        }
+        // Jane 2026-06-22: the trader now ALWAYS rewards points on the first
+        // meeting (kids felt cheated getting "just a heal" with no score), and
+        // still heals a hurt Moses on top. Short, crisp dialog — no clue text.
+        var _healed = false;
+        if (game.hearts < 3) { game.hearts++; updateHudHearts(); _healed = true; }
+        game.stars += 5; updateHudStars();
+        spawnGlitterBurstAtPlayer(16);
+        openDialog('A Caravan Trader', _healed
+          ? '"Drink, friend — the Lord watches over the wanderer." +1 heart, +5 stars!'
+          : '"Take these dates for the road, traveler. Go in peace." +5 stars!');
       } else {
         play('chime');
         openDialog('A Caravan Trader', '"Peace, friend. May the Most High bring you safely to Midian."');
