@@ -23306,6 +23306,102 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function () {});
   });
 }
+
+/* ============================================================================
+   Jane 2026-06-22: OFFLINE-READY SPRITES + INSTALL-AS-APP.
+   (A) Background image WARM: after the cover is idle, quietly prefetch EVERY
+       image (assets-manifest.json) at low concurrency so the service worker
+       caches them. Result: no sprite ever flashes/fails on later scenes, and
+       the whole game's artwork works OFFLINE after the first visit — without
+       blocking the first load. Audio stays cache-on-play (too big to force).
+   (B) "Install App" button: on Android/desktop Chrome we capture
+       beforeinstallprompt and offer a one-tap install (standalone PWA, no
+       browser chrome). On iOS (which has no prompt) we show the manual
+       "Add to Home Screen" steps. Hidden once already installed.
+   ========================================================================== */
+(function(){
+  // ---- (A) background image warm ----
+  function _warmImages(){
+    if (window._warmedImages) return; window._warmedImages = true;
+    fetch('assets-manifest.json', { cache: 'no-cache' })
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(list){
+        if (!Array.isArray(list) || !list.length) return;
+        var i = 0, CONC = 4;
+        function step(){
+          if (i >= list.length) return;
+          var url = list[i++];
+          fetch(url, { cache: 'force-cache' })
+            .catch(function(){})
+            .then(function(){ setTimeout(step, 12); });   // gentle pacing
+        }
+        for (var k = 0; k < CONC; k++) step();
+      })
+      .catch(function(){});
+  }
+  window.addEventListener('load', function(){
+    var run = window.requestIdleCallback || function(cb){ return setTimeout(cb, 1500); };
+    // delay a touch so the cover + opening assets win the bandwidth first
+    setTimeout(function(){ run(_warmImages); }, 2500);
+  });
+
+  // ---- (B) install-as-app ----
+  function _isStandalone(){
+    try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch(e){ return false; }
+  }
+  function _isIOS(){
+    try { return /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && 'ontouchend' in document); } catch(e){ return false; }
+  }
+  var _deferredPrompt = null;
+  function _addInstallBtn(label, onClick){
+    var row = document.getElementById('coverDailyToggleWrap');
+    if (!row || document.getElementById('coverInstallBtn')) return;
+    var btn = document.createElement('button');
+    btn.id = 'coverInstallBtn'; btn.type = 'button'; btn.className = 'btn-golden';
+    btn.setAttribute('aria-label', 'Install this game as an app');
+    btn.innerHTML = '<span aria-hidden="true">📲</span> ' + label;
+    btn.addEventListener('click', onClick);
+    row.appendChild(btn);
+  }
+  function _iosTip(){
+    var t = document.getElementById('iosInstallTip');
+    if (t) { t.remove(); return; }
+    t = document.createElement('div');
+    t.id = 'iosInstallTip';
+    t.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:99999;'
+      + 'max-width:90vw;background:linear-gradient(180deg,#fff5dc,#e8c878);color:#5a2510;'
+      + 'border:2px solid #b88a2c;border-radius:14px;padding:12px 16px;font:600 14px/1.4 Georgia,serif;'
+      + 'box-shadow:0 8px 24px rgba(0,0,0,0.4);text-align:center;';
+    t.innerHTML = 'To install: tap the <b>Share</b> button below, then choose <b>“Add to Home Screen”</b>. '
+      + 'The game opens full-screen like an app — and works offline after your first play.'
+      + '<div style="margin-top:8px"><button type="button" style="background:#7a3a06;color:#ffe7b8;border:none;border-radius:10px;padding:6px 18px;font:700 13px Georgia,serif;cursor:pointer">Got it</button></div>';
+    t.querySelector('button').addEventListener('click', function(){ t.remove(); });
+    document.body.appendChild(t);
+    setTimeout(function(){ if (t.parentNode) t.remove(); }, 12000);
+  }
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    _deferredPrompt = e;
+    if (_isStandalone()) return;
+    _addInstallBtn('Install App', function(){
+      if (!_deferredPrompt) return;
+      _deferredPrompt.prompt();
+      _deferredPrompt.userChoice.finally(function(){
+        _deferredPrompt = null;
+        var b = document.getElementById('coverInstallBtn'); if (b) b.style.display = 'none';
+      });
+    });
+  });
+  window.addEventListener('appinstalled', function(){
+    var b = document.getElementById('coverInstallBtn'); if (b) b.style.display = 'none';
+  });
+  window.addEventListener('load', function(){
+    // iOS never fires beforeinstallprompt — offer the manual steps instead.
+    if (_isIOS() && !_isStandalone()) {
+      setTimeout(function(){ _addInstallBtn('Add to Home Screen', _iosTip); }, 600);
+    }
+  });
+})();
 </script>
 </body>
 </html>
