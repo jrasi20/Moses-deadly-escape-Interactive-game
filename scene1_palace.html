@@ -3254,7 +3254,7 @@
     transition:all 0.4s ease;
     z-index:80;
   }
-  .toast.show { opacity:1; transform:translate(-50%, 0); }
+  .toast.show { opacity:1; transform:translate(-50%, 0); pointer-events:auto; cursor:pointer; }
   /* 2026-05-25: while the cover page is up, anchor toasts to the BOTTOM so the
      muted-audio toast ("No sound?…") can never cover the cover title. In-game
      toasts are unaffected (cover is display:none then). */
@@ -4091,8 +4091,11 @@
     }
     .dpad {
       position: static !important;
-      order: 0 !important;             /* d-pad FAR LEFT (left thumb) */
-      margin-right: auto !important;   /* push actions + power-ups to the RIGHT */
+      order: 0 !important;             /* d-pad on the LEFT (left thumb) */
+      /* Jane 2026-06-23: nudge the d-pad IN from the extreme left edge toward the
+         centre so it's comfortable for right-handers / two-handed play. */
+      margin-left: clamp(16px, 8vw, 110px) !important;
+      margin-right: auto !important;   /* keep actions + power-ups on the RIGHT */
       z-index: auto;
       opacity: 1 !important;
       display: grid !important;
@@ -22782,6 +22785,16 @@ function drawCompass(){
 let toastTimer = null;
 const _toastQueue = [];
 let _toastShowing = false;
+// Jane 2026-06-23: overhead messages (incl. the tutorials-OFF fallback hints) are now
+// TAP-TO-DISMISS so they're never a hindrance — tap clears the toast + any backlog.
+(function(){
+  var _t = document.getElementById('toast'); if (!_t) return;
+  var _hide = function(){
+    try { _t.classList.remove('show'); clearTimeout(toastTimer); _toastQueue.length = 0; _toastShowing = false; } catch(e){}
+  };
+  _t.addEventListener('click', _hide);
+  _t.addEventListener('pointerdown', _hide);
+})();
 let _toastLastMsg = null;
 let _toastLastMsgAt = 0;
 const _TOAST_DURATION_MS = 3600;
