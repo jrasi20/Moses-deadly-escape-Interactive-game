@@ -1115,17 +1115,18 @@
   .win-journey {
     background: linear-gradient(180deg, rgba(60,30,8,0.55), rgba(40,18,4,0.5));
     border: 1.5px solid rgba(255,215,118,0.45); border-radius: 12px;
-    padding: 10px 12px; margin: 8px auto 10px; max-width: 340px;
+    padding: 14px 16px; margin: 8px auto 10px; max-width: 440px;
   }
-  .win-journey .wj-title { color:#ffd976; font-weight:800; font-size:13px; letter-spacing:0.5px; margin-bottom:6px; }
-  .win-journey .wj-res { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:13px; color:#ffeeb5; margin-bottom:8px; }
-  .win-journey .wj-res strong { color:#fff; font-size:15px; }
-  .win-journey .wj-powers { display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:8px; }
-  .win-journey .wj-power { font-size:11px; font-weight:700; padding:3px 8px; border-radius:12px; border:1px solid; }
+  /* Jane 2026-06-23: journey tracker elements were too tiny — bumped every size up. */
+  .win-journey .wj-title { color:#ffd976; font-weight:800; font-size:17px; letter-spacing:0.5px; margin-bottom:9px; }
+  .win-journey .wj-res { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; font-size:16px; color:#ffeeb5; margin-bottom:11px; }
+  .win-journey .wj-res strong { color:#fff; font-size:20px; }
+  .win-journey .wj-powers { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; margin-bottom:10px; }
+  .win-journey .wj-power { font-size:13px; font-weight:700; padding:5px 11px; border-radius:12px; border:1px solid; }
   .win-journey .wj-power.on { color:#0d2a12; background:linear-gradient(135deg,#7ef0a0,#39c46a); border-color:#bdf7cf; box-shadow:0 0 8px rgba(80,220,120,0.5); }
   .win-journey .wj-power.off { color:#cdb88a; background:rgba(0,0,0,0.25); border-color:rgba(255,215,118,0.3); }
   .win-journey .wj-power.off .wj-prog { color:#ffd976; font-weight:800; }
-  .win-journey .wj-next { font-size:12px; color:#fff2c4; }
+  .win-journey .wj-next { font-size:14.5px; color:#fff2c4; }
   .win-journey .wj-next strong { color:#ffd976; }
   .win-journey .wj-bar { height:8px; border-radius:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,215,118,0.3); margin-top:5px; overflow:hidden; }
   .win-journey .wj-bar-fill { height:100%; background:linear-gradient(90deg,#ffd700,#ffa500); border-radius:6px; transition:width 0.6s ease-out; }
@@ -1552,7 +1553,10 @@
     align-items:center; justify-content:center; padding:18px;
     background:radial-gradient(circle at 50% 42%, rgba(60,36,8,0.82), rgba(12,7,2,0.94));
     -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
-    overflow:hidden;
+    /* Jane 2026-06-23: was overflow:hidden + centered, so on SHORT LANDSCAPE the
+       card clipped top+bottom and the Continue button was unreachable. Allow the
+       overlay to scroll. */
+    overflow-y:auto;
   }
   .crystal-reward.active { display:flex; animation:crFadeIn 0.3s ease; }
   @keyframes crFadeIn { from{opacity:0;} to{opacity:1;} }
@@ -1569,11 +1573,19 @@
   }
   .cr-card {
     position:relative; z-index:2; text-align:center; max-width:min(420px,92vw);
+    /* Jane 2026-06-23: cap height + scroll inside so the Continue button is always
+       reachable on short landscape phones (card no longer clips off-screen). */
+    max-height:92svh; overflow-y:auto;
     background:linear-gradient(165deg,#fff3d4,#ffe2a8 55%,#f4c46a);
     border:4px solid #c98a3a; border-radius:22px;
     padding:clamp(18px,5vw,28px) clamp(16px,5vw,30px) clamp(16px,4vw,24px);
     box-shadow:0 18px 50px rgba(0,0,0,0.55), inset 0 2px 4px rgba(255,255,255,0.6);
     animation:crPop 0.5s cubic-bezier(0.18,1.4,0.5,1) both;
+  }
+  /* short-landscape: shrink the crystal art so the whole card fits without scroll */
+  @media (orientation:landscape) and (max-height:500px){
+    .cr-crystal-box { width:clamp(72px,20vh,110px) !important; height:clamp(72px,20vh,110px) !important; margin:2px auto 6px !important; }
+    .cr-card { padding:14px 18px 14px !important; }
   }
   @keyframes crPop { 0%{ transform:scale(0.5) translateY(20px); opacity:0; } 60%{ transform:scale(1.06); opacity:1; } 100%{ transform:scale(1); } }
   .cr-eyebrow {
@@ -5994,16 +6006,12 @@ function _clampSpriteY(rawY, spriteH){
 // resolves correctly because this fn is only CALLED at render time.
 function _safeAnchorX(dx, dw){
   const raw = Math.round(dx + (TILE - dw) / 2);
-  // #112 Jane 2026-06-03: START art was clipping off the right edge. Scene 2
-  // reads window._introPanActive (which scene 3 never sets) so it ALWAYS clamps
-  // and never clips. Match that behavior here — clamp every frame regardless of
-  // the local intro-pan flag, keeping the larger 2.7/2.5 START sprite on-screen.
-  try { if (typeof window._introPanActive !== 'undefined' && window._introPanActive) return raw; } catch(e){}
-  const tileCenterX = dx + TILE / 2;
-  if (tileCenterX < 0 || tileCenterX > CANVAS_W) return raw;
-  if (raw + dw > CANVAS_W - 4) return Math.max(2, CANVAS_W - 4 - dw);
-  if (raw < 2) return 2;
-  return raw;
+  // Jane 2026-06-23: the EXIT label kept CLIPPING on the right. The old guard
+  // returned the UN-clamped position whenever the tile centre sat past CANVAS_W
+  // (which happens at the far-right exit column when the camera is at max-right),
+  // so the pill ran off-screen. Now ALWAYS keep the pill fully on-screen — when
+  // the EXIT/START sprite is drawn at all, its label is guaranteed visible.
+  return Math.max(2, Math.min(raw, CANVAS_W - 4 - dw));
 }
 // v3.28 (Scene 3 port — CANONICAL §8a): caves are sanctuary tiles. Any
 // AI-controlled enemy (rude shepherds, scouts, etc.) MUST refuse to
@@ -18752,12 +18760,20 @@ function _activatePowerup(key){
     else if (player.dir === 'down') _ddy =  3;
     else if (player.dir === 'left') _ddx = -3;
     else                            _ddx =  3;
+    // Jane 2026-06-23: the jar must land on OPEN GROUND, never on a person (it was
+    // dropping literally on the vendor). A good decoy tile is walkable AND has no
+    // standing NPC/entity (_tileHasBlockingEntity covers vendor, shepherds, etc.).
+    var _okDecoy = function(tx, ty){
+      if (!isWalkable(tx, ty)) return false;
+      try { if (typeof _tileHasBlockingEntity === 'function' && _tileHasBlockingEntity(tx, ty)) return false; } catch(e){}
+      return true;
+    };
     let _dtx = player.tx + _ddx, _dty = player.ty + _ddy;
-    if (!isWalkable(_dtx, _dty)) {
+    if (!_okDecoy(_dtx, _dty)) {
       _dtx = player.tx; _dty = player.ty;
-      for (let s = 2; s >= 1; s--) {
+      for (let s = 3; s >= 1; s--) {
         const _tx = player.tx + Math.sign(_ddx) * s, _ty = player.ty + Math.sign(_ddy) * s;
-        if (isWalkable(_tx, _ty)) { _dtx = _tx; _dty = _ty; break; }
+        if (_okDecoy(_tx, _ty)) { _dtx = _tx; _dty = _ty; break; }
       }
     }
     window._decoyTile = { x: _dtx, y: _dty };
@@ -20335,6 +20351,10 @@ function togglePause(){
   if (game.state === 'playing') {
     game.state = 'paused';
     $('pauseModal').classList.add('active');
+    // Jane 2026-06-23: clear any tip popup + goal banner so they don't STACK behind
+    // the pause modal (the "3 messages overlapping" screenshot).
+    try { var _tp = document.getElementById('tipPopupOverlay'); if (_tp) _tp.classList.remove('active'); } catch(e){}
+    try { _hideCrossingBanner(); } catch(e){}
     // #141: reflect the current tutorial-mode setting on every pause open.
     try { _syncTutToggles(); } catch(e){}
     // v3.8 Jane punchlist: "when game is paused, the sound effects should NOT
