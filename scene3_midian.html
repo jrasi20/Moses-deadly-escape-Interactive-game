@@ -1552,7 +1552,7 @@
     position:fixed; inset:0; z-index:70; display:none;
     align-items:center; justify-content:center; padding:18px;
     background:radial-gradient(circle at 50% 42%, rgba(60,36,8,0.82), rgba(12,7,2,0.94));
-    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+    /* Jane 2026-06-24: backdrop blur removed for iOS perf (the live canvas behind kept re-blurring every frame). */
     /* Jane 2026-06-23: was overflow:hidden + centered, so on SHORT LANDSCAPE the
        card clipped top+bottom and the Continue button was unreachable. Allow the
        overlay to scroll. */
@@ -2149,7 +2149,7 @@
   /* Scene-complete sliding banner (shown before win modal) */
   .scene-banner {
     position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    z-index:50; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);
+    z-index:50; background:rgba(0,0,0,0.74); /* Jane 2026-06-24: dropped backdrop-filter blur for iOS perf (re-blurred the live canvas every frame). */
   }
   .scene-banner.active { display:flex; animation: bannerFade 0.4s ease-out; }
   .scene-banner-box {
@@ -2180,7 +2180,7 @@
     background:
       radial-gradient(ellipse 110% 70% at 50% 20%, rgba(255,160,90,0.34), rgba(0,0,0,0) 62%),
       linear-gradient(180deg, #1d0a26 0%, #4a1338 36%, #8a2a26 68%, #240810 100%);
-    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+    /* Jane 2026-06-24: backdrop blur removed for iOS perf (the live canvas behind kept re-blurring every frame). */
   }
   .final-stage-card.active { display:flex; animation: fscFade .4s ease-out; }
   /* #145: the sun is now an IN-FLOW element at the top of the centred text
@@ -4515,7 +4515,7 @@ function resizeCanvas() {
   const browserZoom = (window.outerWidth && window.innerWidth)
     ? Math.max(1, window.outerWidth / window.innerWidth)
     : 1;
-  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), 3);
+  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), 2);  // Jane 2026-06-24: cap 3→2 for iOS perf (retina 3x backing store = ~9x px/frame = lag).
   _renderDPR = dpr; // remember for _renderInner's per-frame transform reset
   canvas.width  = Math.round(CANVAS_W * dpr);
   canvas.height = Math.round(CANVAS_H * dpr);
@@ -14231,7 +14231,7 @@ function _pulleyFrame(now) {
   // letterboxed — every sprite stays crisp + correctly proportioned, no tiny
   // rectangle floating in dead space on portrait/landscape.
   const W = 600, H = 340;
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  const dpr = Math.min(2, window.devicePixelRatio || 1);  // Jane 2026-06-24: cap 3->2 for iOS mini-game perf
   const cssW = canvas.clientWidth || W;
   const cssH = canvas.clientHeight || H;
   const needW = Math.max(W, Math.round(cssW * dpr));
@@ -15608,7 +15608,7 @@ function _rescueFrame(now) {
   // UNIFORM scale (no squish). The 7 lanes then spread across the whole height and sprites
   // scale up with the lane gap, so the game looks big & magnified on every device.
   const W = 760;
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  const dpr = Math.min(2, window.devicePixelRatio || 1);  // Jane 2026-06-24: cap 3->2 for iOS mini-game perf
   const cssW = canvas.clientWidth || W, cssH = canvas.clientHeight || 470;
   const H = Math.max(120, Math.round(W * (cssH / Math.max(1, cssW))));  // floor only guards degenerate sizes; never binds normally so scale stays UNIFORM (no squish)
   const needW = Math.max(1, Math.round(cssW * dpr)), needH = Math.max(1, Math.round(cssH * dpr));
@@ -26892,12 +26892,19 @@ function loop(now){
   // loop, so two heavy loops fought for the frame budget and the mini-game ran SUPER SLOW
   // (correct speed via ?rescuetest=1 where the maze isn't loaded). Skip the maze render
   // so the mini-game gets the full frame.
-  let _miniGameUp = false;
+  // Jane 2026-06-24 iOS PERF: also SKIP the maze render behind ANY full-screen modal
+  // (challenge/checkpoint, crystal reward, win, danger, pause, scene banner) — it's
+  // hidden anyway, and painting the whole world every frame behind it stole the frame
+  // budget from the modal's own taps (the "lag on every checkpoint button press").
+  let _hideMaze = false;
   try {
-    const rm = document.getElementById('rescueModal'), wm = document.getElementById('wellPulleyModal');
-    _miniGameUp = !!((rm && rm.classList.contains('active')) || (wm && wm.classList.contains('active')));
+    const _ids = ['rescueModal','wellPulleyModal','challengeModal','crystalReward','winModal','dangerModal','pauseModal','sceneBanner'];
+    for (let i = 0; i < _ids.length; i++){
+      const el = document.getElementById(_ids[i]);
+      if (el && el.classList.contains('active')) { _hideMaze = true; break; }
+    }
   } catch(e){}
-  if (!_miniGameUp) render();
+  if (!_hideMaze) render();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
@@ -26959,7 +26966,7 @@ if ('serviceWorker' in navigator) {
   #rescueIntro .riTitle{font-size:clamp(30px,5vw,46px);font-weight:700;color:#ffe0a0;line-height:1.1;margin-top:4px;text-shadow:0 3px 10px rgba(0,0,0,.7),0 0 22px rgba(255,180,60,.45);animation:riPop .6s .15s both;}
   #rescueIntro .riStory{font-size:clamp(15px,1.9vw,18px);line-height:1.5;color:#fff1d6;margin:12px auto 4px;max-width:620px;text-shadow:0 2px 8px rgba(0,0,0,.8);animation:riFade .6s .3s both;}
   #rescueIntro #rescueIntroSteps{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:22px 0;width:100%;animation:riFade .6s .45s both;}
-  #rescueIntro .riStep{flex:1;min-width:170px;max-width:245px;background:rgba(30,20,8,0.62);border:1.5px solid rgba(255,215,120,0.5);border-radius:16px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;color:#ffeccb;backdrop-filter:blur(2px);box-shadow:0 4px 14px rgba(0,0,0,.3);}
+  #rescueIntro .riStep{flex:1;min-width:170px;max-width:245px;background:rgba(30,20,8,0.62);border:1.5px solid rgba(255,215,120,0.5);border-radius:16px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;color:#ffeccb;box-shadow:0 4px 14px rgba(0,0,0,.3);}
   #rescueIntro .riStep .riIco{font-size:38px;line-height:1;}
   #rescueIntro .riStep .riArrows{font-size:18px;color:#ffd86a;letter-spacing:3px;font-weight:bold;margin-left:3px;}
   #rescueIntro .riStep .riTx{font-size:14px;line-height:1.4;}

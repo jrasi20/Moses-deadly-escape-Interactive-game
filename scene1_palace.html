@@ -2944,7 +2944,7 @@
   /* Scene-complete sliding banner (shown before win modal) */
   .scene-banner {
     position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    z-index:50; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);
+    z-index:50; background:rgba(0,0,0,0.74); /* Jane 2026-06-24: dropped backdrop-filter blur — re-blurring the live canvas every frame tanked iOS perf; a darker solid dim reads the same. */
   }
   .scene-banner.active { display:flex; animation: bannerFade 0.4s ease-out; }
   .scene-banner-box {
@@ -5398,7 +5398,7 @@ function resizeCanvas() {
   // memory on the few foldables that misreport DPR=3.5+ with no
   // perceptible visual gain. Smaller backing store = lower mid-range
   // Android GPU pressure + smoother first paint.
-  let dpr = Math.min(3, window.devicePixelRatio || 1);
+  let dpr = Math.min(2, window.devicePixelRatio || 1);  // Jane 2026-06-24: cap 3→2 — on iOS retina (dpr 3) a 3x backing store is ~9x the pixels/frame = heavy lag; 2 is ~55% fewer px, barely-visible softer.
   try {
     const zoom = (window.outerWidth && window.innerWidth)
       ? (window.outerWidth / window.innerWidth) : 1;
@@ -17086,10 +17086,20 @@ function _renderJourneyPanel(){
   const host = document.getElementById('winJourney');
   if (!host) return;
   const _ls = (k) => { try { return localStorage.getItem(k); } catch(e){ return null; } };
-  const t = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
-  const c = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
-  const s = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
-  const p = parseInt(_ls('bek.bundle1.totalPoints')    || '0', 10) || 0;  // Jane 2026-06-21: show the AGGREGATE score (cert value) here too — parity with scenes 2 & 3
+  // Jane 2026-06-24: "Your Journey So Far" should show THIS playthrough's totals up
+  // to the scene just finished — on Scene 1's win that's Scene 1 only (Scenes 2 & 3
+  // haven't started yet), NOT the persistent sum-of-all-scenes. Power-up unlock
+  // progress still uses the LIFETIME bundle totals (Jane: all-time is for power-ups).
+  const _sumUpTo = (res, upto) => { let sum = 0; for (let n = 1; n <= upto; n++) sum += parseInt(_ls('bek.scene' + n + '.' + res) || '0', 10) || 0; return sum; };
+  const _UPTO = 1; // Scene 1 — show scenes 1..1
+  const t = _sumUpTo('treasures', _UPTO);
+  const c = _sumUpTo('crowns',    _UPTO);
+  const s = _sumUpTo('scrolls',   _UPTO);
+  const p = _sumUpTo('points',    _UPTO);
+  // lifetime totals drive the power-up unlock progress only
+  const _lifeT = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
+  const _lifeC = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
+  const _lifeS = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
   let owned = [];
   try { owned = JSON.parse(_ls('bek.bundle1.unlocks') || '[]') || []; } catch(e){ owned = []; }
   const _WJ_TIERS = [
@@ -17099,7 +17109,7 @@ function _renderJourneyPanel(){
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
     { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
-  const resVal = { treasures: t, crowns: c, scrolls: s };
+  const resVal = { treasures: _lifeT, crowns: _lifeC, scrolls: _lifeS };
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
     + '<div class="wj-res">'
     +   '<span>\u{1F4B0} <strong>' + t + '</strong> Treasures</span>'   /* 💰 bags (was 💎) — cross-scene consistency */
@@ -23269,7 +23279,16 @@ function loop(now){
   // meant the camera froze during 'cinematic' state and wouldn't catch
   // up after a forced state change.
   updateCamera();
-  render();
+  // Jane 2026-06-24 iOS PERF: skip the maze render behind any full-screen modal
+  // (challenge/checkpoint, win, danger, pause, scene banner) — it's hidden anyway,
+  // and painting the world every frame behind it stole the frame budget from the
+  // modal's taps (checkpoint button lag on iOS).
+  let _hideMaze = false;
+  try {
+    const _ids = ['challengeModal','winModal','dangerModal','pauseModal','sceneBanner'];
+    for (let i = 0; i < _ids.length; i++){ const el = document.getElementById(_ids[i]); if (el && el.classList.contains('active')) { _hideMaze = true; break; } }
+  } catch(e){}
+  if (!_hideMaze) render();
   // 2026-05-09 PM15 v5 — drive the Speed Burst lightning meter.
   try { _updateSpeedBurstMeter(); } catch(e){}
   requestAnimationFrame(loop);
