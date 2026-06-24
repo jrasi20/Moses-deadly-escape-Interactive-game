@@ -2586,7 +2586,7 @@
   /* Scene-complete sliding banner (shown before win modal) */
   .scene-banner {
     position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    z-index:50; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);
+    z-index:50; background:rgba(0,0,0,0.74); /* Jane 2026-06-24: dropped backdrop-filter blur for iOS perf (re-blurred the live canvas every frame). */
   }
   .scene-banner.active { display:flex; animation: bannerFade 0.4s ease-out; }
   .scene-banner-box {
@@ -4104,7 +4104,7 @@ function resizeCanvas() {
   const browserZoom = (window.outerWidth && window.innerWidth)
     ? Math.max(1, window.outerWidth / window.innerWidth)
     : 1;
-  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), 4);
+  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), 2);  // Jane 2026-06-24: cap 4→2 for iOS perf (retina backing store was up to 4x = huge px/frame).
   _renderDPR = dpr; // remember for render()'s per-frame transform reset
   canvas.width  = Math.round(CANVAS_W * dpr);
   canvas.height = Math.round(CANVAS_H * dpr);
@@ -12294,10 +12294,18 @@ function _renderJourneyPanel(){
   const host = document.getElementById('winJourney');
   if (!host) return;
   const _ls = (k) => { try { return localStorage.getItem(k); } catch(e){ return null; } };
-  const t = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
-  const c = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
-  const s = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
-  const p = parseInt(_ls('bek.bundle1.totalPoints')    || '0', 10) || 0;  // Jane 2026-06-21: show the AGGREGATE score here too (this is what the certificate prints) — parity with Scene 3
+  // Jane 2026-06-24: show THIS playthrough's totals up to the scene just finished —
+  // on Scene 2's win that's Scenes 1+2 (Scene 3 not started yet), NOT all scenes.
+  // Power-up unlock progress still uses the LIFETIME totals (all-time is for power-ups).
+  const _sumUpTo = (res, upto) => { let sum = 0; for (let n = 1; n <= upto; n++) sum += parseInt(_ls('bek.scene' + n + '.' + res) || '0', 10) || 0; return sum; };
+  const _UPTO = 2; // Scene 2 — show scenes 1..2
+  const t = _sumUpTo('treasures', _UPTO);
+  const c = _sumUpTo('crowns',    _UPTO);
+  const s = _sumUpTo('scrolls',   _UPTO);
+  const p = _sumUpTo('points',    _UPTO);
+  const _lifeT = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
+  const _lifeC = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
+  const _lifeS = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
   let owned = [];
   try { owned = JSON.parse(_ls('bek.bundle1.unlocks') || '[]') || []; } catch(e){ owned = []; }
   const _WJ_TIERS = [
@@ -12307,7 +12315,7 @@ function _renderJourneyPanel(){
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
     { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
-  const resVal = { treasures: t, crowns: c, scrolls: s };
+  const resVal = { treasures: _lifeT, crowns: _lifeC, scrolls: _lifeS };
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
     + '<div class="wj-res">'
     +   '<span>\u{1F4B0} <strong>' + t + '</strong> Treasures</span>'  /* K8: 💰 bags (was 💎) for cross-scene consistency */
@@ -19587,7 +19595,15 @@ function loop(now){
   // PM66 danger-heat + near-miss (self-guard on game.state)
   try { _updateHeartbeat(); } catch(e){}
   try { _updateNearMiss(); } catch(e){}
-  render();
+  // Jane 2026-06-24 iOS PERF: skip the maze render behind any full-screen modal
+  // (challenge/checkpoint, jigsaw, win, danger, pause, scene banner) — hidden anyway,
+  // and rendering the world behind it stole the frame budget from the modal's taps.
+  let _hideMaze = false;
+  try {
+    const _ids = ['challengeModal','jigsawModal','winModal','dangerModal','pauseModal','sceneBanner'];
+    for (let i = 0; i < _ids.length; i++){ const el = document.getElementById(_ids[i]); if (el && el.classList.contains('active')) { _hideMaze = true; break; } }
+  } catch(e){}
+  if (!_hideMaze) render();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
