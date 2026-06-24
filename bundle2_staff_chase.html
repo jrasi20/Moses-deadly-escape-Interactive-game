@@ -1,0 +1,1138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--
+  In Moses's Sandals: Staffs of Light
+  Bundle 2 prototype - Chapter 1 Level 1
+  Scripture: Exodus 7:8-13 (Aaron's staff swallows the magicians' staffs)
+  Brand: "Step into the shoes of your favorite Bible character"
+  Copyright 2026 Bible Explorer Kids. All rights reserved.
+
+  See BUNDLE2_DESIGN.md for full architecture + reuse pointers.
+  See BUNDLE2_STORYBOARD.md for level beats and verse panel script.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="copyright" content="copyright 2026 Bible Explorer Kids">
+<meta name="description" content="In Moses's Sandals — Staffs of Light: a faith-vs-magic chase game from Exodus 7. Prototype build.">
+<meta name="theme-color" content="#3a1d05">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Staffs of Light">
+<link rel="apple-touch-icon" href="assets/images/logo%201.png">
+<link rel="icon" type="image/png" href="assets/images/logo%201.png">
+<title>In Moses's Sandals — Staffs of Light (Prototype)</title>
+<style>
+  /* --- reset --- */
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body{
+    width:100%;
+    height:100vh; height:100svh; height:100dvh;
+    overflow:hidden;
+    font-family:'Georgia','Times New Roman',serif;
+    background:#1a0a00;
+    color:#fff8e7;
+    user-select:none; -webkit-user-select:none;
+    -webkit-text-size-adjust:100%;
+  }
+  button, input{ font-family:inherit; font-size:16px; }
+  button{ cursor:pointer; border:none; outline:none; }
+
+  /* --- page containers --- */
+  .page{ position:fixed; inset:0; display:none; flex-direction:column; }
+  .page.active{ display:flex; }
+
+  /* --- cover --- */
+  #coverPage{
+    background:radial-gradient(ellipse at top, #c77d3a 0%, #7a3a13 55%, #3a1405 100%);
+    align-items:center; justify-content:center;
+    padding:18px; gap:14px;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .cover-logo{
+    width:clamp(72px, 16vw, 120px);
+    filter:drop-shadow(0 4px 18px rgba(0,0,0,0.55));
+  }
+  .cover-title{
+    font-size:clamp(24px, 6vw, 40px);
+    color:#ffd976;
+    text-align:center;
+    text-shadow:0 3px 0 #5a1d06, 0 6px 22px rgba(0,0,0,0.6);
+    line-height:1.15;
+    letter-spacing:0.5px;
+  }
+  .cover-sub{
+    font-size:clamp(13px, 3vw, 17px);
+    color:#fff1c2;
+    text-align:center;
+    letter-spacing:1px;
+    opacity:0.92;
+  }
+  .cover-chip{
+    display:inline-block;
+    background:rgba(0,0,0,0.35);
+    border:2px solid #ffd976;
+    color:#ffeaa3;
+    font-size:13px;
+    padding:6px 18px;
+    border-radius:50px;
+    font-weight:700;
+    letter-spacing:1px;
+  }
+  .verse-card{
+    width:min(540px, 94%);
+    background:rgba(40,10,2,0.72);
+    border:2px solid rgba(255,215,118,0.45);
+    border-radius:14px;
+    padding:14px 18px;
+    color:#ffeecf;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5);
+  }
+  .verse-card h2{ color:#ffd976; font-size:17px; margin-bottom:6px; text-align:center; }
+  .verse-card p{ font-size:14px; line-height:1.55; }
+  .verse-quote{
+    font-style:italic;
+    background:rgba(0,0,0,0.25);
+    border-left:4px solid #ffd976;
+    padding:8px 12px;
+    margin-top:8px;
+    font-size:13px;
+    color:#ffe8b8;
+    border-radius:4px;
+  }
+  .verse-quote .ref{ display:block; text-align:right; color:#ffb86a; font-style:normal; font-weight:700; margin-top:4px; font-size:11px; }
+  .start-btn{
+    background:linear-gradient(145deg,#ffd976,#f2a83a);
+    color:#5a1d06;
+    padding:14px 36px;
+    font-size:18px;
+    font-weight:700;
+    border-radius:50px;
+    letter-spacing:1px;
+    box-shadow:0 6px 22px rgba(255,180,80,0.55), inset 0 -3px 0 rgba(120,60,10,0.45);
+    transition:transform 0.15s ease;
+  }
+  .start-btn:active{ transform:scale(0.96); }
+  .cover-foot{
+    font-size:11px; opacity:0.7; text-align:center; margin-top:8px;
+  }
+
+  /* --- game --- */
+  #gamePage{
+    background:#0d0500;
+  }
+  .hud{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 12px;
+    background:linear-gradient(180deg, rgba(40,14,3,0.96), rgba(58,22,7,0.92));
+    border-bottom:2px solid #ffd976;
+    flex-shrink:0;
+    gap:6px; flex-wrap:wrap;
+    padding-top:max(8px, env(safe-area-inset-top, 8px));
+    padding-left:max(12px, env(safe-area-inset-left, 12px));
+    padding-right:max(12px, env(safe-area-inset-right, 12px));
+  }
+  .hud-chip{
+    background:rgba(0,0,0,0.35);
+    border:1px solid rgba(255,215,118,0.45);
+    padding:4px 10px;
+    border-radius:18px;
+    color:#ffeaa3;
+    font-size:13px;
+    font-weight:700;
+    display:inline-flex; align-items:center; gap:5px;
+    white-space:nowrap;
+  }
+  .hud-chip.danger{ color:#ff8e74; border-color:#ff8e74; }
+  #hudLevel{ color:#ffd976; font-weight:700; font-size:13px; letter-spacing:1px; }
+  .icon-btn{
+    width:34px; height:34px; border-radius:50%;
+    background:#ffd976; color:#5a1d06;
+    font-weight:900; font-size:15px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  .stage{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    padding:6px;
+    gap:6px;
+    overflow:hidden;
+  }
+  .arena-wrap{
+    flex:1;
+    display:flex; align-items:center; justify-content:center;
+    min-height:0; position:relative;
+  }
+  /* Canvas is sized in JS based on viewport + orientation */
+  #gameCanvas{
+    display:block;
+    background:#2a1606;
+    border:2px solid rgba(255,215,118,0.55);
+    border-radius:8px;
+    box-shadow:0 0 22px rgba(0,0,0,0.55), inset 0 0 30px rgba(0,0,0,0.35);
+    max-width:100%; max-height:100%;
+    touch-action:none;
+  }
+
+  /* Hebrew strip (split-screen consequence) */
+  .hebrew-strip{
+    flex-shrink:0;
+    background:linear-gradient(180deg, #3a1a05, #2a1303);
+    border:1px solid rgba(255,215,118,0.35);
+    border-radius:6px;
+    padding:6px 8px;
+    display:flex; align-items:center; gap:6px;
+    min-height:46px;
+  }
+  .hebrew-strip-label{
+    color:#ffd976;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    flex-shrink:0;
+    max-width:90px;
+    line-height:1.2;
+  }
+  .hebrew-row{
+    flex:1; display:flex; gap:4px;
+    justify-content:space-around; align-items:flex-end;
+  }
+  .slave{
+    flex:1; max-width:48px;
+    display:flex; flex-direction:column; align-items:center;
+    gap:1px;
+  }
+  .slave-bricks{
+    width:100%; max-width:24px;
+    background:linear-gradient(180deg,#a86839,#6e3e1a);
+    border:1px solid #4a2410;
+    border-radius:2px;
+    height:0; /* set in JS based on brick count */
+    transition:height 0.3s ease, background 0.3s ease;
+  }
+  .slave-figure{
+    width:14px; height:18px;
+    background:radial-gradient(ellipse at top, #c08658 0%, #6e3e1a 70%);
+    border-radius:50% 50% 30% 30%;
+    box-shadow:0 1px 0 rgba(0,0,0,0.3);
+    transition:transform 0.3s ease;
+  }
+  .slave.bowed .slave-figure{ transform:translateY(2px) scaleY(0.8); }
+  .slave.crushed .slave-figure{ transform:translateY(4px) scaleY(0.6); }
+  .slave.free .slave-figure{ transform:translateY(-2px) scaleY(1.05); }
+
+  /* controls (d-pad + power buttons) */
+  .controls{
+    flex-shrink:0;
+    display:flex; align-items:center;
+    padding:8px;
+    gap:10px;
+    padding-bottom:max(8px, env(safe-area-inset-bottom, 8px));
+  }
+  .dpad{
+    display:grid;
+    grid-template-columns:repeat(3, 44px);
+    grid-template-rows:repeat(3, 44px);
+    gap:4px;
+    flex-shrink:0;
+  }
+  .dpad-btn{
+    background:linear-gradient(145deg,#d8a85a, #a06822);
+    color:#3a1d05;
+    border-radius:8px;
+    border:none;
+    font-weight:900;
+    font-size:20px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 0 #5a3a18, 0 4px 8px rgba(0,0,0,0.4);
+  }
+  .dpad-btn:active{
+    transform:translateY(2px);
+    box-shadow:0 0 0 #5a3a18;
+  }
+  .dpad-spacer{ visibility:hidden; }
+  .actions{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    align-self:stretch;
+    justify-content:center;
+  }
+  .action-btn{
+    background:linear-gradient(145deg,#3a1d05, #5a3010);
+    color:#ffd976;
+    border:2px solid #ffd976;
+    border-radius:10px;
+    padding:8px 12px;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:0.5px;
+  }
+  .action-btn:active{ transform:scale(0.97); }
+  .action-btn.locked{ opacity:0.4; border-color:#7a5a30; color:#7a5a30; }
+  .action-btn .hint{ display:block; font-size:10px; opacity:0.75; font-weight:400; margin-top:1px; }
+
+  /* modals */
+  .modal{
+    position:fixed; inset:0;
+    background:rgba(20,8,2,0.85);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  .modal.active{ display:flex; }
+  .modal-box{
+    width:min(420px, 96%);
+    background:linear-gradient(155deg, #3a1d05, #5a3010);
+    border:3px solid #ffd976;
+    border-radius:18px;
+    padding:22px 24px;
+    text-align:center;
+    color:#fff8e7;
+    box-shadow:0 12px 48px rgba(0,0,0,0.65);
+    max-height:90vh; overflow-y:auto;
+  }
+  .modal-box h2{
+    color:#ffd976;
+    font-size:22px;
+    margin-bottom:8px;
+    letter-spacing:0.5px;
+  }
+  .modal-stars{
+    font-size:28px;
+    margin:8px 0;
+    letter-spacing:6px;
+    color:#5a3010;
+  }
+  .modal-stars span.lit{ color:#ffd976; text-shadow:0 0 12px rgba(255,215,118,0.85); }
+  .modal-body{ font-size:14px; line-height:1.5; margin-bottom:14px; }
+  .modal-verse{
+    font-style:italic;
+    background:rgba(0,0,0,0.3);
+    border-left:4px solid #ffd976;
+    padding:8px 12px;
+    margin:10px auto;
+    font-size:13px;
+    color:#ffe8b8;
+    border-radius:4px;
+    text-align:left;
+  }
+  .modal-verse .ref{ display:block; text-align:right; color:#ffb86a; font-style:normal; font-weight:700; margin-top:4px; font-size:11px; }
+  .modal-btns{
+    display:flex; gap:8px; justify-content:center; flex-wrap:wrap;
+    margin-top:8px;
+  }
+  .modal-btn{
+    background:linear-gradient(145deg,#ffd976,#f2a83a);
+    color:#5a1d06;
+    padding:10px 22px;
+    font-size:14px;
+    font-weight:700;
+    border-radius:30px;
+    letter-spacing:0.5px;
+    box-shadow:0 4px 14px rgba(255,180,80,0.5);
+  }
+  .modal-btn.ghost{
+    background:transparent; color:#ffd976; border:2px solid #ffd976;
+    box-shadow:none;
+  }
+  .modal-btn:active{ transform:scale(0.96); }
+
+  /* toast */
+  .toast{
+    position:fixed;
+    bottom:max(96px, env(safe-area-inset-bottom, 12px));
+    left:50%;
+    transform:translateX(-50%);
+    background:rgba(40,14,3,0.94);
+    color:#ffd976;
+    border:2px solid #ffd976;
+    border-radius:30px;
+    padding:8px 18px;
+    font-size:13px;
+    font-weight:700;
+    box-shadow:0 6px 22px rgba(0,0,0,0.6);
+    opacity:0; pointer-events:none;
+    transition:opacity 0.25s ease;
+    z-index:40;
+    text-align:center;
+    max-width:90vw;
+  }
+  .toast.show{ opacity:1; }
+
+  /* --- responsive --- */
+  /* Landscape phones: put Hebrew strip on right sidebar, d-pad on bottom-left */
+  @media (orientation: landscape) and (max-height: 540px){
+    .stage{
+      flex-direction:row;
+      gap:6px;
+    }
+    .arena-wrap{
+      flex:1 1 auto;
+    }
+    .hebrew-strip{
+      flex-direction:column;
+      min-height:0;
+      width:108px;
+      max-width:108px;
+      padding:8px 6px;
+      gap:8px;
+    }
+    .hebrew-strip-label{
+      max-width:none;
+      text-align:center;
+      font-size:11px;
+    }
+    .hebrew-row{
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      gap:6px;
+      flex:1;
+    }
+    .slave{
+      flex:0 0 auto;
+      max-width:none;
+      width:38px;
+      flex-direction:row;
+      gap:4px;
+      align-items:center;
+    }
+    .slave-bricks{ width:14px; max-width:14px; height:0; }
+    .dpad{
+      grid-template-columns:repeat(3, 38px);
+      grid-template-rows:repeat(3, 38px);
+    }
+    .controls{ padding:6px; gap:8px; }
+    .action-btn{ font-size:11px; padding:6px 10px; }
+    .action-btn .hint{ display:none; }
+  }
+  /* Very narrow phones in portrait: shrink HUD chips */
+  @media (max-width: 380px) and (orientation: portrait){
+    .hud{ padding:6px 8px; font-size:12px; }
+    .hud-chip{ font-size:11px; padding:3px 8px; }
+    .dpad{
+      grid-template-columns:repeat(3, 40px);
+      grid-template-rows:repeat(3, 40px);
+    }
+    .action-btn{ font-size:11px; padding:7px 8px; }
+  }
+  /* Desktop: keep things centered, hide d-pad in favor of keyboard hint */
+  @media (min-width: 900px) and (pointer: fine){
+    .dpad{
+      opacity:0.55;
+    }
+  }
+  /* Accessibility focus */
+  button:focus-visible{
+    outline:2px solid #ffd976;
+    outline-offset:2px;
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="page active" id="coverPage" role="region" aria-label="Cover page">
+  <img src="assets/images/logo%201.png" alt="Bible Explorer Kids" class="cover-logo" onerror="this.style.display='none'">
+  <h1 class="cover-title">In Moses's Sandals<br><span style="font-size:0.65em; color:#fff1c2;">Staffs of Light</span></h1>
+  <div class="cover-sub">Prototype - Chapter 1, Level 1</div>
+  <div class="cover-chip">EXODUS 7:8-13</div>
+
+  <div class="verse-card">
+    <h2>The Staff That Swallows</h2>
+    <p>Moses and Aaron stand before Pharaoh. Aaron throws down his staff - it becomes a sign. The Egyptian magicians do the same. But Aaron's staff swallows up theirs.</p>
+    <div class="verse-quote">
+      "Aaron's staff swallowed up their staffs."
+      <span class="ref">- Exodus 7:12 (NIV)</span>
+    </div>
+  </div>
+
+  <button class="start-btn" id="startBtn" aria-label="Start the chase">Begin the Chase</button>
+
+  <div class="cover-foot">Bundle 2 prototype build. Use arrow keys, WASD, the on-screen pad, or swipe.</div>
+</div>
+
+<!-- GAME -->
+<div class="page" id="gamePage" role="region" aria-label="Game">
+  <div class="hud" id="hud">
+    <span id="hudLevel">CH 1 - LV 1</span>
+    <span class="hud-chip" id="hudTime" title="Time remaining">⏱ <span id="hudTimeVal">90</span>s</span>
+    <span class="hud-chip" id="hudStaffs" title="Magicians remaining">✨ <span id="hudStaffsVal">2</span>/2</span>
+    <span class="hud-chip" id="hudScore" title="Score">⭐ <span id="hudScoreVal">0</span></span>
+    <button class="icon-btn" id="pauseBtn" aria-label="Pause">II</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="arena-wrap" id="arenaWrap">
+      <canvas id="gameCanvas" width="320" height="448" aria-label="Maze arena"></canvas>
+    </div>
+    <div class="hebrew-strip" id="hebrewStrip" aria-label="Hebrew slaves status">
+      <div class="hebrew-strip-label">HEBREW<br>WORKERS</div>
+      <div class="hebrew-row" id="hebrewRow">
+        <!-- 5 slaves populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <div class="controls" id="controls">
+    <div class="dpad" id="dpad" role="group" aria-label="Movement controls">
+      <span class="dpad-spacer"></span>
+      <button class="dpad-btn" data-dir="up" aria-label="Move up">▲</button>
+      <span class="dpad-spacer"></span>
+      <button class="dpad-btn" data-dir="left" aria-label="Move left">◀</button>
+      <span class="dpad-spacer"></span>
+      <button class="dpad-btn" data-dir="right" aria-label="Move right">▶</button>
+      <span class="dpad-spacer"></span>
+      <button class="dpad-btn" data-dir="down" aria-label="Move down">▼</button>
+      <span class="dpad-spacer"></span>
+    </div>
+    <div class="actions">
+      <button class="action-btn locked" id="freezeBtn" aria-label="Leprous hand freeze - unlocks Chapter 2">
+        ✋ FREEZE
+        <span class="hint">Unlocks Ch 2</span>
+      </button>
+      <button class="action-btn locked" id="floodBtn" aria-label="Nile water flood - unlocks Chapter 3">
+        💧 FLOOD
+        <span class="hint">Unlocks Ch 3</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- WIN MODAL -->
+<div class="modal" id="winModal" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+  <div class="modal-box">
+    <h2 id="winTitle">Faithful and brave!</h2>
+    <div class="modal-stars" id="winStars"><span>★</span><span>★</span><span>★</span></div>
+    <div class="modal-body" id="winBody">All the slaves are free.</div>
+    <div class="modal-verse">
+      "Moses and Aaron went to Pharaoh and did just as the Lord commanded."
+      <span class="ref">- Exodus 7:10 (NIV)</span>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn" id="winNextBtn">Replay</button>
+      <button class="modal-btn ghost" id="winMenuBtn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOSE MODAL -->
+<div class="modal" id="loseModal" role="dialog" aria-modal="true" aria-labelledby="loseTitle">
+  <div class="modal-box">
+    <h2 id="loseTitle">Pharaoh's magic held this time.</h2>
+    <div class="modal-body">The slaves are weary. Try again to free them.</div>
+    <div class="modal-verse">
+      "But Pharaoh's heart became hard."
+      <span class="ref">- Exodus 7:13 (NIV)</span>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn" id="loseRetryBtn">Try Again</button>
+      <button class="modal-btn ghost" id="loseMenuBtn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAUSE MODAL -->
+<div class="modal" id="pauseModal" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+  <div class="modal-box">
+    <h2 id="pauseTitle">Paused</h2>
+    <div class="modal-body">Catch your breath. Pharaoh waits.</div>
+    <div class="modal-btns">
+      <button class="modal-btn" id="resumeBtn">Resume</button>
+      <button class="modal-btn ghost" id="pauseMenuBtn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ==========================================================
+   In Moses's Sandals: Staffs of Light - Bundle 2 prototype
+   Chapter 1 Level 1 only. See BUNDLE2_DESIGN.md.
+   ========================================================== */
+'use strict';
+
+// ---------- DOM helpers ----------
+const $ = id => document.getElementById(id);
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  $(id).classList.add('active');
+}
+function showModal(id){ $(id).classList.add('active'); }
+function hideModal(id){ $(id).classList.remove('active'); }
+function hideAllModals(){ document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); }
+
+let _toastT = null;
+function toast(msg, ms){
+  ms = ms || 1800;
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (_toastT) clearTimeout(_toastT);
+  _toastT = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+// ---------- maze definition (Chapter 1 Level 1) ----------
+// 10 wide x 14 tall. # = wall, . = corridor, P = player start, R = red, B = blue
+// Pac-Man-style: pillar islands with corridors winding around.
+const MAZE_L1 = [
+  '##########',
+  '#P.......#',
+  '#.######.#',
+  '#.#....#.#',
+  '#.#.##.#.#',
+  '#........#',
+  '#.######.#',
+  '#.#R...#.#',
+  '#.#.##.#.#',
+  '#.#....#.#',
+  '#.######.#',
+  '#........#',
+  '#......B.#',
+  '##########',
+];
+
+const COLS = MAZE_L1[0].length;
+const ROWS = MAZE_L1.length;
+
+// ---------- game state ----------
+const GAME = {
+  state: 'cover',          // cover | playing | paused | won | lost
+  level: 1,
+  timeLeft: 90,
+  timeLimit: 90,
+  staffsAlive: 2,
+  staffsAbsorbedThisLevel: 0,
+  staffsAbsorbedTotal: 0,
+  score: 0,
+  bricks: [4,4,4,4,4],     // brick stack per slave (0..MAX_BRICKS); higher = more burden
+  player: { x:1, y:1, dx:0, dy:0, qdx:0, qdy:0, trail:[] },
+  enemies: [],
+  lastTickMs: 0,
+  lastMoveMs: 0,
+  lastBrickMs: 0,
+  audioUnlocked: false,
+};
+
+const MAX_BRICKS = 10;
+const MOVE_INTERVAL_MS = 160;   // player tile-to-tile speed
+const ENEMY_MOVE_INTERVAL_MS = 220;
+const BRICK_GROW_INTERVAL_MS = 2200;  // bricks pile up every 2.2s
+const TRAIL_LIFETIME_MS = 1400;
+
+// ---------- canvas + responsive sizing ----------
+const canvas = $('gameCanvas');
+const ctx = canvas.getContext('2d');
+let TILE = 32;  // recomputed each resize
+
+function resizeCanvas(){
+  const wrap = $('arenaWrap');
+  const rect = wrap.getBoundingClientRect();
+  const availW = Math.max(100, rect.width - 4);
+  const availH = Math.max(100, rect.height - 4);
+  const tileByW = Math.floor(availW / COLS);
+  const tileByH = Math.floor(availH / ROWS);
+  TILE = Math.max(14, Math.min(tileByW, tileByH));
+  const cssW = TILE * COLS;
+  const cssH = TILE * ROWS;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 120));
+
+// ---------- maze accessors ----------
+function tileAt(x, y){
+  if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return '#';
+  return MAZE_L1[y][x];
+}
+function isWall(x, y){ return tileAt(x, y) === '#'; }
+
+// ---------- level init ----------
+function initLevel(){
+  GAME.timeLeft = GAME.timeLimit;
+  GAME.staffsAbsorbedThisLevel = 0;
+  GAME.score = 0;
+  GAME.bricks = [4,4,4,4,4];
+  GAME.player.trail = [];
+  GAME.player.dx = 0; GAME.player.dy = 0;
+  GAME.player.qdx = 0; GAME.player.qdy = 0;
+
+  // place player + enemies based on the maze map
+  for (let y=0; y<ROWS; y++){
+    for (let x=0; x<COLS; x++){
+      const c = MAZE_L1[y][x];
+      if (c === 'P'){ GAME.player.x = x; GAME.player.y = y; }
+    }
+  }
+  GAME.enemies = [
+    { id:'red', kind:'flee', x:3, y:7, color:'#ff5848', dx:0, dy:0, lastMoveMs:0, frozen:false, alive:true },
+    { id:'blue', kind:'wander', x:7, y:12, color:'#4ec8ff', dx:0, dy:0, lastMoveMs:0, frozen:false, alive:true },
+  ];
+  GAME.staffsAlive = GAME.enemies.filter(e => e.alive).length;
+
+  updateHud();
+  updateHebrewStrip();
+}
+
+// ---------- HUD + Hebrew strip ----------
+function updateHud(){
+  $('hudTimeVal').textContent = Math.max(0, Math.ceil(GAME.timeLeft));
+  $('hudStaffsVal').textContent = (GAME.enemies.filter(e=>e.alive).length) + '/' + GAME.enemies.length;
+  $('hudScoreVal').textContent = GAME.score;
+  const timeChip = $('hudTime');
+  if (GAME.timeLeft < 15){ timeChip.classList.add('danger'); }
+  else { timeChip.classList.remove('danger'); }
+}
+
+function buildHebrewStrip(){
+  const row = $('hebrewRow');
+  row.innerHTML = '';
+  for (let i=0; i<5; i++){
+    const cell = document.createElement('div');
+    cell.className = 'slave';
+    cell.innerHTML = '<div class="slave-bricks" id="brk'+i+'"></div><div class="slave-figure"></div>';
+    row.appendChild(cell);
+  }
+}
+function updateHebrewStrip(){
+  for (let i=0; i<5; i++){
+    const brickEl = $('brk'+i);
+    const cell = brickEl.parentElement;
+    const b = GAME.bricks[i];
+    const pct = Math.min(1, b / MAX_BRICKS);
+    brickEl.style.height = (pct * 28).toFixed(0) + 'px';
+    cell.classList.remove('free','bowed','crushed');
+    if (b <= 0) cell.classList.add('free');
+    else if (b >= MAX_BRICKS) cell.classList.add('crushed');
+    else if (b >= 7) cell.classList.add('bowed');
+    if (b >= 8) brickEl.style.background = 'linear-gradient(180deg,#8a4a1d,#4a2410)';
+    else brickEl.style.background = '';
+  }
+}
+
+// ---------- input ----------
+const PENDING = { dx:0, dy:0 };
+function queueDir(dx, dy){
+  if (GAME.state !== 'playing') return;
+  PENDING.dx = dx; PENDING.dy = dy;
+  // apply immediately if it's a 90deg turn that's traversable
+  const px = GAME.player.x, py = GAME.player.y;
+  if (!isWall(px+dx, py+dy)){
+    GAME.player.qdx = dx; GAME.player.qdy = dy;
+  }
+}
+
+// keyboard
+document.addEventListener('keydown', e => {
+  const k = e.key;
+  if (k === 'ArrowUp' || k === 'w' || k === 'W'){ queueDir(0,-1); e.preventDefault(); }
+  else if (k === 'ArrowDown' || k === 's' || k === 'S'){ queueDir(0,1); e.preventDefault(); }
+  else if (k === 'ArrowLeft' || k === 'a' || k === 'A'){ queueDir(-1,0); e.preventDefault(); }
+  else if (k === 'ArrowRight' || k === 'd' || k === 'D'){ queueDir(1,0); e.preventDefault(); }
+  else if (k === ' ' || k === 'p' || k === 'P'){ togglePause(); e.preventDefault(); }
+  else if (k === 'Escape'){ if (GAME.state === 'playing') togglePause(); }
+});
+
+// d-pad
+document.querySelectorAll('.dpad-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    const dir = b.dataset.dir;
+    if (dir === 'up') queueDir(0,-1);
+    else if (dir === 'down') queueDir(0,1);
+    else if (dir === 'left') queueDir(-1,0);
+    else if (dir === 'right') queueDir(1,0);
+  });
+});
+
+// swipe on canvas
+let _swipeStart = null;
+canvas.addEventListener('touchstart', e => {
+  if (!e.changedTouches[0]) return;
+  _swipeStart = { x:e.changedTouches[0].clientX, y:e.changedTouches[0].clientY, t:Date.now() };
+}, { passive:true });
+canvas.addEventListener('touchend', e => {
+  if (!_swipeStart || !e.changedTouches[0]) return;
+  const dx = e.changedTouches[0].clientX - _swipeStart.x;
+  const dy = e.changedTouches[0].clientY - _swipeStart.y;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  if (Math.max(adx, ady) < 18){ _swipeStart = null; return; }
+  if (adx > ady) queueDir(dx > 0 ? 1 : -1, 0);
+  else queueDir(0, dy > 0 ? 1 : -1);
+  _swipeStart = null;
+}, { passive:true });
+
+// pause
+$('pauseBtn').addEventListener('click', togglePause);
+function togglePause(){
+  if (GAME.state === 'playing'){
+    GAME.state = 'paused';
+    showModal('pauseModal');
+  } else if (GAME.state === 'paused'){
+    hideModal('pauseModal');
+    GAME.state = 'playing';
+    GAME.lastTickMs = performance.now();
+  }
+}
+
+// ---------- audio (lazy unlock) ----------
+const SFX = {};
+function loadSfx(name, src){
+  try {
+    const a = new Audio();
+    a.src = src;
+    a.preload = 'none';
+    SFX[name] = a;
+  } catch(e){}
+}
+loadSfx('chime',  'assets/audio/chime2.mp3');
+loadSfx('click',  'assets/audio/click.mp3');
+loadSfx('absorb', 'assets/audio/level%20up%202.mp3');
+loadSfx('win',    'assets/audio/win%20sound.mp3');
+loadSfx('lose',   'assets/audio/uh%20oh.mp3');
+loadSfx('warn',   'assets/audio/danger%20alert.mp3');
+
+function unlockAudio(){
+  if (GAME.audioUnlocked) return;
+  GAME.audioUnlocked = true;
+  // touch each sound (browser allows future plays after first user gesture)
+  Object.values(SFX).forEach(a => {
+    try { a.muted = true; a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(()=>{}); } catch(e){}
+  });
+}
+function play(name){
+  if (!GAME.audioUnlocked) return;
+  const a = SFX[name];
+  if (!a) return;
+  try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){}
+}
+
+// ---------- enemy AI ----------
+function neighborsOf(x, y){
+  const out = [];
+  if (!isWall(x, y-1)) out.push({x, y:y-1, dx:0, dy:-1});
+  if (!isWall(x, y+1)) out.push({x, y:y+1, dx:0, dy:1});
+  if (!isWall(x-1, y)) out.push({x:x-1, y, dx:-1, dy:0});
+  if (!isWall(x+1, y)) out.push({x:x+1, y, dx:1, dy:0});
+  return out;
+}
+function manhattan(a, b){ return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); }
+
+function decideEnemyMove(e){
+  const opts = neighborsOf(e.x, e.y);
+  if (opts.length === 0) return null;
+  // avoid reversing if more than 1 option (Pac-Man-like)
+  const noReverse = opts.filter(o => !(o.dx === -e.dx && o.dy === -e.dy));
+  const choices = noReverse.length > 0 ? noReverse : opts;
+  const p = GAME.player;
+
+  if (e.kind === 'flee'){
+    // pick the option that MAXIMIZES distance to player
+    choices.sort((a,b) => manhattan(b, p) - manhattan(a, p));
+    return choices[0];
+  } else if (e.kind === 'chase'){
+    choices.sort((a,b) => manhattan(a, p) - manhattan(b, p));
+    return choices[0];
+  } else {
+    // wander
+    return choices[Math.floor(Math.random() * choices.length)];
+  }
+}
+
+// ---------- game loop ----------
+function gameTick(nowMs){
+  if (GAME.state !== 'playing'){
+    requestAnimationFrame(gameTick);
+    return;
+  }
+  const dt = nowMs - GAME.lastTickMs;
+  GAME.lastTickMs = nowMs;
+
+  // timer
+  GAME.timeLeft -= dt / 1000;
+  if (GAME.timeLeft <= 0){
+    GAME.timeLeft = 0;
+    endLevel(false);
+    requestAnimationFrame(gameTick);
+    return;
+  }
+
+  // player tile movement
+  if (nowMs - GAME.lastMoveMs >= MOVE_INTERVAL_MS){
+    GAME.lastMoveMs = nowMs;
+    // try queued direction first
+    if (PENDING.dx || PENDING.dy){
+      const nx = GAME.player.x + PENDING.dx;
+      const ny = GAME.player.y + PENDING.dy;
+      if (!isWall(nx, ny)){
+        GAME.player.dx = PENDING.dx; GAME.player.dy = PENDING.dy;
+      }
+    }
+    if (GAME.player.dx || GAME.player.dy){
+      const nx = GAME.player.x + GAME.player.dx;
+      const ny = GAME.player.y + GAME.player.dy;
+      if (!isWall(nx, ny)){
+        // record trail
+        GAME.player.trail.push({ x:GAME.player.x, y:GAME.player.y, t:nowMs });
+        GAME.player.x = nx;
+        GAME.player.y = ny;
+      } else {
+        // bonk
+        GAME.player.dx = 0; GAME.player.dy = 0;
+      }
+    }
+  }
+  // trail aging
+  GAME.player.trail = GAME.player.trail.filter(p => nowMs - p.t < TRAIL_LIFETIME_MS);
+
+  // enemy movement
+  for (const e of GAME.enemies){
+    if (!e.alive || e.frozen) continue;
+    if (nowMs - e.lastMoveMs >= ENEMY_MOVE_INTERVAL_MS){
+      e.lastMoveMs = nowMs;
+      const m = decideEnemyMove(e);
+      if (m){ e.x = m.x; e.y = m.y; e.dx = m.dx; e.dy = m.dy; }
+    }
+  }
+
+  // collision: player vs enemy
+  for (const e of GAME.enemies){
+    if (e.alive && e.x === GAME.player.x && e.y === GAME.player.y){
+      absorbStaff(e);
+    }
+  }
+
+  // bricks pile up
+  if (nowMs - GAME.lastBrickMs >= BRICK_GROW_INTERVAL_MS){
+    GAME.lastBrickMs = nowMs;
+    for (let i=0; i<5; i++){
+      if (GAME.bricks[i] < MAX_BRICKS) GAME.bricks[i]++;
+    }
+    updateHebrewStrip();
+  }
+
+  // HUD refresh once per ~200ms
+  if (!gameTick._hudT || nowMs - gameTick._hudT > 200){
+    gameTick._hudT = nowMs;
+    updateHud();
+  }
+
+  // win check
+  if (GAME.enemies.every(e => !e.alive)){
+    endLevel(true);
+    requestAnimationFrame(gameTick);
+    return;
+  }
+
+  render(nowMs);
+  requestAnimationFrame(gameTick);
+}
+
+function absorbStaff(e){
+  e.alive = false;
+  GAME.staffsAbsorbedThisLevel++;
+  GAME.score += 100;
+  // lift 2 bricks off each slave
+  for (let i=0; i<5; i++){
+    if (GAME.bricks[i] > 0) GAME.bricks[i] = Math.max(0, GAME.bricks[i] - 2);
+  }
+  updateHebrewStrip();
+  play('absorb');
+  toast('Staff absorbed! Slaves cheered.');
+}
+
+function endLevel(won){
+  if (GAME.state === 'won' || GAME.state === 'lost') return;
+  GAME.state = won ? 'won' : 'lost';
+  if (won){
+    // 3-star scoring: time bonus + all-slaves-free bonus
+    const timeBonus = Math.round(GAME.timeLeft * 5);
+    GAME.score += timeBonus;
+    const freeSlaves = GAME.bricks.filter(b => b <= 0).length;
+    let stars = 1;
+    if (freeSlaves >= 3 && GAME.timeLeft >= GAME.timeLimit * 0.4) stars = 3;
+    else if (freeSlaves >= 1 || GAME.timeLeft >= GAME.timeLimit * 0.25) stars = 2;
+    const starsEl = $('winStars');
+    starsEl.innerHTML = '';
+    for (let i=0; i<3; i++){
+      const s = document.createElement('span');
+      s.textContent = '★';
+      if (i < stars) s.classList.add('lit');
+      starsEl.appendChild(s);
+    }
+    $('winBody').textContent = freeSlaves >= 3
+      ? 'All slaves stood up free.'
+      : freeSlaves >= 1
+        ? freeSlaves + ' slave' + (freeSlaves===1?'':'s') + ' free. Replay to free them all!'
+        : 'You won, but the slaves are still weary. Replay for a stronger finish.';
+    play('win');
+    showModal('winModal');
+    // persist progress (placeholder for the full bundle)
+    try { localStorage.setItem('bek.bundle2.lastLevelWon', '1.1'); } catch(e){}
+  } else {
+    play('lose');
+    showModal('loseModal');
+  }
+}
+
+// ---------- render ----------
+function render(nowMs){
+  const W = COLS * TILE;
+  const H = ROWS * TILE;
+  ctx.clearRect(0, 0, W, H);
+
+  // 1. floor tiles + walls (Pharaoh court vibe)
+  for (let y=0; y<ROWS; y++){
+    for (let x=0; x<COLS; x++){
+      const c = MAZE_L1[y][x];
+      const px = x * TILE, py = y * TILE;
+      if (c === '#'){
+        // pillar wall
+        const grad = ctx.createLinearGradient(px, py, px, py + TILE);
+        grad.addColorStop(0, '#6a4a22');
+        grad.addColorStop(0.5, '#3a2410');
+        grad.addColorStop(1, '#6a4a22');
+        ctx.fillStyle = grad;
+        ctx.fillRect(px, py, TILE, TILE);
+        ctx.fillStyle = 'rgba(255,215,118,0.12)';
+        ctx.fillRect(px, py, TILE, 2);
+        ctx.fillRect(px, py + TILE - 2, TILE, 2);
+      } else {
+        // floor tile
+        ctx.fillStyle = ((x+y)&1) ? '#d2a86b' : '#c89b58';
+        ctx.fillRect(px, py, TILE, TILE);
+        // subtle Egyptian motif - dot pattern
+        if (((x*7 + y*13) % 6) === 0){
+          ctx.fillStyle = 'rgba(120,70,30,0.25)';
+          ctx.beginPath(); ctx.arc(px + TILE/2, py + TILE/2, TILE*0.06, 0, Math.PI*2); ctx.fill();
+        }
+        // grout
+        ctx.strokeStyle = 'rgba(90,55,20,0.35)';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(px + 0.25, py + 0.25, TILE - 0.5, TILE - 0.5);
+      }
+    }
+  }
+
+  // 2. player trail (fading golden glow — visual only, no collision)
+  for (const t of GAME.player.trail){
+    const age = (nowMs - t.t) / TRAIL_LIFETIME_MS;
+    if (age >= 1) continue;
+    const alpha = (1 - age) * 0.85;
+    const cx = t.x * TILE + TILE/2;
+    const cy = t.y * TILE + TILE/2;
+    const r = TILE * 0.35 * (1 - age*0.4);
+    const g = ctx.createRadialGradient(cx, cy, 1, cx, cy, r);
+    g.addColorStop(0, 'rgba(255,230,140,' + alpha.toFixed(3) + ')');
+    g.addColorStop(0.6, 'rgba(255,180,60,' + (alpha*0.5).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(255,140,30,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  }
+
+  // 3. enemies (glowing colored rods, NO snake imagery)
+  for (const e of GAME.enemies){
+    if (!e.alive) continue;
+    const cx = e.x * TILE + TILE/2;
+    const cy = e.y * TILE + TILE/2;
+    // outer corona pulse
+    const pulse = 0.5 + 0.5 * Math.sin(nowMs / 280 + (e.id.charCodeAt(0) || 1));
+    const coronaR = TILE * (0.45 + 0.18 * pulse);
+    const cg = ctx.createRadialGradient(cx, cy, 2, cx, cy, coronaR);
+    cg.addColorStop(0, e.color);
+    cg.addColorStop(0.5, e.color.replace(')', ',0.5)').replace('rgb','rgba'));
+    cg.addColorStop(1, e.color.replace(')', ',0)').replace('rgb','rgba'));
+    ctx.fillStyle = e.frozen ? 'rgba(200,230,255,0.6)' : cg;
+    ctx.beginPath(); ctx.arc(cx, cy, coronaR, 0, Math.PI*2); ctx.fill();
+    // staff core (a rod, not a snake)
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.PI / 6 * (e.dx + e.dy*1.5));
+    ctx.fillStyle = e.color;
+    ctx.fillRect(-TILE*0.06, -TILE*0.35, TILE*0.12, TILE*0.7);
+    // staff tip glow
+    ctx.fillStyle = '#fff8e7';
+    ctx.beginPath(); ctx.arc(0, -TILE*0.35, TILE*0.1, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // 4. Moses's staff (player — golden glowing rod)
+  const px = GAME.player.x * TILE + TILE/2;
+  const py = GAME.player.y * TILE + TILE/2;
+  // brighter halo proportional to absorbed
+  const baseHalo = TILE * (0.55 + 0.08 * GAME.staffsAbsorbedThisLevel);
+  const haloPulse = 0.65 + 0.18 * Math.sin(nowMs / 220);
+  const pg = ctx.createRadialGradient(px, py, 2, px, py, baseHalo * haloPulse);
+  pg.addColorStop(0, 'rgba(255,250,200,0.95)');
+  pg.addColorStop(0.4, 'rgba(255,220,120,0.55)');
+  pg.addColorStop(1, 'rgba(255,180,40,0)');
+  ctx.fillStyle = pg;
+  ctx.beginPath(); ctx.arc(px, py, baseHalo * haloPulse, 0, Math.PI*2); ctx.fill();
+  // staff core (gold)
+  ctx.save();
+  ctx.translate(px, py);
+  const ang = (GAME.player.dx === 1) ? Math.PI/2
+            : (GAME.player.dx === -1) ? -Math.PI/2
+            : (GAME.player.dy === -1) ? 0
+            : Math.PI;
+  ctx.rotate(ang);
+  ctx.fillStyle = '#ffd976';
+  ctx.fillRect(-TILE*0.08, -TILE*0.42, TILE*0.16, TILE*0.84);
+  ctx.fillStyle = '#fff8e7';
+  ctx.beginPath(); ctx.arc(0, -TILE*0.42, TILE*0.13, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#a0731c';
+  ctx.fillRect(-TILE*0.1, TILE*0.34, TILE*0.2, TILE*0.06);
+  ctx.restore();
+}
+
+// ---------- start / restart / menu ----------
+function startGame(){
+  unlockAudio();
+  play('click');
+  hideAllModals();
+  showPage('gamePage');
+  buildHebrewStrip();
+  initLevel();
+  resizeCanvas();
+  GAME.state = 'playing';
+  GAME.lastTickMs = performance.now();
+  GAME.lastMoveMs = performance.now();
+  GAME.lastBrickMs = performance.now();
+  toast('Chase the magicians! Absorb their staffs to free the slaves.');
+}
+
+$('startBtn').addEventListener('click', startGame);
+$('winNextBtn').addEventListener('click', () => { hideModal('winModal'); startGame(); });
+$('loseRetryBtn').addEventListener('click', () => { hideModal('loseModal'); startGame(); });
+$('resumeBtn').addEventListener('click', togglePause);
+$('winMenuBtn').addEventListener('click', () => { hideAllModals(); GAME.state = 'cover'; showPage('coverPage'); });
+$('loseMenuBtn').addEventListener('click', () => { hideAllModals(); GAME.state = 'cover'; showPage('coverPage'); });
+$('pauseMenuBtn').addEventListener('click', () => { hideAllModals(); GAME.state = 'cover'; showPage('coverPage'); });
+
+// First user gesture also unlocks audio (iOS)
+['pointerdown','keydown','touchstart','click'].forEach(ev => {
+  window.addEventListener(ev, unlockAudio, { once:false, passive:true });
+});
+
+// ---------- bootstrap ----------
+buildHebrewStrip();
+resizeCanvas();
+requestAnimationFrame(gameTick);
+console.warn('In Moses’s Sandals - Staffs of Light - Bundle 2 prototype loaded.');
+</script>
+</body>
+</html>
