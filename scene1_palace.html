@@ -12134,7 +12134,21 @@ function showTipPopup(eventKey, opts){
       return;
     }
   } catch(e){}
+  // Jane 2026-06-24: Scene 1 fired too many tutorial popups + VO lines back-to-back at
+  // the start (overwhelming). Space consecutive first-event tips at least ~6.5s apart —
+  // if the last one was very recent, defer this one and retry once the gap has passed.
+  try {
+    var _gap = 6500;
+    var _last = window._lastTipShownAt || 0;
+    var _since = performance.now() - _last;
+    if (_last > 0 && _since < _gap) {
+      opts._tipRetries = (opts._tipRetries || 0) + 1;
+      if (opts._tipRetries < 80) setTimeout(() => { try { showTipPopup(eventKey, opts); } catch(e){} }, (_gap - _since) + 120);
+      return;
+    }
+  } catch(e){}
   if (eventKey) _firstEventSeen[eventKey] = true;
+  try { window._lastTipShownAt = performance.now(); } catch(e){}
   // 2026-06-14: play the matching narration line (just-in-time, once) in BOTH the
   // tutorial-popup and the tutorials-off toast-fallback paths.
   // C3/J5: the chariot fires a trumpet stinger + timpani roll right before
@@ -12757,7 +12771,10 @@ function _maybeFireFirstEventTip(){
   //   pointed at a banner tile with no visible bag (the banner art
   //   covers the bag sprite). Fix: build a set of banner tiles from
   //   PALACE_DECOR and skip them — only VISIBLE bags fire the tip.
-  if (!_firstEventSeen.treasure && Array.isArray(MAP)) {
+  // Jane 2026-06-24: hold the treasure-bag tutorial until a little later so the opening
+  // isn't a wall of popups — only after ~22s of play (the kid has moved + met a gate first).
+  const _treasureReady = (typeof game !== 'undefined' && (!game.startedAt || (performance.now() - game.startedAt) >= 22000));
+  if (!_firstEventSeen.treasure && _treasureReady && Array.isArray(MAP)) {
     // Snapshot banner tiles once per call so we can skip concealed bags.
     const _bannerTiles = new Set();
     try {
@@ -18811,7 +18828,13 @@ function _updateTorchlight(){
   // dim — show the popup first; the popup's Got-It hook (_afterTipClose
   // re-entrant pattern from PM37) re-anchors startedAt so the dim
   // cycle resumes cleanly after the modal closes.
-  if (shouldBeDim && !_torchlight.isDim && !_firstEventSeen.dim && _tutModeOn()) {
+  // Jane 2026-06-24: don't interrupt the FIRST dim with a tutorial (too many popups at
+  // the very start). Let the kid SEE one dim happen on their own, then explain it on the
+  // 2nd dim. Count each new dim cycle as it begins.
+  if (shouldBeDim && !_torchlight.isDim && !_firstEventSeen.dim) {
+    try { window._dimCycleCount = (window._dimCycleCount || 0) + 1; } catch(e){}
+  }
+  if (shouldBeDim && !_torchlight.isDim && (window._dimCycleCount || 0) >= 2 && !_firstEventSeen.dim && _tutModeOn()) {
     // I8 (Jane 2026-06-17): hold the dim tutorial (+VO) if a narration or modal is up, so
     // events never overlap a spoken line. Re-anchor so the dim resumes once it's clear.
     try {
