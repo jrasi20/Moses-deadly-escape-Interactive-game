@@ -4463,6 +4463,14 @@ let _renderDPR = 1;
 
 const canvas = $('gameCanvas');
 const ctx = canvas.getContext('2d');
+// Jane 2026-06-24 MOBILE PERF: canvas shadowBlur is one of the most expensive ops on
+// phones/iOS (a full Gaussian blur per shadowed draw, every frame). On TOUCH devices
+// we neutralize shadowBlur on the game context at the SOURCE — every per-frame glow
+// keeps drawing but without the blur (sprites/tiles are unaffected). Desktop keeps the
+// pretty soft glows. One-point fix instead of editing 20+ draw sites.
+window._LOWFX = (function(){ try { return (navigator.maxTouchPoints > 0) || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''); } catch(e){ return false; } })();
+function _killShadowBlur(c){ if (!c || !window._LOWFX || c._sbKilled) return; try { Object.defineProperty(c, 'shadowBlur', { configurable:true, get:function(){ return 0; }, set:function(){} }); c._sbKilled = true; } catch(e){} }
+try { _killShadowBlur(ctx); } catch(e){}
 // v2.2.9 FIX (Jane - "images look blurred and broken"):
 // The previous pixelated mode jag-aliased the illustrated PNGs when scaled
 // down to ~36px tiles. Scene 2 art is painted watercolor/illustration style,
@@ -14223,6 +14231,7 @@ function _pulleyFrame(now) {
   const canvas = document.getElementById('pulleyCanvas');
   if (!canvas) return;
   const c = canvas.getContext('2d');
+  try { _killShadowBlur(c); } catch(e){}   // Jane 2026-06-24: mobile perf — no canvas shadow-blur on touch in the mini-games
   // 2026-05-27 (Jane: "why can't the game window fill the screen ... at least
   // 70% of the screen"): canvas now fills its wrap on ANY aspect. We size the
   // backing store to the rendered CSS box × DPR, paint the desert background
@@ -15601,6 +15610,7 @@ function _rescueFrame(now) {
   _rescue.rafId = requestAnimationFrame(_rescueFrame);
   const canvas = document.getElementById('rescueCanvas'); if (!canvas) return;
   const c = canvas.getContext('2d');
+  try { _killShadowBlur(c); } catch(e){}   // Jane 2026-06-24: mobile perf — no canvas shadow-blur on touch in the mini-games
   // Crisp rendering: fixed 760×470 LOGICAL space (all draw coords assume it), backing
   // store sized to on-screen px × DPR so sprites are never blurrily upscaled.
   // RESPONSIVE PLAYFIELD: logical width stays 760 (horizontal coords unchanged), but the

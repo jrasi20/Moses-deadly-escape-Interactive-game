@@ -5350,6 +5350,13 @@ function _ariaAnnounce(msg){
 }
 window._ariaAnnounce = _ariaAnnounce;
 const ctx = canvas.getContext('2d');
+// Jane 2026-06-24 MOBILE PERF: canvas shadowBlur is very expensive on phones/iOS (a
+// Gaussian blur per shadowed draw, every frame). On TOUCH devices neutralize it at the
+// source so every per-frame glow draws cheaply (sprites/tiles unaffected). Desktop keeps
+// the soft glows. One-point fix instead of editing 30+ draw sites.
+window._LOWFX = (function(){ try { return (navigator.maxTouchPoints > 0) || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''); } catch(e){ return false; } })();
+function _killShadowBlur(c){ if (!c || !window._LOWFX || c._sbKilled) return; try { Object.defineProperty(c, 'shadowBlur', { configurable:true, get:function(){ return 0; }, set:function(){} }); c._sbKilled = true; } catch(e){} }
+try { _killShadowBlur(ctx); } catch(e){}
 ctx.imageSmoothingEnabled = false;
 
 /* compute canvas dimensions that match the available space at 1:1 pixel ratio.
@@ -23383,7 +23390,22 @@ if ('serviceWorker' in navigator) {
     try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch(e){ return false; }
   }
   function _isIOS(){
-    try { return /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && 'ontouchend' in document); } catch(e){ return false; }
+    try {
+      var ua = navigator.userAgent || '';
+      if (/iP(hone|ad|od)/.test(ua)) return true;
+      // iPadOS 13+ reports as "Macintosh" — distinguish a touch iPad from a real Mac.
+      if (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1) return true;
+      return false;
+    } catch(e){ return false; }
+  }
+  // On iOS, "Add to Home Screen" ONLY exists in real Safari — not Chrome-iOS, Firefox-iOS,
+  // or an in-app browser (which is often what a QR scanner opens). Detect non-Safari so the
+  // tip can tell the user to open the game in Safari first.
+  function _isIOSSafari(){
+    try {
+      var ua = navigator.userAgent || '';
+      return _isIOS() && /WebKit/i.test(ua) && !/(CriOS|FxiOS|EdgiOS|OPiOS|GSA|FBAN|FBAV|Instagram|Line|MicroMessenger)/i.test(ua);
+    } catch(e){ return false; }
   }
   var _deferredPrompt = null;
   function _addInstallBtn(label, onClick){
@@ -23405,8 +23427,11 @@ if ('serviceWorker' in navigator) {
       + 'max-width:90vw;background:linear-gradient(180deg,#fff5dc,#e8c878);color:#5a2510;'
       + 'border:2px solid #b88a2c;border-radius:14px;padding:12px 16px;font:600 14px/1.4 Georgia,serif;'
       + 'box-shadow:0 8px 24px rgba(0,0,0,0.4);text-align:center;';
-    t.innerHTML = 'To install: tap the <b>Share</b> button below, then choose <b>“Add to Home Screen”</b>. '
-      + 'The game opens full-screen like an app — and works offline after your first play.'
+    var _inSafari = _isIOSSafari();
+    t.innerHTML = (_inSafari
+        ? 'To install: tap the <b>Share</b> button (the square with an ↑ arrow), then choose <b>“Add to Home Screen”</b>. '
+          + 'The game opens full-screen like an app — and works offline after your first play.'
+        : 'On iPhone/iPad, installing works only in <b>Safari</b>. Tap your browser’s menu and choose <b>“Open in Safari”</b> (or paste the game link into Safari), then use <b>Share → “Add to Home Screen”</b>.')
       + '<div style="margin-top:8px"><button type="button" style="background:#7a3a06;color:#ffe7b8;border:none;border-radius:10px;padding:6px 18px;font:700 13px Georgia,serif;cursor:pointer">Got it</button></div>';
     t.querySelector('button').addEventListener('click', function(){ t.remove(); });
     document.body.appendChild(t);

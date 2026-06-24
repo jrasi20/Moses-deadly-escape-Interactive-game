@@ -4032,6 +4032,13 @@ let _renderDPR = 1;
 
 const canvas = $('gameCanvas');
 const ctx = canvas.getContext('2d');
+// Jane 2026-06-24 MOBILE PERF: canvas shadowBlur is very expensive on phones/iOS (a
+// Gaussian blur per shadowed draw, every frame). On TOUCH devices neutralize it at the
+// source so every per-frame glow draws cheaply (sprites/tiles unaffected). Desktop keeps
+// the soft glows. One-point fix instead of editing 20+ draw sites.
+window._LOWFX = (function(){ try { return (navigator.maxTouchPoints > 0) || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''); } catch(e){ return false; } })();
+function _killShadowBlur(c){ if (!c || !window._LOWFX || c._sbKilled) return; try { Object.defineProperty(c, 'shadowBlur', { configurable:true, get:function(){ return 0; }, set:function(){} }); c._sbKilled = true; } catch(e){} }
+try { _killShadowBlur(ctx); } catch(e){}
 // v2.2.9 FIX (Jane - "images look blurred and broken"):
 // The previous pixelated mode jag-aliased the illustrated PNGs when scaled
 // down to ~36px tiles. Scene 2 art is painted watercolor/illustration style,
