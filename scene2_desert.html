@@ -1704,21 +1704,22 @@
   .win-journey {
     background: linear-gradient(180deg, rgba(60,30,8,0.55), rgba(40,18,4,0.5));
     border: 1.5px solid rgba(255,215,118,0.45); border-radius: 12px;
-    padding: 10px 12px; margin: 8px auto 10px; max-width: 340px;
+    padding: 14px 16px; margin: 8px auto 10px; max-width: 440px;
   }
+  /* Jane 2026-06-23: journey tracker elements were too tiny — bumped every size up. */
   .win-journey .wj-title {
-    color:#ffd976; font-weight:800; font-size:13px; letter-spacing:0.5px; margin-bottom:6px;
+    color:#ffd976; font-weight:800; font-size:17px; letter-spacing:0.5px; margin-bottom:9px;
   }
   .win-journey .wj-res {
-    display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
-    font-size:13px; color:#ffeeb5; margin-bottom:8px;
+    display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+    font-size:16px; color:#ffeeb5; margin-bottom:11px;
   }
-  .win-journey .wj-res strong { color:#fff; font-size:15px; }
+  .win-journey .wj-res strong { color:#fff; font-size:20px; }
   .win-journey .wj-powers {
-    display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:8px;
+    display:flex; gap:7px; flex-wrap:wrap; justify-content:center; margin-bottom:10px;
   }
   .win-journey .wj-power {
-    font-size:11px; font-weight:700; padding:3px 8px; border-radius:12px; border:1px solid;
+    font-size:13px; font-weight:700; padding:5px 11px; border-radius:12px; border:1px solid;
   }
   .win-journey .wj-power.on {
     color:#0d2a12; background:linear-gradient(135deg,#7ef0a0,#39c46a); border-color:#bdf7cf;
@@ -1728,7 +1729,7 @@
     color:#cdb88a; background:rgba(0,0,0,0.25); border-color:rgba(255,215,118,0.3);
   }
   .win-journey .wj-power.off .wj-prog { color:#ffd976; font-weight:800; }
-  .win-journey .wj-next { font-size:12px; color:#fff2c4; }
+  .win-journey .wj-next { font-size:14.5px; color:#fff2c4; }
   .win-journey .wj-next strong { color:#ffd976; }
   .win-journey .wj-bar {
     height:8px; border-radius:6px; background:rgba(0,0,0,0.4);
@@ -9017,12 +9018,17 @@ function _wireJigsawPiece(pieceEl){
       try { _jigsawArmStuckNudge(); } catch(_){}
       return;
     }
-    // Correct slot + upright! Snap into place.
-    const slotRect = hit.getBoundingClientRect();
-    pieceEl.style.left   = slotRect.left + 'px';
-    pieceEl.style.top    = slotRect.top  + 'px';
-    pieceEl.style.width  = slotRect.width + 'px';
-    pieceEl.style.height = slotRect.height + 'px';
+    // Correct slot + upright! Jane 2026-06-23: RE-PARENT the piece INTO the slot
+    // (was left position:fixed at viewport coords, so scrolling the modal made the
+    // piece drift out of its tile box). Now it lives inside the slot and scrolls
+    // with the board.
+    try { hit.style.position = 'relative'; } catch(_){}
+    hit.appendChild(pieceEl);
+    pieceEl.style.position = 'absolute';
+    pieceEl.style.left   = '0';
+    pieceEl.style.top    = '0';
+    pieceEl.style.width  = '100%';
+    pieceEl.style.height = '100%';
     pieceEl.classList.add('locked');
     pieceEl.classList.add('snapped');
     // 2026-05-26: correct placement — clear hints, reset the miss counter, stop
@@ -13662,6 +13668,10 @@ function _drawFoeIce(ctx, cx, cy, r){
 }
 function drawPursuitScouts(ctx){
   if (game.scene !== 2) return;
+  // Jane 2026-06-23: don't draw scouts OR their red "!" edge-warning chevrons during
+  // the intro camera pan — they were sliding across the screen with the pan before
+  // gameplay even starts. Scouts are armed at pan-end, so nothing to show yet.
+  if (window._introPanActive) return;
   // 2026-05-26 — Lure marker: tossed rock + expanding noise ripples at the
   // decoy tile while the Rock Lure is active (so the kid sees where scouts run).
   try {
@@ -14165,6 +14175,11 @@ function updateGuards(dt){
   // Guards were not gated on _introPanActive — they patrolled while
   // the intro camera pan owned the screen. Freeze them too.
   if (window._introPanActive) return;
+  // Jane 2026-06-23 BUG: guards kept PATROLLING while a checkpoint/challenge
+  // modal was open (state='dialog'), so a guard could walk onto Moses's frozen
+  // tile and fire the "Moses needs your help to escape!" game-over MID-QUESTION.
+  // Freeze guards whenever we're not actively playing (matches pursuit scouts).
+  if (typeof game !== 'undefined' && game.state !== 'playing') return;
   // v3.9 Jane 2026-04-24: apply the same 15-second grace window to
   // Scene 2 guards that pursuitScouts already have. Previously guards
   // would keep patrolling during the grace window and could catch Moses
