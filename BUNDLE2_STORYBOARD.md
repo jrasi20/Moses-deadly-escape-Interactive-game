@@ -333,4 +333,61 @@ Adds 12 new Truth Cards to the cross-bundle pool, themed on Ex 3-7:
 
 For prototype (this commit): only **Chapter 1 Level 1** needs to be playable. Storyboard above is the full target spec — we build outward chapter by chapter.
 
-— *Storyboard locked 2026-06-25.*
+— *Storyboard v0.1 locked 2026-06-25.*
+
+---
+
+## v0.2 mechanic update (2026-06-25)
+
+### What changed from v0.1
+The split-screen Hebrew consequence was revised based on playtest concerns. The OLD design had slaves bowing under bricks and being crushed on lose — *theology of suffering*. The NEW design has Israelite workers standing upright, building a brick wall together — *theology of resilience*. God's promises strengthen them; the wall rises despite Pharaoh.
+
+### Updated win condition (all levels in Chapters 1-4)
+
+**Primary win:** Complete the brick wall by time-out (brick wall acts as visible progress meter).
+**Bonus:** Absorb magicians — each grants +5 bricks instant + brief production boost.
+**Stars:**
+- 1 star = wall complete with <20% time remaining
+- 2 stars = wall complete with 20-50% time remaining
+- 3 stars = wall complete with >50% time remaining + all magicians absorbed
+- Hidden 4th star = collect 5 golden bricks (random spawn rate)
+
+### Updated lose copy
+
+**Old:** "Slaves crushed under bricks. Try again to free them."
+**New:** *"Pharaoh inspects the work — the wall is not finished today. The Israelites bow their heads in prayer. Tomorrow, you walk his road again."*
+
+Verse: *"But Moses said to the Lord, 'Why, Lord, why have you brought trouble on this people?'"* — Ex 5:22 (honest about difficulty without despair)
+
+### Updated win copy
+- *"Faithful and brave! The wall is complete. God's promises strengthen his people."*
+- Personalized: *"Well done, [KidName] — you walked his road today."*
+
+### Magicians are now pure obstacles, not threats to workers
+
+Magicians do NOT cast spells on workers. They are Pac-Man ghosts:
+- 🔴 Red flees
+- 🔵 Blue wanders
+- 🟣 Purple chases (Ch 1.6+)
+- 🟡 Gold chief (Ch 4 only)
+
+Absorbing them is rewarded (+5 bricks, +score, brief production boost) but not required for survival. However, Easy/Medium/Hard difficulty scales such that passive production alone won't hit quota — you MUST absorb at least 1-2 magicians per level to win.
+
+### Light-beam blessings woven into every level
+
+Every 15 sec a random Ex 6:6-8 promise rises from the brick wall in a light beam:
+1. *"I will free you from being slaves to them."* (Ex 6:6)
+2. *"I will deliver you with an outstretched arm."* (Ex 6:6)
+3. *"I will redeem you."* (Ex 6:6)
+4. *"I will take you as my own people."* (Ex 6:7)
+5. *"I will be your God."* (Ex 6:7)
+
+Each beam = +2 bricks instant + brief screen golden tint + small score bonus. VO clip plays (when recorded).
+
+Across all 35 levels of the bundle, kids hear these 5 promises ~150-200 times. They will *know* Exodus 6:6-8 by heart by the end.
+
+### Pharaoh as constant pressure (not threat)
+
+Pharaoh sits on his throne at the top of the maze, always visible. He frowns when bricks fall behind milestone. He glares when the wall completes. He's *atmospheric* pressure — never a gameplay-active threat. The kid feels watched, not attacked.
+
+— *Storyboard v0.2 locked 2026-06-25.*

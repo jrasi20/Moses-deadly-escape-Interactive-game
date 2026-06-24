@@ -1,10 +1,12 @@
 # Bundle 2 — *In Moses's Sandals: Staffs of Light*
 
-**Status:** Design locked 2026-06-25 · Prototype Chapter 1 Level 1 building now
+**Status:** Design v0.2 locked 2026-06-25 · Prototype Phase 1 rebuild in progress
 **Scripture:** Exodus 3:1–7:13 (calling → first signs → first defiance → renewal → staff-swallows-magicians)
 **Working title:** *In Moses's Sandals: Staffs of Light*
 **Brand thesis:** "Step into the shoes of your favorite Bible character"
-**Target:** Etsy buyers + Google Play Store (via TWA wrap of existing PWA)
+**Target:** Etsy + Google Play Store (via TWA wrap of existing PWA) + (later) YouTube Playables
+
+**Visual format:** 2D top-down maze, HTML5 Canvas. *Not* 3D — epic feel comes from animation, particles, camera shake, music, voice — not perspective.
 
 ---
 
@@ -305,10 +307,200 @@ For Bundle 2 to clear the bar:
 
 ## 13. Next actions
 
-1. ✅ Lock design doc (this file)
-2. ⏳ Write `BUNDLE2_STORYBOARD.md` (level-by-level beats)
-3. ⏳ Build `bundle2_staff_chase.html` prototype (Chapter 1 Level 1 playable)
-4. ⏳ Push to `claude/bundle2-staff-chase` branch
-5. **Playtest with one 7-year-old.** If they ask to play again → green light for the full build.
+1. ✅ Design doc v0.1 locked
+2. ✅ Storyboard v0.1 locked
+3. ✅ Prototype v0.1 shipped (abstract glowing dots — superseded)
+4. ✅ Design doc v0.2 — this section onward
+5. ⏳ Prototype v0.2 rebuild (character sprites + resilient workers + 4 new thrills + epic moments)
+6. **Playtest with one 7-year-old.** If they ask to play again → green light for the full build.
+7. VO recording (after playtest)
 
-— *Locked 2026-06-25. Iterate this doc as design decisions land.*
+---
+
+## 14. Visual design (v0.2 lock)
+
+### 14.1 The screen, top to bottom
+
+```
++-------------------------------------------+
+|  HUD bar — timer · staff count · score   |
++-------------------------------------------+
+|  Pharaoh on throne (always visible)       |  <- top 2 rows of maze grid =
+|  Frowns when bricks fall behind;          |     fixed throne backdrop,
+|  glares when wall completes               |     not playable
++-------------------------------------------+
+|                                           |
+|  Playable maze area, 10 wide × 12 tall    |  <- top-down view with
+|  Moses sprite + magician sprites          |     character sprites,
+|  inside the maze; staff glow halos        |     NOT abstract dots
+|                                           |
++-------------------------------------------+
+|  3 Israelite workers at brick tables      |
+|  Brick wall RISING behind them            |  <- resilient workers panel:
+|  Straw pile + STRAW tap button + brick    |     upright posture, positive
+|  count + light-beam blessings drifting up |     labor, hope
++-------------------------------------------+
+|  D-pad (movement)  |  Power buttons       |
++-------------------------------------------+
+```
+
+### 14.2 Character sprites used
+
+All sprites reuse Bundle 1 assets — no new commissioning required for v0.2 prototype:
+
+| Character | Source asset(s) | Notes |
+|---|---|---|
+| **Moses** | `moses front/back/left/right facing.png` | Render at ~1.5× tile size; rotates with movement direction. Holding golden staff (drawn programmatically as overlay) |
+| **Magician 1 (red)** | `egyptian guard front/back/left/right facing.png` + canvas hue-rotate filter | Tint red, holding red glowing staff |
+| **Magician 2 (blue)** | Same source, blue hue-rotate | |
+| **Magician 3 (purple)** | Same source, purple hue-rotate (Ch 1.6+) | |
+| **Pharaoh** | `pharaoh front.png` | Renders permanently at top of maze (throne backdrop), animated to frown/glare based on game state |
+| **Israelite workers (×3)** | `color hebrew slaves.png` + `color hebrew slaves 2.png` | Standing upright at brick tables. NEW pose visually — NO bowing, NO crushing |
+| **Aaron** (Ch 2+) | Palette-shift `moses front/back/left/right facing.png` (lighter robe) | Companion sprite that follows Moses at 1-tile lag |
+| **Brick wall** | Tile from `bricks.png` | Drawn programmatically, brick-by-brick, behind workers |
+
+### 14.3 Staff "swallowing" — the absorb visual
+
+When Moses's tile collides with a magician's tile:
+1. **Frame 0:** Magician throws hands up, staff goes vertical
+2. **Frame 1-3:** Magician sprite dissolves into golden particles (15-20 particles, radial burst)
+3. **Frame 4-6:** Magician's colored staff streams as light particles INTO Moses's golden staff
+4. **Frame 7+:** Moses's staff glow brightens permanently for the rest of the level
+5. **Camera shake** (~6px for 200ms)
+6. **Big number popup:** "+5 BRICKS!" floats up in golden text with drop-shadow
+7. **SFX:** absorb chime + brief whoosh
+8. **Visible flash on screen** — quick golden frame for 80ms
+
+This is the highlight-reel moment. Make it feel huge.
+
+### 14.4 Burning Bush flame power pellet
+
+- Spawns 1 flame per level, at level start, at a random open corridor tile
+- Renders as a 4-frame animated bush + flame using `palace floor.png` + a drawn flame
+- Effect on pickup (5 seconds):
+  - Moses's halo doubles in radius
+  - **Magicians visibly flee** — sprites turn 180°, animate "panic run" (alternate L/R facing rapidly)
+  - During flee, magicians move 1.5× normal speed AWAY from Moses
+  - Catching a fleeing magician = **+10 bricks** (vs normal +5) + screen flashes golden
+- After 5 sec, magicians return to normal behavior
+
+### 14.5 Speed zones, wraparound tunnels, combo bonus
+
+- **Speed zone tiles** — gold-arrow overlays on 2-3 floor tiles per level. Stepping on them gives Moses a 1-second 1.5× speed boost.
+- **Wraparound tunnels** — left edge of maze ↔ right edge (Pac-Man classic). Visualized as dark archways.
+- **Combo bonus** — absorb 2 magicians within 5 sec → "DOUBLE STAFF!" big popup + 2× score on second + bonus +5 bricks.
+
+---
+
+## 15. The 8 brick-making thrills (all locked)
+
+| # | Thrill | Mechanic | Bible anchor |
+|---|---|---|---|
+| 1 | **Straw drought** | Periodic alert: "Pharaoh withholds straw!" — straw pile depletes 2× for 15 sec, then a glowing straw bundle spawns in a random maze corridor for Moses to grab (+15 straw) | Ex 5:7 |
+| 2 | **God's wind** | Random good event: 3 workers produce 3× for 10 sec; VO plays *"The Lord is your strength"* | Ex 15:2 |
+| 3 | **Royal Inspector walks by** | Egyptian guard walks across the bottom strip every 25 sec. If wall is behind milestone when he passes, he tears off 3 bricks — kid races to stay ahead | Ex 5:14 |
+| 4 | **Manna drop** | A sheaf-of-wheat sprite drops into the maze every 30 sec. Moses picks up = +5 bricks instantly | Ex 16 (foreshadow) |
+| 5 | **Aaron joins** | From Chapter 2 onward, a 4th worker sprite (Aaron, ~70% Moses palette) appears in the worker panel. Production boost = +1 brick/4 sec | Ex 4:14 |
+| 6 | **Worker song milestones** | At 25/50/75% wall progress, workers briefly harmonize a chant. Small celebration moment + a 1-second 1.5× production rush | Ex 15:1 |
+| 7 | **Golden brick** | Every 10th brick is golden. Collecting 5 gold bricks across the level = hidden 4th star (extra rare reward) | — |
+| 8 | **Light-beam blessings** | God's-promise verse beams (Ex 6:6-8) drift up from the wall every 15 sec, with VO line. Each beam banked = +2 bricks + small score boost. 5-6 beams per level. | Ex 6:6-8 |
+
+### 15.1 Phase 1 prototype (v0.2) — which thrills land first
+
+To validate FEEL without scope explosion, v0.2 prototype includes:
+- ✅ Thrill #1 (straw drought)
+- ✅ Thrill #4 (manna drop)
+- ✅ Thrill #8 (light-beam blessings — text only, VO drops in v0.3)
+- ✅ Plus burning bush flame from Pac-side
+- ✅ Plus combo bonus from Pac-side
+- ❌ Thrills #2, #3, #5, #6, #7 deferred to v0.3 (after playtest confirms direction)
+
+---
+
+## 16. The 10 epic moments (all locked)
+
+| # | Moment | Trigger | What happens |
+|---|---|---|---|
+| 1 | **Level intro flash** | Level loads | 1.5 sec full-screen card: "LEVEL 1.3 — THE INNER COURT" + verse subtitle + music sting |
+| 2 | **VO narration on key beats** | Bush call, sandal ritual, each Ex 6:6-8 promise, win, boss intro, ending | Pre-recorded clips trigger automatically |
+| 3 | **Big number popups** | Magician absorbed, manna picked up, golden brick made | "+5 BRICKS!" or "+10!" or "GOLDEN!" floats up in colored text |
+| 4 | **Camera shake** | Magician absorb, wall completion, boss defeat, Pharaoh stare | Brief 4-6px shake for 200-400 ms |
+| 5 | **Particle effects** | Absorb, manna pickup, verse beam, wall milestone, win | 15-25 colored particles radial-burst with gravity decay |
+| 6 | **Streak rewards** | 3 levels won in a row without losing | "FAITHFUL STREAK ×3" badge + bonus +50 score per future win until first loss |
+| 7 | **Replay highlight** | Level win | 3-sec slow-motion replay of the player's last absorb |
+| 8 | **Personalized win screen** | Level win | "Well done, [KidName] — you walked his road today" + VO line |
+| 9 | **Music swells** | Boss intro, win modal, ending cinematic | Audio crescendo, distinct tracks per event |
+| 10 | **Boss reveal cinematic** | Chapter boss level loads | Camera slow-zooms on Pharaoh's face, throne creak SFX, magicians line up behind, dramatic music |
+
+### 16.1 Phase 1 prototype (v0.2) — which epic moments land first
+
+- ✅ Moment #1 (level intro flash)
+- ✅ Moment #3 (big number popups)
+- ✅ Moment #4 (camera shake)
+- ✅ Moment #5 (particle effects on absorb)
+- ✅ Moment #8 (personalized win screen — text only; VO in v0.3)
+- ❌ Moments #2, #6, #7, #9, #10 deferred to v0.3+ (VO + music recording + replay system + boss = bigger work)
+
+---
+
+## 17. VO script outline (for recording)
+
+This is the full voice script for the bundle. To be recorded by Jane in playtime-quality (warm, expressive, kid-friendly — does NOT need studio). Record after playtesting v0.2.
+
+### 17.1 Onboarding (one-time)
+- `vo-intro-1.mp3` — *"In Egypt, God's people groan in slavery."*
+- `vo-intro-2.mp3` — *"On a far mountain, a shepherd called Moses tends his flock."*
+- `vo-intro-3.mp3` — *"A bush burns — and does not burn out."*
+
+### 17.2 Burning bush sequence (Level 0.5)
+- `vo-bush-call.mp3` — *"Come closer."*
+- `vo-bush-sandals.mp3` — *"Take off your sandals. The place where you stand is holy ground."*
+- `vo-bush-iam.mp3` — *"I AM has sent you."*
+- `vo-bush-promise.mp3` — *"I have seen the misery of my people. I have heard them cry. I will deliver them — and I am sending you."*
+
+### 17.3 The 5 Exodus 6:6-8 promises (play during levels, 1 per 15 sec, randomized)
+- `vo-promise-1.mp3` — *"I will free you from being slaves to them."*
+- `vo-promise-2.mp3` — *"I will deliver you with an outstretched arm."*
+- `vo-promise-3.mp3` — *"I will redeem you."*
+- `vo-promise-4.mp3` — *"I will take you as my own people."*
+- `vo-promise-5.mp3` — *"I will be your God."*
+
+### 17.4 Encouragement (mid-level, random)
+- `vo-strength.mp3` — *"The Lord is your strength."*
+- `vo-wind.mp3` — *"A holy wind moves through the work."*
+
+### 17.5 Win / lose
+- `vo-win-generic.mp3` — *"Well done. You walked his road today."*
+- `vo-lose-generic.mp3` — *"The wall still rises. Try again, faithful one."*
+
+### 17.6 Bundle ending
+- `vo-end-1.mp3` — *"Aaron's staff has swallowed up theirs."*
+- `vo-end-2.mp3` — *"But Pharaoh's heart is hard. The story isn't over."*
+- `vo-end-3.mp3` — *"Well done, friend. The Lord is with you."*
+
+**Total:** ~18 clips. Estimated recording time: 30-45 minutes. File naming convention: `assets/audio/vo-bundle2/<name>.mp3`.
+
+### 17.7 KidName handling (no pre-bake needed)
+
+Skipping the pre-baked-name approach. Instead:
+- Every VO clip is generic ("friend", "faithful one", "brave shepherd")
+- The kid's name appears in the **on-screen text** of the same moment
+- Voice + text together still feel personal without needing 50 name recordings
+
+---
+
+## 18. Marketing channels (locked priorities)
+
+For Etsy + Play Store growth (per Bundle 1+2 strategy discussion):
+
+| Priority | Channel | Effort | Expected return |
+|---|---|---|---|
+| 1 | **Google Play Store TWA wrap** | 1 week | Highest — Android users find the game via Play Search → ends up on Etsy for printables |
+| 2 | **Apple App Store via PWABuilder** | 2 weeks | High — iOS users similar funnel |
+| 3 | **YouTube channel with playthrough + parent-testimonial videos** | Ongoing | High — Christian-parenting niche has growing audience |
+| 4 | **TikTok / Instagram Reels** with kid playing | Ongoing | High — viral potential in Christian parenting community |
+| 5 | **YouTube Playables (curated submission)** | Apply later | Brand-awareness amplifier; not a direct Etsy funnel. Apply after Bundle 3 ships |
+
+YouTube Playables can technically link to Etsy, but conversion is low (~0.5-1%). Better used as a discovery funnel that leads to Google Play install → in-app CTA → Etsy.
+
+— *v0.2 locked 2026-06-25. Next: rebuild prototype.*
