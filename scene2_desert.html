@@ -10803,6 +10803,23 @@ function renderMemory(gate, q, container){
   giveUp.style.marginTop = '10px';
   giveUp.addEventListener('click', () => {
     try { play('tap'); } catch(e){}
+    // Jane 2026-06-24: an accidental SINGLE tap was abruptly ending the run. Require
+    // a confirm — the first tap arms ("Tap again to give up", auto-disarms in 3.5s),
+    // only a SECOND tap actually surrenders.
+    if (!giveUp._armed) {
+      giveUp._armed = true;
+      if (!giveUp.dataset._orig) giveUp.dataset._orig = giveUp.textContent;
+      giveUp.textContent = '⚠ Tap again to give up';
+      giveUp.style.color = '#ffb088'; giveUp.style.fontWeight = '800';
+      clearTimeout(giveUp._armTimer);
+      giveUp._armTimer = setTimeout(() => {
+        giveUp._armed = false;
+        giveUp.textContent = giveUp.dataset._orig || 'I give up';
+        giveUp.style.color = ''; giveUp.style.fontWeight = '';
+      }, 3500);
+      return;
+    }
+    clearTimeout(giveUp._armTimer); giveUp._armed = false;
     openGiveUpGameOver();
   });
   container.appendChild(giveUp);
@@ -10921,6 +10938,23 @@ function renderSlider(gate, q, container){
   giveUp.style.marginTop = '10px';
   giveUp.addEventListener('click', () => {
     try { play('tap'); } catch(e){}
+    // Jane 2026-06-24: an accidental SINGLE tap was abruptly ending the run. Require
+    // a confirm — the first tap arms ("Tap again to give up", auto-disarms in 3.5s),
+    // only a SECOND tap actually surrenders.
+    if (!giveUp._armed) {
+      giveUp._armed = true;
+      if (!giveUp.dataset._orig) giveUp.dataset._orig = giveUp.textContent;
+      giveUp.textContent = '⚠ Tap again to give up';
+      giveUp.style.color = '#ffb088'; giveUp.style.fontWeight = '800';
+      clearTimeout(giveUp._armTimer);
+      giveUp._armTimer = setTimeout(() => {
+        giveUp._armed = false;
+        giveUp.textContent = giveUp.dataset._orig || 'I give up';
+        giveUp.style.color = ''; giveUp.style.fontWeight = '';
+      }, 3500);
+      return;
+    }
+    clearTimeout(giveUp._armTimer); giveUp._armed = false;
     openGiveUpGameOver();
   });
   container.appendChild(giveUp);
@@ -11161,6 +11195,23 @@ function renderMiniMaze(gate, q, container){
   giveUp.style.marginTop = '10px';
   giveUp.addEventListener('click', () => {
     try { play('tap'); } catch(e){}
+    // Jane 2026-06-24: an accidental SINGLE tap was abruptly ending the run. Require
+    // a confirm — the first tap arms ("Tap again to give up", auto-disarms in 3.5s),
+    // only a SECOND tap actually surrenders.
+    if (!giveUp._armed) {
+      giveUp._armed = true;
+      if (!giveUp.dataset._orig) giveUp.dataset._orig = giveUp.textContent;
+      giveUp.textContent = '⚠ Tap again to give up';
+      giveUp.style.color = '#ffb088'; giveUp.style.fontWeight = '800';
+      clearTimeout(giveUp._armTimer);
+      giveUp._armTimer = setTimeout(() => {
+        giveUp._armed = false;
+        giveUp.textContent = giveUp.dataset._orig || 'I give up';
+        giveUp.style.color = ''; giveUp.style.fontWeight = '';
+      }, 3500);
+      return;
+    }
+    clearTimeout(giveUp._armTimer); giveUp._armed = false;
     openGiveUpGameOver();
   });
   container.appendChild(giveUp);
