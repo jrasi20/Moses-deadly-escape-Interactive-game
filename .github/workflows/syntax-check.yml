@@ -48,3 +48,21 @@ jobs:
             fi
           done
           exit $fail
+
+      - name: Validate standalone JS files (service worker, etc.)
+        run: |
+          set +e
+          fail=0
+          # sw.js once shipped a JS syntax error (a 65KB comment that lost its
+          # '//') which silently stopped the service worker from installing, so
+          # builds kept appearing stale. node --check it directly every push.
+          for f in sw.js; do
+            [ -f "$f" ] || { echo "skip $f (not present)"; continue; }
+            if node --check "$f"; then
+              echo "OK   $f"
+            else
+              echo "FAIL $f"
+              fail=1
+            fi
+          done
+          exit $fail
