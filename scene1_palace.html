@@ -23406,6 +23406,30 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Jane 2026-06-24: tiny VERSION BADGE on the cover so you can instantly confirm the
+// phone is on the latest build (iOS caches hard). It shows the ACTIVE service-worker
+// CACHE_VERSION — if it reads an old number, the phone is stuck on a stale cache.
+(function(){
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    function _showVer(v){
+      try {
+        var el = document.getElementById('buildBadge');
+        if (!el){ el = document.createElement('div'); el.id='buildBadge';
+          el.style.cssText='position:fixed;right:6px;bottom:5px;z-index:100000;font:600 10px/1 system-ui,sans-serif;color:rgba(255,231,184,0.55);background:rgba(20,10,4,0.35);padding:3px 7px;border-radius:8px;pointer-events:none;letter-spacing:.5px;';
+          document.body.appendChild(el);
+        }
+        el.textContent = String(v || '').replace('bek-bundle-','');
+      } catch(e){}
+    }
+    navigator.serviceWorker.addEventListener('message', function(ev){
+      if (ev.data && ev.data.type === 'swVersion') _showVer(ev.data.version);
+    });
+    function _ask(){ try { if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage('getVersion'); } catch(e){} }
+    navigator.serviceWorker.ready.then(function(){ _ask(); setTimeout(_ask, 1200); }).catch(function(){});
+  } catch(e){}
+})();
+
 /* ============================================================================
    Jane 2026-06-22: OFFLINE-READY SPRITES + INSTALL-AS-APP.
    (A) Background image WARM: after the cover is idle, quietly prefetch EVERY
