@@ -2,6 +2,11 @@
 
 Cache/build history (newest first). The active build is `CACHE_VERSION` in `sw.js`.
 
+## v112 (2026-06-25)
+- Scene 2 caravan-map jigsaw: pieces no longer fly outside the box. ROOT CAUSE: the modal content has a scale() pop-in transform, and an ancestor transform makes a child's position:fixed resolve against the SCALED ancestor instead of the viewport. Pieces are now dragged in a transform-free <body> layer (correct viewport mapping) and reparented into the slot (hit) or tray (miss).
+- Scene 3 ending narration: the closing AND epilogue cinematics now stop all music beds (the egyptian-cover bed mp3 is loud-mastered and bled over the voice even at 0.03) and play the narration at full volume, so the voice is clearly heard.
+- Scene 3 wolf raid: a lingering wolf no longer freezes on screen when the flock encounter resolves — any remaining wolf is now driven off the pasture (it was left un-updated by an early return).
+
 ## v111 (2026-06-25)
 - Spot-the-difference: tap detection is now object-fit:contain aware (maps the tap to the actual displayed image, not the element box). In LANDSCAPE the image is letterboxed inside its box, so the old element-rect math offset every tap and edge diffs like the courtyard goblet fell outside their tap radius. Fixed in all 3 scenes; halos/miss rings now anchor to the finger.
 - Scene 1: the slippery-marble warning now only fires when Moses is in the SAME ROW (lane) as a marble tile within 2 tiles — was a 5x5 box that triggered from a row above.
