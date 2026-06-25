@@ -20259,6 +20259,11 @@ for (let i=0;i<22;i++) dustMotes.push({
   size: 0.6 + Math.random()*1.4, phase: Math.random()*Math.PI*2
 });
 function drawAmbient(){
+  // Jane 2026-06-24 iOS PERF: this whole layer (full-screen gradient + 3 god-ray
+  // polygons with the costly 'lighter' blend + dust motes) repaints EVERY frame and
+  // is pure decoration. On touch/iOS it's a major framerate drag, so skip it — the
+  // palace still reads fine; smooth movement matters far more on phones than god-rays.
+  if (window._IS_IOS) return;
   // v3.x audit (Jane: "doesn't get the majestic palace feel looking at the walls"):
   // Layered cinematic atmosphere on top of the tile bed. Lift the dim purple
   // wall art into something Play-Store-quality without swapping any PNGs.

@@ -14697,6 +14697,7 @@ function updateWindParticles(dt){
   }
 }
 function drawWindParticles(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   if (game.scene !== 2) return;
   const d = (game && game.difficulty) || 'easy';
   const col = d === 'hard' ? 'rgba(180,120,80,' :
@@ -16471,6 +16472,7 @@ for (let i=0;i<22;i++) dustMotes.push({
   size: 0.6 + Math.random()*1.4, phase: Math.random()*Math.PI*2
 });
 function drawAmbient(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   // warm top-down light wash
   const g = ctx.createLinearGradient(0,0,0,CANVAS_H);
   g.addColorStop(0, 'rgba(255,200,100,0.10)');

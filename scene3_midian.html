@@ -22564,6 +22564,7 @@ function _scene3DuskT(){
 // layer as warm light, not solid paint. No assets required. Fade out as the
 // sky darkens (sunbeams = sun = gone at twilight).
 function drawScene3Sunbeams(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   if (typeof CANVAS_W === 'undefined' || typeof CANVAS_H === 'undefined') return;
   // Fade out across dusk: full strength at t<=0.3, gone by t>=0.85.
   const dusk = _scene3DuskT();
@@ -22620,6 +22621,7 @@ const SCENE3_LANTERNS = [
   { tx: 17, ty:  7, size: 1.2, hue: 'rgba(255,200,140,' }, // well-mouth (small)
 ];
 function drawScene3LanternGlow(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   if (typeof camera === 'undefined' || typeof TILE === 'undefined') return;
   const dusk = _scene3DuskT();
   // Lantern intensity ramps in over the second half of dusk progress.
@@ -22671,6 +22673,7 @@ function _initScene3Fireflies(){
   }
 }
 function drawScene3Fireflies(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   if (typeof camera === 'undefined' || typeof TILE === 'undefined') return;
   const dusk = _scene3DuskT();
   // Fireflies emerge only after twilight starts. Density ramps in across t=0.55-0.85.
@@ -22727,6 +22730,7 @@ function _triggerScene3ShootingStar() {
   _scene3SS.y0 = 0.02 + Math.random() * 0.10;
 }
 function drawScene3ShootingStar() {
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   if (!_scene3SS.active) return;
   const now = performance.now();
   const elapsed = now - _scene3SS.startedAt;
@@ -23950,6 +23954,7 @@ for (let i=0;i<22;i++) dustMotes.push({
   size: 0.6 + Math.random()*1.4, phase: Math.random()*Math.PI*2
 });
 function drawAmbient(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   // warm top-down light wash
   const g = ctx.createLinearGradient(0,0,0,CANVAS_H);
   g.addColorStop(0, 'rgba(255,200,100,0.10)');
