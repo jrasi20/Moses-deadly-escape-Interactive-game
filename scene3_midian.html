@@ -7238,7 +7238,24 @@ function updateScene3Flock(dt){
     }
     return;
   }
-  if (scene3Flock.done) return;
+  if (scene3Flock.done) {
+    // 2026-06-25 (Jane: "1st wolf attack — the 2nd wolf remains on scene
+    // stagnant"). The early `return` froze any wolf still on screen the instant
+    // the encounter resolved (it was mid-pin / mid-stalk / mid-flee and never
+    // got another update). Now: drive every lingering wolf OFF the pasture so
+    // none freezes in view — the draw loop culls it once it's off-screen.
+    for (const w of scene3Flock.wolves){
+      if (w.state === 'gone') continue;
+      if (w.state !== 'leave' && w.state !== 'flee'){
+        w.state = 'leave'; w.targetId = null;
+        if (!w.vx) w.vx = ((w.px < player.px) ? -1 : 1) * 0.09;
+      }
+      w.py += 0.13 * dt; w.px += (w.vx || 0) * dt; w.dir = ((w.vx || 0) < 0 ? -1 : 1);
+      // fully retire it once it has left the viewport so it stops drawing/moving
+      if ((w.px - camera.px) < -160 || (w.py - camera.py) > CANVAS_H + 120) w.state = 'gone';
+    }
+    return;
+  }
   const now = performance.now();
   const frozen = (window._guardFreezeUntil && now < window._guardFreezeUntil);
   const shooR = TILE * 1.6;
@@ -11850,7 +11867,11 @@ function playClosingCinematic(onDone) {
   game.closeStep = 0;
   showClosePanel();
   $('closingCinematic').classList.add('active');
-  try { setMusic('egyptianCover'); } catch(e){}   // #19: lively post-Scene-3 narration bed
+  // 2026-06-25 (Jane: "completely reduce the bg music for the 2 ending panels.
+  // the bg music is dominating and narration is not heard"). The egyptian-cover
+  // bed mp3 is loud-mastered, so even at 0.03 it bled over the narration. Stop
+  // ALL music beds during the closing cinematic so only the voice plays.
+  try { setMusic(null); } catch(e){}
 }
 function _playClosingPanelAudio(p) {
   try {
@@ -11859,7 +11880,7 @@ function _playClosingPanelAudio(p) {
     a.pause();
     a.src = 'assets/audio/' + p.audio;
     a.currentTime = 0;
-    a.volume = 0.85;
+    a.volume = 1.0;   // 2026-06-25: full voice (bed is now off during the ending)
     a.play().catch(()=>{});
   } catch(e){}
 }
@@ -11948,7 +11969,7 @@ function _playEpiloguePanelAudio(p) {
     a.pause();
     a.src = 'assets/audio/' + p.audio;
     a.currentTime = 0;
-    a.volume = 0.85;
+    a.volume = 1.0;   // 2026-06-25: full voice (bed is now off during the ending)
     a.play().catch(()=>{});
   } catch(e){}
 }
@@ -11987,7 +12008,9 @@ function openEpilogueCinematic(onDone) {
   game.epilStep = 0;
   showEpiloguePanel();
   $('epilogueCinematic').classList.add('active');
-  try { setMusic('egyptianCover'); } catch(e){}   // #19: lively post-Scene-3 narration bed
+  // 2026-06-25 (Jane: bg music dominating the ending narration). Stop all music
+  // beds during the epilogue cinematic so only the voice plays. See closing.
+  try { setMusic(null); } catch(e){}
 }
 (function wireEpilogueCinematic() {
   const next = $('epilNextBtn');

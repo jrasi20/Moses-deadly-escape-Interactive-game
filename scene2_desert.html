@@ -8946,6 +8946,24 @@ function _wireJigsawPiece(pieceEl){
   let startX = 0, startY = 0, downX = 0, downY = 0;
   let dragging = false, moved = false;
   let homeRect = null;
+  let _origParent = null;   // tray, so a missed drop can be returned here
+  // 2026-06-25 (Jane: "jigsaw puzzle pieces are outside the box"). ROOT CAUSE:
+  // the modal content carries a scale() pop-in transform (modalPopIn), and an
+  // ancestor transform makes a child's position:fixed resolve against the
+  // SCALED ancestor instead of the viewport — so the dragged piece flew to an
+  // offset, shrunken position outside the box. FIX: drag the piece in the
+  // transform-free <body> layer (fixed coords then map to the real viewport),
+  // and reparent it back into the tray on a miss / into the slot on a hit.
+  function _returnToTray(){
+    try { if (_origParent) _origParent.appendChild(pieceEl); } catch(_){}
+    pieceEl.style.position = '';
+    pieceEl.style.left = '';
+    pieceEl.style.top  = '';
+    pieceEl.style.width = '';
+    pieceEl.style.height = '';
+    pieceEl.style.margin = '';
+    pieceEl.style.zIndex = '';
+  }
   pieceEl.addEventListener('pointerdown', e => {
     if (pieceEl.classList.contains('locked')) return;
     e.preventDefault();
@@ -8962,8 +8980,13 @@ function _wireJigsawPiece(pieceEl){
     dragging = true;
     moved = false;
     pieceEl.classList.add('dragging');
-    // Capture absolute position so the piece can move freely.
+    // Lift the piece into the transform-free <body> so position:fixed maps to
+    // the real viewport (see _returnToTray comment). Remember the tray parent.
+    _origParent = pieceEl.parentElement;
+    try { document.body.appendChild(pieceEl); } catch(_){}
     pieceEl.style.position = 'fixed';
+    pieceEl.style.margin = '0';
+    pieceEl.style.zIndex = '99999';
     pieceEl.style.left = homeRect.left + 'px';
     pieceEl.style.top  = homeRect.top + 'px';
     pieceEl.style.width = homeRect.width + 'px';
@@ -8992,12 +9015,8 @@ function _wireJigsawPiece(pieceEl){
       pieceEl.dataset.rotation = String(next);
       const face = pieceEl.querySelector('.crystal-face');
       if (face) face.style.transform = 'rotate(' + next + 'deg)';
-      // Reset position back to tray.
-      pieceEl.style.position = '';
-      pieceEl.style.left = '';
-      pieceEl.style.top  = '';
-      pieceEl.style.width = '';
-      pieceEl.style.height = '';
+      // Reset position back to tray (reparent — it was lifted into <body>).
+      _returnToTray();
       return;
     }
     // Drag ended — check if dropped on a slot.
@@ -9012,12 +9031,8 @@ function _wireJigsawPiece(pieceEl){
       }
     }
     if (!hit) {
-      // Dropped off-board → bounce back to tray.
-      pieceEl.style.position = '';
-      pieceEl.style.left = '';
-      pieceEl.style.top  = '';
-      pieceEl.style.width = '';
-      pieceEl.style.height = '';
+      // Dropped off-board → bounce back to tray (reparent — lifted into <body>).
+      _returnToTray();
       pieceEl.classList.add('bounce');
       setTimeout(() => pieceEl.classList.remove('bounce'), 380);
       return;
@@ -9033,11 +9048,7 @@ function _wireJigsawPiece(pieceEl){
     const rightSlot = (havePiece === wantPiece);
     const isCorrect = rightSlot && (rotation === 0);
     if (!isCorrect) {
-      pieceEl.style.position = '';
-      pieceEl.style.left = '';
-      pieceEl.style.top  = '';
-      pieceEl.style.width = '';
-      pieceEl.style.height = '';
+      _returnToTray();
       pieceEl.classList.add('bounce');
       setTimeout(() => pieceEl.classList.remove('bounce'), 380);
       try { play('pop') || play('error'); } catch(_){}
@@ -9065,6 +9076,8 @@ function _wireJigsawPiece(pieceEl){
     pieceEl.style.top    = '0';
     pieceEl.style.width  = '100%';
     pieceEl.style.height = '100%';
+    pieceEl.style.margin = '';      // clear the drag-layer overrides
+    pieceEl.style.zIndex = '';
     pieceEl.classList.add('locked');
     pieceEl.classList.add('snapped');
     // 2026-05-26: correct placement — clear hints, reset the miss counter, stop
