@@ -13006,12 +13006,16 @@ function _maybeFireJitTip(){
   if (!_jitTipFired.marble && typeof MAP !== 'undefined' && Array.isArray(MAP)) {
     const px = player.tx, py = player.ty;
     let marbleTile = null;
-    for (let dy = -2; dy <= 2 && !marbleTile; dy++) {
-      for (let dx = -2; dx <= 2 && !marbleTile; dx++) {
-        const ny = py + dy, nx = px + dx;
-        if (ny < 0 || ny >= MAP_H || nx < 0 || nx >= MAP_W) continue;
-        if (MAP[ny][nx] === 9) marbleTile = { tx: nx, ty: ny };
-      }
+    // 2026-06-25 (Jane: "warning about marbled floor modal happens even when
+    // moses is in the upper lane. that modal should only happen when moses is
+    // in the SAME LANE as the marbled floor"). Was a 5x5 box (±2 rows AND
+    // cols), so it fired from a row above/below. Now only scan Moses's OWN row
+    // (same lane), within 2 tiles left/right — he's actually lined up to slide
+    // onto it. (Vertical approaches still get the on-slip "-1 heart" toast.)
+    for (let dx = -2; dx <= 2 && !marbleTile; dx++) {
+      const nx = px + dx;
+      if (nx < 0 || nx >= MAP_W) continue;
+      if (MAP[py][nx] === 9) marbleTile = { tx: nx, ty: py };
     }
     if (marbleTile) {
       _jitTipFired.marble = true;
@@ -15620,8 +15624,26 @@ function renderSpotDiff(gate, q, container){
     const img = imgC.querySelector('.ch-spotdiff-img');
     if (!img) return;
     const rect = img.getBoundingClientRect();
-    const tapX = ((e.clientX - rect.left) / rect.width) * 100;
-    const tapY = ((e.clientY - rect.top) / rect.height) * 100;
+    // 2026-06-25 (Jane: "the goblet is not being detected"). ROOT CAUSE:
+    // in LANDSCAPE the image gets a fixed height + object-fit:contain, which
+    // LETTERBOXES the picture inside its element box. The old tap math used
+    // the element rect (incl. the letterbox bars), so taps were offset/scaled
+    // and edge diffs (the table goblet) fell outside tapR. FIX: map the tap
+    // to the ACTUAL displayed image content (object-fit:contain aware), so
+    // detection is correct in every layout (portrait height:auto = no bars).
+    const _natW = img.naturalWidth  || rect.width;
+    const _natH = img.naturalHeight || rect.height;
+    const _scale = Math.min(rect.width / _natW, rect.height / _natH);
+    const _dispW = _natW * _scale, _dispH = _natH * _scale;
+    const _padX = (rect.width  - _dispW) / 2;
+    const _padY = (rect.height - _dispH) / 2;
+    // raw element-% (used ONLY to draw the halo / miss ring right under the
+    // finger — PM39's "halo at the kid's tap position").
+    const rawX = ((e.clientX - rect.left) / rect.width)  * 100;
+    const rawY = ((e.clientY - rect.top)  / rect.height) * 100;
+    // content-% (used for HIT-DETECTION vs the bank coords).
+    const tapX = ((e.clientX - rect.left - _padX) / _dispW) * 100;
+    const tapY = ((e.clientY - rect.top  - _padY) / _dispH) * 100;
     let hitIdx = -1;
     for (let i = 0; i < detectedDiffs.length; i++){
       if (found.has(i)) continue;
@@ -15651,8 +15673,8 @@ function renderSpotDiff(gate, q, container){
       const HALO_PCT = 6.5;      // halo DIAMETER as % of image width
       const halfHalo = HALO_PCT / 2;
       const _clampPct = (v, min, max) => Math.max(min, Math.min(max, v));
-      const haloLeftPct = _clampPct(tapX - halfHalo, 0, 100 - HALO_PCT);
-      const haloTopPct  = _clampPct(tapY - halfHalo, 0, 100 - HALO_PCT);
+      const haloLeftPct = _clampPct(rawX - halfHalo, 0, 100 - HALO_PCT);
+      const haloTopPct  = _clampPct(rawY - halfHalo, 0, 100 - HALO_PCT);
       imgContainers.forEach(ic => {
         const circle = document.createElement('div');
         circle.className = 'ch-spotdiff-hit';
@@ -15673,8 +15695,8 @@ function renderSpotDiff(gate, q, container){
       try { play('tap'); } catch(ex){}
       const miss = document.createElement('div');
       miss.className = 'ch-spotdiff-miss';
-      miss.style.left = 'calc(' + tapX + '% - 15px)';
-      miss.style.top  = 'calc(' + tapY + '% - 15px)';
+      miss.style.left = 'calc(' + rawX + '% - 15px)';
+      miss.style.top  = 'calc(' + rawY + '% - 15px)';
       imgC.appendChild(miss);
       setTimeout(() => { try { miss.remove(); } catch(ex){} }, 700);
     }
