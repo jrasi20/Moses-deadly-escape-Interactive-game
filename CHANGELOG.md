@@ -2,6 +2,11 @@
 
 Cache/build history (newest first). The active build is `CACHE_VERSION` in `sw.js`.
 
+## v111 (2026-06-25)
+- Spot-the-difference: tap detection is now object-fit:contain aware (maps the tap to the actual displayed image, not the element box). In LANDSCAPE the image is letterboxed inside its box, so the old element-rect math offset every tap and edge diffs like the courtyard goblet fell outside their tap radius. Fixed in all 3 scenes; halos/miss rings now anchor to the finger.
+- Scene 1: the slippery-marble warning now only fires when Moses is in the SAME ROW (lane) as a marble tile within 2 tiles — was a 5x5 box that triggered from a row above.
+- Scene 2 scouts: a scout can no longer catch Moses while OFF-SCREEN (camera clamped at a map corner) — capture now requires the scout to be visible in the viewport. Plus a ~1.4s resume grace after a checkpoint closes so a parked-adjacent scout can't grab Moses the instant the modal closes.
+
 ## v110 (2026-06-24)
 - Housekeeping: moved the accumulated build history out of the `CACHE_VERSION` line in `sw.js` (it had grown to ~65 KB on a single line and a lost `//` had turned it into a syntax error that stopped the service worker from installing) into this file. Also removed the unused 1.1 MB `certificate template.pdf`, fixed the `index.html` redirect to preserve query/hash params, and renamed the misspelled `silder puzzle 1.png` asset.
 

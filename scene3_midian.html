@@ -18315,8 +18315,18 @@ function renderSpotDiff(gate, q, container){
     var img = imgC.querySelector('.ch-spotdiff-img');
     if (!img) return;
     var rect = img.getBoundingClientRect();
-    var tapX = ((e.clientX - rect.left) / rect.width) * 100;
-    var tapY = ((e.clientY - rect.top) / rect.height) * 100;
+    // 2026-06-25 (matches scene1 goblet fix): map the tap to the ACTUAL
+    // displayed image content (object-fit:contain aware) so detection is
+    // correct even when landscape CSS letterboxes the picture inside its box.
+    var _natW = img.naturalWidth  || rect.width;
+    var _natH = img.naturalHeight || rect.height;
+    var _scale = Math.min(rect.width / _natW, rect.height / _natH);
+    var _dispW = _natW * _scale, _dispH = _natH * _scale;
+    var _padX = (rect.width - _dispW) / 2, _padY = (rect.height - _dispH) / 2;
+    var rawX = ((e.clientX - rect.left) / rect.width)  * 100;   // halo/miss at finger
+    var rawY = ((e.clientY - rect.top)  / rect.height) * 100;
+    var tapX = ((e.clientX - rect.left - _padX) / _dispW) * 100; // detection
+    var tapY = ((e.clientY - rect.top  - _padY) / _dispH) * 100;
     var hitIdx = -1;
     for (var i = 0; i < diffs.length; i++){
       if (found.has(i)) continue;
@@ -18334,8 +18344,8 @@ function renderSpotDiff(gate, q, container){
         var circle = document.createElement('div');
         circle.className = 'ch-spotdiff-hit';
         var r = dd.r || 10;
-        circle.style.left = dd.x + '%';
-        circle.style.top  = dd.y + '%';
+        circle.style.left = rawX + '%';
+        circle.style.top  = rawY + '%';
         circle.style.width = (r * 2) + '%';
         ic.appendChild(circle);
       });
@@ -18350,8 +18360,8 @@ function renderSpotDiff(gate, q, container){
       try { play('tap'); } catch(ex){}
       var miss = document.createElement('div');
       miss.className = 'ch-spotdiff-miss';
-      miss.style.left = tapX + '%';
-      miss.style.top  = tapY + '%';
+      miss.style.left = rawX + '%';
+      miss.style.top  = rawY + '%';
       imgC.appendChild(miss);
       setTimeout(function(){ try{miss.remove();}catch(ex){} }, 700);
     }
