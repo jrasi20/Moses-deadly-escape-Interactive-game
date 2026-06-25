@@ -3168,6 +3168,8 @@
     box-shadow: inset 0 0 0 1px rgba(120,70,20,0.25);
   }
   .ch-option:hover { background:#fff1c2; transform: translateX(3px); box-shadow: 0 2px 10px rgba(120,70,20,0.25); }
+  /* Jane 2026-06-24: INSTANT tap highlight — browser :active paints on touchdown even when the canvas frame rate is low, so the kid always sees which answer they tapped. */
+  .ch-option:active, .ch-option.picked { background:#ffd24a !important; border-color:#6a3e10 !important; box-shadow: inset 0 0 0 3px rgba(180,90,20,0.65) !important; }
   .ch-option.correct {
     /* v3.4: golden UPPERCASE flash animation -- lingers ~4.2s total */
     animation: goldenCorrect 4.2s ease-out forwards;
@@ -5409,7 +5411,7 @@ function resizeCanvas() {
   // memory on the few foldables that misreport DPR=3.5+ with no
   // perceptible visual gain. Smaller backing store = lower mid-range
   // Android GPU pressure + smoother first paint.
-  let dpr = Math.min(window._IS_IOS ? 1.5 : 2, window.devicePixelRatio || 1);  // Jane 2026-06-24: iOS gets a lower cap (1.5) than Android (2) — iOS Safari canvas is much slower at the same res.
+  let dpr = Math.min(window._IS_IOS ? 1 : 2, window.devicePixelRatio || 1);  // Jane 2026-06-24: iOS gets a lower cap (1.5) than Android (2) — iOS Safari canvas is much slower at the same res.
   try {
     const zoom = (window.outerWidth && window.innerWidth)
       ? (window.outerWidth / window.innerWidth) : 1;
@@ -5653,23 +5655,24 @@ function unlockAudio() {
   audioUnlocked = true;
   Object.values(audio).forEach(a => {
     if (!a) return;
+    if (a.loop) { return; }   // Jane 2026-06-24 iOS GHOST AUDIO: don't prime LOOPING bgm/VO (they leaked on the access gate); they start explicitly later.
     try {
-      const wasMuted = a.muted;
-      a.muted = true;
+      const wasMuted = a.muted, wasVol = a.volume;
+      a.muted = true; a.volume = 0;   // belt+suspenders — iOS sometimes ignores .muted
       const p = a.play();
       if (p && typeof p.then === 'function') {
         p.then(() => {
           try { a.pause(); a.currentTime = 0; } catch(e){}
-          a.muted = wasMuted;
+          a.muted = wasMuted; a.volume = wasVol;
           _audioUnlockSucceeded++;
           _maybeShowMutedToast();
         }).catch(() => {
-          a.muted = wasMuted;
+          a.muted = wasMuted; a.volume = wasVol;
           _audioUnlockFailed++;
           _maybeShowMutedToast();
         });
       } else {
-        a.muted = wasMuted;
+        a.muted = wasMuted; a.volume = wasVol;
         _audioUnlockSucceeded++;
       }
     } catch(e) { _audioUnlockFailed++; }
