@@ -2867,6 +2867,8 @@
     box-shadow: inset 0 0 0 1px rgba(120,70,20,0.25);
   }
   .ch-option:hover { background:#fff1c2; transform: translateX(3px); box-shadow: 0 2px 10px rgba(120,70,20,0.25); }
+  /* Jane 2026-06-24: INSTANT tap highlight — browser :active paints on touchdown even when the canvas frame rate is low, so the kid always sees which answer they tapped. */
+  .ch-option:active, .ch-option.picked { background:#ffd24a !important; border-color:#6a3e10 !important; box-shadow: inset 0 0 0 3px rgba(180,90,20,0.65) !important; }
   .ch-option.correct {
     /* v3.4: golden UPPERCASE flash animation -- lingers ~4.2s total */
     animation: goldenCorrect 4.2s ease-out forwards;
@@ -4112,7 +4114,7 @@ function resizeCanvas() {
   const browserZoom = (window.outerWidth && window.innerWidth)
     ? Math.max(1, window.outerWidth / window.innerWidth)
     : 1;
-  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), window._IS_IOS ? 1.5 : 2);  // Jane 2026-06-24: iOS gets 1.5 (slower canvas), others 2.
+  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), window._IS_IOS ? 1 : 2);  // Jane 2026-06-24: iOS gets 1.5 (slower canvas), others 2.
   _renderDPR = dpr; // remember for render()'s per-frame transform reset
   canvas.width  = Math.round(CANVAS_W * dpr);
   canvas.height = Math.round(CANVAS_H * dpr);
@@ -4339,18 +4341,24 @@ function unlockAudio() {
   // leak is silent, then unmute once the priming pause has fired.
   Object.values(audio).forEach(a => {
     if (!a) return;
+    // Jane 2026-06-24 iOS GHOST AUDIO: do NOT prime LOOPING tracks (bgm/narration/
+    // alerted/cover beds). The play()->pause() race left them audibly LEAKING on the
+    // access gate ("ghost" music/VO). They're started explicitly with correct timing
+    // later, and priming the short SFX below already unlocks the iOS audio session, so
+    // they still play fine — they just don't ghost on the gate now.
+    if (a.loop) { return; }
     try {
-      const wasMuted = a.muted;
-      a.muted = true;
+      const wasMuted = a.muted, wasVol = a.volume;
+      a.muted = true; a.volume = 0;   // belt + suspenders — iOS sometimes ignores .muted
       const p = a.play();
       if (p && typeof p.then === 'function') {
         p.then(() => {
           try { a.pause(); a.currentTime = 0; } catch(e){}
-          a.muted = wasMuted;
+          a.muted = wasMuted; a.volume = wasVol;
           _audioUnlockSucceeded++;
           _maybeShowMutedToast();
         }).catch(() => {
-          a.muted = wasMuted;
+          a.muted = wasMuted; a.volume = wasVol;
           _audioUnlockFailed++;
           _maybeShowMutedToast();
         });
