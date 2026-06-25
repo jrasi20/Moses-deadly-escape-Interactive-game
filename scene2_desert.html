@@ -4341,24 +4341,22 @@ function unlockAudio() {
   // leak is silent, then unmute once the priming pause has fired.
   Object.values(audio).forEach(a => {
     if (!a) return;
-    // Jane 2026-06-24 iOS GHOST AUDIO: do NOT prime LOOPING tracks (bgm/narration/
-    // alerted/cover beds). The play()->pause() race left them audibly LEAKING on the
-    // access gate ("ghost" music/VO). They're started explicitly with correct timing
-    // later, and priming the short SFX below already unlocks the iOS audio session, so
-    // they still play fine — they just don't ghost on the gate now.
-    if (a.loop) { return; }
+    // Jane 2026-06-24 iOS AUDIO: PRIME EVERY track (incl. looping bgm/narration) so iOS
+    // unlocks them on this tap — skipping them left bgm + VO totally silent on iPhone.
+    // To avoid the old "ghost" overlap, prime MUTED (iOS honors .muted) with loop OFF so
+    // a looping bed can't restart during the brief silent priming window.
     try {
-      const wasMuted = a.muted, wasVol = a.volume;
-      a.muted = true; a.volume = 0;   // belt + suspenders — iOS sometimes ignores .muted
+      const wasMuted = a.muted, wasLoop = a.loop;
+      a.muted = true; a.loop = false;   // Jane 2026-06-24: iOS honors .muted (ignores .volume); disable loop so a looping bgm/VO can't restart mid-prime (that was the 'ghost' overlap). Still PRIME every track so iOS unlocks it.
       const p = a.play();
       if (p && typeof p.then === 'function') {
         p.then(() => {
           try { a.pause(); a.currentTime = 0; } catch(e){}
-          a.muted = wasMuted; a.volume = wasVol;
+          a.muted = wasMuted; a.loop = wasLoop;
           _audioUnlockSucceeded++;
           _maybeShowMutedToast();
         }).catch(() => {
-          a.muted = wasMuted; a.volume = wasVol;
+          a.muted = wasMuted; a.loop = wasLoop;
           _audioUnlockFailed++;
           _maybeShowMutedToast();
         });

@@ -5655,24 +5655,23 @@ function unlockAudio() {
   audioUnlocked = true;
   Object.values(audio).forEach(a => {
     if (!a) return;
-    if (a.loop) { return; }   // Jane 2026-06-24 iOS GHOST AUDIO: don't prime LOOPING bgm/VO (they leaked on the access gate); they start explicitly later.
     try {
-      const wasMuted = a.muted, wasVol = a.volume;
-      a.muted = true; a.volume = 0;   // belt+suspenders — iOS sometimes ignores .muted
+      const wasMuted = a.muted, wasLoop = a.loop;
+      a.muted = true; a.loop = false;   // Jane 2026-06-24: iOS honors .muted (ignores .volume); disable loop so a looping bgm/VO can't restart mid-prime (that was the 'ghost' overlap). Still PRIME every track so iOS unlocks it.
       const p = a.play();
       if (p && typeof p.then === 'function') {
         p.then(() => {
           try { a.pause(); a.currentTime = 0; } catch(e){}
-          a.muted = wasMuted; a.volume = wasVol;
+          a.muted = wasMuted; a.loop = wasLoop;
           _audioUnlockSucceeded++;
           _maybeShowMutedToast();
         }).catch(() => {
-          a.muted = wasMuted; a.volume = wasVol;
+          a.muted = wasMuted; a.loop = wasLoop;
           _audioUnlockFailed++;
           _maybeShowMutedToast();
         });
       } else {
-        a.muted = wasMuted; a.volume = wasVol;
+        a.muted = wasMuted; a.loop = wasLoop;
         _audioUnlockSucceeded++;
       }
     } catch(e) { _audioUnlockFailed++; }
