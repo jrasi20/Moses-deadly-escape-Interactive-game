@@ -4469,6 +4469,7 @@ const ctx = canvas.getContext('2d');
 // keeps drawing but without the blur (sprites/tiles are unaffected). Desktop keeps the
 // pretty soft glows. One-point fix instead of editing 20+ draw sites.
 window._LOWFX = (function(){ try { return (navigator.maxTouchPoints > 0) || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''); } catch(e){ return false; } })();
+window._IS_IOS = (function(){ try { var ua=navigator.userAgent||''; return /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints||0)>1); } catch(e){ return false; } })();
 function _killShadowBlur(c){ if (!c || !window._LOWFX || c._sbKilled) return; try { Object.defineProperty(c, 'shadowBlur', { configurable:true, get:function(){ return 0; }, set:function(){} }); c._sbKilled = true; } catch(e){} }
 try { _killShadowBlur(ctx); } catch(e){}
 // v2.2.9 FIX (Jane - "images look blurred and broken"):
@@ -4523,7 +4524,7 @@ function resizeCanvas() {
   const browserZoom = (window.outerWidth && window.innerWidth)
     ? Math.max(1, window.outerWidth / window.innerWidth)
     : 1;
-  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), 2);  // Jane 2026-06-24: cap 3→2 for iOS perf (retina 3x backing store = ~9x px/frame = lag).
+  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), window._IS_IOS ? 1.5 : 2);  // Jane 2026-06-24: iOS 1.5, others 2.
   _renderDPR = dpr; // remember for _renderInner's per-frame transform reset
   canvas.width  = Math.round(CANVAS_W * dpr);
   canvas.height = Math.round(CANVAS_H * dpr);
@@ -11263,6 +11264,19 @@ window._goFullscreen = window._goFullscreen || function(){
   try { document.addEventListener(ev, window._goFullscreen, { once:true, capture:true }); } catch(e){}
 });
 
+// Jane 2026-06-24: STOP iOS ZOOM (Safari ignores user-scalable=no, so rapid d-pad taps
+// double-tap-zoomed the page). Block pinch via gesture* events + double-tap via
+// touch-action:manipulation on controls. No effect on Android.
+(function(){
+  try {
+    ['gesturestart','gesturechange','gestureend'].forEach(function(g){ document.addEventListener(g, function(e){ e.preventDefault(); }, { passive:false }); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+    var st = document.createElement('style');
+    st.textContent = 'button,.dpad-btn,.btn,.btn-golden,.action-btn,canvas,#gameCanvas{touch-action:manipulation !important;}';
+    (document.head || document.documentElement).appendChild(st);
+  } catch(e){}
+})();
+
 /* ---------- COVER PAGE / DIFFICULTY ---------- */
 document.querySelectorAll('.difficulty-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -12526,6 +12540,15 @@ function _tipPointAtTile(tx, ty){
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
+  // Jane 2026-06-24: never fire a tip + its VO unless actively PLAYING — fixes deferred
+  // tips dumping all at once when the game is paused / in a menu. Hold + retry instead.
+  try {
+    if (typeof game !== 'undefined' && game.state !== 'playing') {
+      opts._tipRetries = (opts._tipRetries || 0) + 1;
+      if (opts._tipRetries < 120) setTimeout(function(){ try { showTipPopup(eventKey, opts); } catch(e){} }, 800);
+      return;
+    }
+  } catch(e){}
   // O1/M2 (Jane 2026-06-20): never stack a popup over an open one — wait + retry.
   try {
     const _ovBusy = document.getElementById('tipPopupOverlay');
@@ -14240,7 +14263,7 @@ function _pulleyFrame(now) {
   // letterboxed — every sprite stays crisp + correctly proportioned, no tiny
   // rectangle floating in dead space on portrait/landscape.
   const W = 600, H = 340;
-  const dpr = Math.min(2, window.devicePixelRatio || 1);  // Jane 2026-06-24: cap 3->2 for iOS mini-game perf
+  const dpr = Math.min(window._IS_IOS ? 1.5 : 2, window.devicePixelRatio || 1);  // Jane 2026-06-24: iOS 1.5, others 2 (mini-game)
   const cssW = canvas.clientWidth || W;
   const cssH = canvas.clientHeight || H;
   const needW = Math.max(W, Math.round(cssW * dpr));
@@ -15618,7 +15641,7 @@ function _rescueFrame(now) {
   // UNIFORM scale (no squish). The 7 lanes then spread across the whole height and sprites
   // scale up with the lane gap, so the game looks big & magnified on every device.
   const W = 760;
-  const dpr = Math.min(2, window.devicePixelRatio || 1);  // Jane 2026-06-24: cap 3->2 for iOS mini-game perf
+  const dpr = Math.min(window._IS_IOS ? 1.5 : 2, window.devicePixelRatio || 1);  // Jane 2026-06-24: iOS 1.5, others 2 (mini-game)
   const cssW = canvas.clientWidth || W, cssH = canvas.clientHeight || 470;
   const H = Math.max(120, Math.round(W * (cssH / Math.max(1, cssW))));  // floor only guards degenerate sizes; never binds normally so scale stays UNIFORM (no squish)
   const needW = Math.max(1, Math.round(cssW * dpr)), needH = Math.max(1, Math.round(cssH * dpr));

@@ -5355,6 +5355,10 @@ const ctx = canvas.getContext('2d');
 // source so every per-frame glow draws cheaply (sprites/tiles unaffected). Desktop keeps
 // the soft glows. One-point fix instead of editing 30+ draw sites.
 window._LOWFX = (function(){ try { return (navigator.maxTouchPoints > 0) || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''); } catch(e){ return false; } })();
+// Jane 2026-06-24: iOS Safari's canvas compositor is much slower than Android Chrome at
+// the same resolution, so iOS gets an EXTRA-low DPR cap (1.5 vs 2) — ~44% fewer pixels
+// per frame than v103, which is the biggest single lever for smooth movement on iPhone.
+window._IS_IOS = (function(){ try { var ua=navigator.userAgent||''; return /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints||0)>1); } catch(e){ return false; } })();
 function _killShadowBlur(c){ if (!c || !window._LOWFX || c._sbKilled) return; try { Object.defineProperty(c, 'shadowBlur', { configurable:true, get:function(){ return 0; }, set:function(){} }); c._sbKilled = true; } catch(e){} }
 try { _killShadowBlur(ctx); } catch(e){}
 ctx.imageSmoothingEnabled = false;
@@ -5405,7 +5409,7 @@ function resizeCanvas() {
   // memory on the few foldables that misreport DPR=3.5+ with no
   // perceptible visual gain. Smaller backing store = lower mid-range
   // Android GPU pressure + smoother first paint.
-  let dpr = Math.min(2, window.devicePixelRatio || 1);  // Jane 2026-06-24: cap 3→2 — on iOS retina (dpr 3) a 3x backing store is ~9x the pixels/frame = heavy lag; 2 is ~55% fewer px, barely-visible softer.
+  let dpr = Math.min(window._IS_IOS ? 1.5 : 2, window.devicePixelRatio || 1);  // Jane 2026-06-24: iOS gets a lower cap (1.5) than Android (2) — iOS Safari canvas is much slower at the same res.
   try {
     const zoom = (window.outerWidth && window.innerWidth)
       ? (window.outerWidth / window.innerWidth) : 1;
@@ -9780,6 +9784,25 @@ window._goFullscreen = function(){
   try { document.addEventListener(ev, window._goFullscreen, { once:true, capture:true }); } catch(e){}
 });
 
+// Jane 2026-06-24: STOP iOS ZOOM. iOS Safari IGNORES the viewport "user-scalable=no",
+// so rapid D-pad taps (e.g. holding UP/DOWN) registered as a double-tap and ZOOMED the
+// page in/out. Block the two iOS zoom gestures globally: (1) pinch via the 'gesture*'
+// events, (2) double-tap by swallowing a 2nd touchend within 300ms. (No effect on Android.)
+(function(){
+  try {
+    // Block PINCH zoom (iOS-only gesture events).
+    ['gesturestart','gesturechange','gestureend'].forEach(function(g){
+      document.addEventListener(g, function(e){ e.preventDefault(); }, { passive:false });
+    });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+    // Block DOUBLE-TAP zoom the safe way (no JS preventDefault that could swallow a rapid
+    // d-pad tap): touch-action:manipulation on every control + the canvas.
+    var st = document.createElement('style');
+    st.textContent = 'button,.dpad-btn,.btn,.btn-golden,.action-btn,canvas,#gameCanvas{touch-action:manipulation !important;}';
+    (document.head || document.documentElement).appendChild(st);
+  } catch(e){}
+})();
+
 /* ---------- COVER PAGE / DIFFICULTY ---------- */
 // 2026-05-19 PM63 (Jane: "so at the initial cover if kids pick easy level,
 // does it get carried throughout for all scenes?"). Scene 2 already reads
@@ -12122,6 +12145,16 @@ function _s1vo(key, opts){
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
+  // Jane 2026-06-24: NEVER fire a tutorial tip + its VO unless we're actively PLAYING.
+  // Bug: while PAUSED (or in a cutscene/menu), deferred tips were dumping all at once
+  // ("when I paused, all the tutorials started playing together"). Hold + retry instead.
+  try {
+    if (typeof game !== 'undefined' && game.state !== 'playing') {
+      opts._tipRetries = (opts._tipRetries || 0) + 1;
+      if (opts._tipRetries < 120) setTimeout(() => { try { showTipPopup(eventKey, opts); } catch(e){} }, 800);
+      return;
+    }
+  } catch(e){}
   // M2/I3 (Jane 2026-06-20: "modal opened over modal"). Never stack a popup on
   // top of one that's already open (e.g. a Power-Up Unlocked popup landing over
   // a tip's "Got it!" card). If the tip overlay is already active, WAIT and

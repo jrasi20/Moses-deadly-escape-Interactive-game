@@ -4037,6 +4037,7 @@ const ctx = canvas.getContext('2d');
 // source so every per-frame glow draws cheaply (sprites/tiles unaffected). Desktop keeps
 // the soft glows. One-point fix instead of editing 20+ draw sites.
 window._LOWFX = (function(){ try { return (navigator.maxTouchPoints > 0) || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''); } catch(e){ return false; } })();
+window._IS_IOS = (function(){ try { var ua=navigator.userAgent||''; return /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints||0)>1); } catch(e){ return false; } })();
 function _killShadowBlur(c){ if (!c || !window._LOWFX || c._sbKilled) return; try { Object.defineProperty(c, 'shadowBlur', { configurable:true, get:function(){ return 0; }, set:function(){} }); c._sbKilled = true; } catch(e){} }
 try { _killShadowBlur(ctx); } catch(e){}
 // v2.2.9 FIX (Jane - "images look blurred and broken"):
@@ -4111,7 +4112,7 @@ function resizeCanvas() {
   const browserZoom = (window.outerWidth && window.innerWidth)
     ? Math.max(1, window.outerWidth / window.innerWidth)
     : 1;
-  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), 2);  // Jane 2026-06-24: cap 4→2 for iOS perf (retina backing store was up to 4x = huge px/frame).
+  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), window._IS_IOS ? 1.5 : 2);  // Jane 2026-06-24: iOS gets 1.5 (slower canvas), others 2.
   _renderDPR = dpr; // remember for render()'s per-frame transform reset
   canvas.width  = Math.round(CANVAS_W * dpr);
   canvas.height = Math.round(CANVAS_H * dpr);
@@ -7301,6 +7302,19 @@ window._goFullscreen = window._goFullscreen || function(){
   try { document.addEventListener(ev, window._goFullscreen, { once:true, capture:true }); } catch(e){}
 });
 
+// Jane 2026-06-24: STOP iOS ZOOM (Safari ignores user-scalable=no, so rapid d-pad taps
+// double-tap-zoomed the page). Block pinch via gesture* events + double-tap via
+// touch-action:manipulation on controls. No effect on Android.
+(function(){
+  try {
+    ['gesturestart','gesturechange','gestureend'].forEach(function(g){ document.addEventListener(g, function(e){ e.preventDefault(); }, { passive:false }); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+    var st = document.createElement('style');
+    st.textContent = 'button,.dpad-btn,.btn,.btn-golden,.action-btn,canvas,#gameCanvas{touch-action:manipulation !important;}';
+    (document.head || document.documentElement).appendChild(st);
+  } catch(e){}
+})();
+
 /* ---------- COVER PAGE / DIFFICULTY ---------- */
 document.querySelectorAll('.difficulty-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -8422,6 +8436,15 @@ function _s2vo(key, opts){
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
+  // Jane 2026-06-24: never fire a tip + its VO unless actively PLAYING — fixes deferred
+  // tips dumping all at once when the game is paused / in a menu. Hold + retry instead.
+  try {
+    if (typeof game !== 'undefined' && game.state !== 'playing') {
+      opts._tipRetries = (opts._tipRetries || 0) + 1;
+      if (opts._tipRetries < 120) setTimeout(function(){ try { showTipPopup(eventKey, opts); } catch(e){} }, 800);
+      return;
+    }
+  } catch(e){}
   // O1/M2 (Jane 2026-06-20): never stack a popup over an open one — wait + retry.
   try {
     const _ovBusy = document.getElementById('tipPopupOverlay');
