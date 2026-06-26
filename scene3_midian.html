@@ -1115,17 +1115,18 @@
   .win-journey {
     background: linear-gradient(180deg, rgba(60,30,8,0.55), rgba(40,18,4,0.5));
     border: 1.5px solid rgba(255,215,118,0.45); border-radius: 12px;
-    padding: 10px 12px; margin: 8px auto 10px; max-width: 340px;
+    padding: 14px 16px; margin: 8px auto 10px; max-width: 440px;
   }
-  .win-journey .wj-title { color:#ffd976; font-weight:800; font-size:13px; letter-spacing:0.5px; margin-bottom:6px; }
-  .win-journey .wj-res { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:13px; color:#ffeeb5; margin-bottom:8px; }
-  .win-journey .wj-res strong { color:#fff; font-size:15px; }
-  .win-journey .wj-powers { display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:8px; }
-  .win-journey .wj-power { font-size:11px; font-weight:700; padding:3px 8px; border-radius:12px; border:1px solid; }
+  /* Jane 2026-06-23: journey tracker elements were too tiny — bumped every size up. */
+  .win-journey .wj-title { color:#ffd976; font-weight:800; font-size:17px; letter-spacing:0.5px; margin-bottom:9px; }
+  .win-journey .wj-res { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; font-size:16px; color:#ffeeb5; margin-bottom:11px; }
+  .win-journey .wj-res strong { color:#fff; font-size:20px; }
+  .win-journey .wj-powers { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; margin-bottom:10px; }
+  .win-journey .wj-power { font-size:13px; font-weight:700; padding:5px 11px; border-radius:12px; border:1px solid; }
   .win-journey .wj-power.on { color:#0d2a12; background:linear-gradient(135deg,#7ef0a0,#39c46a); border-color:#bdf7cf; box-shadow:0 0 8px rgba(80,220,120,0.5); }
   .win-journey .wj-power.off { color:#cdb88a; background:rgba(0,0,0,0.25); border-color:rgba(255,215,118,0.3); }
   .win-journey .wj-power.off .wj-prog { color:#ffd976; font-weight:800; }
-  .win-journey .wj-next { font-size:12px; color:#fff2c4; }
+  .win-journey .wj-next { font-size:14.5px; color:#fff2c4; }
   .win-journey .wj-next strong { color:#ffd976; }
   .win-journey .wj-bar { height:8px; border-radius:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,215,118,0.3); margin-top:5px; overflow:hidden; }
   .win-journey .wj-bar-fill { height:100%; background:linear-gradient(90deg,#ffd700,#ffa500); border-radius:6px; transition:width 0.6s ease-out; }
@@ -1551,8 +1552,11 @@
     position:fixed; inset:0; z-index:70; display:none;
     align-items:center; justify-content:center; padding:18px;
     background:radial-gradient(circle at 50% 42%, rgba(60,36,8,0.82), rgba(12,7,2,0.94));
-    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
-    overflow:hidden;
+    /* Jane 2026-06-24: backdrop blur removed for iOS perf (the live canvas behind kept re-blurring every frame). */
+    /* Jane 2026-06-23: was overflow:hidden + centered, so on SHORT LANDSCAPE the
+       card clipped top+bottom and the Continue button was unreachable. Allow the
+       overlay to scroll. */
+    overflow-y:auto;
   }
   .crystal-reward.active { display:flex; animation:crFadeIn 0.3s ease; }
   @keyframes crFadeIn { from{opacity:0;} to{opacity:1;} }
@@ -1569,11 +1573,19 @@
   }
   .cr-card {
     position:relative; z-index:2; text-align:center; max-width:min(420px,92vw);
+    /* Jane 2026-06-23: cap height + scroll inside so the Continue button is always
+       reachable on short landscape phones (card no longer clips off-screen). */
+    max-height:92svh; overflow-y:auto;
     background:linear-gradient(165deg,#fff3d4,#ffe2a8 55%,#f4c46a);
     border:4px solid #c98a3a; border-radius:22px;
     padding:clamp(18px,5vw,28px) clamp(16px,5vw,30px) clamp(16px,4vw,24px);
     box-shadow:0 18px 50px rgba(0,0,0,0.55), inset 0 2px 4px rgba(255,255,255,0.6);
     animation:crPop 0.5s cubic-bezier(0.18,1.4,0.5,1) both;
+  }
+  /* short-landscape: shrink the crystal art so the whole card fits without scroll */
+  @media (orientation:landscape) and (max-height:500px){
+    .cr-crystal-box { width:clamp(72px,20vh,110px) !important; height:clamp(72px,20vh,110px) !important; margin:2px auto 6px !important; }
+    .cr-card { padding:14px 18px 14px !important; }
   }
   @keyframes crPop { 0%{ transform:scale(0.5) translateY(20px); opacity:0; } 60%{ transform:scale(1.06); opacity:1; } 100%{ transform:scale(1); } }
   .cr-eyebrow {
@@ -2137,7 +2149,7 @@
   /* Scene-complete sliding banner (shown before win modal) */
   .scene-banner {
     position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    z-index:50; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);
+    z-index:50; background:rgba(0,0,0,0.74); /* Jane 2026-06-24: dropped backdrop-filter blur for iOS perf (re-blurred the live canvas every frame). */
   }
   .scene-banner.active { display:flex; animation: bannerFade 0.4s ease-out; }
   .scene-banner-box {
@@ -2168,7 +2180,7 @@
     background:
       radial-gradient(ellipse 110% 70% at 50% 20%, rgba(255,160,90,0.34), rgba(0,0,0,0) 62%),
       linear-gradient(180deg, #1d0a26 0%, #4a1338 36%, #8a2a26 68%, #240810 100%);
-    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+    /* Jane 2026-06-24: backdrop blur removed for iOS perf (the live canvas behind kept re-blurring every frame). */
   }
   .final-stage-card.active { display:flex; animation: fscFade .4s ease-out; }
   /* #145: the sun is now an IN-FLOW element at the top of the centred text
@@ -2478,6 +2490,8 @@
     box-shadow: inset 0 0 0 1px rgba(120,70,20,0.25);
   }
   .ch-option:hover { background:#fff1c2; transform: translateX(3px); box-shadow: 0 2px 10px rgba(120,70,20,0.25); }
+  /* Jane 2026-06-24: INSTANT tap highlight — browser :active paints on touchdown even when the canvas frame rate is low, so the kid always sees which answer they tapped. */
+  .ch-option:active, .ch-option.picked { background:#ffd24a !important; border-color:#6a3e10 !important; box-shadow: inset 0 0 0 3px rgba(180,90,20,0.65) !important; }
   .ch-option.correct {
     /* v3.4: golden UPPERCASE flash animation -- lingers ~4.2s total */
     animation: goldenCorrect 4.2s ease-out forwards;
@@ -4451,6 +4465,15 @@ let _renderDPR = 1;
 
 const canvas = $('gameCanvas');
 const ctx = canvas.getContext('2d');
+// Jane 2026-06-24 MOBILE PERF: canvas shadowBlur is one of the most expensive ops on
+// phones/iOS (a full Gaussian blur per shadowed draw, every frame). On TOUCH devices
+// we neutralize shadowBlur on the game context at the SOURCE — every per-frame glow
+// keeps drawing but without the blur (sprites/tiles are unaffected). Desktop keeps the
+// pretty soft glows. One-point fix instead of editing 20+ draw sites.
+window._LOWFX = (function(){ try { return (navigator.maxTouchPoints > 0) || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''); } catch(e){ return false; } })();
+window._IS_IOS = (function(){ try { var ua=navigator.userAgent||''; return /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints||0)>1); } catch(e){ return false; } })();
+function _killShadowBlur(c){ if (!c || !window._LOWFX || c._sbKilled) return; try { Object.defineProperty(c, 'shadowBlur', { configurable:true, get:function(){ return 0; }, set:function(){} }); c._sbKilled = true; } catch(e){} }
+try { _killShadowBlur(ctx); } catch(e){}
 // v2.2.9 FIX (Jane - "images look blurred and broken"):
 // The previous pixelated mode jag-aliased the illustrated PNGs when scaled
 // down to ~36px tiles. Scene 2 art is painted watercolor/illustration style,
@@ -4503,7 +4526,7 @@ function resizeCanvas() {
   const browserZoom = (window.outerWidth && window.innerWidth)
     ? Math.max(1, window.outerWidth / window.innerWidth)
     : 1;
-  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), 3);
+  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), window._IS_IOS ? 1 : 2);  // Jane 2026-06-24: iOS 1.5, others 2.
   _renderDPR = dpr; // remember for _renderInner's per-frame transform reset
   canvas.width  = Math.round(CANVAS_W * dpr);
   canvas.height = Math.round(CANVAS_H * dpr);
@@ -4819,22 +4842,22 @@ function unlockAudio() {
   Object.values(audio).forEach(a => {
     if (!a) return;
     try {
-      const wasMuted = a.muted;
-      a.muted = true;
+      const wasMuted = a.muted, wasLoop = a.loop;
+      a.muted = true; a.loop = false;   // Jane 2026-06-24: iOS honors .muted (ignores .volume); disable loop so a looping bgm/VO can't restart mid-prime (that was the 'ghost' overlap). Still PRIME every track so iOS unlocks it.
       const p = a.play();
       if (p && typeof p.then === 'function') {
         p.then(() => {
           try { a.pause(); a.currentTime = 0; } catch(e){}
-          a.muted = wasMuted;
+          a.muted = wasMuted; a.loop = wasLoop;
           _audioUnlockSucceeded++;
           _maybeShowMutedToast();
         }).catch(() => {
-          a.muted = wasMuted;
+          a.muted = wasMuted; a.loop = wasLoop;
           _audioUnlockFailed++;
           _maybeShowMutedToast();
         });
       } else {
-        a.muted = wasMuted;
+        a.muted = wasMuted; a.loop = wasLoop;
         _audioUnlockSucceeded++;
       }
     } catch(e){
@@ -5994,16 +6017,12 @@ function _clampSpriteY(rawY, spriteH){
 // resolves correctly because this fn is only CALLED at render time.
 function _safeAnchorX(dx, dw){
   const raw = Math.round(dx + (TILE - dw) / 2);
-  // #112 Jane 2026-06-03: START art was clipping off the right edge. Scene 2
-  // reads window._introPanActive (which scene 3 never sets) so it ALWAYS clamps
-  // and never clips. Match that behavior here — clamp every frame regardless of
-  // the local intro-pan flag, keeping the larger 2.7/2.5 START sprite on-screen.
-  try { if (typeof window._introPanActive !== 'undefined' && window._introPanActive) return raw; } catch(e){}
-  const tileCenterX = dx + TILE / 2;
-  if (tileCenterX < 0 || tileCenterX > CANVAS_W) return raw;
-  if (raw + dw > CANVAS_W - 4) return Math.max(2, CANVAS_W - 4 - dw);
-  if (raw < 2) return 2;
-  return raw;
+  // Jane 2026-06-23: the EXIT label kept CLIPPING on the right. The old guard
+  // returned the UN-clamped position whenever the tile centre sat past CANVAS_W
+  // (which happens at the far-right exit column when the camera is at max-right),
+  // so the pill ran off-screen. Now ALWAYS keep the pill fully on-screen — when
+  // the EXIT/START sprite is drawn at all, its label is guaranteed visible.
+  return Math.max(2, Math.min(raw, CANVAS_W - 4 - dw));
 }
 // v3.28 (Scene 3 port — CANONICAL §8a): caves are sanctuary tiles. Any
 // AI-controlled enemy (rude shepherds, scouts, etc.) MUST refuse to
@@ -7219,7 +7238,24 @@ function updateScene3Flock(dt){
     }
     return;
   }
-  if (scene3Flock.done) return;
+  if (scene3Flock.done) {
+    // 2026-06-25 (Jane: "1st wolf attack — the 2nd wolf remains on scene
+    // stagnant"). The early `return` froze any wolf still on screen the instant
+    // the encounter resolved (it was mid-pin / mid-stalk / mid-flee and never
+    // got another update). Now: drive every lingering wolf OFF the pasture so
+    // none freezes in view — the draw loop culls it once it's off-screen.
+    for (const w of scene3Flock.wolves){
+      if (w.state === 'gone') continue;
+      if (w.state !== 'leave' && w.state !== 'flee'){
+        w.state = 'leave'; w.targetId = null;
+        if (!w.vx) w.vx = ((w.px < player.px) ? -1 : 1) * 0.09;
+      }
+      w.py += 0.13 * dt; w.px += (w.vx || 0) * dt; w.dir = ((w.vx || 0) < 0 ? -1 : 1);
+      // fully retire it once it has left the viewport so it stops drawing/moving
+      if ((w.px - camera.px) < -160 || (w.py - camera.py) > CANVAS_H + 120) w.state = 'gone';
+    }
+    return;
+  }
   const now = performance.now();
   const frozen = (window._guardFreezeUntil && now < window._guardFreezeUntil);
   const shooR = TILE * 1.6;
@@ -11247,6 +11283,19 @@ window._goFullscreen = window._goFullscreen || function(){
   try { document.addEventListener(ev, window._goFullscreen, { once:true, capture:true }); } catch(e){}
 });
 
+// Jane 2026-06-24: STOP iOS ZOOM (Safari ignores user-scalable=no, so rapid d-pad taps
+// double-tap-zoomed the page). Block pinch via gesture* events + double-tap via
+// touch-action:manipulation on controls. No effect on Android.
+(function(){
+  try {
+    ['gesturestart','gesturechange','gestureend'].forEach(function(g){ document.addEventListener(g, function(e){ e.preventDefault(); }, { passive:false }); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+    var st = document.createElement('style');
+    st.textContent = 'button,.dpad-btn,.btn,.btn-golden,.action-btn,canvas,#gameCanvas{touch-action:manipulation !important;}';
+    (document.head || document.documentElement).appendChild(st);
+  } catch(e){}
+})();
+
 /* ---------- COVER PAGE / DIFFICULTY ---------- */
 document.querySelectorAll('.difficulty-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -11818,7 +11867,11 @@ function playClosingCinematic(onDone) {
   game.closeStep = 0;
   showClosePanel();
   $('closingCinematic').classList.add('active');
-  try { setMusic('egyptianCover'); } catch(e){}   // #19: lively post-Scene-3 narration bed
+  // 2026-06-25 (Jane: "completely reduce the bg music for the 2 ending panels.
+  // the bg music is dominating and narration is not heard"). The egyptian-cover
+  // bed mp3 is loud-mastered, so even at 0.03 it bled over the narration. Stop
+  // ALL music beds during the closing cinematic so only the voice plays.
+  try { setMusic(null); } catch(e){}
 }
 function _playClosingPanelAudio(p) {
   try {
@@ -11827,7 +11880,7 @@ function _playClosingPanelAudio(p) {
     a.pause();
     a.src = 'assets/audio/' + p.audio;
     a.currentTime = 0;
-    a.volume = 0.85;
+    a.volume = 1.0;   // 2026-06-25: full voice (bed is now off during the ending)
     a.play().catch(()=>{});
   } catch(e){}
 }
@@ -11916,7 +11969,7 @@ function _playEpiloguePanelAudio(p) {
     a.pause();
     a.src = 'assets/audio/' + p.audio;
     a.currentTime = 0;
-    a.volume = 0.85;
+    a.volume = 1.0;   // 2026-06-25: full voice (bed is now off during the ending)
     a.play().catch(()=>{});
   } catch(e){}
 }
@@ -11955,7 +12008,9 @@ function openEpilogueCinematic(onDone) {
   game.epilStep = 0;
   showEpiloguePanel();
   $('epilogueCinematic').classList.add('active');
-  try { setMusic('egyptianCover'); } catch(e){}   // #19: lively post-Scene-3 narration bed
+  // 2026-06-25 (Jane: bg music dominating the ending narration). Stop all music
+  // beds during the epilogue cinematic so only the voice plays. See closing.
+  try { setMusic(null); } catch(e){}
 }
 (function wireEpilogueCinematic() {
   const next = $('epilNextBtn');
@@ -12510,6 +12565,15 @@ function _tipPointAtTile(tx, ty){
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
+  // Jane 2026-06-24: never fire a tip + its VO unless actively PLAYING — fixes deferred
+  // tips dumping all at once when the game is paused / in a menu. Hold + retry instead.
+  try {
+    if (typeof game !== 'undefined' && game.state !== 'playing') {
+      opts._tipRetries = (opts._tipRetries || 0) + 1;
+      if (opts._tipRetries < 120) setTimeout(function(){ try { showTipPopup(eventKey, opts); } catch(e){} }, 800);
+      return;
+    }
+  } catch(e){}
   // O1/M2 (Jane 2026-06-20): never stack a popup over an open one — wait + retry.
   try {
     const _ovBusy = document.getElementById('tipPopupOverlay');
@@ -14215,6 +14279,7 @@ function _pulleyFrame(now) {
   const canvas = document.getElementById('pulleyCanvas');
   if (!canvas) return;
   const c = canvas.getContext('2d');
+  try { _killShadowBlur(c); } catch(e){}   // Jane 2026-06-24: mobile perf — no canvas shadow-blur on touch in the mini-games
   // 2026-05-27 (Jane: "why can't the game window fill the screen ... at least
   // 70% of the screen"): canvas now fills its wrap on ANY aspect. We size the
   // backing store to the rendered CSS box × DPR, paint the desert background
@@ -14223,7 +14288,7 @@ function _pulleyFrame(now) {
   // letterboxed — every sprite stays crisp + correctly proportioned, no tiny
   // rectangle floating in dead space on portrait/landscape.
   const W = 600, H = 340;
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  const dpr = Math.min(window._IS_IOS ? 1 : 2, window.devicePixelRatio || 1);  // Jane 2026-06-24: iOS 1.5, others 2 (mini-game)
   const cssW = canvas.clientWidth || W;
   const cssH = canvas.clientHeight || H;
   const needW = Math.max(W, Math.round(cssW * dpr));
@@ -15593,6 +15658,7 @@ function _rescueFrame(now) {
   _rescue.rafId = requestAnimationFrame(_rescueFrame);
   const canvas = document.getElementById('rescueCanvas'); if (!canvas) return;
   const c = canvas.getContext('2d');
+  try { _killShadowBlur(c); } catch(e){}   // Jane 2026-06-24: mobile perf — no canvas shadow-blur on touch in the mini-games
   // Crisp rendering: fixed 760×470 LOGICAL space (all draw coords assume it), backing
   // store sized to on-screen px × DPR so sprites are never blurrily upscaled.
   // RESPONSIVE PLAYFIELD: logical width stays 760 (horizontal coords unchanged), but the
@@ -15600,7 +15666,7 @@ function _rescueFrame(now) {
   // UNIFORM scale (no squish). The 7 lanes then spread across the whole height and sprites
   // scale up with the lane gap, so the game looks big & magnified on every device.
   const W = 760;
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  const dpr = Math.min(window._IS_IOS ? 1 : 2, window.devicePixelRatio || 1);  // Jane 2026-06-24: iOS 1.5, others 2 (mini-game)
   const cssW = canvas.clientWidth || W, cssH = canvas.clientHeight || 470;
   const H = Math.max(120, Math.round(W * (cssH / Math.max(1, cssW))));  // floor only guards degenerate sizes; never binds normally so scale stays UNIFORM (no squish)
   const needW = Math.max(1, Math.round(cssW * dpr)), needH = Math.max(1, Math.round(cssH * dpr));
@@ -17917,6 +17983,23 @@ function renderMemory(gate, q, container){
   giveUp.style.marginTop = '10px';
   giveUp.addEventListener('click', () => {
     try { play('tap'); } catch(e){}
+    // Jane 2026-06-24: an accidental SINGLE tap was abruptly ending the run. Require
+    // a confirm — the first tap arms ("Tap again to give up", auto-disarms in 3.5s),
+    // only a SECOND tap actually surrenders.
+    if (!giveUp._armed) {
+      giveUp._armed = true;
+      if (!giveUp.dataset._orig) giveUp.dataset._orig = giveUp.textContent;
+      giveUp.textContent = '⚠ Tap again to give up';
+      giveUp.style.color = '#ffb088'; giveUp.style.fontWeight = '800';
+      clearTimeout(giveUp._armTimer);
+      giveUp._armTimer = setTimeout(() => {
+        giveUp._armed = false;
+        giveUp.textContent = giveUp.dataset._orig || 'I give up';
+        giveUp.style.color = ''; giveUp.style.fontWeight = '';
+      }, 3500);
+      return;
+    }
+    clearTimeout(giveUp._armTimer); giveUp._armed = false;
     openGiveUpGameOver();
   });
   container.appendChild(giveUp);
@@ -18068,6 +18151,23 @@ function renderMiniMaze(gate, q, container){
   giveUp.style.marginTop = '10px';
   giveUp.addEventListener('click', () => {
     try { play('tap'); } catch(e){}
+    // Jane 2026-06-24: an accidental SINGLE tap was abruptly ending the run. Require
+    // a confirm — the first tap arms ("Tap again to give up", auto-disarms in 3.5s),
+    // only a SECOND tap actually surrenders.
+    if (!giveUp._armed) {
+      giveUp._armed = true;
+      if (!giveUp.dataset._orig) giveUp.dataset._orig = giveUp.textContent;
+      giveUp.textContent = '⚠ Tap again to give up';
+      giveUp.style.color = '#ffb088'; giveUp.style.fontWeight = '800';
+      clearTimeout(giveUp._armTimer);
+      giveUp._armTimer = setTimeout(() => {
+        giveUp._armed = false;
+        giveUp.textContent = giveUp.dataset._orig || 'I give up';
+        giveUp.style.color = ''; giveUp.style.fontWeight = '';
+      }, 3500);
+      return;
+    }
+    clearTimeout(giveUp._armTimer); giveUp._armed = false;
     openGiveUpGameOver();
   });
   container.appendChild(giveUp);
@@ -18167,6 +18267,23 @@ function renderSlider(gate, q, container){
   giveUp.style.marginTop = '10px';
   giveUp.addEventListener('click', () => {
     try { play('tap'); } catch(e){}
+    // Jane 2026-06-24: an accidental SINGLE tap was abruptly ending the run. Require
+    // a confirm — the first tap arms ("Tap again to give up", auto-disarms in 3.5s),
+    // only a SECOND tap actually surrenders.
+    if (!giveUp._armed) {
+      giveUp._armed = true;
+      if (!giveUp.dataset._orig) giveUp.dataset._orig = giveUp.textContent;
+      giveUp.textContent = '⚠ Tap again to give up';
+      giveUp.style.color = '#ffb088'; giveUp.style.fontWeight = '800';
+      clearTimeout(giveUp._armTimer);
+      giveUp._armTimer = setTimeout(() => {
+        giveUp._armed = false;
+        giveUp.textContent = giveUp.dataset._orig || 'I give up';
+        giveUp.style.color = ''; giveUp.style.fontWeight = '';
+      }, 3500);
+      return;
+    }
+    clearTimeout(giveUp._armTimer); giveUp._armed = false;
     openGiveUpGameOver();
   });
   container.appendChild(giveUp);
@@ -18221,8 +18338,18 @@ function renderSpotDiff(gate, q, container){
     var img = imgC.querySelector('.ch-spotdiff-img');
     if (!img) return;
     var rect = img.getBoundingClientRect();
-    var tapX = ((e.clientX - rect.left) / rect.width) * 100;
-    var tapY = ((e.clientY - rect.top) / rect.height) * 100;
+    // 2026-06-25 (matches scene1 goblet fix): map the tap to the ACTUAL
+    // displayed image content (object-fit:contain aware) so detection is
+    // correct even when landscape CSS letterboxes the picture inside its box.
+    var _natW = img.naturalWidth  || rect.width;
+    var _natH = img.naturalHeight || rect.height;
+    var _scale = Math.min(rect.width / _natW, rect.height / _natH);
+    var _dispW = _natW * _scale, _dispH = _natH * _scale;
+    var _padX = (rect.width - _dispW) / 2, _padY = (rect.height - _dispH) / 2;
+    var rawX = ((e.clientX - rect.left) / rect.width)  * 100;   // halo/miss at finger
+    var rawY = ((e.clientY - rect.top)  / rect.height) * 100;
+    var tapX = ((e.clientX - rect.left - _padX) / _dispW) * 100; // detection
+    var tapY = ((e.clientY - rect.top  - _padY) / _dispH) * 100;
     var hitIdx = -1;
     for (var i = 0; i < diffs.length; i++){
       if (found.has(i)) continue;
@@ -18240,8 +18367,8 @@ function renderSpotDiff(gate, q, container){
         var circle = document.createElement('div');
         circle.className = 'ch-spotdiff-hit';
         var r = dd.r || 10;
-        circle.style.left = dd.x + '%';
-        circle.style.top  = dd.y + '%';
+        circle.style.left = rawX + '%';
+        circle.style.top  = rawY + '%';
         circle.style.width = (r * 2) + '%';
         ic.appendChild(circle);
       });
@@ -18256,8 +18383,8 @@ function renderSpotDiff(gate, q, container){
       try { play('tap'); } catch(ex){}
       var miss = document.createElement('div');
       miss.className = 'ch-spotdiff-miss';
-      miss.style.left = tapX + '%';
-      miss.style.top  = tapY + '%';
+      miss.style.left = rawX + '%';
+      miss.style.top  = rawY + '%';
       imgC.appendChild(miss);
       setTimeout(function(){ try{miss.remove();}catch(ex){} }, 700);
     }
@@ -18752,12 +18879,20 @@ function _activatePowerup(key){
     else if (player.dir === 'down') _ddy =  3;
     else if (player.dir === 'left') _ddx = -3;
     else                            _ddx =  3;
+    // Jane 2026-06-23: the jar must land on OPEN GROUND, never on a person (it was
+    // dropping literally on the vendor). A good decoy tile is walkable AND has no
+    // standing NPC/entity (_tileHasBlockingEntity covers vendor, shepherds, etc.).
+    var _okDecoy = function(tx, ty){
+      if (!isWalkable(tx, ty)) return false;
+      try { if (typeof _tileHasBlockingEntity === 'function' && _tileHasBlockingEntity(tx, ty)) return false; } catch(e){}
+      return true;
+    };
     let _dtx = player.tx + _ddx, _dty = player.ty + _ddy;
-    if (!isWalkable(_dtx, _dty)) {
+    if (!_okDecoy(_dtx, _dty)) {
       _dtx = player.tx; _dty = player.ty;
-      for (let s = 2; s >= 1; s--) {
+      for (let s = 3; s >= 1; s--) {
         const _tx = player.tx + Math.sign(_ddx) * s, _ty = player.ty + Math.sign(_ddy) * s;
-        if (isWalkable(_tx, _ty)) { _dtx = _tx; _dty = _ty; break; }
+        if (_okDecoy(_tx, _ty)) { _dtx = _tx; _dty = _ty; break; }
       }
     }
     window._decoyTile = { x: _dtx, y: _dty };
@@ -20335,6 +20470,10 @@ function togglePause(){
   if (game.state === 'playing') {
     game.state = 'paused';
     $('pauseModal').classList.add('active');
+    // Jane 2026-06-23: clear any tip popup + goal banner so they don't STACK behind
+    // the pause modal (the "3 messages overlapping" screenshot).
+    try { var _tp = document.getElementById('tipPopupOverlay'); if (_tp) _tp.classList.remove('active'); } catch(e){}
+    try { _hideCrossingBanner(); } catch(e){}
     // #141: reflect the current tutorial-mode setting on every pause open.
     try { _syncTutToggles(); } catch(e){}
     // v3.8 Jane punchlist: "when game is paused, the sound effects should NOT
@@ -22457,6 +22596,7 @@ function _scene3DuskT(){
 // layer as warm light, not solid paint. No assets required. Fade out as the
 // sky darkens (sunbeams = sun = gone at twilight).
 function drawScene3Sunbeams(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   if (typeof CANVAS_W === 'undefined' || typeof CANVAS_H === 'undefined') return;
   // Fade out across dusk: full strength at t<=0.3, gone by t>=0.85.
   const dusk = _scene3DuskT();
@@ -22513,6 +22653,7 @@ const SCENE3_LANTERNS = [
   { tx: 17, ty:  7, size: 1.2, hue: 'rgba(255,200,140,' }, // well-mouth (small)
 ];
 function drawScene3LanternGlow(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   if (typeof camera === 'undefined' || typeof TILE === 'undefined') return;
   const dusk = _scene3DuskT();
   // Lantern intensity ramps in over the second half of dusk progress.
@@ -22564,6 +22705,7 @@ function _initScene3Fireflies(){
   }
 }
 function drawScene3Fireflies(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   if (typeof camera === 'undefined' || typeof TILE === 'undefined') return;
   const dusk = _scene3DuskT();
   // Fireflies emerge only after twilight starts. Density ramps in across t=0.55-0.85.
@@ -22620,6 +22762,7 @@ function _triggerScene3ShootingStar() {
   _scene3SS.y0 = 0.02 + Math.random() * 0.10;
 }
 function drawScene3ShootingStar() {
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   if (!_scene3SS.active) return;
   const now = performance.now();
   const elapsed = now - _scene3SS.startedAt;
@@ -23843,6 +23986,7 @@ for (let i=0;i<22;i++) dustMotes.push({
   size: 0.6 + Math.random()*1.4, phase: Math.random()*Math.PI*2
 });
 function drawAmbient(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   // warm top-down light wash
   const g = ctx.createLinearGradient(0,0,0,CANVAS_H);
   g.addColorStop(0, 'rgba(255,200,100,0.10)');
@@ -26821,12 +26965,19 @@ function loop(now){
   // loop, so two heavy loops fought for the frame budget and the mini-game ran SUPER SLOW
   // (correct speed via ?rescuetest=1 where the maze isn't loaded). Skip the maze render
   // so the mini-game gets the full frame.
-  let _miniGameUp = false;
+  // Jane 2026-06-24 iOS PERF: also SKIP the maze render behind ANY full-screen modal
+  // (challenge/checkpoint, crystal reward, win, danger, pause, scene banner) — it's
+  // hidden anyway, and painting the whole world every frame behind it stole the frame
+  // budget from the modal's own taps (the "lag on every checkpoint button press").
+  let _hideMaze = false;
   try {
-    const rm = document.getElementById('rescueModal'), wm = document.getElementById('wellPulleyModal');
-    _miniGameUp = !!((rm && rm.classList.contains('active')) || (wm && wm.classList.contains('active')));
+    const _ids = ['rescueModal','wellPulleyModal','challengeModal','crystalReward','winModal','dangerModal','pauseModal','sceneBanner'];
+    for (let i = 0; i < _ids.length; i++){
+      const el = document.getElementById(_ids[i]);
+      if (el && el.classList.contains('active')) { _hideMaze = true; break; }
+    }
   } catch(e){}
-  if (!_miniGameUp) render();
+  if (!_hideMaze) render();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
@@ -26888,7 +27039,7 @@ if ('serviceWorker' in navigator) {
   #rescueIntro .riTitle{font-size:clamp(30px,5vw,46px);font-weight:700;color:#ffe0a0;line-height:1.1;margin-top:4px;text-shadow:0 3px 10px rgba(0,0,0,.7),0 0 22px rgba(255,180,60,.45);animation:riPop .6s .15s both;}
   #rescueIntro .riStory{font-size:clamp(15px,1.9vw,18px);line-height:1.5;color:#fff1d6;margin:12px auto 4px;max-width:620px;text-shadow:0 2px 8px rgba(0,0,0,.8);animation:riFade .6s .3s both;}
   #rescueIntro #rescueIntroSteps{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:22px 0;width:100%;animation:riFade .6s .45s both;}
-  #rescueIntro .riStep{flex:1;min-width:170px;max-width:245px;background:rgba(30,20,8,0.62);border:1.5px solid rgba(255,215,120,0.5);border-radius:16px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;color:#ffeccb;backdrop-filter:blur(2px);box-shadow:0 4px 14px rgba(0,0,0,.3);}
+  #rescueIntro .riStep{flex:1;min-width:170px;max-width:245px;background:rgba(30,20,8,0.62);border:1.5px solid rgba(255,215,120,0.5);border-radius:16px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;color:#ffeccb;box-shadow:0 4px 14px rgba(0,0,0,.3);}
   #rescueIntro .riStep .riIco{font-size:38px;line-height:1;}
   #rescueIntro .riStep .riArrows{font-size:18px;color:#ffd86a;letter-spacing:3px;font-weight:bold;margin-left:3px;}
   #rescueIntro .riStep .riTx{font-size:14px;line-height:1.4;}

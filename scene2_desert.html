@@ -1704,21 +1704,22 @@
   .win-journey {
     background: linear-gradient(180deg, rgba(60,30,8,0.55), rgba(40,18,4,0.5));
     border: 1.5px solid rgba(255,215,118,0.45); border-radius: 12px;
-    padding: 10px 12px; margin: 8px auto 10px; max-width: 340px;
+    padding: 14px 16px; margin: 8px auto 10px; max-width: 440px;
   }
+  /* Jane 2026-06-23: journey tracker elements were too tiny — bumped every size up. */
   .win-journey .wj-title {
-    color:#ffd976; font-weight:800; font-size:13px; letter-spacing:0.5px; margin-bottom:6px;
+    color:#ffd976; font-weight:800; font-size:17px; letter-spacing:0.5px; margin-bottom:9px;
   }
   .win-journey .wj-res {
-    display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
-    font-size:13px; color:#ffeeb5; margin-bottom:8px;
+    display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+    font-size:16px; color:#ffeeb5; margin-bottom:11px;
   }
-  .win-journey .wj-res strong { color:#fff; font-size:15px; }
+  .win-journey .wj-res strong { color:#fff; font-size:20px; }
   .win-journey .wj-powers {
-    display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:8px;
+    display:flex; gap:7px; flex-wrap:wrap; justify-content:center; margin-bottom:10px;
   }
   .win-journey .wj-power {
-    font-size:11px; font-weight:700; padding:3px 8px; border-radius:12px; border:1px solid;
+    font-size:13px; font-weight:700; padding:5px 11px; border-radius:12px; border:1px solid;
   }
   .win-journey .wj-power.on {
     color:#0d2a12; background:linear-gradient(135deg,#7ef0a0,#39c46a); border-color:#bdf7cf;
@@ -1728,7 +1729,7 @@
     color:#cdb88a; background:rgba(0,0,0,0.25); border-color:rgba(255,215,118,0.3);
   }
   .win-journey .wj-power.off .wj-prog { color:#ffd976; font-weight:800; }
-  .win-journey .wj-next { font-size:12px; color:#fff2c4; }
+  .win-journey .wj-next { font-size:14.5px; color:#fff2c4; }
   .win-journey .wj-next strong { color:#ffd976; }
   .win-journey .wj-bar {
     height:8px; border-radius:6px; background:rgba(0,0,0,0.4);
@@ -2585,7 +2586,7 @@
   /* Scene-complete sliding banner (shown before win modal) */
   .scene-banner {
     position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    z-index:50; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);
+    z-index:50; background:rgba(0,0,0,0.74); /* Jane 2026-06-24: dropped backdrop-filter blur for iOS perf (re-blurred the live canvas every frame). */
   }
   .scene-banner.active { display:flex; animation: bannerFade 0.4s ease-out; }
   .scene-banner-box {
@@ -2866,6 +2867,8 @@
     box-shadow: inset 0 0 0 1px rgba(120,70,20,0.25);
   }
   .ch-option:hover { background:#fff1c2; transform: translateX(3px); box-shadow: 0 2px 10px rgba(120,70,20,0.25); }
+  /* Jane 2026-06-24: INSTANT tap highlight — browser :active paints on touchdown even when the canvas frame rate is low, so the kid always sees which answer they tapped. */
+  .ch-option:active, .ch-option.picked { background:#ffd24a !important; border-color:#6a3e10 !important; box-shadow: inset 0 0 0 3px rgba(180,90,20,0.65) !important; }
   .ch-option.correct {
     /* v3.4: golden UPPERCASE flash animation -- lingers ~4.2s total */
     animation: goldenCorrect 4.2s ease-out forwards;
@@ -4031,6 +4034,14 @@ let _renderDPR = 1;
 
 const canvas = $('gameCanvas');
 const ctx = canvas.getContext('2d');
+// Jane 2026-06-24 MOBILE PERF: canvas shadowBlur is very expensive on phones/iOS (a
+// Gaussian blur per shadowed draw, every frame). On TOUCH devices neutralize it at the
+// source so every per-frame glow draws cheaply (sprites/tiles unaffected). Desktop keeps
+// the soft glows. One-point fix instead of editing 20+ draw sites.
+window._LOWFX = (function(){ try { return (navigator.maxTouchPoints > 0) || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''); } catch(e){ return false; } })();
+window._IS_IOS = (function(){ try { var ua=navigator.userAgent||''; return /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints||0)>1); } catch(e){ return false; } })();
+function _killShadowBlur(c){ if (!c || !window._LOWFX || c._sbKilled) return; try { Object.defineProperty(c, 'shadowBlur', { configurable:true, get:function(){ return 0; }, set:function(){} }); c._sbKilled = true; } catch(e){} }
+try { _killShadowBlur(ctx); } catch(e){}
 // v2.2.9 FIX (Jane - "images look blurred and broken"):
 // The previous pixelated mode jag-aliased the illustrated PNGs when scaled
 // down to ~36px tiles. Scene 2 art is painted watercolor/illustration style,
@@ -4103,7 +4114,7 @@ function resizeCanvas() {
   const browserZoom = (window.outerWidth && window.innerWidth)
     ? Math.max(1, window.outerWidth / window.innerWidth)
     : 1;
-  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), 4);
+  const dpr = Math.min(((window.devicePixelRatio || 1) * browserZoom), window._IS_IOS ? 1 : 2);  // Jane 2026-06-24: iOS gets 1.5 (slower canvas), others 2.
   _renderDPR = dpr; // remember for render()'s per-frame transform reset
   canvas.width  = Math.round(CANVAS_W * dpr);
   canvas.height = Math.round(CANVAS_H * dpr);
@@ -4330,18 +4341,22 @@ function unlockAudio() {
   // leak is silent, then unmute once the priming pause has fired.
   Object.values(audio).forEach(a => {
     if (!a) return;
+    // Jane 2026-06-24 iOS AUDIO: PRIME EVERY track (incl. looping bgm/narration) so iOS
+    // unlocks them on this tap — skipping them left bgm + VO totally silent on iPhone.
+    // To avoid the old "ghost" overlap, prime MUTED (iOS honors .muted) with loop OFF so
+    // a looping bed can't restart during the brief silent priming window.
     try {
-      const wasMuted = a.muted;
-      a.muted = true;
+      const wasMuted = a.muted, wasLoop = a.loop;
+      a.muted = true; a.loop = false;   // Jane 2026-06-24: iOS honors .muted (ignores .volume); disable loop so a looping bgm/VO can't restart mid-prime (that was the 'ghost' overlap). Still PRIME every track so iOS unlocks it.
       const p = a.play();
       if (p && typeof p.then === 'function') {
         p.then(() => {
           try { a.pause(); a.currentTime = 0; } catch(e){}
-          a.muted = wasMuted;
+          a.muted = wasMuted; a.loop = wasLoop;
           _audioUnlockSucceeded++;
           _maybeShowMutedToast();
         }).catch(() => {
-          a.muted = wasMuted;
+          a.muted = wasMuted; a.loop = wasLoop;
           _audioUnlockFailed++;
           _maybeShowMutedToast();
         });
@@ -5742,7 +5757,7 @@ const CHALLENGE_BANK = {
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     { id:'eSl2', type:'slider',
       q:'Rearrange the tiles to reveal a scene from Moses\' journey:',
-      image:'assets/images/silder puzzle 1.png',
+      image:'assets/images/slider puzzle 1.png',
       alt:'A Bible scene from Moses\' story',
       clue:'Moses\' journey to Midian was long and full of God\'s protection (Exodus 2:15).',
       verse:'"By faith he left Egypt, not fearing the king\'s anger; he persevered because he saw him who is invisible." (Hebrews 11:27 NIV)' },
@@ -7293,6 +7308,19 @@ window._goFullscreen = window._goFullscreen || function(){
   try { document.addEventListener(ev, window._goFullscreen, { once:true, capture:true }); } catch(e){}
 });
 
+// Jane 2026-06-24: STOP iOS ZOOM (Safari ignores user-scalable=no, so rapid d-pad taps
+// double-tap-zoomed the page). Block pinch via gesture* events + double-tap via
+// touch-action:manipulation on controls. No effect on Android.
+(function(){
+  try {
+    ['gesturestart','gesturechange','gestureend'].forEach(function(g){ document.addEventListener(g, function(e){ e.preventDefault(); }, { passive:false }); });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+    var st = document.createElement('style');
+    st.textContent = 'button,.dpad-btn,.btn,.btn-golden,.action-btn,canvas,#gameCanvas{touch-action:manipulation !important;}';
+    (document.head || document.documentElement).appendChild(st);
+  } catch(e){}
+})();
+
 /* ---------- COVER PAGE / DIFFICULTY ---------- */
 document.querySelectorAll('.difficulty-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -8414,6 +8442,15 @@ function _s2vo(key, opts){
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
+  // Jane 2026-06-24: never fire a tip + its VO unless actively PLAYING — fixes deferred
+  // tips dumping all at once when the game is paused / in a menu. Hold + retry instead.
+  try {
+    if (typeof game !== 'undefined' && game.state !== 'playing') {
+      opts._tipRetries = (opts._tipRetries || 0) + 1;
+      if (opts._tipRetries < 120) setTimeout(function(){ try { showTipPopup(eventKey, opts); } catch(e){} }, 800);
+      return;
+    }
+  } catch(e){}
   // O1/M2 (Jane 2026-06-20): never stack a popup over an open one — wait + retry.
   try {
     const _ovBusy = document.getElementById('tipPopupOverlay');
@@ -8909,6 +8946,24 @@ function _wireJigsawPiece(pieceEl){
   let startX = 0, startY = 0, downX = 0, downY = 0;
   let dragging = false, moved = false;
   let homeRect = null;
+  let _origParent = null;   // tray, so a missed drop can be returned here
+  // 2026-06-25 (Jane: "jigsaw puzzle pieces are outside the box"). ROOT CAUSE:
+  // the modal content carries a scale() pop-in transform (modalPopIn), and an
+  // ancestor transform makes a child's position:fixed resolve against the
+  // SCALED ancestor instead of the viewport — so the dragged piece flew to an
+  // offset, shrunken position outside the box. FIX: drag the piece in the
+  // transform-free <body> layer (fixed coords then map to the real viewport),
+  // and reparent it back into the tray on a miss / into the slot on a hit.
+  function _returnToTray(){
+    try { if (_origParent) _origParent.appendChild(pieceEl); } catch(_){}
+    pieceEl.style.position = '';
+    pieceEl.style.left = '';
+    pieceEl.style.top  = '';
+    pieceEl.style.width = '';
+    pieceEl.style.height = '';
+    pieceEl.style.margin = '';
+    pieceEl.style.zIndex = '';
+  }
   pieceEl.addEventListener('pointerdown', e => {
     if (pieceEl.classList.contains('locked')) return;
     e.preventDefault();
@@ -8925,8 +8980,13 @@ function _wireJigsawPiece(pieceEl){
     dragging = true;
     moved = false;
     pieceEl.classList.add('dragging');
-    // Capture absolute position so the piece can move freely.
+    // Lift the piece into the transform-free <body> so position:fixed maps to
+    // the real viewport (see _returnToTray comment). Remember the tray parent.
+    _origParent = pieceEl.parentElement;
+    try { document.body.appendChild(pieceEl); } catch(_){}
     pieceEl.style.position = 'fixed';
+    pieceEl.style.margin = '0';
+    pieceEl.style.zIndex = '99999';
     pieceEl.style.left = homeRect.left + 'px';
     pieceEl.style.top  = homeRect.top + 'px';
     pieceEl.style.width = homeRect.width + 'px';
@@ -8955,12 +9015,8 @@ function _wireJigsawPiece(pieceEl){
       pieceEl.dataset.rotation = String(next);
       const face = pieceEl.querySelector('.crystal-face');
       if (face) face.style.transform = 'rotate(' + next + 'deg)';
-      // Reset position back to tray.
-      pieceEl.style.position = '';
-      pieceEl.style.left = '';
-      pieceEl.style.top  = '';
-      pieceEl.style.width = '';
-      pieceEl.style.height = '';
+      // Reset position back to tray (reparent — it was lifted into <body>).
+      _returnToTray();
       return;
     }
     // Drag ended — check if dropped on a slot.
@@ -8975,12 +9031,8 @@ function _wireJigsawPiece(pieceEl){
       }
     }
     if (!hit) {
-      // Dropped off-board → bounce back to tray.
-      pieceEl.style.position = '';
-      pieceEl.style.left = '';
-      pieceEl.style.top  = '';
-      pieceEl.style.width = '';
-      pieceEl.style.height = '';
+      // Dropped off-board → bounce back to tray (reparent — lifted into <body>).
+      _returnToTray();
       pieceEl.classList.add('bounce');
       setTimeout(() => pieceEl.classList.remove('bounce'), 380);
       return;
@@ -8996,11 +9048,7 @@ function _wireJigsawPiece(pieceEl){
     const rightSlot = (havePiece === wantPiece);
     const isCorrect = rightSlot && (rotation === 0);
     if (!isCorrect) {
-      pieceEl.style.position = '';
-      pieceEl.style.left = '';
-      pieceEl.style.top  = '';
-      pieceEl.style.width = '';
-      pieceEl.style.height = '';
+      _returnToTray();
       pieceEl.classList.add('bounce');
       setTimeout(() => pieceEl.classList.remove('bounce'), 380);
       try { play('pop') || play('error'); } catch(_){}
@@ -9017,12 +9065,19 @@ function _wireJigsawPiece(pieceEl){
       try { _jigsawArmStuckNudge(); } catch(_){}
       return;
     }
-    // Correct slot + upright! Snap into place.
-    const slotRect = hit.getBoundingClientRect();
-    pieceEl.style.left   = slotRect.left + 'px';
-    pieceEl.style.top    = slotRect.top  + 'px';
-    pieceEl.style.width  = slotRect.width + 'px';
-    pieceEl.style.height = slotRect.height + 'px';
+    // Correct slot + upright! Jane 2026-06-23: RE-PARENT the piece INTO the slot
+    // (was left position:fixed at viewport coords, so scrolling the modal made the
+    // piece drift out of its tile box). Now it lives inside the slot and scrolls
+    // with the board.
+    try { hit.style.position = 'relative'; } catch(_){}
+    hit.appendChild(pieceEl);
+    pieceEl.style.position = 'absolute';
+    pieceEl.style.left   = '0';
+    pieceEl.style.top    = '0';
+    pieceEl.style.width  = '100%';
+    pieceEl.style.height = '100%';
+    pieceEl.style.margin = '';      // clear the drag-layer overrides
+    pieceEl.style.zIndex = '';
     pieceEl.classList.add('locked');
     pieceEl.classList.add('snapped');
     // 2026-05-26: correct placement — clear hints, reset the miss counter, stop
@@ -10797,6 +10852,23 @@ function renderMemory(gate, q, container){
   giveUp.style.marginTop = '10px';
   giveUp.addEventListener('click', () => {
     try { play('tap'); } catch(e){}
+    // Jane 2026-06-24: an accidental SINGLE tap was abruptly ending the run. Require
+    // a confirm — the first tap arms ("Tap again to give up", auto-disarms in 3.5s),
+    // only a SECOND tap actually surrenders.
+    if (!giveUp._armed) {
+      giveUp._armed = true;
+      if (!giveUp.dataset._orig) giveUp.dataset._orig = giveUp.textContent;
+      giveUp.textContent = '⚠ Tap again to give up';
+      giveUp.style.color = '#ffb088'; giveUp.style.fontWeight = '800';
+      clearTimeout(giveUp._armTimer);
+      giveUp._armTimer = setTimeout(() => {
+        giveUp._armed = false;
+        giveUp.textContent = giveUp.dataset._orig || 'I give up';
+        giveUp.style.color = ''; giveUp.style.fontWeight = '';
+      }, 3500);
+      return;
+    }
+    clearTimeout(giveUp._armTimer); giveUp._armed = false;
     openGiveUpGameOver();
   });
   container.appendChild(giveUp);
@@ -10915,6 +10987,23 @@ function renderSlider(gate, q, container){
   giveUp.style.marginTop = '10px';
   giveUp.addEventListener('click', () => {
     try { play('tap'); } catch(e){}
+    // Jane 2026-06-24: an accidental SINGLE tap was abruptly ending the run. Require
+    // a confirm — the first tap arms ("Tap again to give up", auto-disarms in 3.5s),
+    // only a SECOND tap actually surrenders.
+    if (!giveUp._armed) {
+      giveUp._armed = true;
+      if (!giveUp.dataset._orig) giveUp.dataset._orig = giveUp.textContent;
+      giveUp.textContent = '⚠ Tap again to give up';
+      giveUp.style.color = '#ffb088'; giveUp.style.fontWeight = '800';
+      clearTimeout(giveUp._armTimer);
+      giveUp._armTimer = setTimeout(() => {
+        giveUp._armed = false;
+        giveUp.textContent = giveUp.dataset._orig || 'I give up';
+        giveUp.style.color = ''; giveUp.style.fontWeight = '';
+      }, 3500);
+      return;
+    }
+    clearTimeout(giveUp._armTimer); giveUp._armed = false;
     openGiveUpGameOver();
   });
   container.appendChild(giveUp);
@@ -10970,8 +11059,18 @@ function renderSpotDiff(gate, q, container){
     var img = imgC.querySelector('.ch-spotdiff-img');
     if (!img) return;
     var rect = img.getBoundingClientRect();
-    var tapX = ((e.clientX - rect.left) / rect.width) * 100;
-    var tapY = ((e.clientY - rect.top) / rect.height) * 100;
+    // 2026-06-25 (matches scene1 goblet fix): map the tap to the ACTUAL
+    // displayed image content (object-fit:contain aware) so detection is
+    // correct even when landscape CSS letterboxes the picture inside its box.
+    var _natW = img.naturalWidth  || rect.width;
+    var _natH = img.naturalHeight || rect.height;
+    var _scale = Math.min(rect.width / _natW, rect.height / _natH);
+    var _dispW = _natW * _scale, _dispH = _natH * _scale;
+    var _padX = (rect.width - _dispW) / 2, _padY = (rect.height - _dispH) / 2;
+    var rawX = ((e.clientX - rect.left) / rect.width)  * 100;   // halo/miss at finger
+    var rawY = ((e.clientY - rect.top)  / rect.height) * 100;
+    var tapX = ((e.clientX - rect.left - _padX) / _dispW) * 100; // detection
+    var tapY = ((e.clientY - rect.top  - _padY) / _dispH) * 100;
     var hitIdx = -1;
     for (var i = 0; i < diffs.length; i++){
       if (found.has(i)) continue;
@@ -10995,8 +11094,8 @@ function renderSpotDiff(gate, q, container){
         // round, accurately-placed halo. Width drives size; height
         // mirrors via aspect-ratio: 1 / 1 so the halo is always a
         // true circle.
-        circle.style.left = dd.x + '%';
-        circle.style.top  = dd.y + '%';
+        circle.style.left = rawX + '%';
+        circle.style.top  = rawY + '%';
         circle.style.width = (r * 2) + '%';
         ic.appendChild(circle);
       });
@@ -11014,8 +11113,8 @@ function renderSpotDiff(gate, q, container){
       // 2026-05-19 PM63: keyframe now applies translate(-50%,-50%),
       // so the explicit -15 px offset is removed — left/top is the
       // exact tap location, transform recenters the 30 px box.
-      miss.style.left = tapX + '%';
-      miss.style.top  = tapY + '%';
+      miss.style.left = rawX + '%';
+      miss.style.top  = rawY + '%';
       imgC.appendChild(miss);
       setTimeout(function(){ try{miss.remove();}catch(ex){} }, 700);
     }
@@ -11155,6 +11254,23 @@ function renderMiniMaze(gate, q, container){
   giveUp.style.marginTop = '10px';
   giveUp.addEventListener('click', () => {
     try { play('tap'); } catch(e){}
+    // Jane 2026-06-24: an accidental SINGLE tap was abruptly ending the run. Require
+    // a confirm — the first tap arms ("Tap again to give up", auto-disarms in 3.5s),
+    // only a SECOND tap actually surrenders.
+    if (!giveUp._armed) {
+      giveUp._armed = true;
+      if (!giveUp.dataset._orig) giveUp.dataset._orig = giveUp.textContent;
+      giveUp.textContent = '⚠ Tap again to give up';
+      giveUp.style.color = '#ffb088'; giveUp.style.fontWeight = '800';
+      clearTimeout(giveUp._armTimer);
+      giveUp._armTimer = setTimeout(() => {
+        giveUp._armed = false;
+        giveUp.textContent = giveUp.dataset._orig || 'I give up';
+        giveUp.style.color = ''; giveUp.style.fontWeight = '';
+      }, 3500);
+      return;
+    }
+    clearTimeout(giveUp._armTimer); giveUp._armed = false;
     openGiveUpGameOver();
   });
   container.appendChild(giveUp);
@@ -11309,6 +11425,12 @@ function handleChallengeAnswer(gate, index, btnEl, opts) {
         _closeChallengeModalAudio();
         $('challengeModal').classList.remove('active');
         game.state = 'playing';
+        // 2026-06-25 (Jane: "while i was idle on checkpoint a scout came and
+        // caught me"). Scouts freeze while the checkpoint modal is open, so a
+        // scout could be parked adjacent the instant it closes and grab Moses
+        // before he can move. Give a short resume grace so the kid can step
+        // away first (capture is blocked, scouts still visibly close in).
+        try { window._scoutResumeUntil = performance.now() + 1400; } catch(e){}
         currentGate = null;
         // 2026-05-19 PM61: gate-solve may complete the "all checkpoints
         // cleared" condition. Combined with 3 collected map fragments,
@@ -12237,10 +12359,18 @@ function _renderJourneyPanel(){
   const host = document.getElementById('winJourney');
   if (!host) return;
   const _ls = (k) => { try { return localStorage.getItem(k); } catch(e){ return null; } };
-  const t = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
-  const c = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
-  const s = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
-  const p = parseInt(_ls('bek.bundle1.totalPoints')    || '0', 10) || 0;  // Jane 2026-06-21: show the AGGREGATE score here too (this is what the certificate prints) — parity with Scene 3
+  // Jane 2026-06-24: show THIS playthrough's totals up to the scene just finished —
+  // on Scene 2's win that's Scenes 1+2 (Scene 3 not started yet), NOT all scenes.
+  // Power-up unlock progress still uses the LIFETIME totals (all-time is for power-ups).
+  const _sumUpTo = (res, upto) => { let sum = 0; for (let n = 1; n <= upto; n++) sum += parseInt(_ls('bek.scene' + n + '.' + res) || '0', 10) || 0; return sum; };
+  const _UPTO = 2; // Scene 2 — show scenes 1..2
+  const t = _sumUpTo('treasures', _UPTO);
+  const c = _sumUpTo('crowns',    _UPTO);
+  const s = _sumUpTo('scrolls',   _UPTO);
+  const p = _sumUpTo('points',    _UPTO);
+  const _lifeT = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
+  const _lifeC = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
+  const _lifeS = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
   let owned = [];
   try { owned = JSON.parse(_ls('bek.bundle1.unlocks') || '[]') || []; } catch(e){ owned = []; }
   const _WJ_TIERS = [
@@ -12250,7 +12380,7 @@ function _renderJourneyPanel(){
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
     { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
-  const resVal = { treasures: t, crowns: c, scrolls: s };
+  const resVal = { treasures: _lifeT, crowns: _lifeC, scrolls: _lifeS };
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
     + '<div class="wj-res">'
     +   '<span>\u{1F4B0} <strong>' + t + '</strong> Treasures</span>'  /* K8: 💰 bags (was 💎) for cross-scene consistency */
@@ -13437,6 +13567,21 @@ function seedPursuitScouts(){
   }
 }
 let _scoutCloseWarnAt = 0;   // v2.2 hoofbeat/scout-alert cooldown (ms)
+// 2026-06-25 (Jane: "when moses runs to the corner of the screen he is getting
+// caught by scouts but the scouts are not seen in the play area. remove this.
+// only when we visually see a danger, moses can be caught by them"). A scout
+// can be tile-adjacent to Moses while OFF-SCREEN when the camera is clamped at
+// a map edge (Moses pinned to the screen border, the strip behind him is still
+// on-map but scrolled out of view). This returns true only when the scout's
+// tile is inside the visible viewport, so an unseen scout can never grab Moses.
+function _scoutVisible(s){
+  try {
+    if (typeof camera === 'undefined' || !camera || typeof TILE === 'undefined') return true;
+    const camL = camera.px / TILE, camT = camera.py / TILE;
+    return (s.tx >= camL && s.tx < camL + VIEW_COLS &&
+            s.ty >= camT && s.ty < camT + VIEW_ROWS);
+  } catch(e){ return true; }
+}
 function updatePursuitScouts(dt){
   if (game.scene !== 2 || game.state !== 'playing') return;
   // J16 (Jane 2026-06-19): "when the jigsaw is solved, a camera pan reveals
@@ -13582,7 +13727,10 @@ function updatePursuitScouts(dt){
     if (chebyshev < closestDist) { closestDist = chebyshev; closestScout = s; }
     // v2.2.2 capture check: Chebyshev <= 1 (adjacent or on top) AND Moses
     // is NOT hidden behind cover. Hiding must protect.
-    if (chebyshev <= 1 && !moses_hidden) {
+    // 2026-06-25: AND the scout must be visible on-screen — an off-screen
+    // scout (camera clamped at a map corner) can no longer grab Moses unseen.
+    // AND not within the brief post-checkpoint resume grace.
+    if (chebyshev <= 1 && !moses_hidden && _scoutVisible(s) && now >= (window._scoutResumeUntil || 0)) {
       s.caught = true;
       try {
         game.hearts = 0; updateHudHearts();
@@ -13662,6 +13810,10 @@ function _drawFoeIce(ctx, cx, cy, r){
 }
 function drawPursuitScouts(ctx){
   if (game.scene !== 2) return;
+  // Jane 2026-06-23: don't draw scouts OR their red "!" edge-warning chevrons during
+  // the intro camera pan — they were sliding across the screen with the pan before
+  // gameplay even starts. Scouts are armed at pan-end, so nothing to show yet.
+  if (window._introPanActive) return;
   // 2026-05-26 — Lure marker: tossed rock + expanding noise ripples at the
   // decoy tile while the Rock Lure is active (so the kid sees where scouts run).
   try {
@@ -14165,6 +14317,11 @@ function updateGuards(dt){
   // Guards were not gated on _introPanActive — they patrolled while
   // the intro camera pan owned the screen. Freeze them too.
   if (window._introPanActive) return;
+  // Jane 2026-06-23 BUG: guards kept PATROLLING while a checkpoint/challenge
+  // modal was open (state='dialog'), so a guard could walk onto Moses's frozen
+  // tile and fire the "Moses needs your help to escape!" game-over MID-QUESTION.
+  // Freeze guards whenever we're not actively playing (matches pursuit scouts).
+  if (typeof game !== 'undefined' && game.state !== 'playing') return;
   // v3.9 Jane 2026-04-24: apply the same 15-second grace window to
   // Scene 2 guards that pursuitScouts already have. Previously guards
   // would keep patrolling during the grace window and could catch Moses
@@ -14585,6 +14742,7 @@ function updateWindParticles(dt){
   }
 }
 function drawWindParticles(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   if (game.scene !== 2) return;
   const d = (game && game.difficulty) || 'easy';
   const col = d === 'hard' ? 'rgba(180,120,80,' :
@@ -16359,6 +16517,7 @@ for (let i=0;i<22;i++) dustMotes.push({
   size: 0.6 + Math.random()*1.4, phase: Math.random()*Math.PI*2
 });
 function drawAmbient(){
+  if (window._IS_IOS) return;   // Jane 2026-06-24 iOS PERF: skip this per-frame ambient/particle FX on iOS only (Android handles it fine; pure decoration).
   // warm top-down light wash
   const g = ctx.createLinearGradient(0,0,0,CANVAS_H);
   g.addColorStop(0, 'rgba(255,200,100,0.10)');
@@ -19521,7 +19680,15 @@ function loop(now){
   // PM66 danger-heat + near-miss (self-guard on game.state)
   try { _updateHeartbeat(); } catch(e){}
   try { _updateNearMiss(); } catch(e){}
-  render();
+  // Jane 2026-06-24 iOS PERF: skip the maze render behind any full-screen modal
+  // (challenge/checkpoint, jigsaw, win, danger, pause, scene banner) — hidden anyway,
+  // and rendering the world behind it stole the frame budget from the modal's taps.
+  let _hideMaze = false;
+  try {
+    const _ids = ['challengeModal','jigsawModal','winModal','dangerModal','pauseModal','sceneBanner'];
+    for (let i = 0; i < _ids.length; i++){ const el = document.getElementById(_ids[i]); if (el && el.classList.contains('active')) { _hideMaze = true; break; } }
+  } catch(e){}
+  if (!_hideMaze) render();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

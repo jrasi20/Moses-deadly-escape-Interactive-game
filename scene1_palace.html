@@ -2052,17 +2052,18 @@
   .win-journey {
     background: linear-gradient(180deg, rgba(60,30,8,0.55), rgba(40,18,4,0.5));
     border: 1.5px solid rgba(255,215,118,0.45); border-radius: 12px;
-    padding: 10px 12px; margin: 8px auto 10px; max-width: 340px;
+    padding: 14px 16px; margin: 8px auto 10px; max-width: 440px;
   }
-  .win-journey .wj-title { color:#ffd976; font-weight:800; font-size:13px; letter-spacing:0.5px; margin-bottom:6px; }
-  .win-journey .wj-res { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:13px; color:#ffeeb5; margin-bottom:8px; }
-  .win-journey .wj-res strong { color:#fff; font-size:15px; }
-  .win-journey .wj-powers { display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin-bottom:8px; }
-  .win-journey .wj-power { font-size:11px; font-weight:700; padding:3px 8px; border-radius:12px; border:1px solid; }
+  /* Jane 2026-06-23: journey tracker elements were too tiny — bumped every size up. */
+  .win-journey .wj-title { color:#ffd976; font-weight:800; font-size:17px; letter-spacing:0.5px; margin-bottom:9px; }
+  .win-journey .wj-res { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; font-size:16px; color:#ffeeb5; margin-bottom:11px; }
+  .win-journey .wj-res strong { color:#fff; font-size:20px; }
+  .win-journey .wj-powers { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; margin-bottom:10px; }
+  .win-journey .wj-power { font-size:13px; font-weight:700; padding:5px 11px; border-radius:12px; border:1px solid; }
   .win-journey .wj-power.on { color:#0d2a12; background:linear-gradient(135deg,#7ef0a0,#39c46a); border-color:#bdf7cf; box-shadow:0 0 8px rgba(80,220,120,0.5); }
   .win-journey .wj-power.off { color:#cdb88a; background:rgba(0,0,0,0.25); border-color:rgba(255,215,118,0.3); }
   .win-journey .wj-power.off .wj-prog { color:#ffd976; font-weight:800; }
-  .win-journey .wj-next { font-size:12px; color:#fff2c4; }
+  .win-journey .wj-next { font-size:14.5px; color:#fff2c4; }
   .win-journey .wj-next strong { color:#ffd976; }
   .win-journey .wj-bar { height:8px; border-radius:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,215,118,0.3); margin-top:5px; overflow:hidden; }
   .win-journey .wj-bar-fill { height:100%; background:linear-gradient(90deg,#ffd700,#ffa500); border-radius:6px; transition:width 0.6s ease-out; }
@@ -2943,7 +2944,7 @@
   /* Scene-complete sliding banner (shown before win modal) */
   .scene-banner {
     position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    z-index:50; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);
+    z-index:50; background:rgba(0,0,0,0.74); /* Jane 2026-06-24: dropped backdrop-filter blur — re-blurring the live canvas every frame tanked iOS perf; a darker solid dim reads the same. */
   }
   .scene-banner.active { display:flex; animation: bannerFade 0.4s ease-out; }
   .scene-banner-box {
@@ -3167,6 +3168,8 @@
     box-shadow: inset 0 0 0 1px rgba(120,70,20,0.25);
   }
   .ch-option:hover { background:#fff1c2; transform: translateX(3px); box-shadow: 0 2px 10px rgba(120,70,20,0.25); }
+  /* Jane 2026-06-24: INSTANT tap highlight — browser :active paints on touchdown even when the canvas frame rate is low, so the kid always sees which answer they tapped. */
+  .ch-option:active, .ch-option.picked { background:#ffd24a !important; border-color:#6a3e10 !important; box-shadow: inset 0 0 0 3px rgba(180,90,20,0.65) !important; }
   .ch-option.correct {
     /* v3.4: golden UPPERCASE flash animation -- lingers ~4.2s total */
     animation: goldenCorrect 4.2s ease-out forwards;
@@ -5349,6 +5352,17 @@ function _ariaAnnounce(msg){
 }
 window._ariaAnnounce = _ariaAnnounce;
 const ctx = canvas.getContext('2d');
+// Jane 2026-06-24 MOBILE PERF: canvas shadowBlur is very expensive on phones/iOS (a
+// Gaussian blur per shadowed draw, every frame). On TOUCH devices neutralize it at the
+// source so every per-frame glow draws cheaply (sprites/tiles unaffected). Desktop keeps
+// the soft glows. One-point fix instead of editing 30+ draw sites.
+window._LOWFX = (function(){ try { return (navigator.maxTouchPoints > 0) || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''); } catch(e){ return false; } })();
+// Jane 2026-06-24: iOS Safari's canvas compositor is much slower than Android Chrome at
+// the same resolution, so iOS gets an EXTRA-low DPR cap (1.5 vs 2) — ~44% fewer pixels
+// per frame than v103, which is the biggest single lever for smooth movement on iPhone.
+window._IS_IOS = (function(){ try { var ua=navigator.userAgent||''; return /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints||0)>1); } catch(e){ return false; } })();
+function _killShadowBlur(c){ if (!c || !window._LOWFX || c._sbKilled) return; try { Object.defineProperty(c, 'shadowBlur', { configurable:true, get:function(){ return 0; }, set:function(){} }); c._sbKilled = true; } catch(e){} }
+try { _killShadowBlur(ctx); } catch(e){}
 ctx.imageSmoothingEnabled = false;
 
 /* compute canvas dimensions that match the available space at 1:1 pixel ratio.
@@ -5397,7 +5411,7 @@ function resizeCanvas() {
   // memory on the few foldables that misreport DPR=3.5+ with no
   // perceptible visual gain. Smaller backing store = lower mid-range
   // Android GPU pressure + smoother first paint.
-  let dpr = Math.min(3, window.devicePixelRatio || 1);
+  let dpr = Math.min(window._IS_IOS ? 1 : 2, window.devicePixelRatio || 1);  // Jane 2026-06-24: iOS gets a lower cap (1.5) than Android (2) — iOS Safari canvas is much slower at the same res.
   try {
     const zoom = (window.outerWidth && window.innerWidth)
       ? (window.outerWidth / window.innerWidth) : 1;
@@ -5642,22 +5656,22 @@ function unlockAudio() {
   Object.values(audio).forEach(a => {
     if (!a) return;
     try {
-      const wasMuted = a.muted;
-      a.muted = true;
+      const wasMuted = a.muted, wasLoop = a.loop;
+      a.muted = true; a.loop = false;   // Jane 2026-06-24: iOS honors .muted (ignores .volume); disable loop so a looping bgm/VO can't restart mid-prime (that was the 'ghost' overlap). Still PRIME every track so iOS unlocks it.
       const p = a.play();
       if (p && typeof p.then === 'function') {
         p.then(() => {
           try { a.pause(); a.currentTime = 0; } catch(e){}
-          a.muted = wasMuted;
+          a.muted = wasMuted; a.loop = wasLoop;
           _audioUnlockSucceeded++;
           _maybeShowMutedToast();
         }).catch(() => {
-          a.muted = wasMuted;
+          a.muted = wasMuted; a.loop = wasLoop;
           _audioUnlockFailed++;
           _maybeShowMutedToast();
         });
       } else {
-        a.muted = wasMuted;
+        a.muted = wasMuted; a.loop = wasLoop;
         _audioUnlockSucceeded++;
       }
     } catch(e) { _audioUnlockFailed++; }
@@ -9772,6 +9786,25 @@ window._goFullscreen = function(){
   try { document.addEventListener(ev, window._goFullscreen, { once:true, capture:true }); } catch(e){}
 });
 
+// Jane 2026-06-24: STOP iOS ZOOM. iOS Safari IGNORES the viewport "user-scalable=no",
+// so rapid D-pad taps (e.g. holding UP/DOWN) registered as a double-tap and ZOOMED the
+// page in/out. Block the two iOS zoom gestures globally: (1) pinch via the 'gesture*'
+// events, (2) double-tap by swallowing a 2nd touchend within 300ms. (No effect on Android.)
+(function(){
+  try {
+    // Block PINCH zoom (iOS-only gesture events).
+    ['gesturestart','gesturechange','gestureend'].forEach(function(g){
+      document.addEventListener(g, function(e){ e.preventDefault(); }, { passive:false });
+    });
+    document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
+    // Block DOUBLE-TAP zoom the safe way (no JS preventDefault that could swallow a rapid
+    // d-pad tap): touch-action:manipulation on every control + the canvas.
+    var st = document.createElement('style');
+    st.textContent = 'button,.dpad-btn,.btn,.btn-golden,.action-btn,canvas,#gameCanvas{touch-action:manipulation !important;}';
+    (document.head || document.documentElement).appendChild(st);
+  } catch(e){}
+})();
+
 /* ---------- COVER PAGE / DIFFICULTY ---------- */
 // 2026-05-19 PM63 (Jane: "so at the initial cover if kids pick easy level,
 // does it get carried throughout for all scenes?"). Scene 2 already reads
@@ -12114,6 +12147,16 @@ function _s1vo(key, opts){
 function showTipPopup(eventKey, opts){
   if (!opts || !opts.title || !opts.body) return;
   if (eventKey && _firstEventSeen[eventKey]) return;
+  // Jane 2026-06-24: NEVER fire a tutorial tip + its VO unless we're actively PLAYING.
+  // Bug: while PAUSED (or in a cutscene/menu), deferred tips were dumping all at once
+  // ("when I paused, all the tutorials started playing together"). Hold + retry instead.
+  try {
+    if (typeof game !== 'undefined' && game.state !== 'playing') {
+      opts._tipRetries = (opts._tipRetries || 0) + 1;
+      if (opts._tipRetries < 120) setTimeout(() => { try { showTipPopup(eventKey, opts); } catch(e){} }, 800);
+      return;
+    }
+  } catch(e){}
   // M2/I3 (Jane 2026-06-20: "modal opened over modal"). Never stack a popup on
   // top of one that's already open (e.g. a Power-Up Unlocked popup landing over
   // a tip's "Got it!" card). If the tip overlay is already active, WAIT and
@@ -12126,7 +12169,21 @@ function showTipPopup(eventKey, opts){
       return;
     }
   } catch(e){}
+  // Jane 2026-06-24: Scene 1 fired too many tutorial popups + VO lines back-to-back at
+  // the start (overwhelming). Space consecutive first-event tips at least ~6.5s apart —
+  // if the last one was very recent, defer this one and retry once the gap has passed.
+  try {
+    var _gap = 6500;
+    var _last = window._lastTipShownAt || 0;
+    var _since = performance.now() - _last;
+    if (_last > 0 && _since < _gap) {
+      opts._tipRetries = (opts._tipRetries || 0) + 1;
+      if (opts._tipRetries < 80) setTimeout(() => { try { showTipPopup(eventKey, opts); } catch(e){} }, (_gap - _since) + 120);
+      return;
+    }
+  } catch(e){}
   if (eventKey) _firstEventSeen[eventKey] = true;
+  try { window._lastTipShownAt = performance.now(); } catch(e){}
   // 2026-06-14: play the matching narration line (just-in-time, once) in BOTH the
   // tutorial-popup and the tutorials-off toast-fallback paths.
   // C3/J5: the chariot fires a trumpet stinger + timpani roll right before
@@ -12749,7 +12806,10 @@ function _maybeFireFirstEventTip(){
   //   pointed at a banner tile with no visible bag (the banner art
   //   covers the bag sprite). Fix: build a set of banner tiles from
   //   PALACE_DECOR and skip them — only VISIBLE bags fire the tip.
-  if (!_firstEventSeen.treasure && Array.isArray(MAP)) {
+  // Jane 2026-06-24: hold the treasure-bag tutorial until a little later so the opening
+  // isn't a wall of popups — only after ~22s of play (the kid has moved + met a gate first).
+  const _treasureReady = (typeof game !== 'undefined' && (!game.startedAt || (performance.now() - game.startedAt) >= 22000));
+  if (!_firstEventSeen.treasure && _treasureReady && Array.isArray(MAP)) {
     // Snapshot banner tiles once per call so we can skip concealed bags.
     const _bannerTiles = new Set();
     try {
@@ -12946,12 +13006,16 @@ function _maybeFireJitTip(){
   if (!_jitTipFired.marble && typeof MAP !== 'undefined' && Array.isArray(MAP)) {
     const px = player.tx, py = player.ty;
     let marbleTile = null;
-    for (let dy = -2; dy <= 2 && !marbleTile; dy++) {
-      for (let dx = -2; dx <= 2 && !marbleTile; dx++) {
-        const ny = py + dy, nx = px + dx;
-        if (ny < 0 || ny >= MAP_H || nx < 0 || nx >= MAP_W) continue;
-        if (MAP[ny][nx] === 9) marbleTile = { tx: nx, ty: ny };
-      }
+    // 2026-06-25 (Jane: "warning about marbled floor modal happens even when
+    // moses is in the upper lane. that modal should only happen when moses is
+    // in the SAME LANE as the marbled floor"). Was a 5x5 box (±2 rows AND
+    // cols), so it fired from a row above/below. Now only scan Moses's OWN row
+    // (same lane), within 2 tiles left/right — he's actually lined up to slide
+    // onto it. (Vertical approaches still get the on-slip "-1 heart" toast.)
+    for (let dx = -2; dx <= 2 && !marbleTile; dx++) {
+      const nx = px + dx;
+      if (nx < 0 || nx >= MAP_W) continue;
+      if (MAP[py][nx] === 9) marbleTile = { tx: nx, ty: py };
     }
     if (marbleTile) {
       _jitTipFired.marble = true;
@@ -15560,8 +15624,26 @@ function renderSpotDiff(gate, q, container){
     const img = imgC.querySelector('.ch-spotdiff-img');
     if (!img) return;
     const rect = img.getBoundingClientRect();
-    const tapX = ((e.clientX - rect.left) / rect.width) * 100;
-    const tapY = ((e.clientY - rect.top) / rect.height) * 100;
+    // 2026-06-25 (Jane: "the goblet is not being detected"). ROOT CAUSE:
+    // in LANDSCAPE the image gets a fixed height + object-fit:contain, which
+    // LETTERBOXES the picture inside its element box. The old tap math used
+    // the element rect (incl. the letterbox bars), so taps were offset/scaled
+    // and edge diffs (the table goblet) fell outside tapR. FIX: map the tap
+    // to the ACTUAL displayed image content (object-fit:contain aware), so
+    // detection is correct in every layout (portrait height:auto = no bars).
+    const _natW = img.naturalWidth  || rect.width;
+    const _natH = img.naturalHeight || rect.height;
+    const _scale = Math.min(rect.width / _natW, rect.height / _natH);
+    const _dispW = _natW * _scale, _dispH = _natH * _scale;
+    const _padX = (rect.width  - _dispW) / 2;
+    const _padY = (rect.height - _dispH) / 2;
+    // raw element-% (used ONLY to draw the halo / miss ring right under the
+    // finger — PM39's "halo at the kid's tap position").
+    const rawX = ((e.clientX - rect.left) / rect.width)  * 100;
+    const rawY = ((e.clientY - rect.top)  / rect.height) * 100;
+    // content-% (used for HIT-DETECTION vs the bank coords).
+    const tapX = ((e.clientX - rect.left - _padX) / _dispW) * 100;
+    const tapY = ((e.clientY - rect.top  - _padY) / _dispH) * 100;
     let hitIdx = -1;
     for (let i = 0; i < detectedDiffs.length; i++){
       if (found.has(i)) continue;
@@ -15591,8 +15673,8 @@ function renderSpotDiff(gate, q, container){
       const HALO_PCT = 6.5;      // halo DIAMETER as % of image width
       const halfHalo = HALO_PCT / 2;
       const _clampPct = (v, min, max) => Math.max(min, Math.min(max, v));
-      const haloLeftPct = _clampPct(tapX - halfHalo, 0, 100 - HALO_PCT);
-      const haloTopPct  = _clampPct(tapY - halfHalo, 0, 100 - HALO_PCT);
+      const haloLeftPct = _clampPct(rawX - halfHalo, 0, 100 - HALO_PCT);
+      const haloTopPct  = _clampPct(rawY - halfHalo, 0, 100 - HALO_PCT);
       imgContainers.forEach(ic => {
         const circle = document.createElement('div');
         circle.className = 'ch-spotdiff-hit';
@@ -15613,8 +15695,8 @@ function renderSpotDiff(gate, q, container){
       try { play('tap'); } catch(ex){}
       const miss = document.createElement('div');
       miss.className = 'ch-spotdiff-miss';
-      miss.style.left = 'calc(' + tapX + '% - 15px)';
-      miss.style.top  = 'calc(' + tapY + '% - 15px)';
+      miss.style.left = 'calc(' + rawX + '% - 15px)';
+      miss.style.top  = 'calc(' + rawY + '% - 15px)';
       imgC.appendChild(miss);
       setTimeout(() => { try { miss.remove(); } catch(ex){} }, 700);
     }
@@ -17085,10 +17167,20 @@ function _renderJourneyPanel(){
   const host = document.getElementById('winJourney');
   if (!host) return;
   const _ls = (k) => { try { return localStorage.getItem(k); } catch(e){ return null; } };
-  const t = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
-  const c = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
-  const s = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
-  const p = parseInt(_ls('bek.bundle1.totalPoints')    || '0', 10) || 0;  // Jane 2026-06-21: show the AGGREGATE score (cert value) here too — parity with scenes 2 & 3
+  // Jane 2026-06-24: "Your Journey So Far" should show THIS playthrough's totals up
+  // to the scene just finished — on Scene 1's win that's Scene 1 only (Scenes 2 & 3
+  // haven't started yet), NOT the persistent sum-of-all-scenes. Power-up unlock
+  // progress still uses the LIFETIME bundle totals (Jane: all-time is for power-ups).
+  const _sumUpTo = (res, upto) => { let sum = 0; for (let n = 1; n <= upto; n++) sum += parseInt(_ls('bek.scene' + n + '.' + res) || '0', 10) || 0; return sum; };
+  const _UPTO = 1; // Scene 1 — show scenes 1..1
+  const t = _sumUpTo('treasures', _UPTO);
+  const c = _sumUpTo('crowns',    _UPTO);
+  const s = _sumUpTo('scrolls',   _UPTO);
+  const p = _sumUpTo('points',    _UPTO);
+  // lifetime totals drive the power-up unlock progress only
+  const _lifeT = parseInt(_ls('bek.bundle1.totalTreasures') || '0', 10) || 0;
+  const _lifeC = parseInt(_ls('bek.bundle1.totalCrowns')    || '0', 10) || 0;
+  const _lifeS = parseInt(_ls('bek.bundle1.totalScrolls')   || '0', 10) || 0;
   let owned = [];
   try { owned = JSON.parse(_ls('bek.bundle1.unlocks') || '[]') || []; } catch(e){ owned = []; }
   const _WJ_TIERS = [
@@ -17098,7 +17190,7 @@ function _renderJourneyPanel(){
     { th:350, res:'treasures', key:'truthSeeker',   label:'\u{1F4D6} Truth Seeker' },
     { th:5,   res:'scrolls',   key:'scribesWisdom', label:'\u{1FAB6} Scribe’s Wisdom' },
   ];
-  const resVal = { treasures: t, crowns: c, scrolls: s };
+  const resVal = { treasures: _lifeT, crowns: _lifeC, scrolls: _lifeS };
   let html = '<div class="wj-title">\u{1F5FA}️ Your Journey So Far</div>'
     + '<div class="wj-res">'
     +   '<span>\u{1F4B0} <strong>' + t + '</strong> Treasures</span>'   /* 💰 bags (was 💎) — cross-scene consistency */
@@ -18793,7 +18885,13 @@ function _updateTorchlight(){
   // dim — show the popup first; the popup's Got-It hook (_afterTipClose
   // re-entrant pattern from PM37) re-anchors startedAt so the dim
   // cycle resumes cleanly after the modal closes.
-  if (shouldBeDim && !_torchlight.isDim && !_firstEventSeen.dim && _tutModeOn()) {
+  // Jane 2026-06-24: don't interrupt the FIRST dim with a tutorial (too many popups at
+  // the very start). Let the kid SEE one dim happen on their own, then explain it on the
+  // 2nd dim. Count each new dim cycle as it begins.
+  if (shouldBeDim && !_torchlight.isDim && !_firstEventSeen.dim) {
+    try { window._dimCycleCount = (window._dimCycleCount || 0) + 1; } catch(e){}
+  }
+  if (shouldBeDim && !_torchlight.isDim && (window._dimCycleCount || 0) >= 2 && !_firstEventSeen.dim && _tutModeOn()) {
     // I8 (Jane 2026-06-17): hold the dim tutorial (+VO) if a narration or modal is up, so
     // events never overlap a spoken line. Re-anchor so the dim resumes once it's clear.
     try {
@@ -20182,6 +20280,11 @@ for (let i=0;i<22;i++) dustMotes.push({
   size: 0.6 + Math.random()*1.4, phase: Math.random()*Math.PI*2
 });
 function drawAmbient(){
+  // Jane 2026-06-24 iOS PERF: this whole layer (full-screen gradient + 3 god-ray
+  // polygons with the costly 'lighter' blend + dust motes) repaints EVERY frame and
+  // is pure decoration. On touch/iOS it's a major framerate drag, so skip it — the
+  // palace still reads fine; smooth movement matters far more on phones than god-rays.
+  if (window._IS_IOS) return;
   // v3.x audit (Jane: "doesn't get the majestic palace feel looking at the walls"):
   // Layered cinematic atmosphere on top of the tile bed. Lift the dim purple
   // wall art into something Play-Store-quality without swapping any PNGs.
@@ -23268,7 +23371,16 @@ function loop(now){
   // meant the camera froze during 'cinematic' state and wouldn't catch
   // up after a forced state change.
   updateCamera();
-  render();
+  // Jane 2026-06-24 iOS PERF: skip the maze render behind any full-screen modal
+  // (challenge/checkpoint, win, danger, pause, scene banner) — it's hidden anyway,
+  // and painting the world every frame behind it stole the frame budget from the
+  // modal's taps (checkpoint button lag on iOS).
+  let _hideMaze = false;
+  try {
+    const _ids = ['challengeModal','winModal','dangerModal','pauseModal','sceneBanner'];
+    for (let i = 0; i < _ids.length; i++){ const el = document.getElementById(_ids[i]); if (el && el.classList.contains('active')) { _hideMaze = true; break; } }
+  } catch(e){}
+  if (!_hideMaze) render();
   // 2026-05-09 PM15 v5 — drive the Speed Burst lightning meter.
   try { _updateSpeedBurstMeter(); } catch(e){}
   requestAnimationFrame(loop);
@@ -23320,6 +23432,30 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Jane 2026-06-24: tiny VERSION BADGE on the cover so you can instantly confirm the
+// phone is on the latest build (iOS caches hard). It shows the ACTIVE service-worker
+// CACHE_VERSION — if it reads an old number, the phone is stuck on a stale cache.
+(function(){
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    function _showVer(v){
+      try {
+        var el = document.getElementById('buildBadge');
+        if (!el){ el = document.createElement('div'); el.id='buildBadge';
+          el.style.cssText='position:fixed;right:6px;bottom:5px;z-index:100000;font:600 10px/1 system-ui,sans-serif;color:rgba(255,231,184,0.55);background:rgba(20,10,4,0.35);padding:3px 7px;border-radius:8px;pointer-events:none;letter-spacing:.5px;';
+          document.body.appendChild(el);
+        }
+        el.textContent = String(v || '').replace('bek-bundle-','');
+      } catch(e){}
+    }
+    navigator.serviceWorker.addEventListener('message', function(ev){
+      if (ev.data && ev.data.type === 'swVersion') _showVer(ev.data.version);
+    });
+    function _ask(){ try { if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage('getVersion'); } catch(e){} }
+    navigator.serviceWorker.ready.then(function(){ _ask(); setTimeout(_ask, 1200); }).catch(function(){});
+  } catch(e){}
+})();
+
 /* ============================================================================
    Jane 2026-06-22: OFFLINE-READY SPRITES + INSTALL-AS-APP.
    (A) Background image WARM: after the cover is idle, quietly prefetch EVERY
@@ -23363,7 +23499,22 @@ if ('serviceWorker' in navigator) {
     try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch(e){ return false; }
   }
   function _isIOS(){
-    try { return /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && 'ontouchend' in document); } catch(e){ return false; }
+    try {
+      var ua = navigator.userAgent || '';
+      if (/iP(hone|ad|od)/.test(ua)) return true;
+      // iPadOS 13+ reports as "Macintosh" — distinguish a touch iPad from a real Mac.
+      if (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1) return true;
+      return false;
+    } catch(e){ return false; }
+  }
+  // On iOS, "Add to Home Screen" ONLY exists in real Safari — not Chrome-iOS, Firefox-iOS,
+  // or an in-app browser (which is often what a QR scanner opens). Detect non-Safari so the
+  // tip can tell the user to open the game in Safari first.
+  function _isIOSSafari(){
+    try {
+      var ua = navigator.userAgent || '';
+      return _isIOS() && /WebKit/i.test(ua) && !/(CriOS|FxiOS|EdgiOS|OPiOS|GSA|FBAN|FBAV|Instagram|Line|MicroMessenger)/i.test(ua);
+    } catch(e){ return false; }
   }
   var _deferredPrompt = null;
   function _addInstallBtn(label, onClick){
@@ -23385,8 +23536,11 @@ if ('serviceWorker' in navigator) {
       + 'max-width:90vw;background:linear-gradient(180deg,#fff5dc,#e8c878);color:#5a2510;'
       + 'border:2px solid #b88a2c;border-radius:14px;padding:12px 16px;font:600 14px/1.4 Georgia,serif;'
       + 'box-shadow:0 8px 24px rgba(0,0,0,0.4);text-align:center;';
-    t.innerHTML = 'To install: tap the <b>Share</b> button below, then choose <b>“Add to Home Screen”</b>. '
-      + 'The game opens full-screen like an app — and works offline after your first play.'
+    var _inSafari = _isIOSSafari();
+    t.innerHTML = (_inSafari
+        ? 'To install: tap the <b>Share</b> button (the square with an ↑ arrow), then choose <b>“Add to Home Screen”</b>. '
+          + 'The game opens full-screen like an app — and works offline after your first play.'
+        : 'On iPhone/iPad, installing works only in <b>Safari</b>. Tap your browser’s menu and choose <b>“Open in Safari”</b> (or paste the game link into Safari), then use <b>Share → “Add to Home Screen”</b>.')
       + '<div style="margin-top:8px"><button type="button" style="background:#7a3a06;color:#ffe7b8;border:none;border-radius:10px;padding:6px 18px;font:700 13px Georgia,serif;cursor:pointer">Got it</button></div>';
     t.querySelector('button').addEventListener('click', function(){ t.remove(); });
     document.body.appendChild(t);

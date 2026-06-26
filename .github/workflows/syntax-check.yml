@@ -1,8 +1,11 @@
 name: HTML inline-JS syntax check
 
-# v3.28.1 Jane 2026-04-29: catches the apostrophe-inside-single-quoted-string
-# class of bugs (and any other JS parse error) before it lands on main and
-# silently breaks the access gate / game.
+# Catches JS parse errors (e.g. unescaped apostrophe inside single-quoted
+# string) before they land on main and silently break the live game.
+#
+# v2 (2026): strip HTML comments before applying the <script> regex —
+# scene1_palace.html mentions the literal "<script>" inside a comment,
+# which the prior extractor wrongly picked up as a code block.
 
 on:
   push:
@@ -22,20 +25,41 @@ jobs:
 
       - name: Extract and validate inline <script> blocks
         run: |
-          set -e
-          shopt -s nullglob
+          set +e
           fail=0
-          for f in index.html scene1_palace.html scene2_desert.html scene3_midian.html; do
+          for f in index.html certificate.html scene1_palace.html scene2_desert.html scene3_midian.html; do
             [ -f "$f" ] || { echo "skip $f (not present)"; continue; }
-            python3 -c "
+            python3 - "$f" <<'PY'
           import re, sys
-          html = open('$f').read()
+          fname = sys.argv[1]
+          html = open(fname).read()
+          # Strip HTML comments first so '<script>' mentioned inside a
+          # comment is not picked up as a real code block.
+          html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
           blocks = re.findall(r'<script(?![^>]*src)[^>]*>(.*?)</script>', html, re.DOTALL)
-          open('/tmp/_check.js','w').write('\n'.join(blocks))
-          print(f'{len(blocks)} inline script block(s) in $f')
-          "
+          open('/tmp/_check.js','w').write('\n;\n'.join(blocks))
+          print(f'{len(blocks)} inline script block(s) in {fname}')
+          PY
             if node --check /tmp/_check.js; then
-              echo "OK  $f"
+              echo "OK   $f"
+            else
+              echo "FAIL $f"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Validate standalone JS files (service worker, etc.)
+        run: |
+          set +e
+          fail=0
+          # sw.js once shipped a JS syntax error (a 65KB comment that lost its
+          # '//') which silently stopped the service worker from installing, so
+          # builds kept appearing stale. node --check it directly every push.
+          for f in sw.js; do
+            [ -f "$f" ] || { echo "skip $f (not present)"; continue; }
+            if node --check "$f"; then
+              echo "OK   $f"
             else
               echo "FAIL $f"
               fail=1
