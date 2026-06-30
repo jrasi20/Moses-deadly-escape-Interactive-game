@@ -5759,6 +5759,31 @@ for (const k in IMG_SRC) {
   })(IMG_SRC[k]);
 }
 
+// Sprite SELF-HEAL (Jane 2026-06-29: "after I hit Skip, sprites show as shadows; a
+// reload fixes it"). A transient first-load image failure (a CDN 503, a dropped
+// connection) left that sprite a SHADOW permanently, because onerror counted it
+// "done" and never retried. Periodically re-fetch any sprite that finished loading
+// with NO pixels (complete && naturalWidth===0), cache-busted, a few times. The game
+// loop redraws every frame, so a recovered sprite pops straight in — no reload needed.
+(function _spriteSelfHeal(){
+  let sweeps = 0; const tries = {};
+  const sweep = () => {
+    sweeps++;
+    for (const k in IMG_SRC) {
+      const im = IMG[k];
+      if (im && im.complete === true && ((im.naturalWidth|0) === 0) && ((tries[k]||0) < 3)) {
+        tries[k] = (tries[k]||0) + 1;
+        const base = IMG_SRC[k];
+        const fresh = new Image();
+        fresh.onload = () => { try { IMG[k] = fresh; } catch(e){} };
+        try { fresh.src = base + (base.indexOf('?') >= 0 ? '&' : '?') + '_heal=' + Date.now() + '_' + tries[k]; } catch(e){}
+      }
+    }
+    if (sweeps < 10) setTimeout(sweep, 2500);
+  };
+  setTimeout(sweep, 3000);
+})();
+
 /* ---------- v3.28 (Scene 3 port — CANONICAL §9): preload progress
    tracking. Tracks images via imagesReady + audio canplaythrough events.
    Updates inline cover bar + full-screen overlay shown when Begin is
@@ -6017,12 +6042,23 @@ function _clampSpriteY(rawY, spriteH){
 // resolves correctly because this fn is only CALLED at render time.
 function _safeAnchorX(dx, dw){
   const raw = Math.round(dx + (TILE - dw) / 2);
-  // Jane 2026-06-23: the EXIT label kept CLIPPING on the right. The old guard
-  // returned the UN-clamped position whenever the tile centre sat past CANVAS_W
-  // (which happens at the far-right exit column when the camera is at max-right),
-  // so the pill ran off-screen. Now ALWAYS keep the pill fully on-screen — when
-  // the EXIT/START sprite is drawn at all, its label is guaranteed visible.
-  return Math.max(2, Math.min(raw, CANVAS_W - 4 - dw));
+  // Jane 2026-06-29: the MIDIAN START art DRIFTED during the intro camera pan —
+  // it stuck to the left canvas edge instead of scrolling off with the world,
+  // because this clamp pinned it on-screen even when its tile was off-screen.
+  // Restore Scene 2's pan-aware logic (it's the canonical version Jane approved):
+  //  • during the intro pan → raw centred position (sprite scrolls naturally, no drift);
+  //  • when the tile CENTRE is off-canvas (camera mid-scroll) → raw (don't peel
+  //    a half-visible sprite off its tile);
+  //  • when the tile centre is ON-canvas → clamp so the full art/label stays
+  //    visible at either edge (this is the EXIT-pill no-clip fix from 2026-06-23,
+  //    which still holds because the far-right exit column's centre is on-canvas
+  //    when the camera is clamped at max-right).
+  if (window._introPanActive) return raw;
+  const tileCenterX = dx + TILE / 2;
+  if (tileCenterX < 0 || tileCenterX > CANVAS_W) return raw;
+  if (raw + dw > CANVAS_W - 4) return Math.max(2, CANVAS_W - 4 - dw);
+  if (raw < 2) return 2;
+  return raw;
 }
 // v3.28 (Scene 3 port — CANONICAL §8a): caves are sanctuary tiles. Any
 // AI-controlled enemy (rude shepherds, scouts, etc.) MUST refuse to
@@ -9387,7 +9423,7 @@ const CHALLENGE_BANK = {
       imgB:'assets/images/spot the difference moses in nile B.png',
       answer:4,
       diffs:[{x:14,y:56,r:10},{x:49,y:41,r:10},{x:54,y:68,r:11},{x:89,y:88,r:9}],
-      clue:'Look very carefully — some colours, shapes or objects have changed between the two pictures!',
+      clue:'Look at the basket holding baby Moses (center), the lily pad (bottom-right), the reeds over the water (center), and the hut (bottom-left).',
       verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
     { id:'s3eSdiff2', type:'spotdiff',
       q:'Tap the 4 differences between these two pictures of Moses fleeing Egypt!',
@@ -9395,7 +9431,7 @@ const CHALLENGE_BANK = {
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
       diffs:[{x:17,y:41,r:9},{x:55,y:82,r:9},{x:43,y:58,r:10},{x:84,y:57,r:10}],
-      clue:'Look carefully at both pictures — things like clothes, colours, or objects may have changed!',
+      clue:"Look at the sun, the dune below it, Moses's waterskin on his belt, and the camel's saddle.",
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     // --- Pictionary ---
     { id:'s3ePict1', type:'pictionary',
@@ -9767,7 +9803,7 @@ const CHALLENGE_BANK = {
       imgB:'assets/images/spot the difference moses in nile B.png',
       answer:4,
       diffs:[{x:14,y:56,r:10},{x:49,y:41,r:10},{x:54,y:68,r:11},{x:89,y:88,r:9}],
-      clue:'Some shapes, colours or background details have changed between the two pictures. Look closely!',
+      clue:'Look at the basket holding baby Moses (center), the lily pad (bottom-right), the reeds over the water (center), and the hut (bottom-left).',
       verse:'"She placed the child in it and put it among the reeds along the bank of the Nile." (Exodus 2:3 NIV)' },
     // --- Pictionary ---
     { id:'s3mPict1', type:'pictionary',
@@ -10136,7 +10172,7 @@ const CHALLENGE_BANK = {
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
       diffs:[{x:17,y:41,r:9},{x:55,y:82,r:9},{x:43,y:58,r:10},{x:84,y:57,r:10}],
-      clue:'Study both images carefully. Not everything is as it seems — colours, objects, or backgrounds may have changed.',
+      clue:"Look at the sun, the dune below it, Moses's waterskin on his belt, and the camel's saddle.",
       verse:'"By faith he left Egypt, not fearing the king\'s anger." (Hebrews 11:27 NIV)' },
     { id:'s3hSdiff2', type:'spotdiff',
       q:'Tap the 4 differences between these two pictures of the princess at the Nile!',
@@ -13975,6 +14011,7 @@ function _pulleyLose() {
   try { play('gameOver') || play('captured') || play('timeUp') || play('sandThud'); } catch(e){}
   // show the lose overlay with the heart loss + a Retry option (unless OUT of hearts)
   const out = (game && game.hearts <= 0);
+  _pulley._out = out;   // Jane 2026-06-29: lose-quit routes through restartScene() when out (parity with _rescueLose)
   const msgEl = document.getElementById('pulleyLoseMsg');
   if (msgEl) msgEl.innerHTML = out
     ? '\u{1F494} That was your last heart! Scene 3 starts over — try again from the beginning.'
@@ -14036,6 +14073,7 @@ function _pulleyBeginCountdown() {
   // audio (was a fixed 3.0s while the audio is shorter, so "the music ended, then the
   // 3-2-1 showed"). Match the audio duration so they run + finish together.
   _pulley.countdown = (audio.raceCountdown && isFinite(audio.raceCountdown.duration) && audio.raceCountdown.duration > 0.5) ? audio.raceCountdown.duration : 3.0; _pulley.go = 0;
+  _pulley.countdownTotal = _pulley.countdown;   // Jane 2026-06-29: the visual counts 3-2-1 across the whole bed (see render), never "5"
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = 'Get ready…';
   // double-rAF so the 3-2-1 beeps are audible right after the overlay swaps out.
   try { requestAnimationFrame(() => requestAnimationFrame(() => { try { play('raceCountdown'); } catch(e){} })); } catch(e){}
@@ -14057,6 +14095,7 @@ function _pulleyRetry() {
   // audio (was a fixed 3.0s while the audio is shorter, so "the music ended, then the
   // 3-2-1 showed"). Match the audio duration so they run + finish together.
   _pulley.countdown = (audio.raceCountdown && isFinite(audio.raceCountdown.duration) && audio.raceCountdown.duration > 0.5) ? audio.raceCountdown.duration : 3.0; _pulley.go = 0;
+  _pulley.countdownTotal = _pulley.countdown;   // Jane 2026-06-29: 3-2-1 across the whole bed (see render)
   document.getElementById('pulleyFeedback').textContent = 'Get ready…';
   try { requestAnimationFrame(() => requestAnimationFrame(() => { try { play('raceCountdown'); } catch(e){} })); } catch(e){}
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
@@ -14164,6 +14203,28 @@ function _pulleyQuit() {
   // P6 (Jane 2026-06-21): quitting leaves the task UNDONE — remind the kid it's
   // still open + how to resume, so they aren't left wondering why the tent stays
   // sealed. (Jethro's tent stays gated on this gate being solved.)
+  try { toast('💧 You can come back any time — step onto the well billboard to water the flock.'); } catch(e){}
+}
+// Jane 2026-06-29: the WELL lose-overlay "Quit" button used to ALWAYS call
+// _pulleyQuit() (which just closes the modal and resumes the maze) — even when
+// the kid was OUT of hearts and the button read "Restart Scene 3". That left
+// Moses standing in Midian at 0 hearts → the maze's own Sandstorm game-over
+// fired, and "Try again" there did NOT reset the treasure-bag bank / saved
+// flock. Mirror _rescueLoseQuit: when out of hearts, route through
+// restartScene() (which re-seeds the flock, herd, map, hearts, timers, etc.)
+// so losing all 3 hearts in the well is a true full Scene-3 restart.
+function _pulleyLoseQuit() {
+  const restart = !!(_pulley && _pulley._out);
+  _pulley.paused = false; _pulley.over = true;
+  cancelAnimationFrame(_pulley.rafId);
+  ['pulleyLoseOverlay','pulleyWinOverlay','pulleyPausedOverlay'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  const modal = document.getElementById('wellPulleyModal'); if (modal) { modal.style.display = 'none'; modal.classList.remove('active'); }
+  try { if (audio.wellMusic) { audio.wellMusic.pause(); audio.wellMusic.currentTime = 0; } } catch(e){}
+  _pulley.gate = null;
+  if (restart) { try { game.state = 'playing'; } catch(e){} try { restartScene(); } catch(e){} return; }
+  try { if (audio.bgm) { if (audio._prevBgmVolume !== undefined) audio.bgm.volume = audio._prevBgmVolume; setMusic('bgm'); } } catch(e){} /* #2 route via setMusic so bgm waits out the victory fanfare */
+  try { game.state = 'playing'; } catch(e){}
+  // not out of hearts → leaving the well leaves the task undone (same nudge as _pulleyQuit)
   try { toast('💧 You can come back any time — step onto the well billboard to water the flock.'); } catch(e){}
 }
 // ---- drawing helpers ----
@@ -14948,7 +15009,15 @@ function _pulleyFrame(now) {
     c.fillStyle = 'rgba(0,0,0,0.22)'; c.fillRect(0, 0, W, H);
     c.textAlign = 'center'; c.textBaseline = 'middle';
     if (_pulley.countdown > 0) {
-      const n = Math.ceil(_pulley.countdown), frac = _pulley.countdown - (n - 1), sc = 1 + (1 - frac) * 0.5;
+      // Jane 2026-06-29: the race-countdown bed is ~5.2s, so Math.ceil() showed
+      // "5-4-3-2-1". Kids want a 3-2-1. Map the full countdown into exactly THREE
+      // evenly-spaced buckets so the on-screen number always reads 3 → 2 → 1
+      // (synced to the same bed + GO timing — no audio surgery, no gameplay overlap).
+      const _total = _pulley.countdownTotal || _pulley.countdown || 3;
+      const _bucket = _total / 3;
+      const n = Math.max(1, Math.min(3, Math.ceil(_pulley.countdown / _bucket)));
+      const frac = Math.max(0, Math.min(1, (_pulley.countdown - (n - 1) * _bucket) / _bucket));
+      const sc = 1 + (1 - frac) * 0.5;
       c.font = 'bold ' + Math.round(110 * sc) + 'px Georgia';
       c.fillStyle = 'rgba(255,225,130,' + Math.min(1, frac * 1.6).toFixed(2) + ')';
       c.shadowColor = 'rgba(0,0,0,0.6)'; c.shadowBlur = 14;
@@ -15003,7 +15072,7 @@ function _pulleyFrame(now) {
   const resumeBtn = document.getElementById('pulleyResumeBtn'); if (resumeBtn) resumeBtn.addEventListener('click', _pulleyResume);
   const quitBtn = document.getElementById('pulleyQuitBtn'); if (quitBtn) quitBtn.addEventListener('click', () => { try { play('click') || play('pop'); } catch(e){} _pulleyQuit(); });
   const retryBtn = document.getElementById('pulleyRetryBtn'); if (retryBtn) retryBtn.addEventListener('click', _pulleyRetry);
-  const loseQuitBtn = document.getElementById('pulleyLoseQuitBtn'); if (loseQuitBtn) loseQuitBtn.addEventListener('click', () => { try { play('click') || play('pop'); } catch(e){} _pulleyQuit(); });
+  const loseQuitBtn = document.getElementById('pulleyLoseQuitBtn'); if (loseQuitBtn) loseQuitBtn.addEventListener('click', () => { try { play('click') || play('pop'); } catch(e){} _pulleyLoseQuit(); });
   const winContinueBtn = document.getElementById('pulleyWinContinueBtn'); if (winContinueBtn) winContinueBtn.addEventListener('click', () => { try { play('click') || play('pop'); } catch(e){} _pulleyWinContinue(); });
   const winReplayBtn = document.getElementById('pulleyWinReplayBtn'); if (winReplayBtn) winReplayBtn.addEventListener('click', _pulleyRetry);
   const cv = document.getElementById('pulleyCanvas');
@@ -15816,16 +15885,28 @@ function _rescueFrame(now) {
     // piled them up at the top and looked like an extra "8th" daughter. Portrait/desktop stay roomy.
     const _dMaxH = Math.min(110 * mag, _rescue.laneGap * (_rescue._shortLand ? 1.82 : 1.2));
     const _dFeet = ly + yOff - 2;
-    // Supply cache (water pots): on short-landscape draw it BEHIND the daughter so it never hides
-    // her (Jane: the pots were covering the daughters). On desktop/portrait keep it in FRONT at her
-    // feet (where drawing it behind had hidden it instead — must not change those views).
-    const _potX = Math.max(10, 8 + 20 * mag);
+    // Jane 2026-06-29: "Moses is able to occupy the daughters' positions." Moses is
+    // centred at mosesX with up to 84*mag width, so his sprite's LEFT edge reaches
+    // mosesX-42*mag — at high portrait/desktop magnification that swept left over the
+    // daughters (fixed at x=30) and covered them. Anchor each lane-daughter INSIDE the
+    // gap [4 .. mosesLeft-6*mag] and fit her to that width, so Moses can never overlap
+    // her at ANY scale. Purely cosmetic — gameplay tracks laneDaughter[] booleans, not
+    // her pixel box — and at normal scale (mag~1) this matches the old x≈30 placement,
+    // so desktop/portrait look unchanged.
+    const _mosesLeft = _rescue.mosesX - 42 * mag;
+    const _dRight = Math.max(18, _mosesLeft - 6 * mag);
+    const _dLeft = 4;
+    const _dCx = (_dLeft + _dRight) / 2;
+    const _dBoxW = _dRight - _dLeft;
+    // Supply cache (water pots): kept at the daughter's feet but never allowed to cross
+    // into Moses's footprint (Jane: pots must not cover the daughters/Moses zone).
+    const _potX = Math.min(Math.max(10, 8 + 20 * mag), _dRight - 6);
     if (_rescue.laneDaughter[i]) { const dgb = Math.sin(now / 360 + i) * 1.4;
       if (_rescue._shortLand) _rescueDrawCache(c, _potX, _dFeet + 2, mag);
-      _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 30, _dFeet + dgb, 60 * mag, _dMaxH);
+      _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], _dCx, _dFeet + dgb, Math.min(60 * mag, _dBoxW), _dMaxH);
       if (!_rescue._shortLand) _rescueDrawCache(c, _potX, _dFeet + 2, mag);
     }
-    else { c.globalAlpha = 0.16; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], 30, _dFeet, 48 * mag, Math.min(72 * mag, _rescue.laneGap)); c.globalAlpha = 1; }
+    else { c.globalAlpha = 0.16; _pDrawFit(c, ['daughterR' + _dn, 'daughter' + _dn, 'daughter1'], _dCx, _dFeet, Math.min(48 * mag, _dBoxW), Math.min(72 * mag, _rescue.laneGap)); c.globalAlpha = 1; }
   }
   // red alarm flash over a lane where a daughter was just taken
   if (_rescue.flashLane) { const fl = _rescue.flashLane, ly = _rescue.laneY[fl.lane], a = Math.max(0, fl.t / 0.55); c.fillStyle = 'rgba(220,40,30,' + (0.34 * a).toFixed(3) + ')'; c.fillRect(0, ly - halfLane, W, gap); }
@@ -18113,25 +18194,30 @@ function renderMiniMaze(gate, q, container){
   // arrow pad
   const pad = document.createElement('div');
   pad.className = 'ch-maze-pad';
+  // Shared move logic used by BOTH the on-screen arrow pad AND the keyboard
+  // (Jane 2026-06-29: "keyboard arrow keys should move Moses in every mini-maze
+  // — only the on-screen arrows work now"). One step per call; carves through
+  // open cells, errors on walls, resolves the gate on reaching the exit.
+  const _mzMove = (dx, dy) => {
+    const nx = state.x + dx, ny = state.y + dy;
+    if (nx < 0 || ny < 0 || nx >= SZ || ny >= SZ) return;
+    if (map[ny][nx] === 1) { try { play('error'); } catch(e){} return; }
+    try { play('tap'); } catch(e){}
+    // move marker
+    cells.forEach(ce => ce.el.classList.remove('moses'));
+    state.x = nx; state.y = ny;
+    cells.find(ce => ce.x === nx && ce.y === ny).el.classList.add('moses');
+    if (nx === SZ-1 && ny === SZ-1) {
+      setTimeout(() => {
+        handleChallengeAnswer(gate, 0, board, { answerLabel: 'Reached the exit!' });
+      }, 250);
+    }
+  };
   const mkBtn = (label, dx, dy) => {
     const b = document.createElement('button');
     b.className = 'ch-maze-btn';
     b.textContent = label;
-    b.addEventListener('click', () => {
-      const nx = state.x + dx, ny = state.y + dy;
-      if (nx < 0 || ny < 0 || nx >= SZ || ny >= SZ) return;
-      if (map[ny][nx] === 1) { try { play('error'); } catch(e){} return; }
-      try { play('tap'); } catch(e){}
-      // move marker
-      cells.forEach(ce => ce.el.classList.remove('moses'));
-      state.x = nx; state.y = ny;
-      cells.find(ce => ce.x === nx && ce.y === ny).el.classList.add('moses');
-      if (nx === SZ-1 && ny === SZ-1) {
-        setTimeout(() => {
-          handleChallengeAnswer(gate, 0, board, { answerLabel: 'Reached the exit!' });
-        }, 250);
-      }
-    });
+    b.addEventListener('click', () => _mzMove(dx, dy));
     return b;
   };
   const row1 = document.createElement('div'); row1.className = 'ch-maze-row';
@@ -18143,6 +18229,21 @@ function renderMiniMaze(gate, q, container){
   row3.appendChild(spacer()); row3.appendChild(mkBtn('\u2193', 0, 1)); row3.appendChild(spacer());
   pad.appendChild(row1); pad.appendChild(row2); pad.appendChild(row3);
   container.appendChild(pad);
+  // Keyboard arrows / WASD drive the mini-maze too (Jane 2026-06-29). Capture-phase
+  // so it beats the global maze handler, and self-removes once this puzzle's board
+  // leaves the DOM (modal closed / next challenge rendered) — no listener leak.
+  const _mzKey = (e) => {
+    if (!document.body.contains(wrapper)) { document.removeEventListener('keydown', _mzKey, true); return; }
+    let dx = 0, dy = 0;
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') dy = -1;
+    else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') dy = 1;
+    else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') dx = -1;
+    else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') dx = 1;
+    else return;
+    e.preventDefault(); e.stopPropagation();
+    _mzMove(dx, dy);
+  };
+  document.addEventListener('keydown', _mzKey, true);
   // v2.2.5 FIX: "I give up" now routes to the Game Over modal (not the
   // scouts-caught Caught! modal, which is story-wrong for a surrender).
   const giveUp = document.createElement('button');

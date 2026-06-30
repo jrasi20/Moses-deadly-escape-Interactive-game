@@ -10,13 +10,13 @@
   "theme_color": "#4a0808",
   "icons": [
     {
-      "src": "assets/images/logo%201.png",
+      "src": "assets/images/app-icon-deadly-escape.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets/images/logo%201.png",
+      "src": "assets/images/app-icon-deadly-escape.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

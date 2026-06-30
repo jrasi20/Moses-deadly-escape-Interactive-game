@@ -35,7 +35,7 @@
      theme color. Service worker is registered after load further down
      in the bottom <script>. -->
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="assets/images/logo%201.png">
+<link rel="apple-touch-icon" href="assets/images/app-icon-deadly-escape.png">
 <title>Moses's Deadly Escape</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -6598,6 +6598,31 @@ for (const k in IMG_SRC) {
     }, 15000);
   })(IMG_SRC[k]);
 }
+
+// Sprite SELF-HEAL (Jane 2026-06-29: "after I hit Skip, sprites show as shadows; a
+// reload fixes it"). A transient first-load image failure (a CDN 503, a dropped
+// connection) left that sprite a SHADOW permanently, because onerror counted it
+// "done" and never retried. Periodically re-fetch any sprite that finished loading
+// with NO pixels (complete && naturalWidth===0), cache-busted, a few times. The game
+// loop redraws every frame, so a recovered sprite pops straight in — no reload needed.
+(function _spriteSelfHeal(){
+  let sweeps = 0; const tries = {};
+  const sweep = () => {
+    sweeps++;
+    for (const k in IMG_SRC) {
+      const im = IMG[k];
+      if (im && im.complete === true && ((im.naturalWidth|0) === 0) && ((tries[k]||0) < 3)) {
+        tries[k] = (tries[k]||0) + 1;
+        const base = IMG_SRC[k];
+        const fresh = new Image();
+        fresh.onload = () => { try { IMG[k] = fresh; } catch(e){} };
+        try { fresh.src = base + (base.indexOf('?') >= 0 ? '&' : '?') + '_heal=' + Date.now() + '_' + tries[k]; } catch(e){}
+      }
+    }
+    if (sweeps < 10) setTimeout(sweep, 2500);
+  };
+  setTimeout(sweep, 3000);
+})();
 
 /* ---------- PRELOAD PROGRESS TRACKING ----------
    Asset bundle can be large on first load. Track images + audio readiness
@@ -15218,42 +15243,45 @@ function renderMiniMaze(gate, q, container){
   // arrow pad
   const pad = document.createElement('div');
   pad.className = 'ch-maze-pad';
+  // Shared move logic — used by BOTH the on-screen arrow pad AND the keyboard
+  // (Jane 2026-06-29: keyboard arrows must move Moses in every mini-maze).
+  const _mzMove = (dx, dy) => {
+    const nx = state.x + dx, ny = state.y + dy;
+    if (nx < 0 || ny < 0 || nx >= SZ || ny >= SZ) return;
+    if (map[ny][nx] === 1) { try { play('error'); } catch(e){} return; }
+    try { play('tap'); } catch(e){}
+    // 2026-05-08 PM7: move the actual Moses <img> across cells, not
+    // just a CSS class — the sprite has to follow the kid's input.
+    const fromCell = cells.find(ce => ce.x === state.x && ce.y === state.y);
+    const toCell   = cells.find(ce => ce.x === nx       && ce.y === ny);
+    if (fromCell) {
+      fromCell.el.classList.remove('moses');
+      delete fromCell.el.dataset.hasMoses;
+      const oldImg = fromCell.el.querySelector('img[alt="Moses"]');
+      if (oldImg) {
+        if (toCell) toCell.el.appendChild(oldImg);
+        else        oldImg.remove();
+      }
+    }
+    state.x = nx; state.y = ny;
+    if (toCell) {
+      toCell.el.classList.add('moses');
+      toCell.el.dataset.hasMoses = '1';
+    }
+    if (nx === SZ-1 && ny === SZ-1) {
+      // 2026-05-15 PM27 (audit #7/#8): tracked setTimeout — see
+      // handleMemoryFlip note. Modal close mid-success would
+      // otherwise re-trigger handleChallengeAnswer on a stale gate.
+      _challengeSetTimeout(() => {
+        handleChallengeAnswer(gate, 0, board, { answerLabel: 'Reached the exit!' });
+      }, 350);
+    }
+  };
   const mkBtn = (label, dx, dy) => {
     const b = document.createElement('button');
     b.className = 'ch-maze-btn';
     b.textContent = label;
-    b.addEventListener('click', () => {
-      const nx = state.x + dx, ny = state.y + dy;
-      if (nx < 0 || ny < 0 || nx >= SZ || ny >= SZ) return;
-      if (map[ny][nx] === 1) { try { play('error'); } catch(e){} return; }
-      try { play('tap'); } catch(e){}
-      // 2026-05-08 PM7: move the actual Moses <img> across cells, not
-      // just a CSS class — the sprite has to follow the kid's input.
-      const fromCell = cells.find(ce => ce.x === state.x && ce.y === state.y);
-      const toCell   = cells.find(ce => ce.x === nx       && ce.y === ny);
-      if (fromCell) {
-        fromCell.el.classList.remove('moses');
-        delete fromCell.el.dataset.hasMoses;
-        const oldImg = fromCell.el.querySelector('img[alt="Moses"]');
-        if (oldImg) {
-          if (toCell) toCell.el.appendChild(oldImg);
-          else        oldImg.remove();
-        }
-      }
-      state.x = nx; state.y = ny;
-      if (toCell) {
-        toCell.el.classList.add('moses');
-        toCell.el.dataset.hasMoses = '1';
-      }
-      if (nx === SZ-1 && ny === SZ-1) {
-        // 2026-05-15 PM27 (audit #7/#8): tracked setTimeout — see
-        // handleMemoryFlip note. Modal close mid-success would
-        // otherwise re-trigger handleChallengeAnswer on a stale gate.
-        _challengeSetTimeout(() => {
-          handleChallengeAnswer(gate, 0, board, { answerLabel: 'Reached the exit!' });
-        }, 350);
-      }
-    });
+    b.addEventListener('click', () => _mzMove(dx, dy));
     return b;
   };
   const row1 = document.createElement('div'); row1.className = 'ch-maze-row';
@@ -15265,6 +15293,20 @@ function renderMiniMaze(gate, q, container){
   row3.appendChild(spacer()); row3.appendChild(mkBtn('\u2193', 0, 1)); row3.appendChild(spacer());
   pad.appendChild(row1); pad.appendChild(row2); pad.appendChild(row3);
   container.appendChild(pad);
+  // Keyboard arrows / WASD drive the mini-maze too (Jane 2026-06-29). Capture-phase
+  // so it beats the global maze handler; self-removes once this board leaves the DOM.
+  const _mzKey = (e) => {
+    if (!document.body.contains(wrap)) { document.removeEventListener('keydown', _mzKey, true); return; }
+    let dx = 0, dy = 0;
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') dy = -1;
+    else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') dy = 1;
+    else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') dx = -1;
+    else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') dx = 1;
+    else return;
+    e.preventDefault(); e.stopPropagation();
+    _mzMove(dx, dy);
+  };
+  document.addEventListener('keydown', _mzKey, true);
   // 2026-05-08 PM8: removed "I give up" — see renderMemory comment.
 }
 

@@ -612,7 +612,7 @@
   @keyframes walkerTravel {
     0%   { opacity: 0; left: 12%; top: 50%; }
     12%  { opacity: 1; }
-    50%  { left: 50%; top: 60%; }
+    50%  { left: 50%; top: 50%; }
     88%  { opacity: 1; }
     100% { opacity: 0; left: 86%; top: 50%; }
   }
@@ -3562,8 +3562,11 @@
     <div class="jigsaw-board" id="jigsawBoard">
       <!-- Three slot drop-zones — JS sets piece1/piece2/piece3 fits.
            Laid out left→right as the journey: canyon → dunes → oasis. -->
+      <!-- Jane: keep all three slots on ONE straight line so the revealed
+           yellow trail runs cleanly through them (the middle slot used to sit
+           lower at top:46%, dipping the tile outside the box + bending the route). -->
       <div class="jigsaw-slot" data-slot="1" style="left:6%;top:34%;"></div>
-      <div class="jigsaw-slot" data-slot="2" style="left:41%;top:46%;"></div>
+      <div class="jigsaw-slot" data-slot="2" style="left:41%;top:34%;"></div>
       <div class="jigsaw-slot" data-slot="3" style="left:76%;top:34%;"></div>
       <!-- START / EXIT pins on the parchment. PM63i: nudged inward
            (8%→12%, 90%→86%) so the wider label pills never clip the
@@ -3579,12 +3582,12 @@
       <div class="jigsaw-pin exit label-above"  style="left:87.5%;top:15%;"><span class="pin-label">MIDIAN</span><span class="pin-dot"></span></div>
       <!-- Faint dashed guide showing roughly where the trail will run -->
       <svg class="jigsaw-route" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M16,118 C60,110 130,150 200,146 C270,142 340,110 384,118"
+        <path d="M16,118 L384,118"
               fill="none" stroke="rgba(120,80,30,0.30)" stroke-width="3" stroke-dasharray="5 9"/>
       </svg>
       <!-- Golden caravan route — drawn in on the reveal -->
       <svg class="jigsaw-goldroute" id="jigsawGoldRoute" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M16,118 C60,110 130,150 200,146 C270,142 340,110 384,118"/>
+        <path d="M16,118 L384,118"/>
       </svg>
       <!-- Traveling footprint on reveal -->
       <div class="jigsaw-walker" id="jigsawWalker" aria-hidden="true">&#128099;</div>
@@ -4876,6 +4879,31 @@ for (const k in IMG_SRC) {
     }, 15000);
   })(IMG_SRC[k]);
 }
+
+// Sprite SELF-HEAL (Jane 2026-06-29: "after I hit Skip, sprites show as shadows; a
+// reload fixes it"). A transient first-load image failure (a CDN 503, a dropped
+// connection) left that sprite a SHADOW permanently, because onerror counted it
+// "done" and never retried. Periodically re-fetch any sprite that finished loading
+// with NO pixels (complete && naturalWidth===0), cache-busted, a few times. The game
+// loop redraws every frame, so a recovered sprite pops straight in — no reload needed.
+(function _spriteSelfHeal(){
+  let sweeps = 0; const tries = {};
+  const sweep = () => {
+    sweeps++;
+    for (const k in IMG_SRC) {
+      const im = IMG[k];
+      if (im && im.complete === true && ((im.naturalWidth|0) === 0) && ((tries[k]||0) < 3)) {
+        tries[k] = (tries[k]||0) + 1;
+        const base = IMG_SRC[k];
+        const fresh = new Image();
+        fresh.onload = () => { try { IMG[k] = fresh; } catch(e){} };
+        try { fresh.src = base + (base.indexOf('?') >= 0 ? '&' : '?') + '_heal=' + Date.now() + '_' + tries[k]; } catch(e){}
+      }
+    }
+    if (sweeps < 10) setTimeout(sweep, 2500);
+  };
+  setTimeout(sweep, 3000);
+})();
 
 /* ---------- v3.28: PRELOAD PROGRESS TRACKING ----------
    The asset bundle is ~75 MB (16 MB audio + 59 MB images). On a 4G phone
@@ -8946,7 +8974,7 @@ function _wireJigsawPiece(pieceEl){
   let startX = 0, startY = 0, downX = 0, downY = 0;
   let dragging = false, moved = false;
   let homeRect = null;
-  let _origParent = null;   // tray, so a missed drop can be returned here
+  let _origParent = null, _origNextSibling = null;   // tray slot, so a miss / tap returns the piece IN PLACE (no reorder)
   // 2026-06-25 (Jane: "jigsaw puzzle pieces are outside the box"). ROOT CAUSE:
   // the modal content carries a scale() pop-in transform (modalPopIn), and an
   // ancestor transform makes a child's position:fixed resolve against the
@@ -8955,7 +8983,7 @@ function _wireJigsawPiece(pieceEl){
   // transform-free <body> layer (fixed coords then map to the real viewport),
   // and reparent it back into the tray on a miss / into the slot on a hit.
   function _returnToTray(){
-    try { if (_origParent) _origParent.appendChild(pieceEl); } catch(_){}
+    try { if (_origParent) _origParent.insertBefore(pieceEl, _origNextSibling); } catch(_){}
     pieceEl.style.position = '';
     pieceEl.style.left = '';
     pieceEl.style.top  = '';
@@ -8980,25 +9008,32 @@ function _wireJigsawPiece(pieceEl){
     dragging = true;
     moved = false;
     pieceEl.classList.add('dragging');
-    // Lift the piece into the transform-free <body> so position:fixed maps to
-    // the real viewport (see _returnToTray comment). Remember the tray parent.
+    // Jane (regression): a TAP must ONLY rotate — it must NOT move the piece in
+    // the tray. So do NOT lift into <body> on pointerdown (the return-reparent
+    // reordered the tray = the "shuffle" bug). Remember the tray slot and lift
+    // ONLY when a real drag begins (first pointermove past threshold).
     _origParent = pieceEl.parentElement;
-    try { document.body.appendChild(pieceEl); } catch(_){}
-    pieceEl.style.position = 'fixed';
-    pieceEl.style.margin = '0';
-    pieceEl.style.zIndex = '99999';
-    pieceEl.style.left = homeRect.left + 'px';
-    pieceEl.style.top  = homeRect.top + 'px';
-    pieceEl.style.width = homeRect.width + 'px';
-    pieceEl.style.height = homeRect.height + 'px';
+    _origNextSibling = pieceEl.nextSibling;
   });
   pieceEl.addEventListener('pointermove', e => {
     if (!dragging) return;
     const dx = e.clientX - downX;
     const dy = e.clientY - downY;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
-    pieceEl.style.left = (homeRect.left + dx) + 'px';
-    pieceEl.style.top  = (homeRect.top  + dy) + 'px';
+    if (!moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+      moved = true;
+      // first real drag → NOW lift into the transform-free <body> for correct
+      // viewport mapping (deferred from pointerdown so a pure tap never reparents).
+      try { document.body.appendChild(pieceEl); } catch(_){}
+      pieceEl.style.position = 'fixed';
+      pieceEl.style.margin = '0';
+      pieceEl.style.zIndex = '99999';
+      pieceEl.style.width = homeRect.width + 'px';
+      pieceEl.style.height = homeRect.height + 'px';
+    }
+    if (moved) {
+      pieceEl.style.left = (homeRect.left + dx) + 'px';
+      pieceEl.style.top  = (homeRect.top  + dy) + 'px';
+    }
   });
   const _release = e => {
     if (!dragging) return;
@@ -9015,8 +9050,8 @@ function _wireJigsawPiece(pieceEl){
       pieceEl.dataset.rotation = String(next);
       const face = pieceEl.querySelector('.crystal-face');
       if (face) face.style.transform = 'rotate(' + next + 'deg)';
-      // Reset position back to tray (reparent — it was lifted into <body>).
-      _returnToTray();
+      // A tap never lifted the piece into <body>, so it stays exactly where it
+      // was in the tray — no reparent (that reorder was the "shuffle" regression).
       return;
     }
     // Drag ended — check if dropped on a slot.
@@ -11216,25 +11251,28 @@ function renderMiniMaze(gate, q, container){
   // arrow pad
   const pad = document.createElement('div');
   pad.className = 'ch-maze-pad';
+  // Shared move logic — used by BOTH the on-screen arrow pad AND the keyboard
+  // (Jane 2026-06-29: keyboard arrows must move Moses in every mini-maze).
+  const _mzMove = (dx, dy) => {
+    const nx = state.x + dx, ny = state.y + dy;
+    if (nx < 0 || ny < 0 || nx >= SZ || ny >= SZ) return;
+    if (map[ny][nx] === 1) { try { play('error'); } catch(e){} return; }
+    try { play('tap'); } catch(e){}
+    // move marker
+    cells.forEach(ce => ce.el.classList.remove('moses'));
+    state.x = nx; state.y = ny;
+    cells.find(ce => ce.x === nx && ce.y === ny).el.classList.add('moses');
+    if (nx === SZ-1 && ny === SZ-1) {
+      setTimeout(() => {
+        handleChallengeAnswer(gate, 0, board, { answerLabel: 'Reached the exit!' });
+      }, 250);
+    }
+  };
   const mkBtn = (label, dx, dy) => {
     const b = document.createElement('button');
     b.className = 'ch-maze-btn';
     b.textContent = label;
-    b.addEventListener('click', () => {
-      const nx = state.x + dx, ny = state.y + dy;
-      if (nx < 0 || ny < 0 || nx >= SZ || ny >= SZ) return;
-      if (map[ny][nx] === 1) { try { play('error'); } catch(e){} return; }
-      try { play('tap'); } catch(e){}
-      // move marker
-      cells.forEach(ce => ce.el.classList.remove('moses'));
-      state.x = nx; state.y = ny;
-      cells.find(ce => ce.x === nx && ce.y === ny).el.classList.add('moses');
-      if (nx === SZ-1 && ny === SZ-1) {
-        setTimeout(() => {
-          handleChallengeAnswer(gate, 0, board, { answerLabel: 'Reached the exit!' });
-        }, 250);
-      }
-    });
+    b.addEventListener('click', () => _mzMove(dx, dy));
     return b;
   };
   const row1 = document.createElement('div'); row1.className = 'ch-maze-row';
@@ -11246,6 +11284,20 @@ function renderMiniMaze(gate, q, container){
   row3.appendChild(spacer()); row3.appendChild(mkBtn('\u2193', 0, 1)); row3.appendChild(spacer());
   pad.appendChild(row1); pad.appendChild(row2); pad.appendChild(row3);
   container.appendChild(pad);
+  // Keyboard arrows / WASD drive the mini-maze too (Jane 2026-06-29). Capture-phase
+  // so it beats the global maze handler; self-removes once this board leaves the DOM.
+  const _mzKey = (e) => {
+    if (!document.body.contains(wrapper)) { document.removeEventListener('keydown', _mzKey, true); return; }
+    let dx = 0, dy = 0;
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') dy = -1;
+    else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') dy = 1;
+    else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') dx = -1;
+    else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') dx = 1;
+    else return;
+    e.preventDefault(); e.stopPropagation();
+    _mzMove(dx, dy);
+  };
+  document.addEventListener('keydown', _mzKey, true);
   // v2.2.5 FIX: "I give up" now routes to the Game Over modal (not the
   // scouts-caught Caught! modal, which is story-wrong for a surrender).
   const giveUp = document.createElement('button');
