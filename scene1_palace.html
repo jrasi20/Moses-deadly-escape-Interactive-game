@@ -11795,7 +11795,17 @@ function showResumePrompt(p) {
     + '<button id="resumeSavedBtn" style="margin:8px;padding:14px 28px;font-size:16px;background:#c59754;border:none;border-radius:10px;color:#fff;font-weight:700;cursor:pointer;font-family:Georgia,serif;">Continue Adventure →</button><br>'
     + '<button id="startFreshFromSaveBtn" style="margin:8px;padding:10px 22px;font-size:14px;background:transparent;border:2px solid #ffd976;border-radius:10px;color:#ffd976;cursor:pointer;font-family:Georgia,serif;">Start Fresh</button>';
   document.body.appendChild(overlay);
-  document.getElementById('resumeSavedBtn').addEventListener('click', () => {
+  // Jane 2026-06-29: the resume button gave no visible press feedback, so a tap
+  // looked ignored. Depress instantly on pointerdown + swap to "Loading…" on click,
+  // then defer the (heavy) start one frame so the pressed state actually paints.
+  const _rsBtn1 = document.getElementById('resumeSavedBtn');
+  _rsBtn1.style.transition = 'transform 0.08s ease, filter 0.08s ease';
+  const _rsPress1 = () => { _rsBtn1.style.transform = 'scale(0.95)'; _rsBtn1.style.filter = 'brightness(0.82)'; };
+  _rsBtn1.addEventListener('pointerdown', _rsPress1);
+  _rsBtn1.addEventListener('click', () => {
+    _rsPress1(); _rsBtn1.textContent = 'Loading…';
+    try { play('click'); } catch(e){}
+    setTimeout(() => {
     overlay.remove();
     // v3.x audit (Bug 148 — Jane: "when i go to main menu and come back, I
     // am being presented an option to continue where i left off. but
@@ -11808,6 +11818,7 @@ function showResumePrompt(p) {
     // Hard last time doesn't suddenly play Easy on resume.
     if (p.difficulty) game.difficulty = p.difficulty;
     startScene1();
+    }, 140);
   });
   document.getElementById('startFreshFromSaveBtn').addEventListener('click', () => {
     _clearCheckpoint();
@@ -11882,6 +11893,10 @@ function restartScene() {
   // reset treasure count and re-seed treasures total
   seedTreasures();
   // reset game stats
+  // Jane 2026-06-29: also zero treasureBags (per-run coin wallet) on restart so a retry
+  // never keeps a stale count / re-inflates from re-seeded coins. Cross-scene totals
+  // (bek.bundle1.total*) are untouched; a resume restores the saved wallet afterward.
+  game.treasureBags = 0;
   game.hearts = 3; game.stars = 0; game.treasureCount = 0;
   game.treasuresTotalLocked = false;   // PM45: re-lock on next seedTreasures
   // Wave 3c (2026-05-08): clear clue-puzzle state so the kid restarts
@@ -15296,7 +15311,17 @@ function renderMiniMaze(gate, q, container){
   // Keyboard arrows / WASD drive the mini-maze too (Jane 2026-06-29). Capture-phase
   // so it beats the global maze handler; self-removes once this board leaves the DOM.
   const _mzKey = (e) => {
-    if (!document.body.contains(wrap)) { document.removeEventListener('keydown', _mzKey, true); return; }
+    // Self-remove once the challenge is gone OR merely CLOSED. The challenge modal
+    // hides by removing its `.active` class (opacity/visibility — NOT display:none — so
+    // the wrapper keeps client rects and stays in the DOM). The old contains() check
+    // therefore stayed true forever, the leaked capture listener ate every arrow key via
+    // stopPropagation, and Moses could no longer move by keyboard — even after restart
+    // (a document listener survives restartScene). Tie the listener's life to the modal's
+    // `.active` state, and return BEFORE stopPropagation so the key reaches the main
+    // handler. (Jane 2026-06-29 show-stopper regression fix.)
+    const _cm = document.getElementById('challengeModal');
+    const _mazeClosed = !wrap.isConnected || (_cm ? !_cm.classList.contains('active') : (wrap.getClientRects().length === 0));
+    if (_mazeClosed) { document.removeEventListener('keydown', _mzKey, true); return; }
     let dx = 0, dy = 0;
     if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') dy = -1;
     else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') dy = 1;
