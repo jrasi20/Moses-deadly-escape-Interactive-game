@@ -8046,10 +8046,16 @@ function showResumePrompt(p) {
     + '<button id="startFreshBtn" style="display:block;width:100%;padding:10px 0;font-size:14px;font-weight:700;color:#ffd976;background:rgba(255,255,255,0.07);border:2px solid #ffd97688;border-radius:10px;cursor:pointer;">Start Fresh (lose saved progress)</button>'
     + '</div>';
   document.body.appendChild(overlay);
-  overlay.querySelector('#resumeBtn').addEventListener('click', () => {
+  // Jane 2026-06-29: give the resume button a visible press (depress + "Loading…")
+  // so a tap never looks ignored; defer the start a frame so the state paints.
+  const _rsBtn = overlay.querySelector('#resumeBtn');
+  _rsBtn.style.transition = 'transform 0.08s ease, filter 0.08s ease';
+  const _rsPress = () => { _rsBtn.style.transform = 'scale(0.95)'; _rsBtn.style.filter = 'brightness(0.82)'; };
+  _rsBtn.addEventListener('pointerdown', _rsPress);
+  _rsBtn.addEventListener('click', () => {
+    _rsPress(); _rsBtn.textContent = 'Loading…';
     play('click');
-    overlay.remove();
-    startScene1();
+    setTimeout(() => { overlay.remove(); startScene1(); }, 140);
   });
   overlay.querySelector('#startFreshBtn').addEventListener('click', () => {
     play('click');
@@ -8232,7 +8238,10 @@ function restartScene() {
   // reset treasure count and re-seed treasures total
   seedTreasures();
   // reset game stats
-  game.hearts = 3; game.stars = 0; game.treasureCount = 0; game.altitudeCleared = 0; _lastAltitudeShown = -1;
+  // Jane 2026-06-29: also zero treasureBags (per-run coin wallet) on restart so a retry
+  // never keeps a stale count / re-inflates from re-seeded coins. Cross-scene totals
+  // (bek.bundle1.total*) are untouched; a resume restores the saved wallet afterward.
+  game.hearts = 3; game.stars = 0; game.treasureCount = 0; game.treasureBags = 0; game.altitudeCleared = 0; _lastAltitudeShown = -1;
   // 2026-05-19 PM63b: reset per-color bag counters so the +1-heart
   // bonus re-arms on each fresh play.
   try { _treasureColorCount.blue = 0; _treasureColorCount.green = 0; _treasureColorCount.red = 0;
@@ -11287,7 +11296,17 @@ function renderMiniMaze(gate, q, container){
   // Keyboard arrows / WASD drive the mini-maze too (Jane 2026-06-29). Capture-phase
   // so it beats the global maze handler; self-removes once this board leaves the DOM.
   const _mzKey = (e) => {
-    if (!document.body.contains(wrapper)) { document.removeEventListener('keydown', _mzKey, true); return; }
+    // Self-remove once the challenge is gone OR merely CLOSED. The challenge modal
+    // hides by removing its `.active` class (opacity/visibility — NOT display:none — so
+    // the wrapper keeps client rects and stays in the DOM). The old contains() check
+    // therefore stayed true forever, the leaked capture listener ate every arrow key via
+    // stopPropagation, and Moses could no longer move by keyboard — even after restart
+    // (a document listener survives restartScene). Tie the listener's life to the modal's
+    // `.active` state, and return BEFORE stopPropagation so the key reaches the main
+    // handler. (Jane 2026-06-29 show-stopper regression fix.)
+    const _cm = document.getElementById('challengeModal');
+    const _mazeClosed = !wrapper.isConnected || (_cm ? !_cm.classList.contains('active') : (wrapper.getClientRects().length === 0));
+    if (_mazeClosed) { document.removeEventListener('keydown', _mzKey, true); return; }
     let dx = 0, dy = 0;
     if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') dy = -1;
     else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') dy = 1;
