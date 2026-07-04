@@ -3557,7 +3557,7 @@
     <div class="jigsaw-header">
       <div class="jigsaw-eyebrow">THE TORN CARAVAN MAP</div>
       <h2 class="jigsaw-title">Piece the map back together</h2>
-      <p class="jigsaw-sub">Moses found 3 scraps of an old caravan map. Drag each onto its place and tap to turn it — line up the trail and it will reveal the hidden path to Midian.</p>
+      <p class="jigsaw-sub">Moses found 3 scraps of an old caravan map. Drag each scrap onto its matching spot on the map — line up the trail and it will reveal the hidden path to Midian.</p>
     </div>
     <div class="jigsaw-board" id="jigsawBoard">
       <!-- Three slot drop-zones — JS sets piece1/piece2/piece3 fits.
@@ -8830,6 +8830,25 @@ function _maybeOpenJigsaw(){
   // gate-clear celebration sfx finishes first.
   setTimeout(() => { try { _openJigsawModal(); } catch(e){} }, 800);
 }
+// Jane 2026-07-03: the jigsaw MUST auto-appear the moment all 6 checkpoints + all 3
+// map pieces are done — the kid should never have to walk to the locked exit to
+// summon it. The event-time triggers could miss (a timing race, a modal still open,
+// the sandstorm), so this watchdog guarantees it: once the criteria are met AND the
+// kid is back in normal play (not in a checkpoint/pause/cinematic), it opens within
+// ~1s. All the guards (_openJigsawModal already no-ops if active/solved) make repeat
+// ticks harmless.
+setInterval(() => {
+  try {
+    if (typeof game === 'undefined' || game.scene !== 2 || game.jigsawSolved) return;
+    if (game.state !== 'playing') return;                 // don't pop over a modal/cinematic
+    const mf = game.mapFragments || {};
+    if (!(mf[1] && mf[2] && mf[3])) return;
+    if (!(Array.isArray(challengeGates) && challengeGates.length > 0 && challengeGates.every(g => g && g.solved))) return;
+    const modal = document.getElementById('jigsawModal');
+    if (modal && modal.classList.contains('active')) return;
+    _openJigsawModal();
+  } catch(e){}
+}, 1000);
 let _jigsawAssignments = null;  // randomized {slot: piece} mapping per play
 // 2026-05-19 (Jane: "make it epic + colorful — the desert is yellow and
 // redundant"). Each fragment is a hand-inked third of the caravan map with
@@ -8894,10 +8913,11 @@ function _openJigsawModal(){
     const div = document.createElement('div');
     div.className = 'jigsaw-piece';
     div.dataset.piece = String(p);
-    const initRot = [90, 180, 270][Math.floor(Math.random() * 3)];
-    div.dataset.rotation = String(initRot);
+    // Jane 2026-07-03: pieces start UPRIGHT (rotation not required to solve any more),
+    // so the only task is matching each scrap to its slot — no fiddly rotate step.
+    div.dataset.rotation = '0';
     div.innerHTML =
-      '<div class="crystal-face" style="transform: rotate(' + initRot + 'deg);">'
+      '<div class="crystal-face" style="transform: rotate(0deg);">'
         + _mapPieceSVG(p)
       + '</div>';
     _wireJigsawPiece(div);
@@ -8913,7 +8933,7 @@ function _openJigsawModal(){
   });
   // Reset status text.
   const status = document.getElementById('jigsawStatus');
-  if (status) status.textContent = 'Place 3 pieces · Tap to rotate · Drag to slot';
+  if (status) status.textContent = 'Drag each scrap onto its matching spot on the map';
   // Pause game state + start puzzle bg music.
   if (game.state !== 'puzzle') {
     window._jigsawPrevState = game.state;
@@ -8977,12 +8997,10 @@ function _jigsawHint(){
   const status = document.getElementById('jigsawStatus');
   if (pieceEl) {
     pieceEl.classList.add('hint-piece');
-    const rot = parseInt(pieceEl.dataset.rotation, 10) || 0;
-    if (rot !== 0) {
-      pieceEl.classList.add('hint-rotate');
-      if (status) status.textContent = 'Drag the glowing scrap to the glowing spot — then tap it to turn it upright.';
-    } else if (status) {
-      status.textContent = 'Drag the glowing scrap onto the glowing spot!';
+    {
+      // Jane 2026-07-03: rotation no longer matters — the hint just shows which
+      // glowing scrap belongs on which glowing spot.
+      if (status) status.textContent = 'Drag the glowing scrap onto the glowing spot!';
     }
   }
   try { play('clickSound') || play('click'); } catch(_){}
@@ -9008,19 +9026,16 @@ function _wireJigsawHintButton(){
   btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
 }
 function _wireJigsawPiece(pieceEl){
-  let startX = 0, startY = 0, downX = 0, downY = 0;
+  let downX = 0, downY = 0;
   let dragging = false, moved = false;
   let homeRect = null;
-  let _origParent = null, _origNextSibling = null;   // tray slot, so a miss / tap returns the piece IN PLACE (no reorder)
-  // 2026-06-25 (Jane: "jigsaw puzzle pieces are outside the box"). ROOT CAUSE:
-  // the modal content carries a scale() pop-in transform (modalPopIn), and an
-  // ancestor transform makes a child's position:fixed resolve against the
-  // SCALED ancestor instead of the viewport — so the dragged piece flew to an
-  // offset, shrunken position outside the box. FIX: drag the piece in the
-  // transform-free <body> layer (fixed coords then map to the real viewport),
-  // and reparent it back into the tray on a miss / into the slot on a hit.
+  // Jane 2026-07-03 REBUILD: the previous version lifted the piece into <body> mid-drag
+  // to escape the modal's pop-in scale transform — but reparenting mid-drag broke the
+  // drag (pieces flew outside the modal / stopped tracking the finger). Instead we KILL
+  // the modal content's transform for the interaction (so a position:fixed piece maps
+  // 1:1 to the viewport) and drag the piece IN PLACE with position:fixed — smooth, and
+  // pointer capture is never lost. The piece only leaves the tray when it snaps home.
   function _returnToTray(){
-    try { if (_origParent) _origParent.insertBefore(pieceEl, _origNextSibling); } catch(_){}
     pieceEl.style.position = '';
     pieceEl.style.left = '';
     pieceEl.style.top  = '';
@@ -9037,33 +9052,29 @@ function _wireJigsawPiece(pieceEl){
     try { _clearJigsawHint(); } catch(_){}
     try { const _hb = document.getElementById('jigsawHintBtn'); if (_hb) _hb.classList.remove('nudge'); } catch(_){}
     try { _jigsawArmStuckNudge(); } catch(_){}
+    // Neutralise the modal's pop-in scale transform so a position:fixed piece maps to
+    // the VIEWPORT (the scaled ancestor was what threw pieces "outside the box").
+    try { const _jc = document.querySelector('#jigsawModal .jigsaw-content'); if (_jc){ _jc.style.animation = 'none'; _jc.style.transform = 'none'; } } catch(_){}
     try { pieceEl.setPointerCapture(e.pointerId); } catch(_){}
     homeRect = pieceEl.getBoundingClientRect();
     downX = e.clientX; downY = e.clientY;
-    startX = pieceEl.offsetLeft;
-    startY = pieceEl.offsetTop;
     dragging = true;
     moved = false;
     pieceEl.classList.add('dragging');
-    // Jane (regression): a TAP must ONLY rotate — it must NOT move the piece in
-    // the tray. So do NOT lift into <body> on pointerdown (the return-reparent
-    // reordered the tray = the "shuffle" bug). Remember the tray slot and lift
-    // ONLY when a real drag begins (first pointermove past threshold).
-    _origParent = pieceEl.parentElement;
-    _origNextSibling = pieceEl.nextSibling;
   });
   pieceEl.addEventListener('pointermove', e => {
     if (!dragging) return;
     const dx = e.clientX - downX;
     const dy = e.clientY - downY;
     if (!moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+      // First real drag → lift with position:fixed AT the piece's current spot. NO
+      // reparent, so pointer capture survives and it tracks the finger exactly.
       moved = true;
-      // first real drag → NOW lift into the transform-free <body> for correct
-      // viewport mapping (deferred from pointerdown so a pure tap never reparents).
-      try { document.body.appendChild(pieceEl); } catch(_){}
       pieceEl.style.position = 'fixed';
       pieceEl.style.margin = '0';
       pieceEl.style.zIndex = '99999';
+      pieceEl.style.left = homeRect.left + 'px';
+      pieceEl.style.top  = homeRect.top + 'px';
       pieceEl.style.width = homeRect.width + 'px';
       pieceEl.style.height = homeRect.height + 'px';
     }
@@ -9091,19 +9102,22 @@ function _wireJigsawPiece(pieceEl){
       // was in the tray — no reparent (that reorder was the "shuffle" regression).
       return;
     }
-    // Drag ended — check if dropped on a slot.
-    const px = e.clientX, py = e.clientY;
+    // Drag ended — SNAP to the NEAREST unfilled slot within a generous distance so
+    // pieces "fall into place" without a pixel-perfect drop (Jane 2026-07-03).
+    const pr = pieceEl.getBoundingClientRect();
+    const pcx = pr.left + pr.width / 2, pcy = pr.top + pr.height / 2;
     const slots = document.querySelectorAll('#jigsawBoard .jigsaw-slot');
-    let hit = null;
+    let hit = null, bestD = Infinity;
     for (const s of slots) {
       if (s.classList.contains('filled')) continue;
       const r = s.getBoundingClientRect();
-      if (px >= r.left && px <= r.right && py >= r.top && py <= r.bottom) {
-        hit = s; break;
-      }
+      const scx = r.left + r.width / 2, scy = r.top + r.height / 2;
+      const d = Math.hypot(pcx - scx, pcy - scy);
+      const tol = Math.max(r.width, r.height) * 1.15;   // ~1.15 slot-widths of slack
+      if (d < bestD && d <= tol) { bestD = d; hit = s; }
     }
     if (!hit) {
-      // Dropped off-board → bounce back to tray (reparent — lifted into <body>).
+      // Dropped nowhere near a slot → bounce back to the tray.
       _returnToTray();
       pieceEl.classList.add('bounce');
       setTimeout(() => pieceEl.classList.remove('bounce'), 380);
@@ -9112,24 +9126,16 @@ function _wireJigsawPiece(pieceEl){
     const slotIdx = parseInt(hit.dataset.slot, 10);
     const wantPiece = _jigsawAssignments[slotIdx];
     const havePiece = parseInt(pieceEl.dataset.piece, 10);
-    const rotation  = parseInt(pieceEl.dataset.rotation, 10) || 0;
-    // 2026-05-19 (Jane: "correct slot AND correct rotation is fine — it
-    // shouldn't be too easy for a 10-year-old"). Both are required. The
-    // ghost-terrain hint in each slot + the distinct messages below keep
-    // it approachable for 6-7 yos without making it trivial.
-    const rightSlot = (havePiece === wantPiece);
-    const isCorrect = rightSlot && (rotation === 0);
-    if (!isCorrect) {
+    // Jane 2026-07-03: rotation is NO LONGER required — it was fiddly and frustrating.
+    // The challenge is matching each terrain scrap to its right spot; on a correct drop
+    // we auto-upright the piece so the caravan trail always lines up.
+    if (havePiece !== wantPiece) {
       _returnToTray();
       pieceEl.classList.add('bounce');
       setTimeout(() => pieceEl.classList.remove('bounce'), 380);
       try { play('pop') || play('error'); } catch(_){}
       const status = document.getElementById('jigsawStatus');
-      if (status) status.textContent = rightSlot
-        ? 'So close! This is the right spot — tap the scrap to turn it upright.'
-        : 'Not quite — try this scrap on a different spot of the map.';
-      // 2026-05-26: after a couple of misses, gently pulse the Hint button so a
-      // stuck kid notices help is there (without auto-showing the answer).
+      if (status) status.textContent = 'Not quite — this scrap belongs on a different spot of the map.';
       _jigsawWrongCount++;
       if (_jigsawWrongCount >= 2) {
         try { const _hb = document.getElementById('jigsawHintBtn'); if (_hb) _hb.classList.add('nudge'); } catch(_){}
@@ -9137,6 +9143,9 @@ function _wireJigsawPiece(pieceEl){
       try { _jigsawArmStuckNudge(); } catch(_){}
       return;
     }
+    // Correct slot → auto-upright so the trail lines up (no rotate-to-solve step).
+    pieceEl.dataset.rotation = '0';
+    { const _f0 = pieceEl.querySelector('.crystal-face'); if (_f0) _f0.style.transform = 'rotate(0deg)'; }
     // Correct slot + upright! Jane 2026-06-23: RE-PARENT the piece INTO the slot
     // (was left position:fixed at viewport coords, so scrolling the modal made the
     // piece drift out of its tile box). Now it lives inside the slot and scrolls
