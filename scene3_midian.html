@@ -19039,6 +19039,7 @@ function _activatePowerup(key){
     }
     window._decoyTile = { x: _dtx, y: _dty };
     window._decoyUntil = now + 5000;
+    window._mosesThrowUntil = performance.now() + 600;   // Jane 2026-07-04: throwing pose
     window._royalVisionUntil = now + 8000;   // keep the crossing + crown reveal
     try { for (const s of pursuitScouts) s._decoyLured = false; } catch(e){}
     window._puActiveUntil[key] = now + 8000;
@@ -26296,6 +26297,9 @@ function drawMoses(){
   // authentically instead of a squashed standing sprite.
   function _pickMosesSprite(dir, hidden) {
     const ok = (im) => im && im.complete && im.naturalWidth;
+    // Jane 2026-07-04: brief THROWING pose while Moses tosses the water-jar lure.
+    if (performance.now() < (window._mosesThrowUntil || 0) && ok(IMG.resMosesThrow))
+      return { img: IMG.resMosesThrow, flip: (dir === 'left') };
     if (hidden) {
       // Ducking variants — facing stays true to dir; falls back to front-duck
       // then crouching-right, then standing sprites if PNGs missing.

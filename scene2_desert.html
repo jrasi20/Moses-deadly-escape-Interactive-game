@@ -4491,6 +4491,7 @@ const IMG_SRC = {
   mosesBack:  'assets/images/moses%20back%20facing.png',
   mosesLeft:  'assets/images/moses%20left%20facing.png',
   mosesRight: 'assets/images/moses%20right%20facing.png',
+  resMosesThrow: 'assets/images/moses%20rescue%20throw.png',   // Jane 2026-07-04: throwing pose when Moses tosses the rock lure
   // v2.3.4 NEW: dedicated ducking/crouching sprite variants for hide state
   mosesDuckFront: 'assets/images/moses%20ducking%20front%20facing.png',
   mosesDuckLeft:  'assets/images/moses%20ducking%20left%20facing.png',
@@ -11950,6 +11951,7 @@ function _activatePowerup(key){
     }
     window._decoyTile = { x: _dtx, y: _dty };
     window._decoyUntil = now + 5000;
+    window._mosesThrowUntil = performance.now() + 600;   // Jane 2026-07-04: throwing pose
     try { for (const s of pursuitScouts) s._decoyLured = false; } catch(e){}
     window._puActiveUntil[key] = now + 5000;
     try { toast('🪨 You toss a rock — the scouts run to the clatter! Slip past!'); } catch(e){}
@@ -18849,6 +18851,9 @@ function drawMoses(){
   // authentically instead of a squashed standing sprite.
   function _pickMosesSprite(dir, hidden) {
     const ok = (im) => im && im.complete && im.naturalWidth;
+    // Jane 2026-07-04: brief THROWING pose while Moses tosses the rock lure.
+    if (performance.now() < (window._mosesThrowUntil || 0) && ok(IMG.resMosesThrow))
+      return { img: IMG.resMosesThrow, flip: (dir === 'left') };
     if (hidden) {
       // Ducking variants — facing stays true to dir; falls back to front-duck
       // then crouching-right, then standing sprites if PNGs missing.
