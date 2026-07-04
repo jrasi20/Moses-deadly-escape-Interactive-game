@@ -14340,7 +14340,10 @@ function getHintForQuestion(q){
   // types (fill/maze/match/slider/…) keep their mechanical coaching — it genuinely helps.
   const _fillerType = (q.type === 'trivia' || q.type === 'tf');
   if (topic && typeHint && !_fillerType) return typeHint + ' ' + topic;
-  if (topic)             return topic;
+  if (topic)                    return topic;
+  // Jane 2026-07-04: for trivia/TF with no specific topic, point to the exact verse
+  // instead of the generic "Every answer is in the Bible…" filler — a real, relevant clue.
+  if (_fillerType && verseHint) return verseHint;
   if (typeHint)          return typeHint;
   if (verseHint)         return verseHint;
   return 'Think about the Moses story and choose your best guess.';
