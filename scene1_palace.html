@@ -8715,18 +8715,20 @@ const CHALLENGE_BANK = {
       imgB:'assets/images/spot%20the%20difference%20moses%20running%20B.png',
       answer:4,
       // 2026-05-16 PM34 — Jane re-drew the differences on the live PNG.
-      // I4 v2 (2026-06-19): coords COMPUTED from real pixel diffs.
-      //  1. sun in sky (upper-left)  (~24%, 33%)
-      //  2. dune / cloud below the sun  (~17%, 41%)
-      //  3. waterskin pouch on Moses's belt  (~42%, 58%)
-      //  4. camel rear / saddle (right)  (~85%, 57%)
+      // Jane 2026-06-29 SHOW-STOPPER FIX: the 4th coord was (55,82) = Moses's SANDALS
+      // (no change there) while the SUN — a real diff named in the clue — had NO target,
+      // making the puzzle unwinnable. Re-derived from the A-vs-B PNGs:
+      //  1. SUN in sky (bright disc in A, gone in B)  (~22%, 33%)
+      //  2. BLACK EAGLE added on the dune in B        (~15%, 41%)
+      //  3. POUCH on Moses's belt (changed)           (~42%, 57%)
+      //  4. CAMEL SADDLE (brown in A → blue in B)      (~82%, 57%)
       diffs:[
-        { x:17, y:41, r:5, tapR:14 },
-        { x:43, y:58, r:5, tapR:14 },
-        { x:84, y:57, r:5, tapR:14 },
-        { x:55, y:82, r:5, tapR:14 },
+        { x:22, y:33, r:5, tapR:15 },
+        { x:15, y:41, r:5, tapR:15 },
+        { x:42, y:57, r:5, tapR:14 },
+        { x:82, y:57, r:5, tapR:14 },
       ],
-      clue:"Look at the sun, the dune below it, Moses's waterskin on his belt, and the camel's saddle.",
+      clue:"Look at the sun in the sky, the black eagle on the dune, the pouch on Moses's belt, and the camel's saddle.",
       verse:'Exodus 2:15 NIV' },
     { id:'hSdiff4', type:'spotdiff',
       q:'Tap on the 4 differences in this scene of Moses at the well!',

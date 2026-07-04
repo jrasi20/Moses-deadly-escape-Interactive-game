@@ -10,7 +10,7 @@
    registered (modern browsers reject blob: SW scripts), so this external
    file is the first working SW. It only runs over http(s)/localhost — on a
    file:// build it simply never registers (harmless). */
-const CACHE_VERSION = 'bek-bundle-v116'; // bump to invalidate caches on each release. History: see CHANGELOG.md
+const CACHE_VERSION = 'bek-bundle-v117'; // bump to invalidate caches on each release. History: see CHANGELOG.md
 
 // Scene-3 opening shell: precache so the first screen is instant + offline-safe
 // on returning devices. Kept small + resilient (allSettled ignores any miss) so a
