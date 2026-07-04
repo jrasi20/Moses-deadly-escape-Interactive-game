@@ -7148,18 +7148,18 @@ const dogs = [
   // Throne quadrant dog — paces between two corners of the upper hall
   { tx:9,  ty:3,  patrolPath:[{x:9,y:3},{x:13,y:3},{x:13,y:5},{x:9,y:5}],
     pi:0, dir:'right', state:'patrol', timer:0, seeRadius:5, patrolMs:520,
-    friendly: Math.random() < 0.20, wag:0, barking:false, barkingUntil:0,
+    friendly: false, wag:0, barking:false, barkingUntil:0,   // Jane 2026-07-04: dog is a pure ANTAGONIST — never friendly/wag/bonus
     isDog:true },
   // Mid corridor dog — patrols the same row Jane reported "guard never
   // chased me here". Now this one absolutely will.
   { tx:23, ty:11, patrolPath:[{x:18,y:11},{x:28,y:11},{x:28,y:13},{x:18,y:13}],
     pi:0, dir:'right', state:'patrol', timer:0, seeRadius:5, patrolMs:520,
-    friendly: Math.random() < 0.20, wag:0, barking:false, barkingUntil:0,
+    friendly: false, wag:0, barking:false, barkingUntil:0,   // Jane 2026-07-04: dog is a pure ANTAGONIST — never friendly/wag/bonus
     isDog:true },
   // Exit corridor dog — between the row-18 gates and the east gate
   { tx:8,  ty:20, patrolPath:[{x:8,y:20},{x:14,y:20},{x:14,y:22},{x:8,y:22}],
     pi:0, dir:'right', state:'patrol', timer:0, seeRadius:5, patrolMs:560,
-    friendly: Math.random() < 0.20, wag:0, barking:false, barkingUntil:0,
+    friendly: false, wag:0, barking:false, barkingUntil:0,   // Jane 2026-07-04: dog is a pure ANTAGONIST — never friendly/wag/bonus
     isDog:true },
 ];
 // Legacy `dog` object — preserved as an ALIAS to dogs[1] so the existing
@@ -13490,7 +13490,8 @@ function triggerInteractable(obj){
     game.hasExitKey = true;
     spawnGlitterBurstAtPlayer(28);
     setTimeout(() => spawnGlitterBurstAtPlayer(20), 180);
-    try { play('chime') || play('success'); } catch(e){}
+    // Jane 2026-07-04: play the magic SFX when the golden key is picked up.
+    try { play('magicSfx') || play('chime') || play('success'); } catch(e){}
     // 2026-05-17 PM41 (Jane: "as soon as golden key is picked up, we
     // are displaying a overhead message saying the gate will be open
     // now. this is incorrect since moses still needs to clear more
@@ -14138,17 +14139,11 @@ function checkDogInteraction(){
         if (d === dog) { interactDog(); }
         else {
           d.met = true;
-          if (d.friendly) {
-            try { play('chime'); } catch(e){}
-            // 2026-05-19 PM52 (Jane: "remove unnecessary overhead
-            // messages like 'palace dog barks'"). Dog interactions
-            // now communicate via SFX + HUD pulse only — no toasts.
-            game.stars = (game.stars || 0) + 1;
-            try { updateHudStars(); } catch(e){}
-          } else {
-            try { play('dog'); } catch(e){}
-            try { triggerGuardAlert(d.tx, d.ty); } catch(e){}
-          }
+          // Jane 2026-07-04: no friendly/wag/bonus variant — every palace dog is an
+          // antagonist. Bark + alert the guards (SFX only, no toast) unless it has
+          // already spent its one catch (then it's a harmless patrol dog).
+          try { play('dog'); } catch(e){}
+          if (!d._spentCatch) { try { triggerGuardAlert(d.tx, d.ty); } catch(e){} }
         }
         return;
       }
@@ -14163,15 +14158,13 @@ function interactDog(){
   if (dog.met) return;
   dog.met = true;
   game.dogMet = true;
-  if (dog.friendly) {
-    play('chime');
-    openDialog("The Palace Dog", "The old palace dog recognizes Moses and wags its tail. It knows a shortcut - you found 1 bonus star!");
-    game.stars += 1; updateHudStars();
-  } else {
-    play('dog');
-    openDialog("The Palace Dog", "The palace dog barks loudly - guards are alerted! Move quickly!");
-    triggerGuardAlert(dog.tx, dog.ty);
-  }
+  // Jane 2026-07-04: the palace dog is a pure ANTAGONIST — it never "wags its tail" or
+  // gives a bonus star (that modal was wrong + confusing). Stepping near it just makes
+  // it bark and alert the guards (SFX + alert vignette, no dialog); if it actually
+  // catches Moses he loses a heart (handled in the capture path). A dog that has already
+  // spent its one catch is downgraded to a harmless patrol dog and no longer alerts.
+  try { play('dog'); } catch(e){}
+  if (!dog._spentCatch) { try { triggerGuardAlert(dog.tx, dog.ty); } catch(e){} }
 }
 
 /* ---------- CHALLENGE (Mandatory Bible-bundle gates) ----------
@@ -14251,6 +14244,15 @@ function getHintForQuestion(q){
   const text  = (q.q || q.prompt || '').toLowerCase();
   const topic = (() => {
     // SPECIFIC NARRATIVE TERMS (highest priority — match the actual story beat)
+    // Jane 2026-07-04: relevant clues for the HARD "fight → flight" beat (these were
+    // falling through to the generic Hebrews/Pharaoh taglines, which didn't hint at the
+    // actual answer).
+    if (text.includes('hitting'))
+      return 'Moses saw TWO Hebrews fighting each other. He asked the one in the wrong why he was hurting a man of his OWN people — a fellow Hebrew (Exodus 2:13).';
+    if (text.includes('ruler and judge') || text.includes('break up') || (text.includes('fighting') && text.includes('say')))
+      return 'The man in the wrong snapped back at Moses: "WHO MADE YOU RULER AND JUDGE OVER US?" — so Moses knew his secret was out (Exodus 2:14).';
+    if (text.includes('pharaoh') && (text.includes('heard') || text.includes('try') || text.includes('tried')))
+      return 'When Pharaoh heard that Moses had killed the Egyptian, he tried to KILL Moses — so Moses ran away to Midian (Exodus 2:15).';
     if (text.includes('groan') || text.includes('cried out') || text.includes('cry out') || text.includes('covenant'))
       return 'God heard the Israelites\' suffering and remembered His covenant with Abraham (Exodus 2:23-25).';
     // v3.x audit (Bug 145 — Jane: irrelevant clue on the "By faith he
@@ -14332,8 +14334,12 @@ function getHintForQuestion(q){
     if (ref) verseHint = 'Check ' + ref[1] + ' in your Bible for the answer.';
   }
 
-  // Assemble the best available hint. Combine type coaching + topic if both are useful.
-  if (topic && typeHint) return typeHint + ' ' + topic;
+  // Assemble the best available hint. Jane 2026-07-04: when a SPECIFIC topic clue
+  // matched, LEAD with it. For trivia/tf the "type hint" is generic filler ("Every
+  // answer is in the Bible…"), so drop it and show only the relevant clue. Interactive
+  // types (fill/maze/match/slider/…) keep their mechanical coaching — it genuinely helps.
+  const _fillerType = (q.type === 'trivia' || q.type === 'tf');
+  if (topic && typeHint && !_fillerType) return typeHint + ' ' + topic;
   if (topic)             return topic;
   if (typeHint)          return typeHint;
   if (verseHint)         return verseHint;
@@ -23363,8 +23369,9 @@ function updateDog(dt){
           // walks its route (visual life) but the catch check above is
           // gated by `!d._spentCatch`, so it can never cost another
           // heart. Reset in restartScene / startScene1 dog-reset loops.
-          d._spentCatch = true;
-          d.friendly = true;     // also stop it alerting guards
+          d._spentCatch = true;  // Jane 2026-07-04: post-catch this dog stops alerting
+                                 // (checked via _spentCatch in interactDog) — do NOT flip
+                                 // d.friendly (that resurrected the wrong "wags tail" modal)
           try { _cameraShake(4, 240); } catch(e){}
           try { _softCatch("A palace dog caught Moses! Hide behind cover so it loses your scent.", IMG_SRC.dogDown || IMG_SRC.dog, 'dog'); } catch(e){}
           // 2026-05-17 PM36 (Jane: "after dog touches/catches moses,

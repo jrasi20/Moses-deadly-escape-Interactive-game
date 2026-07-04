@@ -9224,7 +9224,7 @@ const CHALLENGE_BANK = {
       verse:'"Moses agreed to stay with the man, who gave his daughter Zipporah to Moses in marriage." (Exodus 2:21 NIV)' },
     { id:'e10', type:'trivia', q:'What did Jethro ask when his daughters came home early?',
       options:['"Did you find water?"','"Why have you returned so early today?"','"Where is the Egyptian?"','"Did the flock drink?"'], correct:1,
-      clue:'A surprised father wondered why his daughters were home sooner than usual. (Exodus 2:18)',
+      clue:'Normally the rude shepherds made them late — so Jethro was surprised and asked why they had returned so EARLY today. (Exodus 2:18)',
       verse:'"Why have you returned so early today?" (Exodus 2:18 NIV). Jethro noticed God\'s kindness in the early return.' },
     { id:'e11', type:'fill', q:'Jethro said to his daughters: "Why did you _______ him? Invite him to share bread with us!"',
       options:['Argue with','Leave','Challenge','Forget'], correct:1,
@@ -13444,6 +13444,10 @@ function getHintForQuestion(q){
     // "Moses grew up a Hebrew" line as the default on unrelated questions (e.g.
     // "how old was Moses?", "find the odd one out"). Unmatched questions now fall
     // through to the crisp type hint / verse hint instead of an irrelevant blurb.
+    // Jane 2026-07-04: relevant clue for how Jethro reacted when his daughters told him
+    // about the Egyptian who rescued them (was falling through to a generic blurb).
+    if (hasWord('invite','leave','returned','early') || text.indexOf('came home') !== -1)
+      return 'Jethro was surprised they were home so early, then said: "Why did you LEAVE him? INVITE him to eat!" — his kindness echoes God\'s welcome (Exodus 2:18-20).';
     if (hasWord('basket','papyrus','reed','reeds'))
       return 'A papyrus basket hid baby Moses on the Nile (Exodus 2:3).';
     if (hasWord('nile','river'))
