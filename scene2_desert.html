@@ -6109,13 +6109,15 @@ const CHALLENGE_BANK = {
       imgA:'assets/images/spot the difference moses running A.png',
       imgB:'assets/images/spot the difference moses running B.png',
       answer:4,
-      // M5 (Jane 2026-06-20: "if i click on the vulture it is not recognized;
-      // only if i click under it it detects"). Re-computed offline + visually
-      // verified on the annotated overlay — the VULTURE's real centre is
-      // (17,41), not (12,49). Corrected all 4: sun (24,32), vulture (17,41),
-      // Moses's belt pouch (42,58), camel (85,57). Bigger tap radius too.
-      diffs:[{x:17,y:41,r:12},{x:43,y:58,r:12},{x:84,y:57,r:12},{x:55,y:82,r:12}],
-      clue:'Four things changed: the sun in the sky, the black bird on the palm tree, the pouch on Moses’s belt, and the camel on the right.',
+      // Jane 2026-06-29 SHOW-STOPPER: the 4th coord was (55,82) — Moses's SANDALS,
+      // where nothing changes — while the SUN (a real diff named in the clue) had NO
+      // target, so the puzzle was unwinnable and the reveal halo sat on the sandals.
+      // Re-derived from an A-vs-B pixel diff + a visual read of both PNGs. The 4 real
+      // changes are: SUN in A (bright disc, gone in B) ~ (22,33); BLACK EAGLE added on
+      // the dune in B ~ (15,41); POUCH on Moses's belt (changed) ~ (42,57); CAMEL SADDLE
+      // (brown in A → blue in B) ~ (82,57). Generous tap radius for young kids.
+      diffs:[{x:22,y:33,r:14},{x:15,y:41,r:14},{x:42,y:57,r:13},{x:82,y:57,r:13}],
+      clue:'Four things changed: the sun in the sky, the black eagle on the dune, the pouch on Moses’s belt, and the camel’s saddle.',
       verse:'"Moses fled from Pharaoh and went to live in Midian." (Exodus 2:15 NIV)' },
     // --- Pictionary ---
     { id:'mPict1', type:'pictionary',
@@ -7246,7 +7248,20 @@ function attemptMove(dir) {
             if (remaining > 0) {
               toast('\u{1F512} Locked! Clear ' + remaining + ' more checkpoint' + (remaining===1?'':'s') + ' to unlock the path to Midian.');
             } else if (!game.jigsawSolved) {
-              toast('\u{1F5FA} Find all 3 caravan map pieces — they reveal the path to Midian!');
+              // Jane 2026-06-29 SHOW-STOPPER: all 6 checkpoints AND all 3 map pieces
+              // done, but the jigsaw was never solved (it can be closed/interrupted
+              // before solving — sandstorm, pause, a stray tap — and there was NO way
+              // to reopen it, so the exit stayed locked forever with a misleading "find
+              // 3 pieces" message). If every fragment is already collected, RE-OPEN the
+              // jigsaw right here so the path is always recoverable. Only prompt to hunt
+              // pieces when some are genuinely still missing.
+              const _mf = game.mapFragments || {};
+              if (_mf[1] && _mf[2] && _mf[3]) {
+                toast('\u{1F9E9} Assemble the caravan map to unlock the path to Midian!');
+                try { _openJigsawModal(); } catch(e){}
+              } else {
+                toast('\u{1F5FA} Find all 3 caravan map pieces — they reveal the path to Midian!');
+              }
             }
           } catch(e){}
           try { play('friendlyAlert') || play('uhoh'); } catch(e){}
@@ -17620,7 +17635,18 @@ function drawTile(t, dx, dy, tx, ty){
         // text, with the pill X CLAMPED so the whole thing always stays
         // inside the canvas. "LOCKED" in red, the instruction in cream.
         const _ll1 = 'LOCKED';
-        const _ll2 = 'Find 3 map pieces';
+        // Jane 2026-06-29: label must reflect the ACTUAL missing step, not always
+        // "Find 3 map pieces" (which read as a dead-end once all pieces were found).
+        let _ll2 = 'Find 3 map pieces';
+        try {
+          const _tg = (challengeGates || []).length;
+          const _sg = (challengeGates || []).filter(g => g && g.solved).length;
+          const _mf = game.mapFragments || {};
+          const _allFrags = _mf[1] && _mf[2] && _mf[3];
+          if (_tg > 0 && _sg < _tg) _ll2 = 'Clear ' + (_tg - _sg) + ' checkpoint' + ((_tg - _sg) === 1 ? '' : 's');
+          else if (_allFrags && !game.jigsawSolved) _ll2 = 'Assemble the map!';
+          else if (!_allFrags) _ll2 = 'Find 3 map pieces';
+        } catch(e){}
         ctx.font = 'bold 16px Georgia';
         const _w1 = ctx.measureText(_ll1).width;
         ctx.font = 'bold 13px Georgia';
