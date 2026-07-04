@@ -3557,7 +3557,7 @@
     <div class="jigsaw-header">
       <div class="jigsaw-eyebrow">THE TORN CARAVAN MAP</div>
       <h2 class="jigsaw-title">Piece the map back together</h2>
-      <p class="jigsaw-sub">Moses found 3 scraps of an old caravan map. Drag each scrap onto its matching spot on the map — line up the trail and it will reveal the hidden path to Midian.</p>
+      <p class="jigsaw-sub">Moses found 3 scraps of an old caravan map. Each empty spot shows a <b>faint picture</b> — drag the scrap whose picture <b>matches</b> onto that spot. Line up all three to reveal the hidden path to Midian!</p>
     </div>
     <div class="jigsaw-board" id="jigsawBoard">
       <!-- Three slot drop-zones — JS sets piece1/piece2/piece3 fits.
@@ -3580,14 +3580,17 @@
            dips back onto the square. -->
       <div class="jigsaw-pin start label-above" style="left:17.5%;top:15%;"><span class="pin-label">START</span><span class="pin-dot"></span></div>
       <div class="jigsaw-pin exit label-above"  style="left:87.5%;top:15%;"><span class="pin-label">MIDIAN</span><span class="pin-dot"></span></div>
-      <!-- Faint dashed guide showing roughly where the trail will run -->
+      <!-- Faint dashed guide showing roughly where the trail will run. Jane 2026-07-04:
+           the trail now CONNECTS the START pin (top-left) DOWN into the piece row, runs
+           straight through the 3 scraps, then UP to the MIDIAN pin (top-right) — it used
+           to be a flat line that never reached the START/MIDIAN pins. -->
       <svg class="jigsaw-route" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M16,118 L384,118"
+        <path d="M70,44 C70,104 44,118 96,118 L304,118 C356,118 350,104 350,44"
               fill="none" stroke="rgba(120,80,30,0.30)" stroke-width="3" stroke-dasharray="5 9"/>
       </svg>
-      <!-- Golden caravan route — drawn in on the reveal -->
+      <!-- Golden caravan route — drawn in on the reveal (same connected path) -->
       <svg class="jigsaw-goldroute" id="jigsawGoldRoute" viewBox="0 0 400 240" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M16,118 L384,118"/>
+        <path d="M70,44 C70,104 44,118 96,118 L304,118 C356,118 350,104 350,44"/>
       </svg>
       <!-- Traveling footprint on reveal -->
       <div class="jigsaw-walker" id="jigsawWalker" aria-hidden="true">&#128099;</div>
@@ -8933,7 +8936,7 @@ function _openJigsawModal(){
   });
   // Reset status text.
   const status = document.getElementById('jigsawStatus');
-  if (status) status.textContent = 'Drag each scrap onto its matching spot on the map';
+  if (status) status.textContent = 'Match each scrap to the faint picture in its spot — tap Hint if stuck!';
   // Pause game state + start puzzle bg music.
   if (game.state !== 'puzzle') {
     window._jigsawPrevState = game.state;
@@ -8998,9 +9001,9 @@ function _jigsawHint(){
   if (pieceEl) {
     pieceEl.classList.add('hint-piece');
     {
-      // Jane 2026-07-03: rotation no longer matters — the hint just shows which
-      // glowing scrap belongs on which glowing spot.
-      if (status) status.textContent = 'Drag the glowing scrap onto the glowing spot!';
+      // Jane 2026-07-04: kid-simple — the glowing scrap's picture MATCHES the glowing
+      // spot; just drag it there (no rotation).
+      if (status) status.textContent = 'The glowing scrap matches the glowing spot — drag it there!';
     }
   }
   try { play('clickSound') || play('click'); } catch(_){}
@@ -11950,6 +11953,8 @@ function _activatePowerup(key){
     try { for (const s of pursuitScouts) s._decoyLured = false; } catch(e){}
     window._puActiveUntil[key] = now + 5000;
     try { toast('🪨 You toss a rock — the scouts run to the clatter! Slip past!'); } catch(e){}
+    // Jane 2026-07-04: rolling-boulder rumble when the rock is thrown.
+    try { play('boulderRumble') || play('pop'); } catch(e){}
     try { _cameraPunch(1.12, 520); } catch(e){}  // quick toss punch-in
   } else if (key === 'truthSeeker') {
     window._truthSeekerArmed = true;
@@ -13917,12 +13922,19 @@ function drawPursuitScouts(ctx){
           ctx.beginPath(); ctx.arc(ccx, ccy, TILE*(0.3 + ph*1.3), 0, Math.PI*2);
           ctx.strokeStyle = 'rgba(255,210,120,' + (0.5*(1-ph)).toFixed(2) + ')'; ctx.lineWidth = 3; ctx.stroke();
         }
-        const _bob = Math.sin(_n/180)*2, _sz = TILE*0.8;
-        if (IMG.rock && IMG.rock.complete && IMG.rock.naturalWidth) {
-          ctx.drawImage(IMG.rock, ccx - _sz/2, ccy - _sz/2 + _bob, _sz, _sz);
+        // Jane 2026-07-04: the tossed rock now ROLLS on the sand — a rotate wobble
+        // (parity with Scene 1's rolling goblet) using the rolling-boulder sprite so kids
+        // clearly see a boulder rolling to the clatter spot.
+        const _bob = Math.sin(_n/180)*2, _roll = Math.sin(_n/130)*0.6, _sz = TILE*0.85;
+        const _bImg = (IMG.rollingBoulder && IMG.rollingBoulder.complete && IMG.rollingBoulder.naturalWidth) ? IMG.rollingBoulder
+                    : (IMG.rock && IMG.rock.complete && IMG.rock.naturalWidth) ? IMG.rock : null;
+        ctx.translate(ccx, ccy + _bob); ctx.rotate(_roll);
+        if (_bImg) {
+          ctx.shadowColor = 'rgba(30,20,5,0.4)'; ctx.shadowBlur = 4; ctx.shadowOffsetY = 2;
+          ctx.drawImage(_bImg, -_sz/2, -_sz/2, _sz, _sz);
         } else {
           ctx.font = Math.round(TILE*0.7) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('\u{1FAA8}', ccx, ccy + _bob);
+          ctx.fillText('\u{1FAA8}', 0, 0);
         }
         ctx.restore();
       }

@@ -3528,7 +3528,7 @@
       <span><strong id="winScoreNum">0</strong> Score</span>
       <!-- L12 (Jane 2026-06-20): label this as THIS-SCENE's found count so it
            doesn't clash with the lifetime "Treasures" in the journey panel. -->
-      <span><strong id="winTreasureNum">0/0</strong> Found this run</span>
+      <span><strong id="winTreasureNum">0</strong> Treasures</span>
       <span><strong id="winHeartsNum">3/3</strong> Hearts</span>
     </div>
     <!-- 2026-05-19 (Jane: cross-scene "Your Journey" tally) -->
@@ -4308,6 +4308,7 @@
 <audio id="audBgmExit"      preload="none" src="assets/audio/bgm-exit.mp3"></audio>
 <audio id="audBgmCorridor"  loop preload="none" src="assets/audio/bgm-corridor.mp3"></audio>
 <audio id="audEgyptianCover" loop preload="none" src="assets/audio/egyptian%20cover%20music.mp3"></audio>
+<audio id="audEgyptianMusic3" loop preload="none" src="assets/audio/egyptian%20music%203.mp3"></audio>
 <audio id="audClickSound" preload="none" src="assets/audio/click%20sound.mp3"></audio>
 <!-- v3.4: character-input click (letter taps, match/unscramble/sequence) -->
 <audio id="audTap" preload="none" src="assets/audio/click.mp3"></audio>
@@ -4594,6 +4595,7 @@ const audio = {
   bgmExit:     $('audBgmExit'),     // #14: victory heat-up bed
   bgmCorridor: $('audBgmCorridor'), // #15: wolf-attack danger bed
   egyptianCover: $('audEgyptianCover'), // #19: lively post-Scene-3 narration bed
+  egyptianMusic3: $('audEgyptianMusic3'), // Jane 2026-07-04: SOFT bed under the ending (closing + epilogue) narration
   clickSound: $('audClickSound'),   // Jane: click sound.mp3 for menu button selection
   tap:       $('audTap'),       // v3.4: character-input clicks
   alerted:   $('audAlerted'),   // v3.4: fast tension when a guard is alerted
@@ -4894,7 +4896,7 @@ function _setSoundOn(on){
 // Used on transitions (menu return, win, pause, scene end) so no loop bleeds
 // across screens regardless of which code path started it.
 function _killAllGameMusic(){
-  const tracks = ['bgm','narration','alerted','cinNarrate','closeNarrate','epilNarrate','wellMusic','coverMusic','puzzleBg','challengeMusic','wolfEpic','wolfAlert'];
+  const tracks = ['bgm','narration','alerted','cinNarrate','closeNarrate','epilNarrate','wellMusic','coverMusic','puzzleBg','challengeMusic','wolfEpic','wolfAlert','egyptianCover','egyptianMusic3'];
   tracks.forEach(k => { const a = audio[k]; if (!a) return; try { a.pause(); a.currentTime = 0; } catch(e){} });
 }
 try { window._killAllGameMusic = _killAllGameMusic; } catch(e){}
@@ -11910,17 +11912,28 @@ const CLOSING_PANELS = [
   },
 ];
 let _closingOnDoneCb = null;
+// Jane 2026-07-04: a SOFT bed under the ENDING narration (closing §8 + epilogue §9).
+// She asked for egyptian music 3.mp3 kept very low so the voice clearly leads (an earlier
+// agent removed the bed entirely). Idempotent so it plays ONCE and spans both cinematics
+// (no restart when the closing hands off to the epilogue).
+function _playEndingBed(){
+  try { setMusic(null); } catch(e){}   // silence the loud game beds first
+  try {
+    const a = audio.egyptianMusic3 || $('audEgyptianMusic3');
+    if (a) { a.loop = true; a.volume = 0.10; if (a.paused) { a.currentTime = 0; a.play().catch(()=>{}); } }
+  } catch(e){}
+}
+function _stopEndingBed(){
+  try { const a = audio.egyptianMusic3 || $('audEgyptianMusic3'); if (a) { a.pause(); a.currentTime = 0; } } catch(e){}
+}
 function playClosingCinematic(onDone) {
   _closingOnDoneCb = (typeof onDone === 'function') ? onDone : null;
   game.state = 'cinematic';
   game.closeStep = 0;
   showClosePanel();
   $('closingCinematic').classList.add('active');
-  // 2026-06-25 (Jane: "completely reduce the bg music for the 2 ending panels.
-  // the bg music is dominating and narration is not heard"). The egyptian-cover
-  // bed mp3 is loud-mastered, so even at 0.03 it bled over the narration. Stop
-  // ALL music beds during the closing cinematic so only the voice plays.
-  try { setMusic(null); } catch(e){}
+  // Soft egyptian-music-3 bed under the narration (voice-forward at 0.10).
+  _playEndingBed();
 }
 function _playClosingPanelAudio(p) {
   try {
@@ -12048,6 +12061,7 @@ function _stopEpilogueAudio() {
 }
 function _finishEpilogue() {
   _stopEpilogueAudio();
+  _stopEndingBed();   // Jane 2026-07-04: stop the soft ending bed as we leave the epilogue
   $('epilogueCinematic').classList.remove('active');
   const cb = _epilOnDoneCb; _epilOnDoneCb = null;
   try { if (cb) cb(); } catch(e){}
@@ -12057,9 +12071,9 @@ function openEpilogueCinematic(onDone) {
   game.epilStep = 0;
   showEpiloguePanel();
   $('epilogueCinematic').classList.add('active');
-  // 2026-06-25 (Jane: bg music dominating the ending narration). Stop all music
-  // beds during the epilogue cinematic so only the voice plays. See closing.
-  try { setMusic(null); } catch(e){}
+  // Keep the same SOFT egyptian-music-3 bed running from the closing into the epilogue
+  // (idempotent — it won't restart if already playing).
+  _playEndingBed();
 }
 (function wireEpilogueCinematic() {
   const next = $('epilNextBtn');
@@ -13524,6 +13538,9 @@ function getHintForQuestion(q){
   // (that produced the long passages). Prefer the content hint, then the puzzle
   // nudge, then the verse pointer, then a short generic.
   if (topic)     return topic;
+  // Jane 2026-07-04: for trivia/TF with no topic, point to the exact verse rather than a
+  // generic coaching line — a real clue for the specific question.
+  if ((q.type === 'trivia' || q.type === 'tf') && verseHint) return verseHint;
   if (typeHint)  return typeHint;
   if (verseHint) return verseHint;
   return 'Picture the Bible scene — the answer is there.';
@@ -14104,7 +14121,10 @@ function _pulleyBeginCountdown() {
   _pulley.countdownTotal = _pulley.countdown;   // Jane 2026-06-29: the visual counts 3-2-1 across the whole bed (see render), never "5"
   const fb = document.getElementById('pulleyFeedback'); if (fb) fb.textContent = 'Get ready…';
   // double-rAF so the 3-2-1 beeps are audible right after the overlay swaps out.
-  try { requestAnimationFrame(() => requestAnimationFrame(() => { try { play('raceCountdown'); } catch(e){} })); } catch(e){}
+  // Jane 2026-07-04: the well-game countdown music was silent. Play the raceCountdown
+  // bed DIRECTLY (from the start) rather than via play(), which could no-op here (the 90ms
+  // throttle, or the element not primed in the well's entry order). Respects mute.
+  try { requestAnimationFrame(() => requestAnimationFrame(() => { try { const _rc = audio.raceCountdown; if (_rc && (typeof _soundOn === 'undefined' || _soundOn)) { _rc.currentTime = 0; _rc.volume = 0.8; _rc.play().catch(()=>{}); } else { play('raceCountdown'); } } catch(e){ try { play('raceCountdown'); } catch(_){} } })); } catch(e){}
   cancelAnimationFrame(_pulley.rafId); _pulley.rafId = requestAnimationFrame(_pulleyFrame);
 }
 function _pulleyRetry() {
@@ -14125,7 +14145,10 @@ function _pulleyRetry() {
   _pulley.countdown = (audio.raceCountdown && isFinite(audio.raceCountdown.duration) && audio.raceCountdown.duration > 0.5) ? audio.raceCountdown.duration : 3.0; _pulley.go = 0;
   _pulley.countdownTotal = _pulley.countdown;   // Jane 2026-06-29: 3-2-1 across the whole bed (see render)
   document.getElementById('pulleyFeedback').textContent = 'Get ready…';
-  try { requestAnimationFrame(() => requestAnimationFrame(() => { try { play('raceCountdown'); } catch(e){} })); } catch(e){}
+  // Jane 2026-07-04: the well-game countdown music was silent. Play the raceCountdown
+  // bed DIRECTLY (from the start) rather than via play(), which could no-op here (the 90ms
+  // throttle, or the element not primed in the well's entry order). Respects mute.
+  try { requestAnimationFrame(() => requestAnimationFrame(() => { try { const _rc = audio.raceCountdown; if (_rc && (typeof _soundOn === 'undefined' || _soundOn)) { _rc.currentTime = 0; _rc.volume = 0.8; _rc.play().catch(()=>{}); } else { play('raceCountdown'); } } catch(e){ try { play('raceCountdown'); } catch(_){} } })); } catch(e){}
   _pulley.rafId = requestAnimationFrame(_pulleyFrame);
 }
 function _closePulleyGame() {
@@ -15175,7 +15198,7 @@ function _rescueCfg() {
   // Slowed the ARRIVAL cadence a lot (0.90s→1.05s between shepherds) and trimmed foe
   // speed (72→66) + total waves (34→30) so it's noticeably gentler. Still the TOUGHEST
   // tier — faster foes, more of them, and a bigger boss than medium — just not frantic.
-  if (d === 'hard')   return { total: 30, spawnEvery: 1.05, foeSpeed: 66, bigChance: 0.24, fastChance: 0.30, coins: 115, bossHp: 40 };
+  if (d === 'hard')   return { total: 30, spawnEvery: 1.05, foeSpeed: 58, bigChance: 0.24, fastChance: 0.30, coins: 115, bossHp: 40 };  // Jane 2026-07-04: shepherds a tad slower (66→58); nothing else changed
   if (d === 'medium') return { total: 28, spawnEvery: 1.05, foeSpeed: 64, bigChance: 0.22, fastChance: 0.30, coins: 130, bossHp: 34 };
   return { total: 22, spawnEvery: 1.25, foeSpeed: 56, bigChance: 0.18, fastChance: 0.26, coins: 160, bossHp: 24 }; // easy
 }
@@ -19020,6 +19043,8 @@ function _activatePowerup(key){
     try { for (const s of pursuitScouts) s._decoyLured = false; } catch(e){}
     window._puActiveUntil[key] = now + 8000;
     try { toast('🏺 You toss a water jar — the shepherds scramble for it! Slip past!'); } catch(e){}
+    // Jane 2026-07-04: the tossed water jar smashes where it lands — play jar smash.mp3.
+    try { play('jarSmash') || play('pop'); } catch(e){}
     try { _cameraPunch(1.12, 520); } catch(e){}  // quick toss punch-in
   } else if (key === 'truthSeeker') {
     window._truthSeekerArmed = true;
@@ -19656,7 +19681,9 @@ function showWin(){
   $('winTitle').textContent = tierHeadline;
   $('winTier').textContent = tierTitle;
   $('winScoreNum').textContent = game.stars;
-  $('winTreasureNum').textContent = game.treasureCount + '/' + game.treasuresTotal;
+  // Jane 2026-07-04: show the TREASURE-BAGS wallet (the number the HUD displays this
+  // scene), not the small overworld pickup count "7/10" — those diverged and read wrong.
+  $('winTreasureNum').textContent = Math.round(game.treasureBags || 0);
   $('winHeartsNum').textContent = game.hearts + '/3';
   $('winTruthText').textContent = truth;
   // v2.2.6 Jane feedback: the "Truth Card Collected" card on the win modal
