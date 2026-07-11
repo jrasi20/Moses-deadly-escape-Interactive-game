@@ -5681,6 +5681,9 @@ function unlockAudio() {
   // the ambient cover music NOW (audio is fresh-unlocked). Stays under
   // 0.45 vol so it sets atmosphere without crowding the read.
   try { _maybeStartCoverMusic(); } catch(e){}
+  // Jane 2026-07-11 (iPad audio not playing): if the gameplay music bed was requested
+  // before this unlock gesture, iPad Safari blocked its autoplay — start it now.
+  try { if (audio.bgm && audio.bgm.paused && typeof game !== 'undefined' && game.state && game.state !== 'cover' && game.state !== 'paused') { audio.bgm.play().catch(()=>{}); } } catch(e){}
 }
 // Wave 2 (2026-05-06): start the cover-page ambient throne loop. Idempotent —
 // safe to call multiple times. Honors _audioUnlockSucceeded so the call
@@ -9843,8 +9846,13 @@ window._goFullscreen = function(){
     document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
     // Block DOUBLE-TAP zoom the safe way (no JS preventDefault that could swallow a rapid
     // d-pad tap): touch-action:manipulation on every control + the canvas.
+    // Jane 2026-07-11: double-tap STILL zoomed on iPad because touch-action:manipulation
+    // was only on buttons/canvas — double-tapping the HUD/margins/empty areas used the
+    // default 'auto' and zoomed. Apply manipulation to EVERY element (blocks double-tap
+    // zoom everywhere, still allows tap + pinch), then restore touch-action:none on the
+    // game canvas so swipe-to-move keeps working.
     var st = document.createElement('style');
-    st.textContent = 'button,.dpad-btn,.btn,.btn-golden,.action-btn,canvas,#gameCanvas{touch-action:manipulation !important;}';
+    st.textContent = '*{touch-action:manipulation !important;} canvas,#gameCanvas{touch-action:none !important;}';
     (document.head || document.documentElement).appendChild(st);
   } catch(e){}
 })();
@@ -20581,26 +20589,32 @@ function drawTile(t, dx, dy, tx, ty){
       ctx.stroke();
       ctx.restore();
     }
-    // 3. Painted-texture noise — cream + warm flecks for a hand-painted look
-    ctx.save();
-    const _density = Math.max(6, Math.round(TILE * 0.18));
-    for (let i = 0; i < _density; i++) {
-      const _s = (tx * 31 + ty * 47 + i * 11) % 1000;
-      const _dx2 = dx + (_s % TILE);
-      const _dy2 = dy + ((_s * 5) % TILE);
-      ctx.fillStyle = (i % 4 === 0)
-        ? 'rgba(120, 90, 40, 0.10)'   // dark fleck
-        : 'rgba(255, 250, 220, 0.10)'; // light fleck
-      ctx.fillRect(_dx2, _dy2, 1, 1);
+    // 3. Painted-texture noise — cream + warm flecks for a hand-painted look.
+    // Jane 2026-07-11 iOS PERF: skip the per-tile fleck loop + directional gradient on
+    // iOS. These two ran for EVERY visible floor tile EVERY frame (createLinearGradient
+    // is one of the most expensive canvas ops), and were a main cause of the iPad/iPhone
+    // slowness + input lag. Desktop/Android keep the full painted texture.
+    if (!window._IS_IOS) {
+      ctx.save();
+      const _density = Math.max(6, Math.round(TILE * 0.18));
+      for (let i = 0; i < _density; i++) {
+        const _s = (tx * 31 + ty * 47 + i * 11) % 1000;
+        const _dx2 = dx + (_s % TILE);
+        const _dy2 = dy + ((_s * 5) % TILE);
+        ctx.fillStyle = (i % 4 === 0)
+          ? 'rgba(120, 90, 40, 0.10)'   // dark fleck
+          : 'rgba(255, 250, 220, 0.10)'; // light fleck
+        ctx.fillRect(_dx2, _dy2, 1, 1);
+      }
+      ctx.restore();
+      // 4. Soft per-tile directional shading — same upper-left light as walls
+      const _fg = ctx.createLinearGradient(dx, dy, dx + TILE, dy + TILE);
+      _fg.addColorStop(0,    'rgba(255, 250, 220, 0.10)');
+      _fg.addColorStop(0.5,  'rgba(0, 0, 0, 0)');
+      _fg.addColorStop(1,    'rgba(80, 50, 20, 0.10)');
+      ctx.fillStyle = _fg;
+      ctx.fillRect(dx, dy, TILE, TILE);
     }
-    ctx.restore();
-    // 4. Soft per-tile directional shading — same upper-left light as walls
-    const _fg = ctx.createLinearGradient(dx, dy, dx + TILE, dy + TILE);
-    _fg.addColorStop(0,    'rgba(255, 250, 220, 0.10)');
-    _fg.addColorStop(0.5,  'rgba(0, 0, 0, 0)');
-    _fg.addColorStop(1,    'rgba(80, 50, 20, 0.10)');
-    ctx.fillStyle = _fg;
-    ctx.fillRect(dx, dy, TILE, TILE);
   }
   // per-tile tint variation (3-cycle) — subtle warm shift for depth
   const tintVar = (tx*17 + ty*23) % 4;
@@ -20628,6 +20642,20 @@ function drawTile(t, dx, dy, tx, ty){
     // gold lip + cast shadow extending further onto the floor — to
     // break the monochrome that Jane was seeing.
     const _frontH = Math.max(20, Math.round(TILE * 0.85));
+    if (window._IS_IOS) {
+      // iOS PERF: flat dark front face + gold lip + brick lines (cheap), and a thin flat
+      // cast shadow — no gradients. Keeps the wall's height cue without 2 createLinearGradient
+      // calls per below-wall floor tile every frame.
+      ctx.fillStyle = 'rgba(78, 44, 18, 0.86)';
+      ctx.fillRect(dx, dy, TILE, _frontH);
+      ctx.fillStyle = 'rgba(255, 235, 170, 0.55)';
+      ctx.fillRect(dx, dy, TILE, 2);
+      ctx.fillStyle = 'rgba(30, 14, 4, 0.45)';
+      ctx.fillRect(dx, dy + Math.round(_frontH * 0.33), TILE, 1);
+      ctx.fillRect(dx, dy + Math.round(_frontH * 0.67), TILE, 1);
+      ctx.fillStyle = 'rgba(0,0,0,0.26)';
+      ctx.fillRect(dx, dy + _frontH, TILE, 3);
+    } else {
     // 1. Wall front face — dark stone gradient. Stronger contrast than
     //    before so the wall reads as a SOLID BLOCK with depth.
     const _frontGrad = ctx.createLinearGradient(dx, dy, dx, dy + _frontH);
@@ -20654,6 +20682,7 @@ function drawTile(t, dx, dy, tx, ty){
     _castGrad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = _castGrad;
     ctx.fillRect(dx, dy + _frontH, TILE, 12);
+    }
   }
   // PER-ZONE TILE TINT (Jane 2026-05-02): three palace zones, each with a
   // distinct floor wash so kids feel they're moving through different
@@ -20730,16 +20759,17 @@ function drawTile(t, dx, dy, tx, ty){
       const _bases = ['#180c06', '#150a04', '#1a0e08', '#170c05', '#180d07'];
       ctx.fillStyle = _bases[_v];
       ctx.fillRect(dx, dy, TILE, TILE);
-      // 2. Directional gradient — restrained on dark base so it doesn't
-      //    wash the dark out
+      // 2. Directional gradient + 3. painted-texture noise. Jane 2026-07-11 iOS PERF:
+      //    skip both on iOS — palace-wall-top.png is missing so EVERY wall tile hit this
+      //    fallback's gradient + 8-fleck loop every frame. The dark base + edge highlights
+      //    below keep the wall reading as dark stone. Desktop/Android keep the texture.
+      if (!window._IS_IOS) {
       const _lg = ctx.createLinearGradient(dx, dy, dx + TILE, dy + TILE);
       _lg.addColorStop(0,    'rgba(255, 220, 150, 0.10)');
       _lg.addColorStop(0.45, 'rgba(0, 0, 0, 0)');
       _lg.addColorStop(1,    'rgba(0, 0, 0, 0.30)');
       ctx.fillStyle = _lg;
       ctx.fillRect(dx, dy, TILE, TILE);
-      // 3. Painted-texture noise — tiny pseudo-random light + dark dots
-      //    give the limestone a hand-painted feel instead of flat gradient
       ctx.save();
       const _density = Math.max(8, Math.round(TILE * 0.22));
       for (let i = 0; i < _density; i++) {
@@ -20752,6 +20782,7 @@ function drawTile(t, dx, dy, tx, ty){
         ctx.fillRect(_dx2, _dy2, 1, 1);
       }
       ctx.restore();
+      }
       // 4. Top-edge highlight — catches the light, sells "top of a wall"
       ctx.fillStyle = 'rgba(255, 230, 160, 0.38)';
       ctx.fillRect(dx, dy, TILE, 2);

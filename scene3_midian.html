@@ -4867,6 +4867,10 @@ function unlockAudio() {
     }
   });
   setTimeout(_maybeShowMutedToast, 2000);
+  // Jane 2026-07-11 (iPad audio not playing): a music bed requested BEFORE this unlock
+  // gesture was blocked by iPad Safari's autoplay policy. Now that audio is unlocked,
+  // re-assert the wanted bed so the bgm/narration actually starts.
+  try { if (typeof _musicWant !== 'undefined' && _musicWant && typeof setMusic === 'function') setMusic(_musicWant); } catch(e){}
 }
 // v2.3.1 (Jane): single source-of-truth music switcher. Pauses every looping
 // track except the one requested, so we never hear two musics at once.
@@ -11342,7 +11346,7 @@ window._goFullscreen = window._goFullscreen || function(){
     ['gesturestart','gesturechange','gestureend'].forEach(function(g){ document.addEventListener(g, function(e){ e.preventDefault(); }, { passive:false }); });
     document.addEventListener('dblclick', function(e){ e.preventDefault(); }, { passive:false });
     var st = document.createElement('style');
-    st.textContent = 'button,.dpad-btn,.btn,.btn-golden,.action-btn,canvas,#gameCanvas{touch-action:manipulation !important;}';
+    st.textContent = '*{touch-action:manipulation !important;} canvas,#gameCanvas{touch-action:none !important;}';   // Jane 2026-07-11: block iPad double-tap zoom on the WHOLE page (was only buttons/canvas)
     (document.head || document.documentElement).appendChild(st);
   } catch(e){}
 })();
@@ -24535,6 +24539,14 @@ function drawTile(t, dx, dy, tx, ty){
       const b = 42 + Math.floor(shade * 10);   // 42..52
       ctx.fillStyle = `rgb(${r},${g},${b})`;
       ctx.fillRect(dx, dy, TILE, TILE);
+      // Jane 2026-07-11 iOS PERF: skip the 5× per-wall createLinearGradient (strata/rim/
+      // base-shadow) + fleck loop every frame — flat rim + base-shadow strips on iOS.
+      if (window._IS_IOS) {
+        ctx.fillStyle = 'rgba(210,170,110,0.14)';
+        ctx.fillRect(dx, dy, TILE, Math.round(TILE * 0.16));
+        ctx.fillStyle = 'rgba(10,5,0,0.34)';
+        ctx.fillRect(dx, dy + Math.round(TILE * 0.78), TILE, Math.round(TILE * 0.22));
+      } else {
       // 3 horizontal sedimentary strata at slight per-tile offsets
       const strataOffset = (hash & 7);
       for (let k = 0; k < 3; k++) {
@@ -24563,6 +24575,7 @@ function drawTile(t, dx, dy, tx, ty){
         const fx = dx + ((tx*7 + ty*11 + i*13) % (TILE-4)) + 2;
         const fy = dy + ((tx*13 + ty*5 + i*7)  % (TILE-4)) + 2;
         ctx.fillRect(fx, fy, 1, 1);
+      }
       }
       // crisp dark seam at tile edges — keeps the border readable
       ctx.strokeStyle = 'rgba(20,10,4,0.55)';
