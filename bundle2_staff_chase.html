@@ -1,0 +1,2730 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--
+  In Moses's Sandals: Staffs of Light
+  Bundle 2 prototype v0.4 - epic multi-level rebuild
+  Scripture: Exodus 3:1 - 7:13
+  Brand: "Step into the shoes of your favorite Bible character"
+  Copyright 2026 Bible Explorer Kids. All rights reserved.
+
+  v0.4 epic upgrade from v0.3:
+  - Chapter 1 now has 3 LEVELS with rising difficulty (mazes A/B/C)
+  - Chapter overview screen showing 3 level dots (current highlighted)
+  - BRICK-FLY animation: every pickup launches a +N BRICKS! popup that
+    arcs from the pickup tile to the brick wall, then a brick visibly
+    drops into place. THIS is the story-beat connection - kids see
+    pickups powering the wall, exactly as requested.
+  - Smooth tile-lerped Moses movement (no more snap-to-tile jitter)
+  - Inter-level cinematic with NIV verse beat
+  - Boss chief magician sprite on Level 3 (golden, fast, chases)
+  - 6 pickup types: burning bush flame, manna, straw bundle, golden idol
+    (+score), Truth scroll (auto-triggers blessing), water jar (+straw)
+  - Per-level chapter intros with unique level names + verses
+  - Environmental detail: corner torches with flickering animation,
+    dust mote particles drifting through air, varied column textures
+  - Moses idle breath animation when stopped
+  - Brick wall "near-complete" shine when >= 80% built
+  - Pharaoh facial mood animations: subtle eye-narrow, frown depth
+  - Magician sprite hover-bob idle anim + glow pulse
+  - Worker hand-raise animation when blessing fires
+  - Score-popup variety: +5 BRICKS, +10 BRICKS, GOLDEN IDOL +20, etc.
+  - Multi-stage win cinematic: stars roll in, then tier, then verse
+  - Tighter HUD with progress bar
+  - "Chapter 1 of 4" header showing the journey
+
+  v0.4 still LACKS (future commits): VO recordings, Chapter 0 sheep
+  tutorial, sandal ritual, Chapters 2-4 freeze + flood powers + boss,
+  Aaron companion sprite, voice narration, service worker integration.
+
+  See BUNDLE2_DESIGN.md sections 14-17 + BUNDLE2_STORYBOARD.md.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="copyright" content="copyright 2026 Bible Explorer Kids">
+<meta name="description" content="In Moses's Sandals: Staffs of Light - Bundle 2 interactive Bible game from Exodus 3-7.">
+<meta name="theme-color" content="#3a1d05">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Staffs of Light">
+<link rel="apple-touch-icon" href="assets/images/logo%201.png">
+<link rel="icon" type="image/png" href="assets/images/logo%201.png">
+<title>In Moses's Sandals - Staffs of Light</title>
+<style>
+  *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body{
+    width:100%; height:100vh; height:100svh; height:100dvh;
+    overflow:hidden;
+    font-family:'Georgia','Times New Roman',serif;
+    background:#1a0a00; color:#fff8e7;
+    user-select:none; -webkit-user-select:none;
+    -webkit-text-size-adjust:100%;
+  }
+  button, input{ font-family:inherit; font-size:16px; }
+  button{ cursor:pointer; border:none; outline:none; }
+  .page{ position:fixed; inset:0; display:none; flex-direction:column; }
+  .page.active{ display:flex; }
+
+  /* ACCESS GATE */
+  .access-gate{
+    position:fixed; inset:0; z-index:80;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at top,#3a1505,#0d0500);
+    padding:18px;
+  }
+  .access-gate.hidden{ display:none; }
+  .access-box{
+    width:min(420px, 94%);
+    background:rgba(40,14,3,0.92);
+    border:3px solid #ffd976; border-radius:18px;
+    padding:24px 20px; text-align:center;
+    box-shadow:0 12px 48px rgba(0,0,0,0.7);
+  }
+  .access-box img{ width:74px; margin-bottom:8px; }
+  .access-box h2{ color:#ffd976; font-size:22px; margin-bottom:8px; }
+  .access-box p{ color:#ffeecf; font-size:14px; line-height:1.5; margin-bottom:14px; }
+  .access-box input{
+    width:100%; padding:12px 14px; border-radius:10px;
+    border:3px solid rgba(255,215,118,0.55);
+    background:rgba(255,255,255,0.95);
+    color:#3a1505; font-size:16px; font-weight:700;
+    text-align:center; letter-spacing:2px;
+    text-transform:uppercase; outline:none; margin-bottom:10px;
+  }
+  .access-box input:focus{ border-color:#ffd976; box-shadow:0 0 12px rgba(255,215,118,0.6); }
+  .access-error{ color:#ff8e74; font-size:13px; min-height:18px; margin-bottom:8px; font-weight:700; }
+  .access-box button{
+    background:linear-gradient(145deg,#ffd976,#f2a83a);
+    color:#5a1d06; padding:13px 30px; font-size:16px; font-weight:700;
+    border-radius:30px; letter-spacing:1px;
+    box-shadow:0 6px 18px rgba(255,180,80,0.5);
+  }
+  .access-box button:active{ transform:scale(0.95); }
+  .access-help{ color:#ffd976; font-size:12px; margin-top:14px; opacity:0.85; line-height:1.45; }
+
+  /* COVER */
+  #coverPage{
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(255,200,90,0.25) 0%, rgba(0,0,0,0) 55%),
+      radial-gradient(ellipse at top, #c77d3a 0%, #7a3a13 55%, #3a1405 100%);
+    align-items:center;
+    padding:18px 14px 28px; gap:11px;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    min-height:100vh; min-height:100dvh; height:auto;
+    position:relative;
+  }
+  #coverPage::before{
+    content:""; position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(45deg, transparent 0 60px, rgba(255,255,255,0.025) 60px 61px);
+    pointer-events:none;
+  }
+  .cover-logo{ width:clamp(80px, 17vw, 130px); margin-top:6px; filter:drop-shadow(0 4px 18px rgba(0,0,0,0.55)); animation:logoBob 3.4s ease-in-out infinite; }
+  @keyframes logoBob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);} }
+  .cover-title{
+    font-size:clamp(24px, 6.4vw, 44px);
+    color:#ffd976; text-align:center;
+    text-shadow:0 3px 0 #5a1d06, 0 6px 22px rgba(0,0,0,0.6);
+    line-height:1.1; letter-spacing:0.5px;
+    animation:titleGlow 4s ease-in-out infinite;
+  }
+  @keyframes titleGlow{
+    0%,100%{ text-shadow:0 3px 0 #5a1d06, 0 6px 22px rgba(0,0,0,0.6); }
+    50%{ text-shadow:0 3px 0 #5a1d06, 0 6px 22px rgba(0,0,0,0.6), 0 0 35px rgba(255,215,118,0.7); }
+  }
+  .cover-title .sub{ font-size:0.62em; color:#fff1c2; font-style:italic; display:block; margin-top:4px; }
+  .cover-chip{
+    display:inline-block; background:rgba(0,0,0,0.4);
+    border:2px solid #ffd976; color:#ffeaa3;
+    font-size:13px; padding:6px 18px; border-radius:50px;
+    font-weight:700; letter-spacing:1.5px;
+    box-shadow:0 0 18px rgba(255,215,118,0.15);
+  }
+  .story-card{
+    width:min(560px, 96%);
+    background:rgba(40,10,2,0.78);
+    border:2px solid rgba(255,215,118,0.45);
+    border-radius:16px; padding:16px 20px;
+    margin-bottom:4px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.55);
+    color:#ffeecf;
+    position:relative; z-index:1;
+  }
+  .story-card h2{ color:#ffd976; font-size:18px; margin-bottom:8px; text-align:center; letter-spacing:0.4px; }
+  .story-card p{ font-size:14px; line-height:1.55; }
+  .verse-box{
+    font-style:italic; background:rgba(0,0,0,0.32);
+    border-left:4px solid #ffd976; padding:10px 14px; margin-top:10px;
+    font-size:13px; color:#ffe8b8; border-radius:4px;
+  }
+  .verse-box .ref{ display:block; text-align:right; color:#ffb86a; margin-top:5px; font-size:11px; font-style:normal; font-weight:700; }
+  .difficulty-selector{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:6px 0 4px; }
+  .difficulty-btn{
+    background:rgba(255,215,118,0.12);
+    color:#ffeaa3; border:2px solid #ffd976;
+    padding:9px 18px; border-radius:30px;
+    font-weight:700; font-size:14px;
+    transition:all 0.18s ease; letter-spacing:0.5px;
+  }
+  .difficulty-btn:hover{ background:rgba(255,215,118,0.28); transform:translateY(-2px); }
+  .difficulty-btn.selected{
+    background:#ffd976; color:#5a1d06;
+    box-shadow:0 0 22px rgba(255,215,118,0.75);
+    transform:scale(1.05);
+  }
+  .diff-detail{ font-size:12px; color:#ffd976; text-align:center; opacity:0.85; margin-top:4px; letter-spacing:0.4px; }
+  #difficultyHint{ display:none; color:#ffd976; font-size:14px; font-weight:700; text-align:center; }
+  .name-row{ display:flex; flex-direction:column; align-items:center; gap:5px; width:min(360px, 92%); }
+  .name-row label{ font-size:13px; color:#ffd976; font-weight:700; letter-spacing:0.5px; }
+  .name-row input{
+    width:100%; padding:10px 14px;
+    border-radius:10px; border:2px solid rgba(255,215,118,0.55);
+    background:rgba(255,255,255,0.95);
+    color:#3a1505; font-size:15px; font-weight:700; text-align:center;
+    outline:none;
+  }
+  .name-row input:focus{ border-color:#ffd976; box-shadow:0 0 12px rgba(255,215,118,0.6); }
+  .start-btn{
+    background:linear-gradient(145deg,#ffd976,#f2a83a);
+    color:#5a1d06; padding:14px 36px; font-size:19px; font-weight:700;
+    border-radius:50px; letter-spacing:1px;
+    box-shadow:0 6px 22px rgba(255,180,80,0.55), inset 0 -3px 0 rgba(120,60,10,0.45);
+    transition:transform 0.15s ease; margin-top:6px;
+    animation:startPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes startPulse{
+    0%,100%{ box-shadow:0 6px 22px rgba(255,180,80,0.55), inset 0 -3px 0 rgba(120,60,10,0.45); }
+    50%{ box-shadow:0 8px 32px rgba(255,180,80,0.85), inset 0 -3px 0 rgba(120,60,10,0.45); }
+  }
+  .start-btn:active{ transform:scale(0.96); }
+  .cover-foot{ color:#f2cd8e; font-size:11px; text-align:center; opacity:0.8; margin-top:14px; padding:8px 6px; max-width:560px; }
+  .cover-chapters{
+    display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:8px;
+  }
+  .cover-chapter{
+    color:#ffd976; font-size:11px; font-weight:700;
+    background:rgba(0,0,0,0.35); border:1px solid rgba(255,215,118,0.4);
+    padding:5px 11px; border-radius:14px; letter-spacing:0.5px;
+  }
+  .cover-chapter.locked{ opacity:0.4; }
+  .cover-chapter.current{ background:#ffd976; color:#5a1d06; box-shadow:0 0 12px rgba(255,215,118,0.6); }
+
+  /* CINEMATIC */
+  .cinematic{
+    position:fixed; inset:0;
+    background:#0a0501;
+    display:none; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding:18px; z-index:40; overflow-y:auto;
+  }
+  .cinematic.active{ display:flex; }
+  .cin-panel{
+    width:min(680px, 96%);
+    background:rgba(255,215,118,0.04);
+    border:2px solid rgba(255,215,118,0.3);
+    border-radius:14px; padding:18px 22px;
+    color:#ffeecf;
+    box-shadow:0 6px 28px rgba(0,0,0,0.6);
+  }
+  .cin-art{
+    width:100%; aspect-ratio:16/9;
+    border-radius:10px; margin-bottom:14px;
+    background:radial-gradient(ellipse at 30% 30%, #d9a05a 0%, #824012 60%, #2b0c02 100%);
+    display:flex; align-items:center; justify-content:center;
+    position:relative; overflow:hidden;
+  }
+  .cin-art img{ width:100%; height:100%; object-fit:cover; display:block; filter:brightness(0.78) sepia(0.18); }
+  .cin-art .cin-overlay{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.6));
+  }
+  .cin-text{ font-size:clamp(14px, 3.6vw, 17px); line-height:1.55; font-style:italic; color:#fff4d7; text-align:center; padding:0 6px; }
+  .cin-caption{ text-align:center; color:#ffd976; font-size:12px; margin-top:10px; letter-spacing:1px; opacity:0.85; }
+  .cin-controls{ display:flex; gap:10px; margin-top:16px; justify-content:center; }
+  .cin-btn{
+    background:#ffd976; color:#5a1d06;
+    padding:10px 24px; border-radius:30px;
+    font-weight:700; font-size:15px;
+    box-shadow:0 3px 10px rgba(0,0,0,0.45);
+  }
+  .cin-btn.ghost{ background:transparent; color:#ffd976; border:2px solid #ffd976; }
+  .cin-btn:active{ transform:scale(0.96); }
+  .cin-progress{ color:#ffd976; font-size:11px; opacity:0.7; margin-top:14px; letter-spacing:2px; text-align:center; }
+
+  /* CHAPTER OVERVIEW (between levels) */
+  .chapter-overview{
+    position:fixed; inset:0;
+    background:radial-gradient(ellipse at center, #3a1d05, #0d0500);
+    display:none; align-items:center; justify-content:center;
+    flex-direction:column; padding:24px; z-index:55;
+    text-align:center;
+  }
+  .chapter-overview.active{ display:flex; animation:overviewIn 0.45s ease-out; }
+  @keyframes overviewIn{ 0%{opacity:0;} 100%{opacity:1;} }
+  .co-tag{ color:#ffd976; font-size:13px; letter-spacing:3px; margin-bottom:8px; opacity:0.85; }
+  .co-title{
+    color:#fff8e7; font-size:clamp(22px, 6vw, 32px); font-weight:900;
+    text-shadow:0 3px 0 #5a1d06, 0 0 18px rgba(255,160,40,0.7);
+    margin-bottom:18px; letter-spacing:1px;
+  }
+  .co-dots{ display:flex; gap:14px; justify-content:center; margin-bottom:20px; }
+  .co-dot{
+    width:44px; height:44px;
+    background:rgba(0,0,0,0.45); border:3px solid rgba(255,215,118,0.4);
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:#ffd976; font-size:18px; font-weight:900;
+    position:relative;
+  }
+  .co-dot.done{
+    background:linear-gradient(135deg, #ffd976, #f2a83a);
+    color:#5a1d06; border-color:#ffd976;
+  }
+  .co-dot.current{
+    background:rgba(255,215,118,0.18); border-color:#ffd976;
+    box-shadow:0 0 18px rgba(255,215,118,0.6);
+    animation:dotPulse 1.3s ease-in-out infinite;
+  }
+  @keyframes dotPulse{
+    0%,100%{ transform:scale(1); box-shadow:0 0 18px rgba(255,215,118,0.6); }
+    50%{ transform:scale(1.13); box-shadow:0 0 26px rgba(255,215,118,0.85); }
+  }
+  .co-dot.locked{ opacity:0.4; }
+  .co-dot::after{
+    content:""; position:absolute; right:-19px; top:50%;
+    transform:translateY(-50%);
+    width:14px; height:2px;
+    background:rgba(255,215,118,0.45);
+  }
+  .co-dot:last-child::after{ display:none; }
+  .co-dot.done::after{ background:#ffd976; }
+  .co-level-name{
+    color:#ffd976; font-size:18px; font-weight:900;
+    letter-spacing:1.5px; margin-bottom:6px;
+    text-shadow:0 0 14px #ffa840;
+  }
+  .co-level-verse{
+    color:#ffeecf; font-style:italic; font-size:14px;
+    max-width:560px; line-height:1.5; margin-bottom:18px;
+    padding:0 8px;
+  }
+  .co-verse-ref{ display:block; color:#ffb86a; font-style:normal; font-weight:700; margin-top:4px; font-size:11px; }
+  .co-btn{
+    background:linear-gradient(145deg,#ffd976,#f2a83a);
+    color:#5a1d06; padding:12px 28px;
+    font-size:16px; font-weight:700; border-radius:30px;
+    letter-spacing:1px;
+    box-shadow:0 5px 18px rgba(255,180,80,0.5);
+    animation:startPulse 2.4s ease-in-out infinite;
+  }
+  .co-btn:active{ transform:scale(0.96); }
+
+  /* GAME PAGE */
+  #gamePage{ background:#0d0500; }
+
+  /* HUD */
+  .hud{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:6px 12px;
+    background:linear-gradient(180deg, rgba(40,14,3,0.96), rgba(58,22,7,0.92));
+    border-bottom:2px solid #ffd976;
+    flex-shrink:0; gap:6px; flex-wrap:wrap;
+    padding-top:max(6px, env(safe-area-inset-top, 6px));
+    padding-left:max(12px, env(safe-area-inset-left, 12px));
+    padding-right:max(12px, env(safe-area-inset-right, 12px));
+    z-index:5;
+  }
+  .hud-chip{
+    background:rgba(0,0,0,0.35); border:1px solid rgba(255,215,118,0.45);
+    padding:3px 9px; border-radius:18px; color:#ffeaa3;
+    font-size:12px; font-weight:700;
+    display:inline-flex; align-items:center; gap:4px;
+    white-space:nowrap;
+  }
+  .hud-chip.danger{ color:#ff8e74; border-color:#ff8e74; animation:dangerPulse 0.8s ease-in-out infinite; }
+  @keyframes dangerPulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.06);} }
+  #hudLevel{ color:#ffd976; font-weight:700; font-size:12px; letter-spacing:1px; display:inline-flex; align-items:center; gap:6px; }
+  #hudKidName{ color:#fff8e7; font-size:11px; font-weight:700; opacity:0.85; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hud-progress{
+    flex-basis:100%; height:5px;
+    background:rgba(0,0,0,0.42); border-radius:3px;
+    border:1px solid rgba(255,215,118,0.3); margin-top:4px;
+    overflow:hidden;
+  }
+  .hud-progress-fill{
+    height:100%;
+    background:linear-gradient(90deg, #ffd976, #ff8a30);
+    width:0%; transition:width 0.35s ease;
+    box-shadow:0 0 10px rgba(255,215,118,0.7);
+  }
+  .icon-btn{
+    width:32px; height:32px; border-radius:50%;
+    background:#ffd976; color:#5a1d06;
+    font-weight:900; font-size:14px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  /* STAGE */
+  .stage{
+    flex:1; display:flex; flex-direction:row;
+    min-height:0; padding:4px; gap:4px; overflow:hidden;
+  }
+  .arena-wrap{
+    flex:1 1 auto; min-width:0;
+    display:flex; align-items:center; justify-content:center;
+    min-height:0; position:relative;
+  }
+  #gameCanvas{
+    display:block; background:#1a0a00;
+    border:2px solid rgba(255,215,118,0.55);
+    border-radius:8px;
+    box-shadow:0 0 22px rgba(0,0,0,0.55), inset 0 0 30px rgba(0,0,0,0.35);
+    max-width:100%; max-height:100%;
+    touch-action:none;
+  }
+  .worker-panel{
+    flex:0 0 auto;
+    width:clamp(106px, 28vw, 178px);
+    background:linear-gradient(180deg, #3a1a05, #2a1303);
+    border:1px solid rgba(255,215,118,0.35);
+    border-radius:6px;
+    padding:6px;
+    display:flex; flex-direction:column; gap:6px;
+    min-height:0; position:relative; overflow:hidden;
+  }
+  .wp-header{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .wp-label{ color:#ffd976; font-size:10px; font-weight:700; letter-spacing:0.6px; text-align:center; line-height:1.1; }
+  .wp-quota{ color:#fff8e7; font-size:13px; font-weight:700; text-align:center; line-height:1; }
+  .wp-quota .num{ color:#ffd976; font-size:16px; }
+  .wp-quota .qsub{ display:block; font-size:9px; opacity:0.78; letter-spacing:0.6px; margin-top:2px; }
+  .wp-quota.boost{ animation:quotaBoost 0.4s ease-out; }
+  @keyframes quotaBoost{ 0%{transform:scale(1);} 50%{transform:scale(1.22);} 100%{transform:scale(1);} }
+  .wp-wall-area{ flex:1 1 auto; min-height:80px; position:relative; border-radius:4px; overflow:hidden; }
+  .brick-wall{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.85));
+    overflow:hidden; border-radius:4px;
+  }
+  .brick-wall.near-done{
+    box-shadow:inset 0 0 30px rgba(255,215,118,0.55);
+    animation:wallShine 1.6s ease-in-out infinite;
+  }
+  @keyframes wallShine{
+    0%,100%{ box-shadow:inset 0 0 30px rgba(255,215,118,0.55); }
+    50%{ box-shadow:inset 0 0 48px rgba(255,215,118,0.95); }
+  }
+  .brick-wall .brick{
+    position:absolute;
+    width:20%; height:8.33%;
+    background:linear-gradient(180deg,#a86839,#6e3e1a);
+    border:1px solid #4a2410; box-sizing:border-box;
+    box-shadow:inset 0 1px 0 rgba(255,200,140,0.2);
+    transition:opacity 0.25s ease;
+  }
+  .brick-wall .brick.gold{
+    background:linear-gradient(180deg,#ffd976,#a87820);
+    border-color:#5a3a08;
+    box-shadow:inset 0 1px 0 rgba(255,255,200,0.5), 0 0 5px rgba(255,215,118,0.8);
+  }
+  .brick-wall .brick.just-placed{ animation:brickIn 0.42s ease-out; }
+  @keyframes brickIn{
+    0%   { transform:translateY(-28px) scale(1.25); opacity:0; filter:brightness(1.6); }
+    50%  { transform:translateY(3px) scale(1.08); opacity:1; filter:brightness(1.25); }
+    100% { transform:translateY(0) scale(1); opacity:1; filter:brightness(1); }
+  }
+  .wp-workers{
+    flex:0 0 auto;
+    display:flex; align-items:flex-end; justify-content:space-around;
+    gap:3px; height:48px; position:relative; z-index:2;
+  }
+  .worker{ position:relative; width:24px; height:44px; flex:0 0 auto; }
+  .worker .body{
+    position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+    width:18px; height:24px;
+    background:radial-gradient(ellipse at top, #d29268 0%, #6e3e1a 70%);
+    border-radius:50% 50% 30% 30%;
+    box-shadow:0 1px 0 rgba(0,0,0,0.3);
+    animation:workBob 1.2s ease-in-out infinite;
+  }
+  .worker:nth-child(2) .body{ animation-delay:0.3s; }
+  .worker:nth-child(3) .body{ animation-delay:0.6s; }
+  .worker .head{
+    position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width:14px; height:14px;
+    background:radial-gradient(circle, #f0c090 0%, #c08658 80%);
+    border-radius:50%; border:1px solid #6e3e1a;
+  }
+  .worker .table{
+    position:absolute; bottom:-2px; left:50%; transform:translateX(-50%);
+    width:24px; height:5px;
+    background:#5a3010; border-radius:1px;
+  }
+  .worker.boosted .body{
+    animation:workBoosted 0.5s ease-in-out infinite;
+    box-shadow:0 0 8px rgba(255,215,118,0.85);
+  }
+  .worker.cheer .body{ animation:workCheer 0.6s ease-out; }
+  @keyframes workBob{ 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(-3px);} }
+  @keyframes workBoosted{ 0%,100%{transform:translateX(-50%) translateY(0) scale(1);} 50%{transform:translateX(-50%) translateY(-5px) scale(1.08);} }
+  @keyframes workCheer{ 0%{transform:translateX(-50%) translateY(0);} 40%{transform:translateX(-50%) translateY(-10px) scale(1.18);} 100%{transform:translateX(-50%) translateY(0);} }
+  .wp-footer{ flex:0 0 auto; display:flex; flex-direction:column; align-items:stretch; gap:4px; }
+  .wp-straw{
+    display:flex; align-items:center; justify-content:center; gap:4px;
+    background:rgba(0,0,0,0.4); border:1px solid #ffd976;
+    border-radius:12px; padding:3px 6px;
+    color:#ffd976; font-size:11px; font-weight:700;
+  }
+  .wp-straw .ico{ font-size:13px; }
+  .wp-straw.drought{ color:#ff8e74; border-color:#ff8e74; animation:dangerPulse 0.8s ease-in-out infinite; }
+  .straw-tap{
+    background:linear-gradient(145deg,#d8a85a,#a06822);
+    color:#3a1d05; border-radius:10px; border:none;
+    padding:8px 6px; font-weight:900; font-size:11px;
+    letter-spacing:0.5px;
+    box-shadow:0 2px 0 #5a3a18, 0 3px 8px rgba(0,0,0,0.4);
+    width:100%;
+  }
+  .straw-tap:active{ transform:translateY(2px); box-shadow:0 0 0 #5a3a18; }
+  .straw-tap.empty{ opacity:0.45; cursor:not-allowed; }
+
+  .verse-beam{
+    position:absolute; left:50%; bottom:8%;
+    transform:translateX(-50%);
+    color:#fff8e7; font-size:9px; font-style:italic; font-weight:700;
+    text-shadow:0 0 8px #ffd976, 0 0 14px #ffa840;
+    pointer-events:none; z-index:5; text-align:center;
+    width:92%; line-height:1.25;
+    animation:beamRise 5s ease-out forwards;
+  }
+  @keyframes beamRise{
+    0%   { opacity:0; transform:translate(-50%, 0) scale(0.85); }
+    14%  { opacity:1; transform:translate(-50%, -8px) scale(1); }
+    78%  { opacity:1; transform:translate(-50%, -80%) scale(1.04); }
+    100% { opacity:0; transform:translate(-50%, -100%) scale(1); }
+  }
+  .wind-banner{
+    position:absolute; top:8px; left:50%;
+    transform:translateX(-50%);
+    background:linear-gradient(135deg, rgba(150,220,255,0.85), rgba(255,250,200,0.85));
+    color:#3a1d05;
+    padding:5px 14px; border-radius:14px;
+    font-size:11px; font-weight:900; letter-spacing:1px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.5);
+    pointer-events:none; z-index:6;
+    animation:windBanner 4s ease-out forwards;
+  }
+  @keyframes windBanner{
+    0%   { opacity:0; transform:translate(-50%, -8px); }
+    12%  { opacity:1; transform:translate(-50%, 0); }
+    88%  { opacity:1; transform:translate(-50%, 0); }
+    100% { opacity:0; transform:translate(-50%, -8px); }
+  }
+
+  /* CONTROLS */
+  .controls{
+    flex-shrink:0; display:flex; align-items:center;
+    padding:6px 8px; gap:8px;
+    padding-bottom:max(6px, env(safe-area-inset-bottom, 6px));
+    background:rgba(40,14,3,0.55);
+  }
+  .dpad{
+    display:grid;
+    grid-template-columns:repeat(3, 44px);
+    grid-template-rows:repeat(3, 44px);
+    gap:3px; flex-shrink:0;
+  }
+  .dpad-btn{
+    background:linear-gradient(145deg,#d8a85a,#a06822);
+    color:#3a1d05; border-radius:8px; border:none;
+    font-weight:900; font-size:20px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 0 #5a3a18, 0 4px 8px rgba(0,0,0,0.4);
+  }
+  .dpad-btn:active{ transform:translateY(2px); box-shadow:0 0 0 #5a3a18; }
+  .dpad-spacer{ visibility:hidden; }
+  .actions{ flex:1; display:flex; flex-direction:column; gap:5px; align-self:stretch; justify-content:center; }
+  .action-btn{
+    background:linear-gradient(145deg,#3a1d05,#5a3010);
+    color:#ffd976; border:2px solid #ffd976;
+    border-radius:10px; padding:7px 10px;
+    font-size:11px; font-weight:700; letter-spacing:0.4px;
+    text-align:left;
+  }
+  .action-btn:active{ transform:scale(0.97); }
+  .action-btn.locked{ opacity:0.4; border-color:#7a5a30; color:#7a5a30; }
+  .action-btn .hint{ display:block; font-size:9px; opacity:0.75; font-weight:400; margin-top:1px; }
+
+  /* BRICK-FLY animation - the story-beat connection from pickup to wall */
+  .brick-fly{
+    position:fixed; pointer-events:none;
+    z-index:48;
+    color:#ffd976; font-weight:900; font-size:14px;
+    text-shadow:0 1px 0 #3a1d05, 0 0 8px #ffd976, 0 0 14px #ffa840;
+    transition:left 0.7s cubic-bezier(0.3, 0.05, 0.6, 1), top 0.7s cubic-bezier(0.7, 0, 1, 0.6), opacity 0.25s ease;
+  }
+  .brick-fly.arrived{
+    opacity:0; transform:scale(1.3);
+  }
+
+  /* BIG NUMBER POPUPS */
+  .float-num{
+    position:fixed; color:#ffd976;
+    font-size:24px; font-weight:900;
+    text-shadow:0 2px 0 #3a1d05, 0 0 10px rgba(255,215,118,0.85), 0 0 18px rgba(255,160,40,0.65);
+    pointer-events:none; z-index:50;
+    animation:floatNum 1.3s ease-out forwards;
+  }
+  .float-num.bonus{ color:#fff8e7; font-size:28px; }
+  .float-num.golden{ color:#fff1c2; font-size:30px; }
+  .float-num.combo{ color:#ffeab8; font-size:32px; text-shadow:0 2px 0 #3a1d05, 0 0 14px #ffd976, 0 0 24px #ff7820; }
+  @keyframes floatNum{
+    0%   { opacity:0; transform:translate(-50%, 0) scale(0.85); }
+    18%  { opacity:1; transform:translate(-50%, -10px) scale(1.2); }
+    100% { opacity:0; transform:translate(-50%, -68px) scale(0.95); }
+  }
+
+  /* INTRO FLASH */
+  .intro-flash{
+    position:fixed; inset:0;
+    display:none; align-items:center; justify-content:center;
+    flex-direction:column;
+    background:rgba(20,8,2,0.88);
+    z-index:60; text-align:center; padding:20px;
+  }
+  .intro-flash.active{ display:flex; animation:flashIn 2s ease-out forwards; }
+  @keyframes flashIn{
+    0% { opacity:0; }
+    12% { opacity:1; }
+    80% { opacity:1; }
+    100% { opacity:0; pointer-events:none; }
+  }
+  .intro-flash .level-tag{
+    color:#ffd976; font-size:14px; letter-spacing:4px; font-weight:700;
+    text-shadow:0 0 12px #ffa840; margin-bottom:8px;
+    animation:tagFade 2s ease-out;
+  }
+  .intro-flash .level-name{
+    color:#fff8e7; font-size:clamp(24px, 8vw, 38px); font-weight:900;
+    text-shadow:0 3px 0 #5a1d06, 0 0 16px rgba(255,160,40,0.7);
+    letter-spacing:1px; margin-bottom:12px;
+    animation:nameFade 2s ease-out;
+  }
+  .intro-flash .level-verse{
+    color:#ffeecf; font-size:clamp(13px, 3vw, 16px); font-style:italic;
+    max-width:92%; line-height:1.4;
+    animation:nameFade 2s ease-out;
+  }
+  @keyframes tagFade{
+    0%{ opacity:0; transform:translateY(-12px); }
+    18%{ opacity:1; transform:translateY(0); }
+    82%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+  @keyframes nameFade{
+    0%{ opacity:0; transform:scale(0.92); }
+    25%{ opacity:1; transform:scale(1.04); }
+    35%{ transform:scale(1); }
+    82%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+
+  /* MODALS */
+  .modal{
+    position:fixed; inset:0;
+    background:rgba(20,8,2,0.86);
+    display:none; align-items:center; justify-content:center;
+    z-index:50; padding:18px;
+  }
+  .modal.active{ display:flex; }
+  .modal-box{
+    width:min(460px, 96%);
+    background:linear-gradient(155deg,#3a1d05,#5a3010);
+    border:3px solid #ffd976; border-radius:18px;
+    padding:22px 24px;
+    text-align:center; color:#fff8e7;
+    box-shadow:0 12px 48px rgba(0,0,0,0.7);
+    max-height:92vh; overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    animation:modalIn 0.32s ease-out;
+  }
+  @keyframes modalIn{
+    0% { opacity:0; transform:scale(0.85) translateY(20px); }
+    100% { opacity:1; transform:scale(1) translateY(0); }
+  }
+  .modal-box h2{ color:#ffd976; font-size:22px; margin-bottom:8px; letter-spacing:0.5px; }
+  .modal-body{ font-size:14px; line-height:1.5; margin-bottom:10px; }
+  .modal-body .name{ color:#ffd976; font-weight:700; }
+  .modal-verse{
+    font-style:italic; background:rgba(0,0,0,0.32);
+    border-left:4px solid #ffd976; padding:8px 12px; margin:10px auto;
+    font-size:13px; color:#ffe8b8; border-radius:4px;
+    text-align:left;
+  }
+  .modal-verse .ref{ display:block; text-align:right; color:#ffb86a; font-style:normal; font-weight:700; margin-top:4px; font-size:11px; }
+  .modal-btns{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
+  .modal-btn{
+    background:linear-gradient(145deg,#ffd976,#f2a83a);
+    color:#5a1d06; padding:10px 22px;
+    font-size:14px; font-weight:700; border-radius:30px;
+    letter-spacing:0.5px;
+    box-shadow:0 4px 14px rgba(255,180,80,0.5);
+  }
+  .modal-btn.ghost{ background:transparent; color:#ffd976; border:2px solid #ffd976; box-shadow:none; }
+  .modal-btn:active{ transform:scale(0.96); }
+
+  .win-modal .modal-box{
+    background:linear-gradient(155deg, #3a1d05, #7a3a13 55%, #c77d3a);
+    max-width:480px; padding:24px 22px;
+  }
+  .win-hero{ position:relative; width:104px; height:104px; margin:0 auto 6px; }
+  .win-hero-rays{
+    position:absolute; inset:-22px;
+    background:conic-gradient(from 0deg,
+      rgba(255,215,118,0) 0deg, rgba(255,215,118,0.6) 20deg, rgba(255,215,118,0) 40deg,
+      rgba(255,215,118,0) 60deg, rgba(255,215,118,0.6) 80deg, rgba(255,215,118,0) 100deg,
+      rgba(255,215,118,0) 120deg, rgba(255,215,118,0.6) 140deg, rgba(255,215,118,0) 160deg,
+      rgba(255,215,118,0) 180deg, rgba(255,215,118,0.6) 200deg, rgba(255,215,118,0) 220deg,
+      rgba(255,215,118,0) 240deg, rgba(255,215,118,0.6) 260deg, rgba(255,215,118,0) 280deg,
+      rgba(255,215,118,0) 300deg, rgba(255,215,118,0.6) 320deg, rgba(255,215,118,0) 340deg);
+    animation:rayRotate 8s linear infinite;
+    border-radius:50%; filter:blur(2px);
+  }
+  @keyframes rayRotate{ 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+  .win-hero-img{
+    position:absolute; inset:10px;
+    width:84px; height:84px; object-fit:contain;
+    filter:drop-shadow(0 0 16px #ffd976);
+    animation:heroPulse 2.2s ease-in-out infinite;
+  }
+  @keyframes heroPulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.07);} }
+  .win-title{
+    color:#ffd976; font-size:22px; font-weight:900;
+    margin:4px 0 2px;
+    text-shadow:0 2px 0 #3a1d05;
+  }
+  .win-name-shout{
+    color:#fff8e7; font-size:14px; font-style:italic;
+    margin-bottom:8px;
+  }
+  .win-name-shout .name{ color:#ffd976; font-weight:700; font-style:normal; }
+  .win-stars{ font-size:34px; margin:6px 0; letter-spacing:7px; color:#5a3010; }
+  .win-stars span{ display:inline-block; transition:transform 0.3s; }
+  .win-stars span.lit{
+    color:#ffd976; text-shadow:0 0 12px rgba(255,215,118,0.85);
+    animation:starPop 0.45s ease-out;
+  }
+  .win-stars span.gold{
+    color:#fff1c2; text-shadow:0 0 14px #fff8e7, 0 0 22px rgba(255,250,200,0.95);
+    animation:goldStarBounce 1.4s ease-in-out infinite;
+  }
+  @keyframes starPop{
+    0%{ transform:scale(0); opacity:0; }
+    50%{ transform:scale(1.4); opacity:1; }
+    100%{ transform:scale(1); opacity:1; }
+  }
+  @keyframes goldStarBounce{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.18);} }
+  .win-tier{
+    display:inline-block;
+    background:rgba(0,0,0,0.45); border:2px solid #ffd976;
+    color:#ffd976; padding:5px 16px;
+    border-radius:24px; font-weight:900;
+    font-size:13px; letter-spacing:2px;
+    margin:4px 0 10px;
+  }
+  .win-scorebox{ display:flex; justify-content:center; flex-wrap:wrap; gap:14px; margin-bottom:10px; font-size:13px; color:#ffeecf; }
+  .win-scorebox strong{ color:#ffd976; font-weight:900; font-size:15px; }
+  .win-badges{ display:flex; justify-content:center; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .win-badge{
+    display:inline-flex; align-items:center; gap:4px;
+    background:rgba(0,0,0,0.35); border:1px solid #ffd976;
+    color:#ffd976; font-size:10px; font-weight:700;
+    padding:4px 9px; border-radius:14px;
+    letter-spacing:0.4px;
+  }
+  .win-motivate{ color:#ffeecf; font-size:12px; font-style:italic; margin-bottom:12px; opacity:0.92; }
+
+  /* TOAST */
+  .toast{
+    position:fixed; bottom:max(108px, env(safe-area-inset-bottom, 12px));
+    left:50%; transform:translateX(-50%);
+    background:rgba(40,14,3,0.94);
+    color:#ffd976; border:2px solid #ffd976;
+    border-radius:30px; padding:8px 18px;
+    font-size:13px; font-weight:700;
+    box-shadow:0 6px 22px rgba(0,0,0,0.6);
+    opacity:0; pointer-events:none;
+    transition:opacity 0.25s ease;
+    z-index:40; text-align:center; max-width:90vw;
+  }
+  .toast.show{ opacity:1; }
+
+  /* SANDSTORM */
+  .sandstorm{
+    position:absolute; inset:0;
+    background:linear-gradient(135deg, rgba(220,180,90,0), rgba(220,180,90,0.35), rgba(220,180,90,0));
+    pointer-events:none; opacity:0;
+    transition:opacity 0.6s ease; z-index:9;
+    border-radius:8px;
+  }
+  .sandstorm.on{ opacity:1; animation:sandDrift 6s linear infinite; }
+  @keyframes sandDrift{ 0%{background-position:0 0;} 100%{background-position:100% 0;} }
+
+  /* RESPONSIVE */
+  @media (orientation: landscape) and (max-height: 540px){
+    .worker-panel{ width:clamp(118px, 22vw, 168px); }
+    .dpad{ grid-template-columns:repeat(3, 38px); grid-template-rows:repeat(3, 38px); }
+    .controls{ padding:5px; gap:6px; }
+    .action-btn{ font-size:10px; padding:5px 8px; }
+    .action-btn .hint{ display:none; }
+    .hud{ padding:4px 10px; }
+    .hud-chip{ font-size:11px; padding:2px 7px; }
+  }
+  @media (max-width: 380px) and (orientation: portrait){
+    .hud{ padding:4px 8px; }
+    .hud-chip{ font-size:11px; padding:2px 7px; }
+    .worker-panel{ width:clamp(94px, 28vw, 118px); padding:4px; }
+    .worker{ width:18px; height:38px; }
+    .worker .body{ width:14px; height:20px; }
+    .worker .head{ width:11px; height:11px; }
+    .worker .table{ width:18px; }
+    .dpad{ grid-template-columns:repeat(3, 40px); grid-template-rows:repeat(3, 40px); }
+    .action-btn{ font-size:11px; padding:6px 8px; }
+    .wp-quota{ font-size:11px; }
+    .wp-quota .num{ font-size:14px; }
+  }
+  @media (min-width: 900px) and (pointer: fine){
+    .worker-panel{ width:clamp(170px, 18vw, 240px); }
+    .dpad{ opacity:0.55; }
+  }
+  button:focus-visible{ outline:2px solid #ffd976; outline-offset:2px; }
+</style>
+</head>
+<body>
+
+<!-- ACCESS GATE -->
+<div class="access-gate" id="accessGate">
+  <div class="access-box">
+    <img src="assets/images/logo%201.png" alt="Bible Explorer Kids" onerror="this.style.display='none'">
+    <h2>Welcome, Bible Explorer!</h2>
+    <p>Enter the access code from your Etsy purchase README.</p>
+    <input type="text" id="accessInput" maxlength="12" placeholder="ACCESS CODE" autocomplete="off">
+    <div class="access-error" id="accessError"></div>
+    <button id="accessSubmit">Unlock Game</button>
+    <div class="access-help">
+      Same codes as Bundle 1 (Moses' Deadly Escape).<br>
+      Lost your code? Email <strong>janerasika20@gmail.com</strong>
+    </div>
+  </div>
+</div>
+
+<!-- COVER PAGE -->
+<div class="page" id="coverPage">
+  <img src="assets/images/logo%201.png" alt="" class="cover-logo" onerror="this.style.display='none'">
+  <h1 class="cover-title">In Moses's Sandals<span class="sub">Staffs of Light</span></h1>
+  <div class="cover-chip">CHAPTER 1 — EXODUS 7:8-13</div>
+
+  <div class="story-card">
+    <h2>The Wall That Rises</h2>
+    <p>Stand before Pharaoh in his great court. Chase the magicians' staffs — every one you absorb sends bricks flying to the wall that the Israelites must build. Pharaoh withholds straw and demands the same work. God's promises strengthen his people.</p>
+    <div class="verse-box">
+      "I will free you... I will deliver you... I will redeem you. I will take you as my own people, and I will be your God."
+      <span class="ref">- Exodus 6:6-7 (NIV)</span>
+    </div>
+  </div>
+
+  <div class="cover-chapters">
+    <span class="cover-chapter current">CH 1 — STAFFS</span>
+    <span class="cover-chapter locked">CH 2 — HEALING HAND</span>
+    <span class="cover-chapter locked">CH 3 — WATERS</span>
+    <span class="cover-chapter locked">CH 4 — BEFORE PHARAOH</span>
+  </div>
+
+  <div class="story-card">
+    <h2>Choose Your Difficulty</h2>
+    <div id="difficultyHint">Please choose a difficulty first!</div>
+    <div class="difficulty-selector">
+      <button class="difficulty-btn" data-diff="easy">Easy</button>
+      <button class="difficulty-btn" data-diff="medium">Medium</button>
+      <button class="difficulty-btn" data-diff="hard">Hard</button>
+    </div>
+    <div class="diff-detail" id="diffDetail">Easy: forgiving. Medium: balanced. Hard: 4 magicians + sandstorms + chief on Lv 3.</div>
+  </div>
+
+  <div class="story-card">
+    <div class="name-row">
+      <label for="kidNameInput">Your name, brave shepherd:</label>
+      <input type="text" id="kidNameInput" maxlength="18" placeholder="(optional)" autocomplete="off">
+    </div>
+  </div>
+
+  <button class="start-btn" id="startBtn">Begin the Chase</button>
+  <div class="cover-foot">Arrows / WASD / D-pad / swipe to move. Tap STRAW to help workers. Catch every pickup — each one builds bricks!</div>
+</div>
+
+<!-- CINEMATIC -->
+<div class="cinematic" id="cinematic" role="dialog" aria-modal="true">
+  <div class="cin-panel">
+    <div class="cin-art">
+      <img src="" alt="" id="cinImg" onerror="this.style.display='none'">
+      <div class="cin-overlay"></div>
+    </div>
+    <div class="cin-text" id="cinText"></div>
+    <div class="cin-caption" id="cinCaption"></div>
+    <div class="cin-controls">
+      <button class="cin-btn ghost" id="cinSkip">Skip</button>
+      <button class="cin-btn" id="cinNext">Next →</button>
+    </div>
+    <div class="cin-progress" id="cinProgress">— 1 / 4 —</div>
+  </div>
+</div>
+
+<!-- CHAPTER OVERVIEW (between levels) -->
+<div class="chapter-overview" id="chapterOverview" role="dialog" aria-modal="true">
+  <div class="co-tag" id="coTag">CHAPTER 1 — THE STAFF OF POWER</div>
+  <div class="co-title" id="coTitle">Your Journey</div>
+  <div class="co-dots" id="coDots">
+    <div class="co-dot current" data-lv="1">1</div>
+    <div class="co-dot locked" data-lv="2">2</div>
+    <div class="co-dot locked" data-lv="3">3</div>
+  </div>
+  <div class="co-level-name" id="coLevelName">LEVEL 1 — THE OUTER COURT</div>
+  <div class="co-level-verse" id="coLevelVerse">
+    "Moses and Aaron went to Pharaoh and did just as the Lord commanded."
+    <span class="co-verse-ref">— Exodus 7:10 (NIV)</span>
+  </div>
+  <button class="co-btn" id="coBeginBtn">Begin Level →</button>
+</div>
+
+<!-- GAME PAGE -->
+<div class="page" id="gamePage" role="region" aria-label="Game">
+  <div class="hud" id="hud">
+    <span id="hudLevel"><span id="hudKidName"></span> <span style="opacity:0.7">·</span> <span id="hudLevelTag">CH 1 LV 1</span></span>
+    <span class="hud-chip" id="hudTime"><span aria-hidden="true">⏱</span> <span id="hudTimeVal">90</span>s</span>
+    <span class="hud-chip" id="hudStaffs"><span aria-hidden="true">✨</span> <span id="hudStaffsVal">2</span></span>
+    <span class="hud-chip" id="hudScore"><span aria-hidden="true">⭐</span> <span id="hudScoreVal">0</span></span>
+    <button class="icon-btn" id="pauseBtn" aria-label="Pause">II</button>
+    <div class="hud-progress"><div class="hud-progress-fill" id="hudProgressFill"></div></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="arena-wrap" id="arenaWrap">
+      <canvas id="gameCanvas" width="320" height="448"></canvas>
+      <div class="sandstorm" id="sandstormFx" aria-hidden="true"></div>
+    </div>
+    <div class="worker-panel" id="workerPanel">
+      <div class="wp-header">
+        <div class="wp-label">BRICK WALL</div>
+        <div class="wp-quota" id="wpQuota">
+          <span class="num" id="brickVal">0</span><span style="opacity:0.6;">/<span id="brickQuotaVal">30</span></span>
+          <span class="qsub">BRICKS</span>
+        </div>
+      </div>
+      <div class="wp-wall-area" id="wpCenter">
+        <div class="brick-wall" id="brickWall" aria-hidden="true"></div>
+        <div class="wp-workers" id="wpWorkers">
+          <div class="worker"><div class="head"></div><div class="body"></div><div class="table"></div></div>
+          <div class="worker"><div class="head"></div><div class="body"></div><div class="table"></div></div>
+          <div class="worker"><div class="head"></div><div class="body"></div><div class="table"></div></div>
+        </div>
+      </div>
+      <div class="wp-footer">
+        <div class="wp-straw" id="strawIndicator">
+          <span class="ico">🌾</span><span id="strawVal">20</span> straw
+        </div>
+        <button class="straw-tap" id="strawTap">+ STRAW</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls" id="controls">
+    <div class="dpad" id="dpad" role="group">
+      <span class="dpad-spacer"></span>
+      <button class="dpad-btn" data-dir="up">▲</button>
+      <span class="dpad-spacer"></span>
+      <button class="dpad-btn" data-dir="left">◀</button>
+      <span class="dpad-spacer"></span>
+      <button class="dpad-btn" data-dir="right">▶</button>
+      <span class="dpad-spacer"></span>
+      <button class="dpad-btn" data-dir="down">▼</button>
+      <span class="dpad-spacer"></span>
+    </div>
+    <div class="actions">
+      <button class="action-btn locked" id="freezeBtn">✋ FREEZE<span class="hint">Unlocks Ch 2</span></button>
+      <button class="action-btn locked" id="floodBtn">💧 FLOOD<span class="hint">Unlocks Ch 3</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- INTRO FLASH -->
+<div class="intro-flash" id="introFlash">
+  <div class="level-tag" id="introTag">CHAPTER 1 LEVEL 1</div>
+  <div class="level-name" id="introName">THE OUTER COURT</div>
+  <div class="level-verse" id="introVerse">"Moses and Aaron went to Pharaoh." — Exodus 7:10</div>
+</div>
+
+<!-- TUTORIAL MODAL -->
+<div class="modal" id="tutorialModal">
+  <div class="modal-box">
+    <h2>How to Play</h2>
+    <div class="modal-body" style="text-align:left;">
+      <p style="margin-bottom:8px;"><strong style="color:#ffd976;">🟡 You are Moses.</strong> Walk Pharaoh's court using arrows, WASD, the d-pad, or swipes.</p>
+      <p style="margin-bottom:8px;"><strong style="color:#ffd976;">✨ Chase magicians' staffs.</strong> Each absorbed sends <b>+5 bricks flying</b> to the wall!</p>
+      <p style="margin-bottom:8px;"><strong style="color:#ffd976;">🌾 Collect pickups</strong> (manna, idol, scroll, jar) — every one shoots bricks at the wall.</p>
+      <p style="margin-bottom:8px;"><strong style="color:#ffd976;">🔥 Find the burning bush</strong> — 5 sec invincibility! Magicians flee.</p>
+      <p><strong style="color:#ffd976;">🧱 Finish the wall</strong> before time runs out. Beat 3 levels of Chapter 1.</p>
+    </div>
+    <div class="modal-verse">
+      "I will be your God." <span class="ref">— Exodus 6:7 (NIV)</span>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn" id="tutStartBtn">Let's Go!</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAUSE MODAL -->
+<div class="modal" id="pauseModal">
+  <div class="modal-box">
+    <h2>Paused</h2>
+    <div class="modal-body">Catch your breath, <span class="name" id="pauseName">brave shepherd</span>.</div>
+    <div class="modal-btns">
+      <button class="modal-btn" id="resumeBtn">Resume</button>
+      <button class="modal-btn ghost" id="pauseRestartBtn">Restart Level</button>
+      <button class="modal-btn ghost" id="pauseMenuBtn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- WIN MODAL (per-level) -->
+<div class="modal win-modal" id="winModal">
+  <div class="modal-box">
+    <div class="win-hero">
+      <div class="win-hero-rays"></div>
+      <img class="win-hero-img" id="winHeroImg" src="assets/images/moses%20front%20facing.png" alt="" onerror="this.style.display='none'">
+    </div>
+    <h2 class="win-title" id="winTitle">The wall is complete!</h2>
+    <div class="win-name-shout">Well done, <span class="name" id="winName">friend</span> — you walked his road today.</div>
+    <div class="win-stars" id="winStars"></div>
+    <div class="win-tier" id="winTier">BRAVE SHEPHERD</div>
+    <div class="win-scorebox">
+      <span><strong id="winScoreNum">0</strong> Score</span>
+      <span><strong id="winStaffNum">0</strong> Staffs</span>
+      <span><strong id="winTimeNum">0s</strong> Spare</span>
+    </div>
+    <div class="win-badges" id="winBadges"></div>
+    <div class="modal-verse" id="winVerse">
+      "I will take you as my own people, and I will be your God."
+      <span class="ref">— Exodus 6:7 (NIV)</span>
+    </div>
+    <p class="win-motivate" id="winMotivate">Next level awaits.</p>
+    <div class="modal-btns">
+      <button class="modal-btn" id="winNextBtn">Next Level →</button>
+      <button class="modal-btn ghost" id="winReplayBtn">Replay</button>
+      <button class="modal-btn ghost" id="winMenuBtn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOSE MODAL -->
+<div class="modal" id="loseModal">
+  <div class="modal-box">
+    <h2>The wall still rises.</h2>
+    <div class="modal-body">Pharaoh inspects the work today, <span class="name" id="loseName">friend</span>. Tomorrow, you walk his road again.</div>
+    <div class="modal-verse">
+      "But Moses said to the Lord, 'Why, Lord, why have you brought trouble on this people?'"
+      <span class="ref">— Exodus 5:22 (NIV)</span>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn" id="loseRetryBtn">Try Again</button>
+      <button class="modal-btn ghost" id="loseMenuBtn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAPTER COMPLETE MODAL -->
+<div class="modal win-modal" id="chapterDoneModal">
+  <div class="modal-box">
+    <div class="win-hero">
+      <div class="win-hero-rays"></div>
+      <img class="win-hero-img" src="assets/images/moses%20front%20facing.png" alt="" onerror="this.style.display='none'">
+    </div>
+    <h2 class="win-title">Chapter 1 Complete!</h2>
+    <div class="win-name-shout">All three magicians of Pharaoh have been swallowed, <span class="name" id="chapDoneName">friend</span>.</div>
+    <div class="win-tier" id="chapDoneTier">DELIVERER</div>
+    <div class="win-scorebox">
+      <span><strong id="chapDoneScore">0</strong> Chapter Score</span>
+      <span><strong id="chapDoneStars">0</strong> ★ Stars</span>
+    </div>
+    <div class="modal-verse">
+      "Aaron's staff swallowed up their staffs. Yet Pharaoh's heart became hard."
+      <span class="ref">— Exodus 7:12-13 (NIV)</span>
+    </div>
+    <p class="win-motivate">Chapter 2 — The Healing Hand — coming soon. Aaron will join your road.</p>
+    <div class="modal-btns">
+      <button class="modal-btn" id="chapDoneMenuBtn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- AUDIO -->
+<audio id="audBgCover" preload="none" loop src="assets/audio/cover%20page%20music.mp3"></audio>
+<audio id="audBgGame"  preload="none" loop src="assets/audio/egyptian%20music.mp3"></audio>
+<audio id="audAbsorb"  preload="none" src="assets/audio/level%20up%202.mp3"></audio>
+<audio id="audChime"   preload="none" src="assets/audio/chime2.mp3"></audio>
+<audio id="audClick"   preload="none" src="assets/audio/click.mp3"></audio>
+<audio id="audWin"     preload="none" src="assets/audio/win%20sound.mp3"></audio>
+<audio id="audLose"    preload="none" src="assets/audio/uh%20oh.mp3"></audio>
+<audio id="audWarn"    preload="none" src="assets/audio/danger%20alert.mp3"></audio>
+<audio id="audFlame"   preload="none" src="assets/audio/torch%20whoosh.mp3"></audio>
+<audio id="audManna"   preload="none" src="assets/audio/treasure%20chime.mp3"></audio>
+<audio id="audBrick"   preload="none" src="assets/audio/pop.mp3"></audio>
+<audio id="audWind"    preload="none" src="assets/audio/friendly%20alert.mp3"></audio>
+<audio id="audCombo"   preload="none" src="assets/audio/level%20up%203.mp3"></audio>
+<audio id="audCoin"    preload="none" src="assets/audio/coin%20collect.mp3"></audio>
+<audio id="audSuccess" preload="none" src="assets/audio/success%20trumpet.mp3"></audio>
+
+<script>
+'use strict';
+
+/* ============================================================
+   In Moses's Sandals - Staffs of Light - prototype v0.4
+   Multi-level Chapter 1 + brick-fly + chapter overview
+   See BUNDLE2_DESIGN.md sections 14-17.
+   ============================================================ */
+
+const $ = id => document.getElementById(id);
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  $(id).classList.add('active');
+}
+function showModal(id){ $(id).classList.add('active'); }
+function hideModal(id){ $(id).classList.remove('active'); }
+function hideAllModals(){ document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); }
+let _toastT = null;
+function toast(msg, ms){
+  ms = ms || 2200;
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (_toastT) clearTimeout(_toastT);
+  _toastT = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+/* ACCESS CODES (shared Bundle 1) */
+const VALID_CODE_HASHES = new Set([
+  '0a7b35a935e29ce3474b7bb5f0073503f6cdec843c4e2368254f4c97a79a1cf8',
+  'fd750c0dba41357f20a51d354bbb20710e94224cbe0ae165984f66d05e2cd3b6',
+  'fe98100869c0c034270b481b1a9b287719468cbf5c6de23bc2972c515a8cfddc',
+  '8c752f2181e7d41997a738e459b62a7042937031dd5d0b6f92be7460aa5deb0c',
+  'aaf2285ccce61c29485ce614b3a353a33b2ada07de55af13ce03dd1e7e432c00'
+]);
+async function _sha256Hex(str){
+  if (!window.crypto || !window.crypto.subtle) return null;
+  const bytes = new TextEncoder().encode(str);
+  const buf = await window.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function unlockGame(){
+  const gate = $('accessGate');
+  if (gate) gate.classList.add('hidden');
+  showPage('coverPage');
+  try { localStorage.setItem('bek.bundle2.unlocked', '1'); } catch(e){}
+}
+try {
+  if (localStorage.getItem('bek.bundle2.unlocked') === '1' ||
+      localStorage.getItem('bek.moses2.unlocked') === '1' ||
+      localStorage.getItem('bek.bundle1.unlocked') === '1'){
+    unlockGame();
+  }
+} catch(e){}
+async function tryAccessCode(){
+  const inp = $('accessInput'); const err = $('accessError');
+  const val = (inp.value || '').trim().toUpperCase();
+  if (!val){ err.textContent = 'Please enter your access code.'; return; }
+  let ok = false;
+  try {
+    const hex = await _sha256Hex(val);
+    if (hex && VALID_CODE_HASHES.has(hex)) ok = true;
+  } catch(e){}
+  if (ok){ err.textContent = ''; play('chime'); unlockGame(); }
+  else { err.textContent = "That code isn't recognized. Check your Etsy README."; inp.select(); }
+}
+$('accessSubmit').addEventListener('click', () => { unlockAudio(); tryAccessCode(); });
+$('accessInput').addEventListener('keydown', e => { if (e.key === 'Enter') tryAccessCode(); });
+
+/* DIFFICULTY + LEVEL CONFIG */
+const DIFF_BASE = {
+  easy:   { timeMul:1.20, enemyAdd:0, sandstormChance:0,    allowChiefL3:false, brickMul:0.95 },
+  medium: { timeMul:1.00, enemyAdd:0, sandstormChance:0.15, allowChiefL3:true,  brickMul:1.0  },
+  hard:   { timeMul:0.85, enemyAdd:1, sandstormChance:0.30, allowChiefL3:true,  brickMul:1.15 }
+};
+const LEVELS = [
+  { id:1, name:'THE OUTER COURT',  baseTime:100, baseEnemies:2, brickQuota:28, maze:'A',
+    verse:'"Moses and Aaron went to Pharaoh and did just as the Lord commanded."', ref:'Exodus 7:10' },
+  { id:2, name:'THE INNER COURT',  baseTime:90,  baseEnemies:3, brickQuota:34, maze:'B',
+    verse:'"They did the same things by their secret arts."', ref:'Exodus 7:11' },
+  { id:3, name:'BEFORE THE THRONE', baseTime:75, baseEnemies:4, brickQuota:42, maze:'C',
+    verse:'"Aaron\'s staff swallowed up their staffs."', ref:'Exodus 7:12' }
+];
+let _selectedDifficulty = null;
+try { _selectedDifficulty = localStorage.getItem('bek.bundle2.lastDifficulty') || null; } catch(e){}
+function applyDiffSelection(){
+  document.querySelectorAll('.difficulty-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.diff === _selectedDifficulty);
+  });
+  const d = _selectedDifficulty;
+  if (d){
+    $('diffDetail').textContent = ({
+      easy:   'Easy: forgiving timer, 2-3 magicians, no sandstorms.',
+      medium: 'Medium: balanced. 2-3 magicians, light sandstorms.',
+      hard:   'Hard: tight timer, +1 magician each level, chief on Lv 3, sandstorms.'
+    })[d];
+  }
+}
+document.querySelectorAll('.difficulty-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    _selectedDifficulty = btn.dataset.diff;
+    try { localStorage.setItem('bek.bundle2.lastDifficulty', _selectedDifficulty); } catch(e){}
+    applyDiffSelection();
+    play('click');
+  });
+});
+
+/* KID NAME */
+let _kidName = '';
+try { _kidName = (localStorage.getItem('bek.kidName') || '').trim(); } catch(e){}
+function setKidName(n){
+  _kidName = (n || '').trim().substring(0, 18);
+  try { localStorage.setItem('bek.kidName', _kidName); } catch(e){}
+}
+$('kidNameInput').value = _kidName;
+$('kidNameInput').addEventListener('input', e => { setKidName(e.target.value); });
+function nameOrFallback(){ return _kidName || 'friend'; }
+function nameOrShepherd(){ return _kidName || 'brave shepherd'; }
+
+/* MAZES - 3 layouts for 3 levels */
+const MAZE_A = [
+  'TTTTTTTTTTTT',
+  'TTTTTTTTTTTT',
+  '############',
+  '#P.........#',
+  '#.########.#',
+  '#.#...F..#.#',
+  '#.#.####.#.#',
+  '............',
+  '#.#.####.#.#',
+  '#.#......#.#',
+  '#.########.#',
+  '#..........#',
+  '#.######.###',
+  '#.#R.....#.#',
+  '#.######.#B#',
+  '############'
+];
+const MAZE_B = [
+  'TTTTTTTTTTTTTT',
+  'TTTTTTTTTTTTTT',
+  '##############',
+  '#P...........#',
+  '#.##########.#',
+  '#.#...S....#.#',
+  '#.#.######.#.#',
+  '#.#.#....#.#.#',
+  '..............',
+  '#.#.#....#.#.#',
+  '#.#.######.#.#',
+  '#.#...F....#.#',
+  '#.##########.#',
+  '#............#',
+  '#.######.#####',
+  '#.#R....B#...#',
+  '#.######.###.#',
+  '##############'
+];
+const MAZE_C = [
+  'TTTTTTTTTTTTTTTT',
+  'TTTTTTTTTTTTTTTT',
+  '################',
+  '#P.....S.....F.#',
+  '#.############.#',
+  '#.#..........#.#',
+  '#.#.########.#.#',
+  '#.#.#......#.#.#',
+  '#.#.#.####.#.#.#',
+  '................',
+  '#.#.#.####.#.#.#',
+  '#.#.#......#.#.#',
+  '#.#.########.#.#',
+  '#.#..........#.#',
+  '#.############.#',
+  '#.#R...B...X.#.#',
+  '#.############.#',
+  '################'
+];
+const MAZE_BY_KEY = { A: MAZE_A, B: MAZE_B, C: MAZE_C };
+
+function getMaze(){
+  const lv = LEVELS[GAME.levelIdx];
+  return MAZE_BY_KEY[lv.maze];
+}
+function mazeDim(){
+  const m = getMaze();
+  return { cols: m[0].length, rows: m.length };
+}
+function tileAt(x, y){
+  const m = getMaze();
+  if (y < 0 || y >= m.length) return '#';
+  if (m[y][0] === '.' && (x < 0 || x >= m[0].length)){
+    if (x < 0) return m[y][m[0].length - 1];
+    if (x >= m[0].length) return m[y][0];
+  }
+  if (x < 0 || x >= m[0].length) return '#';
+  return m[y][x];
+}
+function isWall(x, y){
+  const c = tileAt(x, y);
+  return c === '#' || c === 'T';
+}
+function isTunnelRow(y){
+  const m = getMaze();
+  if (y < 0 || y >= m.length) return false;
+  return m[y][0] === '.';
+}
+const THRONE_ROWS = 2;
+
+/* GAME STATE */
+const GAME = {
+  state: 'cover',
+  diff: null,
+  levelIdx: 0,
+  chapterScore: 0,
+  chapterStars: 0,
+  timeLimit: 90, timeLeft: 90,
+  score: 0,
+  brickCount: 0, brickQuota: 30, goldBricks: 0,
+  straw: 20, strawMax: 30,
+  passiveBrickAcc: 0,
+  player: { tx:1, ty:3, fx:1, fy:3, dx:0, dy:0, lerpMs:0 },
+  enemies: [],
+  pickups: [],   // unified pickup list: {x, y, kind, born, bob}
+  speedZones: [],
+  particles: [],
+  dustMotes: [],
+  torches: [],
+  invulnUntilMs: 0,
+  windBoostUntilMs: 0,
+  pharaohMood: 'neutral',
+  pharaohMoodUntilMs: 0,
+  shakeT: 0, shakeAmp: 0,
+  panUntilMs: 0,
+  panProgress: 1,
+  lastTickMs: 0,
+  lastMoveMs: 0,
+  lastEnemyMs: 0,
+  lastPassiveBrickMs: 0,
+  lastBlessingMs: 0,
+  lastEventCheckMs: 0,
+  lastFlameRespawnCheckMs: 0,
+  lastAbsorbMs: 0,
+  staffsAbsorbed: 0,
+  comboCount: 0,
+  audioUnlocked: false,
+  sandstormOn: false,
+  flickerSeed: Math.floor(Math.random()*1000),
+};
+const MOVE_INTERVAL_MS = 165;
+const MOVE_INTERVAL_BOOSTED_MS = 115;
+const ENEMY_MOVE_MS = 230;
+const ENEMY_FLEE_MS = 145;
+const ENEMY_CHIEF_MS = 175;
+const PASSIVE_BRICK_BASE_MS = 1900;
+const BLESSING_INTERVAL_MS = 14000;
+const EVENT_CHECK_INTERVAL_MS = 6500;
+const FLAME_RESPAWN_MS = 22000;
+const COMBO_WINDOW_MS = 5000;
+const PICKUP_BASE_BRICKS = 5;
+
+const BLESSINGS = [
+  '"I will free you from being slaves to them." — Ex 6:6',
+  '"I will deliver you with an outstretched arm." — Ex 6:6',
+  '"I will redeem you." — Ex 6:6',
+  '"I will take you as my own people." — Ex 6:7',
+  '"I will be your God." — Ex 6:7',
+];
+const TIERS = [
+  { min:0,    name:'BRAVE SHEPHERD' },
+  { min:400,  name:'FAITHFUL ONE' },
+  { min:700,  name:'STAFF BEARER' },
+  { min:1100, name:'DELIVERER' }
+];
+function tierFor(score){
+  let pick = TIERS[0];
+  for (const t of TIERS) if (score >= t.min) pick = t;
+  return pick.name;
+}
+
+const PICKUP_KINDS = {
+  flame:  { color:'#ff8a30', label:'BURNING BUSH!', bricks:0,  scoreBonus:0,  sound:'flame',   action:'invuln' },
+  manna:  { color:'#e0c878', label:'MANNA',         bricks:5,  scoreBonus:25, sound:'manna',   action:'bricks' },
+  idol:   { color:'#fff1c2', label:'GOLDEN IDOL',   bricks:0,  scoreBonus:150, sound:'coin',    action:'score' },
+  scroll: { color:'#a0c8ff', label:'TRUTH SCROLL',  bricks:3,  scoreBonus:50, sound:'chime',   action:'scroll' },
+  jar:    { color:'#7fdac8', label:'WATER JAR',     bricks:0,  scoreBonus:30, sound:'manna',   action:'straw' },
+  straw:  { color:'#d8c060', label:'STRAW BUNDLE',  bricks:0,  scoreBonus:20, sound:'brick',   action:'strawBig' }
+};
+
+/* CANVAS */
+const canvas = $('gameCanvas');
+const ctx = canvas.getContext('2d');
+let TILE = 32;
+function resizeCanvas(){
+  const wrap = $('arenaWrap');
+  const rect = wrap.getBoundingClientRect();
+  const availW = Math.max(100, rect.width - 4);
+  const availH = Math.max(100, rect.height - 4);
+  const { cols, rows } = mazeDim();
+  const tileByW = Math.floor(availW / cols);
+  const tileByH = Math.floor(availH / rows);
+  TILE = Math.max(14, Math.min(tileByW, tileByH));
+  const cssW = TILE * cols;
+  const cssH = TILE * rows;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 120));
+
+/* IMAGES */
+const IMG = {};
+function loadImg(key, src){
+  const im = new Image();
+  im.onload = () => { IMG[key] = im; };
+  im.onerror = () => {};
+  im.src = src;
+}
+loadImg('mosesFront', 'assets/images/moses%20front%20facing.png');
+loadImg('mosesBack',  'assets/images/moses%20back%20facing.png');
+loadImg('mosesLeft',  'assets/images/moses%20left%20facing.png');
+loadImg('mosesRight', 'assets/images/moses%20right%20facing.png');
+loadImg('magFront',   'assets/images/egyptian%20guard%20front%20facing.png');
+loadImg('magBack',    'assets/images/egyptian%20guard%20back%20facing.png');
+loadImg('magLeft',    'assets/images/egyptian%20guard%20left%20facing.png');
+loadImg('magRight',   'assets/images/egyptian%20guard%20right%20facing.png');
+loadImg('pharaoh',    'assets/images/pharaoh%20front.png');
+
+/* AUDIO */
+const AUDIO = {
+  bgCover:$('audBgCover'), bgGame:$('audBgGame'),
+  absorb:$('audAbsorb'), chime:$('audChime'), click:$('audClick'),
+  win:$('audWin'), lose:$('audLose'), warn:$('audWarn'),
+  flame:$('audFlame'), manna:$('audManna'), brick:$('audBrick'),
+  wind:$('audWind'), combo:$('audCombo'),
+  coin:$('audCoin'), success:$('audSuccess')
+};
+const VOLUMES = { bgCover:0.35, bgGame:0.32, absorb:0.85, chime:0.7, click:0.55, win:0.9, lose:0.7, warn:0.7, flame:0.75, manna:0.75, brick:0.55, wind:0.7, combo:0.85, coin:0.75, success:0.85 };
+Object.keys(AUDIO).forEach(k => { if (AUDIO[k]) AUDIO[k].volume = VOLUMES[k] || 0.6; });
+function unlockAudio(){
+  if (GAME.audioUnlocked) return;
+  GAME.audioUnlocked = true;
+  Object.values(AUDIO).forEach(a => {
+    if (!a) return;
+    try {
+      a.muted = true;
+      a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(()=>{});
+    } catch(e){}
+  });
+}
+function play(name){
+  if (!GAME.audioUnlocked) return;
+  const a = AUDIO[name];
+  if (!a) return;
+  try { a.currentTime = 0; a.play().catch(()=>{}); } catch(e){}
+}
+function loop(name){
+  if (!GAME.audioUnlocked) return;
+  const a = AUDIO[name];
+  if (!a) return;
+  try { a.play().catch(()=>{}); } catch(e){}
+}
+function stop(name){
+  const a = AUDIO[name];
+  if (!a) return;
+  try { a.pause(); a.currentTime = 0; } catch(e){}
+}
+
+/* CINEMATIC */
+const CIN_PANELS = [
+  { img: 'assets/images/prelude-2-hebrews-enslaved.png',
+    text: "In Egypt, God's people groan in slavery. Their cries reach the Lord.",
+    caption: 'EXODUS 2:23-24' },
+  { img: 'assets/images/opening-3-looks-both-ways.png',
+    text: "Moses, called from the burning bush, returns to Egypt with Aaron at his side.",
+    caption: 'EXODUS 4:27-29' },
+  { img: 'assets/images/intro%20scene%202.png',
+    text: "Before Pharaoh's throne, Aaron throws down his staff. The magicians do the same. Their staffs glow with colored light - but Aaron's swallows theirs.",
+    caption: 'EXODUS 7:8-12' },
+  { img: 'assets/images/closing-2-jethro-question.png',
+    text: "Yet Pharaoh's heart is hard. He withholds straw. The Israelites must still make bricks. God promises: I will free, I will deliver, I will redeem.",
+    caption: 'EXODUS 5:7 + 6:6-7' }
+];
+let _cinStep = 0;
+function openCinematic(){
+  _cinStep = 0;
+  $('cinematic').classList.add('active');
+  renderCinematic();
+  GAME.state = 'cinematic';
+}
+function renderCinematic(){
+  const p = CIN_PANELS[_cinStep];
+  $('cinImg').src = p.img;
+  $('cinImg').style.display = '';
+  $('cinText').textContent = p.text;
+  $('cinCaption').textContent = p.caption || '';
+  $('cinProgress').textContent = '— ' + (_cinStep + 1) + ' / ' + CIN_PANELS.length + ' —';
+  $('cinNext').textContent = (_cinStep < CIN_PANELS.length - 1) ? 'Next →' : 'Begin →';
+}
+$('cinNext').addEventListener('click', () => {
+  unlockAudio(); play('click');
+  if (_cinStep < CIN_PANELS.length - 1){
+    _cinStep += 1; renderCinematic();
+  } else {
+    $('cinematic').classList.remove('active');
+    showChapterOverview();
+  }
+});
+$('cinSkip').addEventListener('click', () => {
+  unlockAudio();
+  $('cinematic').classList.remove('active');
+  showChapterOverview();
+});
+
+/* CHAPTER OVERVIEW */
+function showChapterOverview(){
+  GAME.state = 'overview';
+  $('coTag').textContent = 'CHAPTER 1 — THE STAFF OF POWER';
+  $('coTitle').textContent = 'Your Journey';
+  const dots = document.querySelectorAll('#coDots .co-dot');
+  dots.forEach((d, i) => {
+    d.classList.remove('current','done','locked');
+    if (i < GAME.levelIdx) d.classList.add('done');
+    else if (i === GAME.levelIdx) d.classList.add('current');
+    else d.classList.add('locked');
+  });
+  const lv = LEVELS[GAME.levelIdx];
+  $('coLevelName').textContent = 'LEVEL ' + lv.id + ' — ' + lv.name;
+  $('coLevelVerse').innerHTML = lv.verse + '<span class="co-verse-ref">— ' + lv.ref + ' (NIV)</span>';
+  $('chapterOverview').classList.add('active');
+}
+$('coBeginBtn').addEventListener('click', () => {
+  play('click');
+  $('chapterOverview').classList.remove('active');
+  beginLevel();
+});
+
+/* LEVEL FLOW */
+function beginLevel(){
+  stop('bgCover'); loop('bgGame');
+  showPage('gamePage');
+  initLevel();
+  resizeCanvas();
+  $('hudKidName').textContent = nameOrFallback();
+  $('hudLevelTag').textContent = 'CH 1 LV ' + LEVELS[GAME.levelIdx].id;
+  let seenTut = false;
+  try { seenTut = localStorage.getItem('bek.bundle2.tutDone') === '1'; } catch(e){}
+  if (!seenTut && GAME.levelIdx === 0){
+    showModal('tutorialModal');
+    GAME.state = 'paused';
+    return;
+  }
+  startIntroFlash();
+}
+$('tutStartBtn').addEventListener('click', () => {
+  try { localStorage.setItem('bek.bundle2.tutDone', '1'); } catch(e){}
+  hideModal('tutorialModal'); play('click');
+  startIntroFlash();
+});
+function startIntroFlash(){
+  const lv = LEVELS[GAME.levelIdx];
+  $('introTag').textContent = 'CHAPTER 1 LEVEL ' + lv.id;
+  $('introName').textContent = lv.name;
+  $('introVerse').textContent = lv.verse + ' — ' + lv.ref;
+  $('introFlash').classList.add('active');
+  GAME.panUntilMs = performance.now() + 1900;
+  setTimeout(() => {
+    $('introFlash').classList.remove('active');
+    GAME.state = 'playing';
+    const now = performance.now();
+    GAME.lastTickMs = now;
+    GAME.lastMoveMs = now;
+    GAME.lastEnemyMs = now;
+    GAME.lastPassiveBrickMs = now;
+    GAME.lastBlessingMs = now;
+    GAME.lastEventCheckMs = now;
+    GAME.lastFlameRespawnCheckMs = now;
+    toast('Chase the magicians! Every pickup builds bricks!');
+  }, 1900);
+}
+
+function initLevel(){
+  const diff = DIFF_BASE[GAME.diff || 'easy'];
+  const lv = LEVELS[GAME.levelIdx];
+  GAME.timeLimit = Math.round(lv.baseTime * diff.timeMul);
+  GAME.timeLeft = GAME.timeLimit;
+  GAME.score = 0;
+  GAME.brickCount = 0;
+  GAME.brickQuota = Math.round(lv.brickQuota * diff.brickMul);
+  GAME.goldBricks = 0;
+  GAME.straw = 20;
+  GAME.passiveBrickAcc = 0;
+  GAME.player = { tx:1, ty:3, fx:1, fy:3, dx:0, dy:0, lerpMs:0 };
+  GAME.particles = [];
+  GAME.pickups = [];
+  GAME.speedZones = [];
+  GAME.invulnUntilMs = 0;
+  GAME.windBoostUntilMs = 0;
+  GAME.pharaohMood = 'neutral';
+  GAME.pharaohMoodUntilMs = 0;
+  GAME.shakeT = 0; GAME.shakeAmp = 0;
+  GAME.staffsAbsorbed = 0;
+  GAME.comboCount = 0;
+  GAME.lastAbsorbMs = 0;
+  GAME.sandstormOn = false;
+  $('sandstormFx').classList.remove('on');
+
+  // place from maze
+  const m = getMaze();
+  const enemies = [];
+  for (let y=0; y<m.length; y++){
+    for (let x=0; x<m[0].length; x++){
+      const c = m[y][x];
+      if (c === 'P'){ GAME.player.tx = x; GAME.player.ty = y; GAME.player.fx = x; GAME.player.fy = y; }
+      else if (c === 'R'){ enemies.push({ id:'red', kind:'flee', color:'#ff5848', tx:x, ty:y, fx:x, fy:y, dx:0, dy:0, lastMoveMs:0, alive:true, panicked:false }); }
+      else if (c === 'B'){ enemies.push({ id:'blue', kind:'wander', color:'#5acdff', tx:x, ty:y, fx:x, fy:y, dx:0, dy:0, lastMoveMs:0, alive:true, panicked:false }); }
+      else if (c === 'X'){
+        const allowChief = (lv.id === 3 && diff.allowChiefL3);
+        if (allowChief){
+          enemies.push({ id:'chief', kind:'chase', color:'#ffd976', tx:x, ty:y, fx:x, fy:y, dx:0, dy:0, lastMoveMs:0, alive:true, panicked:false, isChief:true });
+        } else {
+          enemies.push({ id:'purple', kind:'chase', color:'#c878ff', tx:x, ty:y, fx:x, fy:y, dx:0, dy:0, lastMoveMs:0, alive:true, panicked:false });
+        }
+      }
+      else if (c === 'F'){ GAME.pickups.push({ tx:x, ty:y, kind:'flame', born:performance.now() }); }
+      else if (c === 'S'){ GAME.speedZones.push({ x, y }); }
+    }
+  }
+  // Add additional enemies based on diff add (clone last)
+  if (diff.enemyAdd > 0 && enemies.length > 0){
+    for (let k=0; k<diff.enemyAdd; k++){
+      const base = enemies[enemies.length - 1];
+      enemies.push({ id:base.id, kind:base.kind, color:base.color, tx:base.tx, ty:Math.min(m.length-2, base.ty + 1 + k), fx:base.tx, fy:base.ty, dx:0, dy:0, lastMoveMs:0, alive:true, panicked:false });
+    }
+  }
+  GAME.enemies = enemies;
+
+  // torches at corners
+  GAME.torches = [
+    { x:1, y:THRONE_ROWS+1 },
+    { x:m[0].length-2, y:THRONE_ROWS+1 },
+    { x:1, y:m.length-2 },
+    { x:m[0].length-2, y:m.length-2 }
+  ];
+
+  // dust motes
+  GAME.dustMotes = [];
+  for (let i=0; i<24; i++){
+    GAME.dustMotes.push({
+      x:Math.random()*m[0].length*TILE,
+      y:THRONE_ROWS*TILE + Math.random()*(m.length-THRONE_ROWS)*TILE,
+      vx:(Math.random()-0.5)*0.15,
+      vy:-0.05 - Math.random()*0.1,
+      r:0.5 + Math.random()*1,
+      a:0.15 + Math.random()*0.35
+    });
+  }
+
+  rebuildBrickWall();
+  updateHud();
+}
+
+/* BRICK WALL */
+function rebuildBrickWall(){
+  const wall = $('brickWall');
+  wall.innerHTML = '';
+  const total = GAME.brickQuota;
+  const cols = 5;
+  const rows = Math.ceil(total / cols);
+  for (let i=0; i<total; i++){
+    const b = document.createElement('div');
+    b.className = 'brick';
+    const r = Math.floor(i / cols);
+    const c = i % cols;
+    b.style.left = (c * (100 / cols)) + '%';
+    b.style.bottom = (r * (100 / rows)) + '%';
+    b.style.width = (100 / cols) + '%';
+    b.style.height = (100 / rows) + '%';
+    b.style.visibility = 'hidden';
+    if (((i+1) % 10) === 0) b.classList.add('gold');
+    wall.appendChild(b);
+  }
+  wall.classList.remove('near-done');
+}
+function updateBrickWall(){
+  const wall = $('brickWall');
+  const bricks = wall.children;
+  for (let i=0; i<bricks.length; i++){
+    const visible = i < GAME.brickCount;
+    if (visible){
+      const wasHidden = bricks[i].style.visibility === 'hidden';
+      bricks[i].style.visibility = 'visible';
+      if (wasHidden){
+        bricks[i].classList.add('just-placed');
+        const el = bricks[i];
+        setTimeout(() => el.classList.remove('just-placed'), 440);
+      }
+    } else {
+      bricks[i].style.visibility = 'hidden';
+    }
+  }
+  // near-complete shine
+  const pct = GAME.brickCount / GAME.brickQuota;
+  if (pct >= 0.8) wall.classList.add('near-done');
+  else wall.classList.remove('near-done');
+}
+
+/* HUD */
+function updateHud(){
+  $('hudTimeVal').textContent = Math.max(0, Math.ceil(GAME.timeLeft));
+  $('hudStaffsVal').textContent = GAME.enemies.filter(e=>e.alive).length;
+  $('hudScoreVal').textContent = GAME.score;
+  $('strawVal').textContent = GAME.straw;
+  $('brickVal').textContent = GAME.brickCount;
+  $('brickQuotaVal').textContent = GAME.brickQuota;
+  const timeChip = $('hudTime');
+  if (GAME.timeLeft < 15) timeChip.classList.add('danger');
+  else timeChip.classList.remove('danger');
+  const strawBtn = $('strawTap');
+  if (GAME.straw <= 0) strawBtn.classList.add('empty'); else strawBtn.classList.remove('empty');
+  const strawInd = $('strawIndicator');
+  if (GAME.straw <= 5) strawInd.classList.add('drought'); else strawInd.classList.remove('drought');
+  const pct = Math.min(100, Math.floor((GAME.brickCount / GAME.brickQuota) * 100));
+  $('hudProgressFill').style.width = pct + '%';
+}
+
+/* INPUT */
+const PENDING = { dx:0, dy:0 };
+function queueDir(dx, dy){
+  if (GAME.state !== 'playing') return;
+  PENDING.dx = dx; PENDING.dy = dy;
+}
+document.addEventListener('keydown', e => {
+  const k = e.key;
+  if (k === 'ArrowUp'    || k === 'w' || k === 'W'){ queueDir(0,-1); e.preventDefault(); }
+  else if (k === 'ArrowDown'  || k === 's' || k === 'S'){ queueDir(0, 1); e.preventDefault(); }
+  else if (k === 'ArrowLeft'  || k === 'a' || k === 'A'){ queueDir(-1,0); e.preventDefault(); }
+  else if (k === 'ArrowRight' || k === 'd' || k === 'D'){ queueDir( 1,0); e.preventDefault(); }
+  else if (k === ' ' || k === 'p' || k === 'P'){ togglePause(); e.preventDefault(); }
+  else if (k === 'Escape'){ if (GAME.state === 'playing') togglePause(); }
+});
+document.querySelectorAll('.dpad-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    const d = b.dataset.dir;
+    if (d === 'up') queueDir(0,-1);
+    else if (d === 'down') queueDir(0,1);
+    else if (d === 'left') queueDir(-1,0);
+    else if (d === 'right') queueDir(1,0);
+  });
+});
+let _sw = null;
+canvas.addEventListener('touchstart', e => {
+  if (!e.changedTouches[0]) return;
+  _sw = { x:e.changedTouches[0].clientX, y:e.changedTouches[0].clientY };
+}, { passive:true });
+canvas.addEventListener('touchend', e => {
+  if (!_sw || !e.changedTouches[0]) return;
+  const dx = e.changedTouches[0].clientX - _sw.x;
+  const dy = e.changedTouches[0].clientY - _sw.y;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) { _sw = null; return; }
+  if (Math.abs(dx) > Math.abs(dy)) queueDir(dx > 0 ? 1 : -1, 0);
+  else queueDir(0, dy > 0 ? 1 : -1);
+  _sw = null;
+}, { passive:true });
+$('pauseBtn').addEventListener('click', togglePause);
+function togglePause(){
+  if (GAME.state === 'playing'){
+    GAME.state = 'paused';
+    $('pauseName').textContent = nameOrShepherd();
+    showModal('pauseModal');
+  } else if (GAME.state === 'paused'){
+    hideModal('pauseModal');
+    GAME.state = 'playing';
+    GAME.lastTickMs = performance.now();
+  }
+}
+$('strawTap').addEventListener('click', () => {
+  if (GAME.state !== 'playing') return;
+  if (GAME.straw <= 0){ toast('Pharaoh withheld the straw! Find a bundle in the maze.'); play('warn'); return; }
+  GAME.straw -= 1;
+  GAME.passiveBrickAcc += 0.34;
+  if (GAME.passiveBrickAcc >= 1){
+    const n = Math.floor(GAME.passiveBrickAcc);
+    GAME.passiveBrickAcc -= n;
+    addBricks(n);
+  }
+  play('brick');
+  updateHud();
+});
+
+/* ENEMY AI */
+function neighborsOf(x, y){
+  const out = [];
+  const dim = mazeDim();
+  if (isTunnelRow(y)){
+    if (x === 0) out.push({ x: dim.cols - 1, y, dx:-1, dy:0 });
+    if (x === dim.cols - 1) out.push({ x: 0, y, dx:1, dy:0 });
+  }
+  if (!isWall(x, y-1)) out.push({x, y:y-1, dx:0, dy:-1});
+  if (!isWall(x, y+1)) out.push({x, y:y+1, dx:0, dy:1});
+  if (!isWall(x-1, y)) out.push({x:x-1, y, dx:-1, dy:0});
+  if (!isWall(x+1, y)) out.push({x:x+1, y, dx:1, dy:0});
+  return out;
+}
+function manhattan(a, b){ return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); }
+function decideEnemyMove(e){
+  const opts = neighborsOf(e.tx, e.ty);
+  if (opts.length === 0) return null;
+  const noReverse = opts.filter(o => !(o.dx === -e.dx && o.dy === -e.dy));
+  const choices = noReverse.length > 0 ? noReverse : opts;
+  const p = { x:GAME.player.tx, y:GAME.player.ty };
+  if (e.panicked || e.kind === 'flee'){
+    choices.sort((a,b) => manhattan(b, p) - manhattan(a, p));
+    return choices[0];
+  }
+  if (e.kind === 'chase'){
+    choices.sort((a,b) => manhattan(a, p) - manhattan(b, p));
+    return choices[0];
+  }
+  return choices[Math.floor(Math.random() * choices.length)];
+}
+
+/* FX */
+function spawnParticles(cx, cy, color, count){
+  for (let i=0; i<count; i++){
+    const a = Math.random() * Math.PI * 2;
+    const s = 1.5 + Math.random() * 3;
+    GAME.particles.push({
+      x:cx, y:cy,
+      vx:Math.cos(a) * s,
+      vy:Math.sin(a) * s - 1,
+      life:0, ttl:600 + Math.random()*400,
+      color
+    });
+  }
+}
+function spawnPopup(text, cls, atTileCenterPx){
+  const wrap = $('arenaWrap');
+  const rect = wrap.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'float-num' + (cls ? ' ' + cls : '');
+  el.textContent = text;
+  const ctr = atTileCenterPx || { x:rect.width/2, y:rect.height/2 - 20 };
+  el.style.left = (rect.left + ctr.x) + 'px';
+  el.style.top = (rect.top + ctr.y) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1400);
+}
+/* THE BRICK-FLY ANIMATION - the story-beat connection.
+   Spawns a "+N BRICK" label at the pickup's screen position, then
+   animates it across to the brick wall, then triggers addBricks(). */
+function brickFly(fromX, fromY, n){
+  const wallEl = $('brickWall');
+  const wallRect = wallEl.getBoundingClientRect();
+  const targetX = wallRect.left + wallRect.width/2;
+  const targetY = wallRect.top + wallRect.height/2;
+  const el = document.createElement('div');
+  el.className = 'brick-fly';
+  el.textContent = '+' + n + ' 🧱';
+  el.style.left = fromX + 'px';
+  el.style.top = fromY + 'px';
+  document.body.appendChild(el);
+  // force layout then animate
+  void el.offsetWidth;
+  requestAnimationFrame(() => {
+    el.style.left = targetX + 'px';
+    el.style.top = targetY + 'px';
+  });
+  setTimeout(() => {
+    el.classList.add('arrived');
+    addBricks(n);
+    // worker cheer
+    document.querySelectorAll('.worker').forEach(w => {
+      w.classList.add('cheer');
+      setTimeout(() => w.classList.remove('cheer'), 700);
+    });
+  }, 720);
+  setTimeout(() => el.remove(), 1100);
+}
+function spawnBeam(text){
+  const wpc = $('wpCenter');
+  const el = document.createElement('div');
+  el.className = 'verse-beam';
+  el.textContent = text;
+  wpc.appendChild(el);
+  setTimeout(() => el.remove(), 4900);
+}
+function spawnWindBanner(){
+  const wpc = $('wpCenter');
+  const el = document.createElement('div');
+  el.className = 'wind-banner';
+  el.textContent = "GOD'S WIND - 3x SPEED";
+  wpc.appendChild(el);
+  setTimeout(() => el.remove(), 3900);
+}
+function cameraShake(amp, ms){
+  GAME.shakeAmp = Math.max(GAME.shakeAmp, amp);
+  GAME.shakeT = Math.max(GAME.shakeT, ms);
+}
+function pulseQuota(){
+  const q = $('wpQuota');
+  q.classList.add('boost');
+  setTimeout(() => q.classList.remove('boost'), 400);
+}
+
+/* GAMEPLAY EFFECTS */
+function addBricks(n){
+  if (n <= 0) return;
+  const before = GAME.brickCount;
+  GAME.brickCount = Math.min(GAME.brickQuota, GAME.brickCount + n);
+  for (let i=before; i<GAME.brickCount; i++){
+    if (((i+1) % 10) === 0) GAME.goldBricks++;
+  }
+  updateBrickWall();
+  pulseQuota();
+  updateHud();
+  if (GAME.brickCount >= GAME.brickQuota){
+    endLevel(true);
+  }
+}
+function tileToScreenPx(tx, ty){
+  const wrap = $('arenaWrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  const canvasRect = canvas.getBoundingClientRect();
+  return {
+    x: canvasRect.left + (tx + 0.5) * TILE,
+    y: canvasRect.top + (ty + 0.5) * TILE
+  };
+}
+function absorbStaff(e){
+  e.alive = false;
+  e.panicked = false;
+  GAME.staffsAbsorbed++;
+  const screenPt = tileToScreenPx(e.tx, e.ty);
+  const cx = (e.tx + 0.5) * TILE;
+  const cy = (e.ty + 0.5) * TILE;
+  spawnParticles(cx, cy, '#ffd976', 26);
+  spawnParticles(cx, cy, e.color, 16);
+  cameraShake(7, 280);
+  const now = performance.now();
+  let bonus = 0;
+  let bricksFromStaff = e.isChief ? 12 : 5;
+  if (now - GAME.lastAbsorbMs < COMBO_WINDOW_MS && GAME.lastAbsorbMs > 0){
+    GAME.comboCount += 1;
+    bonus = 5;
+    spawnPopup('DOUBLE STAFF!', 'combo', { x:(e.tx+0.5)*TILE, y:(e.ty+0.5)*TILE });
+    play('combo');
+  } else {
+    GAME.comboCount = 1;
+    play('absorb');
+  }
+  GAME.lastAbsorbMs = now;
+  GAME.score += 100 + bonus * 10 + (e.isChief ? 200 : 0);
+  if (e.isChief) {
+    spawnPopup('CHIEF FALLEN! +200', 'golden', { x:(e.tx+0.5)*TILE, y:(e.ty+0.5)*TILE });
+    play('success');
+  }
+  brickFly(screenPt.x, screenPt.y, bricksFromStaff + bonus);
+  GAME.pharaohMood = 'frown';
+  GAME.pharaohMoodUntilMs = now + 2000;
+}
+function pickUpItem(pk){
+  const kindCfg = PICKUP_KINDS[pk.kind];
+  const idx = GAME.pickups.indexOf(pk);
+  if (idx !== -1) GAME.pickups.splice(idx, 1);
+  const screenPt = tileToScreenPx(pk.tx, pk.ty);
+  const cx = (pk.tx + 0.5) * TILE;
+  const cy = (pk.ty + 0.5) * TILE;
+  spawnParticles(cx, cy, kindCfg.color, 18);
+  cameraShake(4, 200);
+  play(kindCfg.sound);
+  switch (kindCfg.action){
+    case 'invuln':
+      GAME.invulnUntilMs = performance.now() + 5000;
+      GAME.enemies.forEach(e => { if (e.alive) e.panicked = true; });
+      spawnPopup('BURNING BUSH!', 'golden', { x:cx, y:cy });
+      toast('Magicians flee! Catch them while you shine.');
+      setTimeout(() => { GAME.enemies.forEach(e => { e.panicked = false; }); }, 5000);
+      // also send 3 bricks
+      brickFly(screenPt.x, screenPt.y, 3);
+      GAME.score += 50;
+      break;
+    case 'bricks':
+      spawnPopup('+25', 'golden', { x:cx, y:cy });
+      brickFly(screenPt.x, screenPt.y, kindCfg.bricks);
+      GAME.score += kindCfg.scoreBonus;
+      toast('Manna from heaven! The wall rises.');
+      break;
+    case 'score':
+      spawnPopup('GOLDEN IDOL +' + kindCfg.scoreBonus, 'golden', { x:cx, y:cy });
+      GAME.score += kindCfg.scoreBonus;
+      brickFly(screenPt.x, screenPt.y, 2);
+      break;
+    case 'scroll':
+      spawnPopup('TRUTH SCROLL!', 'bonus', { x:cx, y:cy });
+      // trigger a blessing immediately
+      maybeFireBlessing(performance.now(), true);
+      brickFly(screenPt.x, screenPt.y, kindCfg.bricks);
+      GAME.score += kindCfg.scoreBonus;
+      break;
+    case 'straw':
+      spawnPopup('WATER JAR +8 STRAW', 'bonus', { x:cx, y:cy });
+      GAME.straw = Math.min(GAME.strawMax, GAME.straw + 8);
+      brickFly(screenPt.x, screenPt.y, 2);
+      GAME.score += kindCfg.scoreBonus;
+      break;
+    case 'strawBig':
+      spawnPopup('+15 STRAW', 'bonus', { x:cx, y:cy });
+      GAME.straw = Math.min(GAME.strawMax, GAME.straw + 15);
+      brickFly(screenPt.x, screenPt.y, 1);
+      GAME.score += kindCfg.scoreBonus;
+      break;
+  }
+  updateHud();
+}
+function fireGodsWind(){
+  GAME.windBoostUntilMs = performance.now() + 10000;
+  spawnWindBanner();
+  document.querySelectorAll('.worker').forEach(w => w.classList.add('boosted'));
+  setTimeout(() => document.querySelectorAll('.worker').forEach(w => w.classList.remove('boosted')), 10000);
+  play('wind');
+  toast("God's wind! Workers are stronger.");
+}
+function maybeSpawnEvent(now){
+  if (now - GAME.lastEventCheckMs < EVENT_CHECK_INTERVAL_MS) return;
+  GAME.lastEventCheckMs = now;
+  const roll = Math.random();
+  const lv = LEVELS[GAME.levelIdx];
+  if (roll < 0.30){
+    spawnPickup('manna');
+  } else if (roll < 0.50){
+    if (lv.id >= 2) spawnPickup('idol');
+    else spawnPickup('manna');
+  } else if (roll < 0.65 && lv.id >= 2){
+    spawnPickup('scroll');
+  } else if (roll < 0.78 && GAME.straw <= 8){
+    spawnPickup(Math.random() < 0.5 ? 'straw' : 'jar');
+  } else if (roll < 0.88 && now > GAME.windBoostUntilMs + 8000){
+    fireGodsWind();
+  } else if (roll < 0.97 && GAME.diff && DIFF_BASE[GAME.diff].sandstormChance > 0
+            && Math.random() < DIFF_BASE[GAME.diff].sandstormChance && !GAME.sandstormOn){
+    GAME.sandstormOn = true;
+    $('sandstormFx').classList.add('on');
+    toast('A sandstorm rolls through the court!');
+    setTimeout(() => { GAME.sandstormOn = false; $('sandstormFx').classList.remove('on'); }, 7000);
+  }
+}
+function spawnPickup(kind){
+  if (GAME.pickups.some(p => p.kind === kind && kind !== 'manna')) return;  // limit duplicates
+  const free = findFreeTile();
+  if (!free) return;
+  GAME.pickups.push({ tx:free.x, ty:free.y, kind, born:performance.now() });
+  const kindCfg = PICKUP_KINDS[kind];
+  if (kindCfg.label) toast(kindCfg.label + ' appears!');
+}
+function findFreeTile(){
+  const m = getMaze();
+  const cols = m[0].length;
+  const rows = m.length;
+  for (let attempts=0; attempts<32; attempts++){
+    const x = Math.floor(Math.random() * cols);
+    const y = THRONE_ROWS + Math.floor(Math.random() * (rows - THRONE_ROWS));
+    if (isWall(x, y)) continue;
+    if (x === GAME.player.tx && y === GAME.player.ty) continue;
+    let near = false;
+    for (const e of GAME.enemies){
+      if (!e.alive) continue;
+      if (manhattan({x:e.tx,y:e.ty}, {x,y}) < 2){ near = true; break; }
+    }
+    if (near) continue;
+    for (const pk of GAME.pickups){
+      if (pk.tx === x && pk.ty === y){ near = true; break; }
+    }
+    if (near) continue;
+    return { x, y };
+  }
+  return null;
+}
+function maybeRespawnFlame(now){
+  const hasFlame = GAME.pickups.some(p => p.kind === 'flame');
+  if (hasFlame) return;
+  if (now - GAME.lastFlameRespawnCheckMs < FLAME_RESPAWN_MS) return;
+  GAME.lastFlameRespawnCheckMs = now;
+  const free = findFreeTile();
+  if (free){
+    GAME.pickups.push({ tx:free.x, ty:free.y, kind:'flame', born:now });
+    toast('A burning bush flame appears!');
+  }
+}
+function maybeFireBlessing(now, forced){
+  if (!forced && now - GAME.lastBlessingMs < BLESSING_INTERVAL_MS) return;
+  GAME.lastBlessingMs = now;
+  const text = BLESSINGS[Math.floor(Math.random() * BLESSINGS.length)];
+  spawnBeam(text);
+  GAME.score += 20;
+  // bricks via fly too (for visible chain)
+  const wpc = $('wpCenter');
+  const wallRect = wpc.getBoundingClientRect();
+  const screenPt = { x: wallRect.left + wallRect.width/2, y: wallRect.top + wallRect.height - 12 };
+  brickFly(screenPt.x, screenPt.y, 2);
+  play('chime');
+}
+
+/* GAME LOOP */
+function gameTick(nowMs){
+  if (GAME.state !== 'playing'){
+    requestAnimationFrame(gameTick);
+    return;
+  }
+  const dt = nowMs - GAME.lastTickMs;
+  GAME.lastTickMs = nowMs;
+  GAME.timeLeft -= dt / 1000;
+  if (GAME.timeLeft <= 0){
+    GAME.timeLeft = 0;
+    endLevel(false);
+    requestAnimationFrame(gameTick);
+    return;
+  }
+  const moveInterval = (nowMs < GAME.windBoostUntilMs) ? MOVE_INTERVAL_BOOSTED_MS : MOVE_INTERVAL_MS;
+  // player movement (tile-based with smooth lerp)
+  if (nowMs - GAME.lastMoveMs >= moveInterval){
+    GAME.lastMoveMs = nowMs;
+    if (PENDING.dx || PENDING.dy){
+      let nx = GAME.player.tx + PENDING.dx;
+      let ny = GAME.player.ty + PENDING.dy;
+      if (isTunnelRow(ny)){
+        const cols = mazeDim().cols;
+        if (nx < 0) nx = cols - 1;
+        if (nx >= cols) nx = 0;
+      }
+      if (!isWall(nx, ny)){
+        GAME.player.dx = PENDING.dx; GAME.player.dy = PENDING.dy;
+      }
+    }
+    if (GAME.player.dx || GAME.player.dy){
+      let nx = GAME.player.tx + GAME.player.dx;
+      let ny = GAME.player.ty + GAME.player.dy;
+      if (isTunnelRow(ny)){
+        const cols = mazeDim().cols;
+        if (nx < 0) nx = cols - 1;
+        if (nx >= cols) nx = 0;
+      }
+      if (!isWall(nx, ny)){
+        GAME.player.tx = nx; GAME.player.ty = ny;
+        GAME.player.lerpMs = nowMs;
+        for (const sz of GAME.speedZones){
+          if (sz.x === nx && sz.y === ny){
+            GAME.windBoostUntilMs = Math.max(GAME.windBoostUntilMs, nowMs + 900);
+            spawnParticles((nx+0.5)*TILE, (ny+0.5)*TILE, '#ffd976', 8);
+            break;
+          }
+        }
+      } else {
+        GAME.player.dx = 0; GAME.player.dy = 0;
+      }
+    }
+  }
+  // lerp player smooth position
+  const lerpT = Math.min(1, (nowMs - GAME.player.lerpMs) / moveInterval);
+  GAME.player.fx = GAME.player.fx + (GAME.player.tx - GAME.player.fx) * Math.min(1, lerpT + 0.0);
+  GAME.player.fy = GAME.player.fy + (GAME.player.ty - GAME.player.fy) * Math.min(1, lerpT + 0.0);
+  // enemies
+  for (const e of GAME.enemies){
+    if (!e.alive) continue;
+    let interval = e.panicked ? ENEMY_FLEE_MS : ENEMY_MOVE_MS;
+    if (e.isChief) interval = ENEMY_CHIEF_MS;
+    if (nowMs - e.lastMoveMs >= interval){
+      e.lastMoveMs = nowMs;
+      const m = decideEnemyMove(e);
+      if (m){ e.tx = m.x; e.ty = m.y; e.dx = m.dx; e.dy = m.dy; }
+    }
+    // lerp
+    e.fx = e.fx + (e.tx - e.fx) * 0.25;
+    e.fy = e.fy + (e.ty - e.fy) * 0.25;
+  }
+  // collisions
+  for (const e of GAME.enemies){
+    if (e.alive && e.tx === GAME.player.tx && e.ty === GAME.player.ty){
+      absorbStaff(e);
+    }
+  }
+  for (let i = GAME.pickups.length - 1; i >= 0; i--){
+    const pk = GAME.pickups[i];
+    if (pk.tx === GAME.player.tx && pk.ty === GAME.player.ty){
+      pickUpItem(pk);
+    }
+  }
+  // passive bricks
+  const passiveInterval = (nowMs < GAME.windBoostUntilMs) ? Math.floor(PASSIVE_BRICK_BASE_MS / 3) : PASSIVE_BRICK_BASE_MS;
+  if (nowMs - GAME.lastPassiveBrickMs >= passiveInterval){
+    GAME.lastPassiveBrickMs = nowMs;
+    if (GAME.straw > 0){
+      GAME.straw = Math.max(0, GAME.straw - 1);
+      addBricks(1);
+    }
+  }
+  maybeSpawnEvent(nowMs);
+  maybeRespawnFlame(nowMs);
+  maybeFireBlessing(nowMs);
+  // shake decay
+  if (GAME.shakeT > 0){ GAME.shakeT -= dt; if (GAME.shakeT <= 0){ GAME.shakeT = 0; GAME.shakeAmp = 0; } }
+  // particles
+  const survivors = [];
+  for (const p of GAME.particles){
+    p.life += dt;
+    if (p.life >= p.ttl) continue;
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.12;
+    survivors.push(p);
+  }
+  GAME.particles = survivors;
+  // dust motes
+  for (const d of GAME.dustMotes){
+    d.x += d.vx;
+    d.y += d.vy;
+    const m = getMaze();
+    if (d.y < THRONE_ROWS*TILE) d.y = m.length*TILE;
+    if (d.x < 0) d.x = m[0].length*TILE;
+    if (d.x > m[0].length*TILE) d.x = 0;
+  }
+  // hud throttle
+  if (!gameTick._hudT || nowMs - gameTick._hudT > 200){
+    gameTick._hudT = nowMs;
+    updateHud();
+  }
+  if (GAME.pharaohMood !== 'neutral' && nowMs > GAME.pharaohMoodUntilMs){
+    GAME.pharaohMood = 'neutral';
+  }
+  GAME.panProgress = (nowMs < GAME.panUntilMs) ? Math.max(0, 1 - (GAME.panUntilMs - nowMs) / 1900) : 1;
+  render(nowMs);
+  requestAnimationFrame(gameTick);
+}
+
+function endLevel(won){
+  if (GAME.state === 'won' || GAME.state === 'lost') return;
+  GAME.state = won ? 'won' : 'lost';
+  stop('bgGame');
+  if (won){
+    const timeBonus = Math.round(GAME.timeLeft * 5);
+    GAME.score += timeBonus;
+    let stars = 1;
+    const tFrac = GAME.timeLeft / GAME.timeLimit;
+    const allCaught = GAME.enemies.every(e => !e.alive);
+    if (tFrac >= 0.45 && allCaught) stars = 3;
+    else if (tFrac >= 0.2 || allCaught) stars = 2;
+    const starsEl = $('winStars');
+    starsEl.innerHTML = '';
+    for (let i=0; i<3; i++){
+      const s = document.createElement('span');
+      s.textContent = '★';
+      if (i < stars){
+        s.classList.add('lit');
+        s.style.animationDelay = (0.15 + i*0.25) + 's';
+      }
+      starsEl.appendChild(s);
+    }
+    if (GAME.goldBricks >= 3){
+      const g = document.createElement('span'); g.textContent = '★'; g.classList.add('gold');
+      starsEl.appendChild(g);
+    }
+    $('winTier').textContent = tierFor(GAME.score);
+    $('winScoreNum').textContent = GAME.score;
+    $('winStaffNum').textContent = GAME.staffsAbsorbed;
+    $('winTimeNum').textContent = Math.ceil(GAME.timeLeft) + 's';
+    const badgeEl = $('winBadges');
+    badgeEl.innerHTML = '';
+    const badges = [];
+    if (allCaught) badges.push('ALL STAFFS');
+    if (GAME.goldBricks >= 3) badges.push('GOLDEN');
+    if (GAME.staffsAbsorbed >= 2 && GAME.comboCount >= 2) badges.push('COMBO');
+    if (tFrac >= 0.6) badges.push('SWIFT');
+    const chiefDown = GAME.enemies.some(e => e.isChief && !e.alive);
+    if (chiefDown) badges.push('CHIEF SLAIN');
+    badges.forEach(t => {
+      const b = document.createElement('span'); b.className = 'win-badge'; b.textContent = t;
+      badgeEl.appendChild(b);
+    });
+    if (badges.length === 0){
+      const b = document.createElement('span'); b.className = 'win-badge'; b.textContent = 'FAITHFUL';
+      badgeEl.appendChild(b);
+    }
+    $('winName').textContent = nameOrFallback();
+    const lv = LEVELS[GAME.levelIdx];
+    $('winTitle').textContent = lv.id === 3 ? 'Chapter 1 - Final Wall!' : 'The wall is complete!';
+    $('winVerse').innerHTML = '"' + lv.verse.replace(/^"|"$/g, '') + '"<span class="ref">— ' + lv.ref + ' (NIV)</span>';
+    if (GAME.levelIdx === LEVELS.length - 1){
+      $('winNextBtn').textContent = 'See Chapter Result';
+      $('winMotivate').textContent = 'You faced all three magicians. The wall is built.';
+    } else {
+      $('winNextBtn').textContent = 'Next Level →';
+      $('winMotivate').textContent = 'Level ' + (LEVELS[GAME.levelIdx+1].id) + ' — ' + LEVELS[GAME.levelIdx+1].name + ' awaits.';
+    }
+    play('win');
+    GAME.chapterScore += GAME.score;
+    GAME.chapterStars += stars;
+    showModal('winModal');
+    try {
+      const key = 'bek.bundle2.best.ch1.lv' + lv.id + '.' + (GAME.diff || 'easy');
+      const prev = parseInt(localStorage.getItem(key) || '0', 10);
+      if (GAME.score > prev) localStorage.setItem(key, String(GAME.score));
+      localStorage.setItem('bek.bundle2.lastLevelWon', '1.' + lv.id);
+    } catch(e){}
+  } else {
+    $('loseName').textContent = nameOrFallback();
+    play('lose');
+    showModal('loseModal');
+  }
+}
+
+/* RENDER */
+function spriteFor(prefix){
+  const p = GAME.player;
+  if (p.dx === 1) return IMG[prefix + 'Right'];
+  if (p.dx === -1) return IMG[prefix + 'Left'];
+  if (p.dy === -1) return IMG[prefix + 'Back'];
+  return IMG[prefix + 'Front'];
+}
+function enemySprite(e){
+  if (e.dx === 1) return IMG.magRight;
+  if (e.dx === -1) return IMG.magLeft;
+  if (e.dy === -1) return IMG.magBack;
+  return IMG.magFront;
+}
+
+function render(nowMs){
+  const { cols, rows } = mazeDim();
+  const W = cols * TILE;
+  const H = rows * TILE;
+  let shakeDx = 0, shakeDy = 0;
+  if (GAME.shakeAmp > 0){
+    shakeDx = (Math.random() * 2 - 1) * GAME.shakeAmp;
+    shakeDy = (Math.random() * 2 - 1) * GAME.shakeAmp;
+  }
+  let panOffsetY = 0;
+  if (GAME.panProgress < 1){
+    panOffsetY = -H * 0.2 * (1 - GAME.panProgress);
+  }
+  ctx.save();
+  ctx.clearRect(0, 0, W, H);
+  ctx.translate(shakeDx, shakeDy + panOffsetY);
+
+  // throne backdrop
+  const throneH = THRONE_ROWS * TILE;
+  const throneGrad = ctx.createLinearGradient(0, 0, 0, throneH);
+  throneGrad.addColorStop(0, '#3a1d05');
+  throneGrad.addColorStop(0.7, '#5a3010');
+  throneGrad.addColorStop(1, '#3a1d05');
+  ctx.fillStyle = throneGrad;
+  ctx.fillRect(0, 0, W, throneH);
+  // hieroglyph stripes
+  ctx.fillStyle = 'rgba(255,215,118,0.15)';
+  for (let x=0; x<cols; x++) ctx.fillRect(x * TILE + 2, 4, TILE-4, 2);
+  // small hieroglyphic symbols
+  for (let x=0; x<cols; x++){
+    if ((x + GAME.flickerSeed) % 3 === 0){
+      ctx.fillStyle = 'rgba(255,215,118,0.22)';
+      ctx.fillRect(x * TILE + TILE/2 - 2, throneH * 0.35, 4, 2);
+      ctx.fillRect(x * TILE + TILE/2 - 1, throneH * 0.40, 2, 4);
+    }
+  }
+  // Pharaoh
+  const phaW = Math.min(throneH * 0.95, TILE * 1.8);
+  const phaH = throneH * 0.95;
+  const phaX = W/2 - phaW/2;
+  const phaY = throneH * 0.04;
+  ctx.fillStyle = '#8a5818';
+  ctx.fillRect(phaX - 10, phaY + phaH - 6, phaW + 20, 6);
+  ctx.fillStyle = '#5a3010';
+  ctx.fillRect(phaX - 14, phaY + phaH, phaW + 28, 4);
+  if (IMG.pharaoh && IMG.pharaoh.complete && IMG.pharaoh.naturalWidth){
+    ctx.drawImage(IMG.pharaoh, phaX, phaY, phaW, phaH);
+  } else {
+    ctx.fillStyle = '#d2a85a';
+    ctx.beginPath();
+    ctx.ellipse(phaX + phaW/2, phaY + phaH * 0.5, phaW * 0.35, phaH * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#3a1d05';
+    ctx.fillRect(phaX + phaW * 0.3, phaY + phaH * 0.18, phaW * 0.4, phaH * 0.18);
+  }
+  if (GAME.pharaohMood !== 'neutral'){
+    ctx.fillStyle = GAME.pharaohMood === 'glare' ? 'rgba(255,80,40,0.5)' : 'rgba(255,140,40,0.32)';
+    ctx.fillRect(0, 0, W, throneH);
+  }
+  ctx.fillStyle = '#ffd976';
+  ctx.fillRect(0, throneH - 2, W, 2);
+
+  // floor + walls
+  const m = getMaze();
+  for (let y=THRONE_ROWS; y<rows; y++){
+    for (let x=0; x<cols; x++){
+      const c = m[y][x];
+      const px = x * TILE, py = y * TILE;
+      if (c === '#' || c === 'T'){
+        const grad = ctx.createLinearGradient(px, py, px, py + TILE);
+        grad.addColorStop(0, '#6a4a22');
+        grad.addColorStop(0.5, '#3a2410');
+        grad.addColorStop(1, '#6a4a22');
+        ctx.fillStyle = grad;
+        ctx.fillRect(px, py, TILE, TILE);
+        ctx.fillStyle = 'rgba(255,215,118,0.12)';
+        ctx.fillRect(px, py, TILE, 2);
+        ctx.fillRect(px, py + TILE - 2, TILE, 2);
+        // brick texture
+        if (((x + y) % 2 === 0)){
+          ctx.fillStyle = 'rgba(40,20,8,0.4)';
+          ctx.fillRect(px + TILE*0.5 - 0.5, py + TILE*0.3, 1, TILE*0.4);
+        }
+      } else {
+        ctx.fillStyle = ((x+y)&1) ? '#d2a86b' : '#c89b58';
+        ctx.fillRect(px, py, TILE, TILE);
+        if (((x*7 + y*13) % 6) === 0){
+          ctx.fillStyle = 'rgba(120,70,30,0.24)';
+          ctx.beginPath(); ctx.arc(px + TILE/2, py + TILE/2, TILE*0.07, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.strokeStyle = 'rgba(90,55,20,0.3)';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(px + 0.25, py + 0.25, TILE - 0.5, TILE - 0.5);
+      }
+    }
+  }
+  // tunnel arches
+  for (let y=0; y<m.length; y++){
+    if (isTunnelRow(y)){
+      const py = y * TILE;
+      ctx.fillStyle = '#3a1d05';
+      ctx.fillRect(0, py, 6, TILE);
+      ctx.fillRect(W - 6, py, 6, TILE);
+      ctx.fillStyle = '#ffd976';
+      ctx.fillRect(0, py + TILE/2 - 1, 6, 2);
+      ctx.fillRect(W - 6, py + TILE/2 - 1, 6, 2);
+    }
+  }
+  // torches at corners — flickering
+  for (const t of GAME.torches){
+    if (isWall(t.x, t.y)) continue;
+    const tx = t.x * TILE + TILE/2;
+    const ty = t.y * TILE + TILE/2;
+    const fl = 0.6 + 0.4 * Math.sin(nowMs / 110 + (t.x + t.y) * 0.7);
+    const tg = ctx.createRadialGradient(tx, ty, 2, tx, ty, TILE * 0.7 * fl);
+    tg.addColorStop(0, 'rgba(255,180,80,0.35)');
+    tg.addColorStop(1, 'rgba(255,80,20,0)');
+    ctx.fillStyle = tg;
+    ctx.beginPath(); ctx.arc(tx, ty, TILE * 0.7 * fl, 0, Math.PI*2); ctx.fill();
+    // torch sprite
+    ctx.fillStyle = '#5a3010';
+    ctx.fillRect(tx - 2, ty - TILE*0.05, 4, TILE*0.18);
+    ctx.fillStyle = '#ffd976';
+    ctx.beginPath(); ctx.ellipse(tx, ty - TILE*0.12, 3 * fl, 7 * fl, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff8a30';
+    ctx.beginPath(); ctx.ellipse(tx, ty - TILE*0.18, 2 * fl, 4 * fl, 0, 0, Math.PI*2); ctx.fill();
+  }
+  // speed zones
+  for (const sz of GAME.speedZones){
+    const px = sz.x * TILE, py = sz.y * TILE;
+    ctx.save();
+    const a = 0.55 + 0.3 * Math.sin(nowMs / 300);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = '#ffd976';
+    ctx.beginPath();
+    ctx.moveTo(px + TILE*0.2, py + TILE*0.6);
+    ctx.lineTo(px + TILE*0.5, py + TILE*0.3);
+    ctx.lineTo(px + TILE*0.8, py + TILE*0.6);
+    ctx.lineTo(px + TILE*0.65, py + TILE*0.6);
+    ctx.lineTo(px + TILE*0.65, py + TILE*0.78);
+    ctx.lineTo(px + TILE*0.35, py + TILE*0.78);
+    ctx.lineTo(px + TILE*0.35, py + TILE*0.6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  // pickups
+  for (const pk of GAME.pickups){
+    drawPickup(pk, nowMs);
+  }
+  // dust motes
+  for (const d of GAME.dustMotes){
+    ctx.fillStyle = 'rgba(255,235,170,' + d.a + ')';
+    ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI*2); ctx.fill();
+  }
+  // enemies
+  for (const e of GAME.enemies){
+    if (!e.alive) continue;
+    const ex = (e.fx + 0.5) * TILE;
+    const ey = (e.fy + 0.5) * TILE;
+    const bob = Math.sin(nowMs / 380 + e.tx * 0.5) * 1.8;
+    const pulse = 0.5 + 0.5 * Math.sin(nowMs / 280 + (e.id.charCodeAt(0) || 1));
+    const cr = TILE * (0.48 + 0.18 * pulse) * (e.isChief ? 1.25 : 1);
+    const cg = ctx.createRadialGradient(ex, ey + bob, 2, ex, ey + bob, cr);
+    cg.addColorStop(0, e.color);
+    cg.addColorStop(0.5, e.color);
+    cg.addColorStop(1, e.color + '00');
+    ctx.globalAlpha = e.panicked ? 0.45 : 0.65;
+    ctx.fillStyle = cg;
+    ctx.beginPath(); ctx.arc(ex, ey + bob, cr, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+    const sp = enemySprite(e);
+    const spW = TILE * (e.isChief ? 1.5 : 1.28);
+    const spH = TILE * (e.isChief ? 1.8 : 1.52);
+    if (sp && sp.complete && sp.naturalWidth){
+      ctx.save();
+      if (e.panicked){
+        ctx.translate(ex, ey + bob);
+        ctx.rotate(Math.sin(nowMs / 80) * 0.18);
+        ctx.translate(-ex, -(ey + bob));
+      }
+      ctx.drawImage(sp, ex - spW/2, ey + bob - spH/2 - TILE*0.05, spW, spH);
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = e.isChief ? 0.35 : 0.55;
+      ctx.fillStyle = e.color;
+      ctx.fillRect(ex - spW/2, ey + bob - spH/2 - TILE*0.05, spW, spH);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.restore();
+    } else {
+      ctx.fillStyle = e.color;
+      ctx.fillRect(ex - TILE*0.2, ey + bob - TILE*0.32, TILE*0.4, TILE*0.64);
+    }
+    // staff in hand
+    ctx.save();
+    ctx.translate(ex + TILE*0.18, ey + bob - TILE*0.1);
+    ctx.fillStyle = e.color;
+    ctx.fillRect(-1, -TILE*0.22, 2, TILE*0.42);
+    ctx.fillStyle = '#fff8e7';
+    ctx.beginPath(); ctx.arc(0, -TILE*0.22, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+    // chief crown
+    if (e.isChief){
+      ctx.fillStyle = '#ffd976';
+      ctx.beginPath();
+      ctx.moveTo(ex - TILE*0.18, ey + bob - TILE*0.62);
+      ctx.lineTo(ex - TILE*0.10, ey + bob - TILE*0.74);
+      ctx.lineTo(ex, ey + bob - TILE*0.62);
+      ctx.lineTo(ex + TILE*0.10, ey + bob - TILE*0.74);
+      ctx.lineTo(ex + TILE*0.18, ey + bob - TILE*0.62);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  // Moses
+  const ppx = (GAME.player.fx + 0.5) * TILE;
+  const ppy = (GAME.player.fy + 0.5) * TILE;
+  const moseBob = (GAME.player.dx === 0 && GAME.player.dy === 0) ? Math.sin(nowMs / 600) * 1.4 : 0;
+  const invuln = (nowMs < GAME.invulnUntilMs);
+  const haloR = TILE * (invuln ? 1.1 : 0.7) * (0.85 + 0.15 * Math.sin(nowMs/220));
+  const hg = ctx.createRadialGradient(ppx, ppy + moseBob, 2, ppx, ppy + moseBob, haloR);
+  if (invuln){
+    hg.addColorStop(0, 'rgba(255,250,200,0.95)');
+    hg.addColorStop(0.4, 'rgba(255,180,60,0.6)');
+    hg.addColorStop(1, 'rgba(255,140,30,0)');
+  } else {
+    hg.addColorStop(0, 'rgba(255,235,170,0.85)');
+    hg.addColorStop(0.45, 'rgba(255,200,90,0.45)');
+    hg.addColorStop(1, 'rgba(255,170,40,0)');
+  }
+  ctx.fillStyle = hg;
+  ctx.beginPath(); ctx.arc(ppx, ppy + moseBob, haloR, 0, Math.PI*2); ctx.fill();
+  const msp = spriteFor('moses');
+  const mspW = TILE * 1.34;
+  const mspH = TILE * 1.58;
+  if (msp && msp.complete && msp.naturalWidth){
+    ctx.drawImage(msp, ppx - mspW/2, ppy + moseBob - mspH/2 - TILE*0.05, mspW, mspH);
+  } else {
+    ctx.fillStyle = '#d2a85a';
+    ctx.beginPath();
+    ctx.ellipse(ppx, ppy + moseBob - TILE*0.05, TILE*0.24, TILE*0.34, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#fff8e7';
+    ctx.beginPath(); ctx.arc(ppx, ppy + moseBob - TILE*0.3, TILE*0.13, 0, Math.PI*2); ctx.fill();
+  }
+  // golden staff
+  ctx.save();
+  ctx.translate(ppx + TILE*0.24, ppy + moseBob - TILE*0.05);
+  ctx.fillStyle = '#ffd976';
+  ctx.fillRect(-1.7, -TILE*0.38, 3.4, TILE*0.68);
+  const tgrad = ctx.createRadialGradient(0, -TILE*0.38, 0, 0, -TILE*0.38, 7);
+  tgrad.addColorStop(0, '#fff8e7');
+  tgrad.addColorStop(1, 'rgba(255,250,200,0)');
+  ctx.fillStyle = tgrad;
+  ctx.beginPath(); ctx.arc(0, -TILE*0.38, 7, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+
+  // particles
+  for (const p of GAME.particles){
+    const a = 1 - p.life / p.ttl;
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = a;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 2.8 * a, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  if (invuln){
+    ctx.fillStyle = 'rgba(255,215,118,0.06)';
+    ctx.fillRect(0, 0, W, H);
+  }
+  ctx.restore();
+}
+
+function drawPickup(pk, nowMs){
+  const cx = (pk.tx + 0.5) * TILE;
+  const cy = (pk.ty + 0.5) * TILE;
+  const bob = Math.sin((nowMs - pk.born) / 280) * 2;
+  const kindCfg = PICKUP_KINDS[pk.kind];
+  // halo
+  const pulse = 0.6 + 0.4 * Math.sin(nowMs / 220);
+  const hg = ctx.createRadialGradient(cx, cy + bob, 2, cx, cy + bob, TILE * 0.8 * pulse);
+  hg.addColorStop(0, kindCfg.color);
+  hg.addColorStop(0.5, kindCfg.color);
+  hg.addColorStop(1, kindCfg.color + '00');
+  ctx.globalAlpha = 0.75;
+  ctx.fillStyle = hg;
+  ctx.beginPath(); ctx.arc(cx, cy + bob, TILE * 0.8 * pulse, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 1;
+  // icon
+  switch (pk.kind){
+    case 'flame':
+      ctx.fillStyle = '#3a4a1a';
+      ctx.beginPath(); ctx.ellipse(cx, cy + bob + TILE*0.2, TILE*0.24, TILE*0.13, 0, 0, Math.PI*2); ctx.fill();
+      for (let k=0; k<3; k++){
+        const ang = (nowMs/280 + k*2) % (Math.PI * 2);
+        const fy2 = cy + bob - TILE*0.06 - Math.sin(ang) * TILE * 0.07;
+        ctx.fillStyle = k===1 ? '#ffd976' : '#ff8a30';
+        ctx.beginPath();
+        ctx.ellipse(cx - TILE*0.13 + k*TILE*0.13, fy2, TILE*0.085, TILE*0.2, 0, 0, Math.PI*2);
+        ctx.fill();
+      }
+      break;
+    case 'manna':
+      ctx.fillStyle = '#e0c878';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + bob, TILE*0.22, TILE*0.3, Math.PI/12, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = '#8a5818'; ctx.lineWidth = 1.2;
+      for (let k=0; k<5; k++){
+        ctx.beginPath();
+        ctx.moveTo(cx - TILE*0.16 + k*TILE*0.08, cy + bob - TILE*0.24);
+        ctx.lineTo(cx - TILE*0.05 + k*TILE*0.06, cy + bob);
+        ctx.stroke();
+      }
+      break;
+    case 'idol':
+      // golden chalice / idol icon
+      ctx.fillStyle = '#ffd976';
+      ctx.beginPath();
+      ctx.moveTo(cx - TILE*0.12, cy + bob - TILE*0.2);
+      ctx.lineTo(cx + TILE*0.12, cy + bob - TILE*0.2);
+      ctx.lineTo(cx + TILE*0.18, cy + bob);
+      ctx.lineTo(cx, cy + bob + TILE*0.12);
+      ctx.lineTo(cx - TILE*0.18, cy + bob);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#fff8e7';
+      ctx.fillRect(cx - 2, cy + bob - TILE*0.05, 4, TILE*0.12);
+      break;
+    case 'scroll':
+      ctx.fillStyle = '#fff8e7';
+      ctx.fillRect(cx - TILE*0.18, cy + bob - TILE*0.16, TILE*0.36, TILE*0.32);
+      ctx.fillStyle = '#5a3010';
+      ctx.fillRect(cx - TILE*0.2, cy + bob - TILE*0.18, TILE*0.02, TILE*0.36);
+      ctx.fillRect(cx + TILE*0.18, cy + bob - TILE*0.18, TILE*0.02, TILE*0.36);
+      ctx.strokeStyle = '#7a4a18'; ctx.lineWidth = 1;
+      for (let k=0; k<3; k++){
+        ctx.beginPath();
+        ctx.moveTo(cx - TILE*0.13, cy + bob - TILE*0.08 + k * TILE*0.08);
+        ctx.lineTo(cx + TILE*0.13, cy + bob - TILE*0.08 + k * TILE*0.08);
+        ctx.stroke();
+      }
+      break;
+    case 'jar':
+      ctx.fillStyle = '#7fdac8';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + bob + TILE*0.05, TILE*0.18, TILE*0.22, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#3a8a78';
+      ctx.fillRect(cx - TILE*0.08, cy + bob - TILE*0.18, TILE*0.16, TILE*0.1);
+      break;
+    case 'straw':
+      ctx.fillStyle = '#d8c060';
+      ctx.fillRect(cx - TILE*0.2, cy + bob - TILE*0.07, TILE*0.4, TILE*0.14);
+      ctx.fillStyle = '#a08020';
+      ctx.fillRect(cx - TILE*0.2, cy + bob - TILE*0.005, TILE*0.4, TILE*0.012);
+      break;
+  }
+}
+
+/* HANDLERS */
+$('startBtn').addEventListener('click', () => {
+  unlockAudio(); play('click');
+  if (!_selectedDifficulty){
+    $('difficultyHint').style.display = 'block';
+    setTimeout(() => { $('difficultyHint').style.display = 'none'; }, 2200);
+    return;
+  }
+  GAME.diff = _selectedDifficulty;
+  GAME.levelIdx = 0;
+  GAME.chapterScore = 0;
+  GAME.chapterStars = 0;
+  openCinematic();
+});
+$('winNextBtn').addEventListener('click', () => {
+  hideModal('winModal'); play('click');
+  if (GAME.levelIdx < LEVELS.length - 1){
+    GAME.levelIdx += 1;
+    showChapterOverview();
+  } else {
+    // chapter done
+    $('chapDoneName').textContent = nameOrFallback();
+    $('chapDoneTier').textContent = tierFor(GAME.chapterScore);
+    $('chapDoneScore').textContent = GAME.chapterScore;
+    $('chapDoneStars').textContent = GAME.chapterStars;
+    showModal('chapterDoneModal');
+    try {
+      localStorage.setItem('bek.bundle2.chapter1Done', '1');
+      localStorage.setItem('bek.bundle2.chapter1Score', String(GAME.chapterScore));
+    } catch(e){}
+  }
+});
+$('winReplayBtn').addEventListener('click', () => { hideModal('winModal'); play('click'); beginLevel(); });
+$('winMenuBtn').addEventListener('click', () => { hideAllModals(); stop('bgGame'); loop('bgCover'); GAME.state = 'cover'; showPage('coverPage'); });
+$('chapDoneMenuBtn').addEventListener('click', () => { hideAllModals(); stop('bgGame'); loop('bgCover'); GAME.state = 'cover'; showPage('coverPage'); });
+$('loseRetryBtn').addEventListener('click', () => { hideModal('loseModal'); play('click'); beginLevel(); });
+$('loseMenuBtn').addEventListener('click', () => { hideAllModals(); stop('bgGame'); loop('bgCover'); GAME.state = 'cover'; showPage('coverPage'); });
+$('resumeBtn').addEventListener('click', togglePause);
+$('pauseRestartBtn').addEventListener('click', () => { hideAllModals(); play('click'); beginLevel(); });
+$('pauseMenuBtn').addEventListener('click', () => { hideAllModals(); stop('bgGame'); loop('bgCover'); GAME.state = 'cover'; showPage('coverPage'); });
+
+['pointerdown','keydown','touchstart','click'].forEach(ev => {
+  window.addEventListener(ev, unlockAudio, { once:false, passive:true });
+});
+applyDiffSelection();
+$('hudKidName').textContent = _kidName || '';
+rebuildBrickWall();
+resizeCanvas();
+requestAnimationFrame(gameTick);
+console.warn('Staffs of Light v0.4 prototype loaded.');
+</script>
+</body>
+</html>
